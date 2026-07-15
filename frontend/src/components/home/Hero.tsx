@@ -29,4 +29,5 @@ export default function Hero() {
       </div>
     </section>
   );
-}
+}<div className="mx-auto grid min-h-[700px] max-w-7xl items-center gap-16 px-6 py-24 lg:grid-cols-2">
+</div>
