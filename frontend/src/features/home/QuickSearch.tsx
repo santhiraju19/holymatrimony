@@ -1,14 +1,11 @@
-"use client";
-
-import { Search } from "lucide-react";
-import { Button } from "@/components/ui";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
 
 export default function QuickSearch() {
   return (
-    <section className="relative -mt-16 z-20">
+    <section className="relative -mt-10 z-20">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="rounded-3xl bg-white p-8 shadow-2xl">
-
+        <Card className="p-8">
           <h2 className="text-2xl font-bold text-[#0B2D5C]">
             Begin Your Journey
           </h2>
@@ -17,50 +14,32 @@ export default function QuickSearch() {
             Search verified Christian brides and grooms.
           </p>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-6">
-
-            <select className="rounded-xl border p-3">
-              <option>I am</option>
-              <option>Groom</option>
-              <option>Bride</option>
-            </select>
-
-            <select className="rounded-xl border p-3">
-              <option>Looking For</option>
-              <option>Bride</option>
-              <option>Groom</option>
-            </select>
-
+          <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <input
-              type="number"
+              className="rounded-xl border border-gray-300 p-3"
               placeholder="Age From"
-              className="rounded-xl border p-3"
             />
 
             <input
-              type="number"
+              className="rounded-xl border border-gray-300 p-3"
               placeholder="Age To"
-              className="rounded-xl border p-3"
             />
 
-            <select className="rounded-xl border p-3">
-              <option>Denomination</option>
-              <option>CSI</option>
-              <option>Baptist</option>
-              <option>Catholic</option>
-              <option>Pentecostal</option>
-            </select>
+            <input
+              className="rounded-xl border border-gray-300 p-3"
+              placeholder="Denomination"
+            />
 
-            <Button
-              variant="secondary"
-              className="flex items-center justify-center gap-2"
-            >
-              <Search size={18} />
+            <input
+              className="rounded-xl border border-gray-300 p-3"
+              placeholder="State"
+            />
+
+            <Button variant="secondary">
               Search
             </Button>
-
           </div>
-        </div>
+        </Card>
       </div>
     </section>
   );

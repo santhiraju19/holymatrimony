@@ -11,7 +11,7 @@ export default function Card({
 }: Props) {
   return (
     <div
-      className={`rounded-3xl bg-white shadow-lg transition hover:shadow-xl ${className}`}
+      className={`rounded-3xl bg-white shadow-lg ${className}`}
     >
       {children}
     </div>

@@ -1,28 +1,25 @@
-import Image from "next/image";
-import { Button } from "@/components/ui";
+import Button from "@/components/ui/Button";
 
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-[#0B2D5C] via-[#123C73] to-[#0B2D5C] text-white">
-      <div className="mx-auto flex min-h-[700px] max-w-7xl items-center px-6 py-20">
-
+    <section className="bg-gradient-to-br from-[#0B2D5C] via-[#123C73] to-[#0B2D5C] text-white">
+      <div className="mx-auto max-w-7xl px-6 py-24 lg:py-32">
         <div className="max-w-3xl">
-
           <span className="rounded-full bg-[#D4AF37]/20 px-4 py-2 text-sm font-medium text-[#FFD95A]">
             India's Trusted Christian Matrimony
           </span>
 
-          <h1 className="mt-8 text-5xl font-extrabold leading-tight md:text-7xl">
+          <h1 className="mt-8 text-5xl font-extrabold leading-tight lg:text-7xl">
             Find Your
             <span className="block text-[#D4AF37]">
               God-Given Life Partner
             </span>
           </h1>
 
-          <p className="mt-8 max-w-2xl text-xl leading-8 text-slate-200">
-            Holy Matrimony helps Christian brides and grooms discover meaningful,
-            faith-centered relationships through verified profiles, trusted church
-            partnerships, and a secure matchmaking experience.
+          <p className="mt-8 max-w-2xl text-xl text-slate-200">
+            Holy Matrimony connects Christian brides and grooms through
+            verified profiles, trusted churches, and faith-centered
+            relationships.
           </p>
 
           <div className="mt-10 flex flex-wrap gap-4">
@@ -35,50 +32,23 @@ export default function Hero() {
             </Button>
           </div>
 
-          <div className="mt-14 flex flex-wrap gap-10 text-center">
+          <div className="mt-14 grid grid-cols-3 gap-8">
             <div>
-              <h3 className="text-4xl font-bold text-[#D4AF37]">
-                12,500+
-              </h3>
-
-              <p className="text-slate-300">
-                Verified Profiles
-              </p>
+              <h3 className="text-3xl font-bold text-[#D4AF37]">12,500+</h3>
+              <p className="text-slate-300">Verified Profiles</p>
             </div>
 
             <div>
-              <h3 className="text-4xl font-bold text-[#D4AF37]">
-                180+
-              </h3>
-
-              <p className="text-slate-300">
-                Churches
-              </p>
+              <h3 className="text-3xl font-bold text-[#D4AF37]">180+</h3>
+              <p className="text-slate-300">Church Partners</p>
             </div>
 
             <div>
-              <h3 className="text-4xl font-bold text-[#D4AF37]">
-                4,200+
-              </h3>
-
-              <p className="text-slate-300">
-                Happy Matches
-              </p>
+              <h3 className="text-3xl font-bold text-[#D4AF37]">4,200+</h3>
+              <p className="text-slate-300">Happy Matches</p>
             </div>
           </div>
-
         </div>
-
-        <div className="hidden flex-1 justify-end lg:flex">
-          <Image
-            src="/images/hero/christian-couple.png"
-            alt="Christian Couple"
-            width={550}
-            height={650}
-            priority
-          />
-        </div>
-
       </div>
     </section>
   );
