@@ -1,7 +1,13 @@
 "use client";
 
-import { useProfileWizard } from "@/features/profile/hooks/useProfileWizard";
+import { useMemo } from "react";
 
+import { useProfileWizard } from "@/features/profile/hooks/useProfileWizard";
+import { useProfile } from "@/features/profile/context/useProfile";
+
+import { calculateProfileCompletion } from "@/features/profile/utils/profileCompletion";
+
+import ProfileCompletionCard from "@/features/profile/components/ProfileCompletionCard";
 import ProfileStepper from "@/features/profile/components/ProfileStepper";
 
 import BasicInfoForm from "@/features/profile/components/BasicInfoForm";
@@ -13,7 +19,14 @@ import PhotoUpload from "@/features/profile/components/PhotoUpload";
 import Review from "@/features/profile/components/Review";
 
 export default function ProfilePage() {
+  const profile = useProfile();
+
   const { step, next, back } = useProfileWizard();
+
+  const completion = useMemo(
+    () => calculateProfileCompletion(profile),
+    [profile]
+  );
 
   const forms = [
     <BasicInfoForm
@@ -59,7 +72,6 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-8">
-      {/* Page Header */}
       <div>
         <h1 className="text-4xl font-bold text-[#0B2D5C]">
           Complete Your Profile
@@ -70,10 +82,14 @@ export default function ProfilePage() {
         </p>
       </div>
 
-      {/* Progress Stepper */}
+      <ProfileCompletionCard
+        percentage={completion.percentage}
+        completed={completion.completed}
+        pending={completion.pending}
+      />
+
       <ProfileStepper currentStep={step + 1} />
 
-      {/* Current Step */}
       {forms[step]}
     </div>
   );
