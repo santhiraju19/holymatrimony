@@ -5,10 +5,12 @@ import { useMemo } from "react";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 
-import DropZone from "./DropZone";
-import PhotoGrid from "./PhotoGrid";
-import UploadProgress from "./UploadProgress";
-import UploadGuidelines from "./UploadGuidelines";
+import {
+  DropZone,
+  PhotoGrid,
+  UploadProgress,
+  UploadGuidelines,
+} from "./photos";
 
 import { useProfile } from "@/features/profile/context/useProfile";
 import { PhotoItem } from "../types";
