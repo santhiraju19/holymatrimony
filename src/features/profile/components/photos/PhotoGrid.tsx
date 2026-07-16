@@ -24,7 +24,7 @@ export default function PhotoGrid({
 
   return (
     <>
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {photos.map((photo, index) => (
           <PhotoCard
             key={photo.id}
@@ -37,24 +37,26 @@ export default function PhotoGrid({
         ))}
       </div>
 
-      <PhotoPreview
-        open={selectedIndex !== null}
-        images={previews}
-        currentIndex={selectedIndex ?? 0}
-        onClose={() => setSelectedIndex(null)}
-        onPrevious={() =>
-          setSelectedIndex((prev) => {
-            if (prev === null) return 0;
-            return prev === 0 ? previews.length - 1 : prev - 1;
-          })
-        }
-        onNext={() =>
-          setSelectedIndex((prev) => {
-            if (prev === null) return 0;
-            return prev === previews.length - 1 ? 0 : prev + 1;
-          })
-        }
-      />
+      {selectedIndex !== null && (
+        <PhotoPreview
+          open
+          images={previews}
+          currentIndex={selectedIndex}
+          onClose={() => setSelectedIndex(null)}
+          onPrevious={() =>
+            setSelectedIndex((prev) => {
+              if (prev === null) return 0;
+              return prev === 0 ? previews.length - 1 : prev - 1;
+            })
+          }
+          onNext={() =>
+            setSelectedIndex((prev) => {
+              if (prev === null) return 0;
+              return prev === previews.length - 1 ? 0 : prev + 1;
+            })
+          }
+        />
+      )}
     </>
   );
 }
