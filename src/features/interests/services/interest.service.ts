@@ -10,6 +10,7 @@ export const interestService = {
       memberName,
       status: "Pending",
       sentAt: new Date().toISOString(),
+      chatEnabled: false,
     };
 
     interests.push(interest);
@@ -25,10 +26,20 @@ export const interestService = {
     id: number,
     status: "Accepted" | "Rejected"
   ) {
-    interests = interests.map((i) =>
-      i.id === id ? { ...i, status } : i
+    interests = interests.map((interest) =>
+      interest.id === id
+        ? {
+            ...interest,
+            status,
+            chatEnabled: status === "Accepted",
+          }
+        : interest
     );
 
     return interests;
+  },
+
+  async get(id: number) {
+    return interests.find((i) => i.id === id);
   },
 };

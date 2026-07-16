@@ -4,4 +4,5 @@ export interface Interest {
   memberName: string;
   status: "Pending" | "Accepted" | "Rejected";
   sentAt: string;
+  chatEnabled: boolean;
 }
