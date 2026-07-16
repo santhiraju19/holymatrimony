@@ -9,6 +9,30 @@ interface ReviewProps {
   onBack: () => void;
 }
 
+function Status({
+  label,
+  verified,
+}: {
+  label: string;
+  verified: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-slate-200 p-4">
+      <span className="font-medium">{label}</span>
+
+      <span
+        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+          verified
+            ? "bg-green-100 text-green-700"
+            : "bg-amber-100 text-amber-700"
+        }`}
+      >
+        {verified ? "Verified" : "Pending"}
+      </span>
+    </div>
+  );
+}
+
 export default function Review({
   onBack,
 }: ReviewProps) {
@@ -22,9 +46,7 @@ export default function Review({
   } = useProfile();
 
   const handleSubmit = () => {
-    // TODO:
-    // Replace this with API integration in Sprint 5.
-    console.log("Profile Submitted", {
+    console.log({
       basicInfo,
       churchInfo,
       educationInfo,
@@ -36,90 +58,74 @@ export default function Review({
     alert("Profile submitted successfully.");
   };
 
-  const Section = ({
-    title,
-    children,
-  }: {
-    title: string;
-    children: React.ReactNode;
-  }) => (
-    <div className="rounded-xl border border-slate-200 p-5">
-      <h3 className="mb-4 text-lg font-semibold text-[#0B2D5C]">
-        {title}
-      </h3>
-
-      <div className="space-y-2 text-sm text-slate-700">
-        {children}
-      </div>
-    </div>
-  );
-
   return (
-    <Card>
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-[#0B2D5C]">
+    <div className="space-y-8">
+      <Card>
+        <h2 className="mb-2 text-3xl font-bold text-[#0B2D5C]">
           Review Your Profile
         </h2>
 
-        <p className="mt-2 text-slate-500">
-          Please review your information before submitting.
+        <p className="text-slate-500">
+          Review your information before submitting.
         </p>
-      </div>
+      </Card>
 
-      <div className="space-y-6">
-        <Section title="Basic Information">
-          <p><strong>Name:</strong> {basicInfo.fullName}</p>
-          <p><strong>Mobile:</strong> {basicInfo.mobile}</p>
-          <p><strong>Date of Birth:</strong> {basicInfo.dateOfBirth}</p>
-          <p><strong>Gender:</strong> {basicInfo.gender}</p>
-        </Section>
+      <Card>
+        <h3 className="mb-6 text-xl font-bold text-[#0B2D5C]">
+          Verification Status
+        </h3>
 
-        <Section title="Church Information">
-          <p><strong>Church:</strong> {churchInfo.churchName}</p>
-          <p><strong>Denomination:</strong> {churchInfo.denomination}</p>
-          <p><strong>Pastor:</strong> {churchInfo.pastorName}</p>
-        </Section>
+        <div className="space-y-4">
+          <Status
+            label="Email Verification"
+            verified={false}
+          />
 
-        <Section title="Education">
-          <p><strong>Education:</strong> {educationInfo.highestEducation}</p>
-          <p><strong>Profession:</strong> {educationInfo.profession}</p>
-          <p><strong>Company:</strong> {educationInfo.company}</p>
-          <p><strong>Income:</strong> {educationInfo.annualIncome}</p>
-        </Section>
+          <Status
+            label="Mobile Verification"
+            verified={basicInfo.mobile.trim() !== ""}
+          />
 
-        <Section title="Family">
-          <p><strong>Father:</strong> {familyInfo.fatherName}</p>
-          <p><strong>Mother:</strong> {familyInfo.motherName}</p>
-          <p><strong>Siblings:</strong> {familyInfo.siblings}</p>
-          <p><strong>Location:</strong> {familyInfo.familyLocation}</p>
-        </Section>
+          <Status
+            label="Church Verification"
+            verified={churchInfo.churchName.trim() !== ""}
+          />
 
-        <Section title="Partner Preferences">
-          <p>
-            <strong>Age:</strong>{" "}
-            {preferenceInfo.preferredAgeFrom} - {preferenceInfo.preferredAgeTo}
-          </p>
+          <Status
+            label="Pastor Recommendation"
+            verified={churchInfo.pastorName.trim() !== ""}
+          />
 
-          <p>
-            <strong>Denomination:</strong>{" "}
-            {preferenceInfo.denomination}
-          </p>
+          <Status
+            label="Profile Photos"
+            verified={photoInfo.photos.length > 0}
+          />
+        </div>
+      </Card>
 
-          <p>
-            <strong>Education:</strong>{" "}
-            {preferenceInfo.education}
-          </p>
-        </Section>
+      <Card>
+        <h3 className="mb-6 text-xl font-bold text-[#0B2D5C]">
+          Profile Summary
+        </h3>
 
-        <Section title="Photos">
-          <p>
-            <strong>Total Photos:</strong>{" "}
-            {photoInfo.photos?.length ?? 0}
-          </p>
-        </Section>
-      </div>
+        <div className="grid gap-5 md:grid-cols-2">
+          <div>
+            <p><strong>Name:</strong> {basicInfo.fullName}</p>
+            <p><strong>Mobile:</strong> {basicInfo.mobile}</p>
+            <p><strong>DOB:</strong> {basicInfo.dateOfBirth}</p>
+            <p><strong>Gender:</strong> {basicInfo.gender}</p>
+          </div>
 
-      <div className="mt-10 flex justify-between">
+          <div>
+            <p><strong>Church:</strong> {churchInfo.churchName}</p>
+            <p><strong>Education:</strong> {educationInfo.highestEducation}</p>
+            <p><strong>Profession:</strong> {educationInfo.profession}</p>
+            <p><strong>Photos:</strong> {photoInfo.photos.length}</p>
+          </div>
+        </div>
+      </Card>
+
+      <div className="flex justify-between">
         <Button
           variant="secondary"
           onClick={onBack}
@@ -134,6 +140,6 @@ export default function Review({
           Submit Profile
         </Button>
       </div>
-    </Card>
+    </div>
   );
 }
