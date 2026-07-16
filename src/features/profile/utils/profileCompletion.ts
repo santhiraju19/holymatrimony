@@ -16,56 +16,49 @@ export function calculateProfileCompletion(
     {
       label: "Basic Information",
       valid:
-        !!profile.basicInfo.fullName &&
-        !!profile.basicInfo.mobile &&
-        !!profile.basicInfo.gender &&
-        !!profile.basicInfo.dateOfBirth,
+        profile.basicInfo.fullName.trim() !== "" &&
+        profile.basicInfo.mobile.trim() !== "" &&
+        profile.basicInfo.gender.trim() !== "" &&
+        profile.basicInfo.dateOfBirth.trim() !== "",
     },
     {
       label: "Church Information",
       valid:
-        !!profile.churchInfo.churchName &&
-        !!profile.churchInfo.denomination,
+        profile.churchInfo.churchName.trim() !== "" &&
+        profile.churchInfo.denomination.trim() !== "",
     },
     {
       label: "Education",
       valid:
-        !!profile.educationInfo.highestEducation &&
-        !!profile.educationInfo.profession,
+        profile.educationInfo.highestEducation.trim() !== "" &&
+        profile.educationInfo.profession.trim() !== "",
     },
     {
       label: "Family",
       valid:
-        !!profile.familyInfo.fatherName &&
-        !!profile.familyInfo.motherName,
+        profile.familyInfo.fatherName.trim() !== "" &&
+        profile.familyInfo.motherName.trim() !== "",
     },
     {
       label: "Partner Preferences",
       valid:
-        !!profile.preferenceInfo.preferredAgeFrom &&
-        !!profile.preferenceInfo.preferredAgeTo,
+        profile.preferenceInfo.preferredAgeFrom.trim() !== "" &&
+        profile.preferenceInfo.preferredAgeTo.trim() !== "",
     },
     {
       label: "Photos",
-      valid:
-        Array.isArray((profile.photoInfo as any).photos)
-          ? (profile.photoInfo as any).photos.length > 0
-          : !!profile.photoInfo.profilePhoto,
+      valid: profile.photoInfo.photos.length > 0,
     },
   ];
 
   sections.forEach((section) => {
-    if (section.valid) {
-      completed.push(section.label);
-    } else {
-      pending.push(section.label);
-    }
+    section.valid
+      ? completed.push(section.label)
+      : pending.push(section.label);
   });
 
   return {
-    percentage: Math.round(
-      (completed.length / sections.length) * 100
-    ),
+    percentage: Math.round((completed.length / sections.length) * 100),
     completed,
     pending,
   };
