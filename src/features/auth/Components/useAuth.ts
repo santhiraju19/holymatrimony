@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { setToken, removeToken } from "@/lib/auth";
+import { authService } from "./services/auth.service";
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -25,12 +28,12 @@ export default function useAuth() {
     setLoading(true);
 
     try {
-      // TODO: Replace with API call
-      console.log("LOGIN", data);
+      const response = await authService.login(data);
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      router.push("/dashboard");
+      if (response.success) {
+        setToken(response.token);
+        router.push("/dashboard");
+      }
     } finally {
       setLoading(false);
     }
@@ -40,19 +43,18 @@ export default function useAuth() {
     setLoading(true);
 
     try {
-      // TODO: Replace with API call
-      console.log("REGISTER", data);
+      const response = await authService.register(data);
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      router.push("/login");
+      if (response.success) {
+        router.push("/login");
+      }
     } finally {
       setLoading(false);
     }
   }
 
   async function logout() {
-    // TODO: Clear token/session
+    removeToken();
     router.push("/login");
   }
 
