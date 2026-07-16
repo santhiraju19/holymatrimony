@@ -1,17 +1,21 @@
 import { ReactNode } from "react";
+import { twMerge } from "tailwind-merge";
 
-interface Props {
+interface CardProps {
   children: ReactNode;
   className?: string;
 }
 
 export default function Card({
   children,
-  className = "",
-}: Props) {
+  className,
+}: CardProps) {
   return (
     <div
-      className={`rounded-3xl bg-white shadow-lg ${className}`}
+      className={twMerge(
+        "rounded-3xl border border-slate-200 bg-white p-8 shadow-sm",
+        className
+      )}
     >
       {children}
     </div>

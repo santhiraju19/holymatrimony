@@ -1,19 +1,41 @@
-import "./globals.css";
-import type { Metadata } from "next";
+import { ReactNode } from "react";
 
-export const metadata: Metadata = {
-  title: "Holy Matrimony",
-  description: "Christian Matrimony Platform",
-};
+import AuthHero from "@/features/auth/components/AuthHero";
 
-export default function RootLayout({
+interface Props {
+  children: ReactNode;
+}
+
+export default function AuthLayout({
   children,
-}: {
-  children: React.ReactNode;
-}) {
+}: Props) {
   return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-200">
+
+      <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center p-6">
+
+        <div className="grid w-full overflow-hidden rounded-[32px] bg-white shadow-2xl lg:grid-cols-2">
+
+          {/* Left Side */}
+
+          <AuthHero />
+
+          {/* Right Side */}
+
+          <div className="flex items-center justify-center p-10 lg:p-16">
+
+            <div className="w-full max-w-md">
+
+              {children}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
   );
 }

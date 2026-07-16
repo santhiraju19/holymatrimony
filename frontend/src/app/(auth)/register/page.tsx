@@ -1,7 +1,5 @@
+import RegisterForm from "@/features/auth/components/RegisterForm";
+
 export default function RegisterPage() {
-  return (
-    <h1 className="text-3xl font-bold">
-      Register Page
-    </h1>
-  );
+  return <RegisterForm />;
 }
