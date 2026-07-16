@@ -1,5 +1,13 @@
 "use client";
 
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import FormField from "@/components/ui/FormField";
+import Input from "@/components/ui/Input";
+import Select from "@/components/ui/Select";
+
+import { useProfile } from "@/features/profile/context/useProfile";
+
 interface BasicInfoFormProps {
   onNext: () => void;
 }
@@ -7,76 +15,105 @@ interface BasicInfoFormProps {
 export default function BasicInfoForm({
   onNext,
 }: BasicInfoFormProps) {
+  const { basicInfo, setProfile } = useProfile();
+
+  const updateBasicInfo = (
+    field: keyof typeof basicInfo,
+    value: string
+  ) => {
+    setProfile((prev) => ({
+      ...prev,
+      basicInfo: {
+        ...prev.basicInfo,
+        [field]: value,
+      },
+    }));
+  };
+
   return (
-    <div className="rounded-2xl bg-white p-8 shadow">
-      <h2 className="text-2xl font-bold text-[#0B2D5C]">
-        Step 1 • Basic Information
-      </h2>
+    <Card>
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-[#0B2D5C]">
+          Step 1 • Basic Information
+        </h2>
 
-      <div className="mt-8 grid gap-6 md:grid-cols-2">
-        <div>
-          <label className="mb-2 block font-medium">
-            Full Name
-          </label>
+        <p className="mt-2 text-slate-500">
+          Tell us about yourself.
+        </p>
+      </div>
 
-          <input
-            className="w-full rounded-xl border border-slate-300 p-3"
+      <div className="grid gap-6 md:grid-cols-2">
+        <FormField
+          label="Full Name"
+          required
+        >
+          <Input
+            value={basicInfo.fullName}
             placeholder="Enter your full name"
+            onChange={(e) =>
+              updateBasicInfo("fullName", e.target.value)
+            }
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="mb-2 block font-medium">
-            Mobile Number
-          </label>
-
-          <input
-            className="w-full rounded-xl border border-slate-300 p-3"
+        <FormField
+          label="Mobile Number"
+          required
+        >
+          <Input
+            value={basicInfo.mobile}
             placeholder="+91 9876543210"
+            onChange={(e) =>
+              updateBasicInfo("mobile", e.target.value)
+            }
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="mb-2 block font-medium">
-            Date of Birth
-          </label>
-
-          <input
+        <FormField
+          label="Date of Birth"
+          required
+        >
+          <Input
             type="date"
-            className="w-full rounded-xl border border-slate-300 p-3"
+            value={basicInfo.dateOfBirth}
+            onChange={(e) =>
+              updateBasicInfo("dateOfBirth", e.target.value)
+            }
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="mb-2 block font-medium">
-            Gender
-          </label>
-
-          <select className="w-full rounded-xl border border-slate-300 p-3">
-            <option>Select Gender</option>
-            <option>Bride</option>
-            <option>Groom</option>
-          </select>
-        </div>
+        <FormField
+          label="Gender"
+          required
+        >
+          <Select
+            value={basicInfo.gender}
+            onChange={(e) =>
+              updateBasicInfo("gender", e.target.value)
+            }
+          >
+            <option value="">Select Gender</option>
+            <option value="Bride">Male</option>
+            <option value="Groom">Female</option>
+          </Select>
+        </FormField>
       </div>
 
       <div className="mt-10 flex justify-between">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           disabled
-          className="rounded-xl bg-slate-300 px-8 py-3 text-white"
         >
           Back
-        </button>
+        </Button>
 
-        <button
-          type="button"
+        <Button
+          variant="primary"
           onClick={onNext}
-          className="rounded-xl bg-[#0B2D5C] px-8 py-3 font-semibold text-white hover:bg-[#123C73]"
         >
           Continue
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }

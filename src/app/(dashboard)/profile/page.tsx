@@ -6,9 +6,56 @@ import ProfileStepper from "@/features/profile/components/ProfileStepper";
 
 import BasicInfoForm from "@/features/profile/components/BasicInfoForm";
 import ChurchInfoForm from "@/features/profile/components/ChurchInfoForm";
+import EducationForm from "@/features/profile/components/EducationForm";
+import FamilyForm from "@/features/profile/components/FamilyForm";
+import PreferencesForm from "@/features/profile/components/PreferencesForm";
+import PhotoUpload from "@/features/profile/components/PhotoUpload";
+import Review from "@/features/profile/components/Review";
 
 export default function ProfilePage() {
   const { step, next, back } = useProfileWizard();
+
+  const forms = [
+    <BasicInfoForm
+      key="basic"
+      onNext={next}
+    />,
+
+    <ChurchInfoForm
+      key="church"
+      onBack={back}
+      onNext={next}
+    />,
+
+    <EducationForm
+      key="education"
+      onBack={back}
+      onNext={next}
+    />,
+
+    <FamilyForm
+      key="family"
+      onBack={back}
+      onNext={next}
+    />,
+
+    <PreferencesForm
+      key="preferences"
+      onBack={back}
+      onNext={next}
+    />,
+
+    <PhotoUpload
+      key="photos"
+      onBack={back}
+      onNext={next}
+    />,
+
+    <Review
+      key="review"
+      onBack={back}
+    />,
+  ];
 
   return (
     <div className="space-y-8">
@@ -18,28 +65,16 @@ export default function ProfilePage() {
           Complete Your Profile
         </h1>
 
-        <p className="mt-2 text-gray-500">
+        <p className="mt-2 text-slate-500">
           Complete your profile to start finding your God-given life partner.
         </p>
       </div>
 
-      {/* Stepper */}
-      <ProfileStepper currentStep={step} />
+      {/* Progress Stepper */}
+      <ProfileStepper currentStep={step + 1} />
 
-      {/* Step 1 */}
-      {step === 0 && (
-        <BasicInfoForm
-          onNext={next}
-        />
-      )}
-
-      {/* Step 2 */}
-      {step === 1 && (
-        <ChurchInfoForm
-          onBack={back}
-          onNext={next}
-        />
-      )}
+      {/* Current Step */}
+      {forms[step]}
     </div>
   );
 }

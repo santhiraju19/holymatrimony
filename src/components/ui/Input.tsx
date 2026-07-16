@@ -1,15 +1,13 @@
-import { SelectHTMLAttributes } from "react";
+import { InputHTMLAttributes } from "react";
 
-interface SelectProps
-  extends SelectHTMLAttributes<HTMLSelectElement> {}
+interface InputProps extends InputHTMLAttributes<HTMLInputElement> {}
 
-export default function Select({
-  children,
+export default function Input({
   className = "",
   ...props
-}: SelectProps) {
+}: InputProps) {
   return (
-    <select
+    <input
       {...props}
       className={`
         w-full
@@ -27,8 +25,6 @@ export default function Select({
         focus:ring-[#D4AF37]/20
         ${className}
       `}
-    >
-      {children}
-    </select>
+    />
   );
 }

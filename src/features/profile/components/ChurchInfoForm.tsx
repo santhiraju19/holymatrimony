@@ -1,5 +1,13 @@
 "use client";
 
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import FormField from "@/components/ui/FormField";
+import Input from "@/components/ui/Input";
+import Select from "@/components/ui/Select";
+
+import { useProfile } from "@/features/profile/context/useProfile";
+
 interface ChurchInfoFormProps {
   onNext: () => void;
   onBack: () => void;
@@ -9,109 +17,135 @@ export default function ChurchInfoForm({
   onNext,
   onBack,
 }: ChurchInfoFormProps) {
+  const { churchInfo, setProfile } = useProfile();
+
+  const updateChurchInfo = (
+    field: keyof typeof churchInfo,
+    value: string
+  ) => {
+    setProfile((prev) => ({
+      ...prev,
+      churchInfo: {
+        ...prev.churchInfo,
+        [field]: value,
+      },
+    }));
+  };
+
   return (
-    <div className="rounded-2xl bg-white p-8 shadow">
+    <Card>
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-[#0B2D5C]">
+          Step 2 • Church Information
+        </h2>
 
-      <h2 className="text-2xl font-bold text-[#0B2D5C]">
-        Step 2 • Church Information
-      </h2>
+        <p className="mt-2 text-slate-500">
+          Tell us about your church and spiritual background.
+        </p>
+      </div>
 
-      <div className="mt-8 grid gap-6 md:grid-cols-2">
-
-        <div>
-          <label className="mb-2 block font-medium">
-            Church Name
-          </label>
-
-          <input
-            className="w-full rounded-xl border border-slate-300 p-3"
+      <div className="grid gap-6 md:grid-cols-2">
+        <FormField
+          label="Church Name"
+          required
+        >
+          <Input
+            value={churchInfo.churchName}
             placeholder="Enter church name"
+            onChange={(e) =>
+              updateChurchInfo("churchName", e.target.value)
+            }
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="mb-2 block font-medium">
-            Denomination
-          </label>
+        <FormField
+          label="Denomination"
+          required
+        >
+          <Select
+            value={churchInfo.denomination}
+            onChange={(e) =>
+              updateChurchInfo("denomination", e.target.value)
+            }
+          >
+            <option value="">Select denomination</option>
+            <option value="CSI">CSI</option>
+            <option value="Catholic">Catholic</option>
+            <option value="Baptist">Baptist</option>
+            <option value="Pentecostal">Pentecostal</option>
+            <option value="Lutheran">Lutheran</option>
+            <option value="Methodist">Methodist</option>
+            <option value="Independent">Independent</option>
+          </Select>
+        </FormField>
 
-          <select className="w-full rounded-xl border border-slate-300 p-3">
-            <option>Select denomination</option>
-            <option>CSI</option>
-            <option>Catholic</option>
-            <option>Baptist</option>
-            <option>Pentecostal</option>
-            <option>Lutheran</option>
-            <option>Methodist</option>
-            <option>Independent</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="mb-2 block font-medium">
-            Pastor Name
-          </label>
-
-          <input
-            className="w-full rounded-xl border border-slate-300 p-3"
+        <FormField
+          label="Pastor Name"
+        >
+          <Input
+            value={churchInfo.pastorName}
             placeholder="Pastor name"
+            onChange={(e) =>
+              updateChurchInfo("pastorName", e.target.value)
+            }
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="mb-2 block font-medium">
-            Baptized
-          </label>
+        <FormField
+          label="Baptized"
+        >
+          <Select
+            value={churchInfo.baptized}
+            onChange={(e) =>
+              updateChurchInfo("baptized", e.target.value)
+            }
+          >
+            <option value="">Select</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </Select>
+        </FormField>
 
-          <select className="w-full rounded-xl border border-slate-300 p-3">
-            <option>Yes</option>
-            <option>No</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="mb-2 block font-medium">
-            Church Membership ID
-          </label>
-
-          <input
-            className="w-full rounded-xl border border-slate-300 p-3"
+        <FormField
+          label="Church Membership ID"
+        >
+          <Input
+            value={churchInfo.membershipId}
             placeholder="Optional"
+            onChange={(e) =>
+              updateChurchInfo("membershipId", e.target.value)
+            }
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="mb-2 block font-medium">
-            Church Address
-          </label>
-
-          <input
-            className="w-full rounded-xl border border-slate-300 p-3"
+        <FormField
+          label="Church Address"
+        >
+          <Input
+            value={churchInfo.churchAddress}
             placeholder="City / State"
+            onChange={(e) =>
+              updateChurchInfo("churchAddress", e.target.value)
+            }
           />
-        </div>
-
+        </FormField>
       </div>
 
       <div className="mt-10 flex justify-between">
-
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           onClick={onBack}
-          className="rounded-xl bg-slate-300 px-8 py-3 text-white"
         >
           Back
-        </button>
+        </Button>
 
-        <button
-          type="button"
+        <Button
+          variant="primary"
           onClick={onNext}
-          className="rounded-xl bg-[#0B2D5C] px-8 py-3 font-semibold text-white hover:bg-[#123C73]"
         >
           Continue
-        </button>
-
+        </Button>
       </div>
-
-    </div>
+    </Card>
   );
 }
