@@ -1,10 +1,23 @@
 "use client";
 
-import React, { createContext } from "react";
+import React, {
+  createContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
+
 import { ProfileState } from "../types";
+import { useProfileRecovery } from "../hooks/useProfileRecovery";
 
 export interface ProfileContextType extends ProfileState {
-  setProfile: React.Dispatch<React.SetStateAction<ProfileState>>;
+  setProfile: React.Dispatch<
+    React.SetStateAction<ProfileState>
+  >;
+
+  saveStatus: "idle" | "saving" | "saved";
+
+  clearSavedDraft: () => void;
 }
 
 export const initialProfile: ProfileState = {
@@ -13,11 +26,14 @@ export const initialProfile: ProfileState = {
     mobile: "",
     dateOfBirth: "",
     gender: "",
+    age: "",
+    maritalStatus: "",
+    email: "",
   },
 
   churchInfo: {
-    churchName: "",
     denomination: "",
+    churchName: "",
     pastorName: "",
     baptized: "",
     membershipId: "",
@@ -41,8 +57,18 @@ export const initialProfile: ProfileState = {
   preferenceInfo: {
     preferredAgeFrom: "",
     preferredAgeTo: "",
-    denomination: "",
-    education: "",
+    preferredDenomination: "",
+    preferredEducation: "",
+  },
+
+  locationInfo: {
+    city: "",
+    state: "",
+    country: "",
+  },
+
+  aboutInfo: {
+    aboutMe: "",
   },
 
   photoInfo: {
@@ -51,7 +77,51 @@ export const initialProfile: ProfileState = {
   },
 };
 
-export const ProfileContext = createContext<ProfileContextType>({
-  ...initialProfile,
-  setProfile: () => {},
-});
+export const ProfileContext =
+  createContext<ProfileContextType>({
+    ...initialProfile,
+    setProfile: () => {},
+    saveStatus: "idle",
+    clearSavedDraft: () => {},
+  });
+
+interface Props {
+  children: ReactNode;
+}
+
+export function ProfileProvider({
+  children,
+}: Props) {
+  const [profile, setProfile] =
+    useState<ProfileState>(initialProfile);
+
+  const {
+    restoreDraft,
+    removeDraft,
+    saveStatus,
+  } = useProfileRecovery(profile);
+
+  /**
+   * Restore profile on first load
+   */
+  useEffect(() => {
+    const draft = restoreDraft();
+
+    if (draft) {
+      setProfile(draft);
+    }
+  }, [restoreDraft]);
+
+  return (
+    <ProfileContext.Provider
+      value={{
+        ...profile,
+        setProfile,
+        saveStatus,
+        clearSavedDraft: removeDraft,
+      }}
+    >
+      {children}
+    </ProfileContext.Provider>
+  );
+}

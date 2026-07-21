@@ -3,9 +3,10 @@
 import { useParams } from "next/navigation";
 
 import Card from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
 
 import InterestButton from "@/features/interests/components/InterestButton";
+import CallRequestButton from "@/features/secure-connect/components/CallRequestButton";
+import TrustPassport from "@/features/trust/components/TrustPassport";
 
 const members = [
   {
@@ -111,13 +112,21 @@ export default function MemberProfilePage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
+
       <div className="grid gap-8 lg:grid-cols-3">
+
         <Card className="overflow-hidden p-0">
-          <div className="aspect-[4/5] bg-gradient-to-br from-slate-200 to-slate-300" />
+          <div className="flex aspect-[4/5] items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300">
+            <span className="text-slate-500">
+              Member Photo
+            </span>
+          </div>
         </Card>
 
         <div className="space-y-6 lg:col-span-2">
+
           <Card>
+
             <h1 className="text-4xl font-bold text-[#0B2D5C]">
               {member.name}
             </h1>
@@ -127,44 +136,21 @@ export default function MemberProfilePage() {
             </p>
 
             <div className="mt-8 grid gap-4 md:grid-cols-2">
-              <Info
-                label="Age"
-                value={`${member.age} Years`}
-              />
 
-              <Info
-                label="Height"
-                value={member.height}
-              />
+              <Info label="Age" value={`${member.age} Years`} />
+              <Info label="Height" value={member.height} />
+              <Info label="Education" value={member.education} />
+              <Info label="Profession" value={member.profession} />
+              <Info label="Church" value={member.church} />
+              <Info label="Denomination" value={member.denomination} />
+              <Info label="Location" value={member.location} />
 
-              <Info
-                label="Education"
-                value={member.education}
-              />
-
-              <Info
-                label="Profession"
-                value={member.profession}
-              />
-
-              <Info
-                label="Church"
-                value={member.church}
-              />
-
-              <Info
-                label="Denomination"
-                value={member.denomination}
-              />
-
-              <Info
-                label="Location"
-                value={member.location}
-              />
             </div>
+
           </Card>
 
           <Card>
+
             <h2 className="mb-4 text-2xl font-bold text-[#0B2D5C]">
               About
             </h2>
@@ -172,20 +158,29 @@ export default function MemberProfilePage() {
             <p className="leading-8 text-slate-600">
               {member.about}
             </p>
+
           </Card>
 
-          <div className="flex gap-4">
+          <TrustPassport />
+
+          <div className="flex flex-wrap gap-4">
+
             <InterestButton
               memberId={member.id}
               memberName={member.name}
             />
 
-            <Button variant="secondary">
-              💬 Chat
-            </Button>
+            <CallRequestButton
+              memberId={member.id}
+              memberName={member.name}
+            />
+
           </div>
+
         </div>
+
       </div>
+
     </div>
   );
 }
@@ -199,6 +194,7 @@ function Info({
 }) {
   return (
     <div className="rounded-xl border border-slate-200 p-4">
+
       <div className="text-sm text-slate-500">
         {label}
       </div>
@@ -206,6 +202,7 @@ function Info({
       <div className="mt-1 font-semibold text-[#0B2D5C]">
         {value}
       </div>
+
     </div>
   );
 }

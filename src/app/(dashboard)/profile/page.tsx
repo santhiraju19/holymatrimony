@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 
 import { useProfileWizard } from "@/features/profile/hooks/useProfileWizard";
+import { useProfileApi } from "@/features/profile/hooks/useProfileApi";
 import { useProfile } from "@/features/profile/context/useProfile";
 
 import { calculateProfileCompletion } from "@/features/profile/utils/profileCompletion";
@@ -21,6 +22,8 @@ import Review from "@/features/profile/components/Review";
 export default function ProfilePage() {
   const profile = useProfile();
 
+  const { loading, error } = useProfileApi();
+
   const { step, next, back } = useProfileWizard();
 
   const completion = useMemo(
@@ -29,10 +32,7 @@ export default function ProfilePage() {
   );
 
   const forms = [
-    <BasicInfoForm
-      key="basic"
-      onNext={next}
-    />,
+    <BasicInfoForm key="basic" onNext={next} />,
 
     <ChurchInfoForm
       key="church"
@@ -69,6 +69,24 @@ export default function ProfilePage() {
       onBack={back}
     />,
   ];
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[300px] items-center justify-center">
+        <p className="text-slate-500">
+          Loading profile...
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-600">
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

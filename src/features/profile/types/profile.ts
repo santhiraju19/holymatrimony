@@ -58,3 +58,12 @@ export interface ProfileData {
   preferences: PreferenceDetails;
   photos: ProfilePhoto[];
 }
+
+/**
+ * Stored in localStorage for Profile Recovery (Sprint 6R)
+ */
+export interface ProfileDraft {
+  version: number;
+  updatedAt: number;
+  data: ProfileData;
+}

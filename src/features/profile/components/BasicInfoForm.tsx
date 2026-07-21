@@ -43,10 +43,7 @@ export default function BasicInfoForm({
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <FormField
-          label="Full Name"
-          required
-        >
+        <FormField label="Full Name" required>
           <Input
             value={basicInfo.fullName}
             placeholder="Enter your full name"
@@ -56,10 +53,18 @@ export default function BasicInfoForm({
           />
         </FormField>
 
-        <FormField
-          label="Mobile Number"
-          required
-        >
+        <FormField label="Email" required>
+          <Input
+            type="email"
+            value={basicInfo.email}
+            placeholder="Enter your email"
+            onChange={(e) =>
+              updateBasicInfo("email", e.target.value)
+            }
+          />
+        </FormField>
+
+        <FormField label="Mobile Number" required>
           <Input
             value={basicInfo.mobile}
             placeholder="+91 9876543210"
@@ -69,10 +74,7 @@ export default function BasicInfoForm({
           />
         </FormField>
 
-        <FormField
-          label="Date of Birth"
-          required
-        >
+        <FormField label="Date of Birth" required>
           <Input
             type="date"
             value={basicInfo.dateOfBirth}
@@ -82,10 +84,18 @@ export default function BasicInfoForm({
           />
         </FormField>
 
-        <FormField
-          label="Gender"
-          required
-        >
+        <FormField label="Age">
+          <Input
+            type="number"
+            value={basicInfo.age}
+            placeholder="Age"
+            onChange={(e) =>
+              updateBasicInfo("age", e.target.value)
+            }
+          />
+        </FormField>
+
+        <FormField label="Gender" required>
           <Select
             value={basicInfo.gender}
             onChange={(e) =>
@@ -93,24 +103,32 @@ export default function BasicInfoForm({
             }
           >
             <option value="">Select Gender</option>
-            <option value="Bride">Male</option>
-            <option value="Groom">Female</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </Select>
+        </FormField>
+
+        <FormField label="Marital Status" required>
+          <Select
+            value={basicInfo.maritalStatus}
+            onChange={(e) =>
+              updateBasicInfo("maritalStatus", e.target.value)
+            }
+          >
+            <option value="">Select</option>
+            <option value="Never Married">Never Married</option>
+            <option value="Divorced">Divorced</option>
+            <option value="Widowed">Widowed</option>
           </Select>
         </FormField>
       </div>
 
       <div className="mt-10 flex justify-between">
-        <Button
-          variant="secondary"
-          disabled
-        >
+        <Button variant="secondary" disabled>
           Back
         </Button>
 
-        <Button
-          variant="primary"
-          onClick={onNext}
-        >
+        <Button variant="primary" onClick={onNext}>
           Continue
         </Button>
       </div>

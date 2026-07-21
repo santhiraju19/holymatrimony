@@ -2,101 +2,119 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 import AuthCard from "./AuthCard";
+import { authService } from "../services/auth.service";
+import { getToken } from "@/lib/auth";
 
 export default function LoginForm() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [remember, setRemember] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  const handleSubmit = async (
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(
     e: React.FormEvent<HTMLFormElement>
-  ) => {
+  ) {
     e.preventDefault();
 
     setLoading(true);
+    setError("");
 
-    // Sprint 5.2
-    // Replace with auth API
-    await new Promise((resolve) => setTimeout(resolve, 1200));
+    try {
+      console.log("========== LOGIN START ==========");
 
-    setLoading(false);
-  };
+      const result = await authService.login({
+        email,
+        password,
+      });
+
+      console.log("Login Response:", result);
+
+      const token = getToken();
+
+      console.log("Stored Token:", token);
+
+      if (!token) {
+        throw new Error("JWT Token was not stored.");
+      }
+
+      console.log("Redirecting to profile...");
+
+      router.replace("/profile");
+    } catch (err: any) {
+      console.error("LOGIN ERROR:", err);
+
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError("Login failed.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <AuthCard
       title="Welcome Back"
-      subtitle="Sign in to continue your journey."
+      subtitle="Sign in to continue your Holy Matrimony journey."
     >
       <form
         onSubmit={handleSubmit}
         className="space-y-5"
       >
-        <div>
-          <label className="mb-2 block text-sm font-semibold text-slate-700">
-            Email Address
-          </label>
+        {error && (
+          <div className="rounded-lg border border-red-300 bg-red-100 p-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
+        <input
+          required
+          type="email"
+          placeholder="Email Address"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-[#0B2D5C] focus:ring-2 focus:ring-[#0B2D5C]/20"
+        />
+
+        <div className="relative">
           <input
             required
-            type="email"
-            placeholder="Enter your email"
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-[#0B2D5C] focus:ring-2 focus:ring-[#0B2D5C]/20"
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 pr-12 outline-none focus:border-[#0B2D5C] focus:ring-2 focus:ring-[#0B2D5C]/20"
           />
-        </div>
 
-        <div>
-          <label className="mb-2 block text-sm font-semibold text-slate-700">
-            Password
-          </label>
-
-          <div className="relative">
-            <input
-              required
-              type={showPassword ? "text" : "password"}
-              placeholder="Enter your password"
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 pr-12 outline-none transition focus:border-[#0B2D5C] focus:ring-2 focus:ring-[#0B2D5C]/20"
-            />
-
-            <button
-              type="button"
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500"
-              onClick={() => setShowPassword((v) => !v)}
-            >
-              {showPassword ? (
-                <EyeOff size={20} />
-              ) : (
-                <Eye size={20} />
-              )}
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between text-sm">
-          <label className="flex items-center gap-2">
-            <input
-              checked={remember}
-              type="checkbox"
-              onChange={(e) => setRemember(e.target.checked)}
-            />
-
-            Remember me
-          </label>
-
-          <Link
-            href="/forgot-password"
-            className="font-semibold text-[#0B2D5C] hover:underline"
+          <button
+            type="button"
+            className="absolute right-4 top-1/2 -translate-y-1/2"
+            onClick={() => setShowPassword((prev) => !prev)}
           >
-            Forgot Password?
-          </Link>
+            {showPassword ? (
+              <EyeOff size={20} />
+            ) : (
+              <Eye size={20} />
+            )}
+          </button>
         </div>
 
         <button
-          disabled={loading}
           type="submit"
-          className="flex w-full items-center justify-center rounded-xl bg-[#0B2D5C] py-3 font-semibold text-white transition hover:bg-[#123C73] disabled:cursor-not-allowed disabled:opacity-70"
+          disabled={loading}
+          className="flex w-full items-center justify-center rounded-xl bg-[#0B2D5C] py-3 font-semibold text-white hover:bg-[#123C73] disabled:opacity-60"
         >
           {loading ? (
             <>
@@ -110,13 +128,22 @@ export default function LoginForm() {
             "Sign In"
           )}
         </button>
+
+        <div className="text-center">
+          <Link
+            href="/forgot-password"
+            className="text-sm text-[#0B2D5C] hover:underline"
+          >
+            Forgot Password?
+          </Link>
+        </div>
       </form>
 
-      <p className="mt-8 text-center text-sm text-slate-600">
+      <p className="mt-8 text-center text-sm">
         Don't have an account?{" "}
         <Link
           href="/register"
-          className="font-bold text-[#D4AF37] hover:underline"
+          className="font-semibold text-[#D4AF37]"
         >
           Create Account
         </Link>

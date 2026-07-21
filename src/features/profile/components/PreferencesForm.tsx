@@ -34,11 +34,7 @@ export default function PreferencesForm({
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-
-        <FormField
-          label="Preferred Age From"
-          required
-        >
+        <FormField label="Preferred Age From" required>
           <Input
             type="number"
             value={preferenceInfo.preferredAgeFrom}
@@ -53,10 +49,7 @@ export default function PreferencesForm({
           />
         </FormField>
 
-        <FormField
-          label="Preferred Age To"
-          required
-        >
+        <FormField label="Preferred Age To" required>
           <Input
             type="number"
             value={preferenceInfo.preferredAgeTo}
@@ -71,15 +64,13 @@ export default function PreferencesForm({
           />
         </FormField>
 
-        <FormField
-          label="Preferred Denomination"
-        >
+        <FormField label="Preferred Denomination">
           <Select
-            value={preferenceInfo.denomination}
+            value={preferenceInfo.preferredDenomination}
             onChange={(e) =>
               updateSection(
                 "preferenceInfo",
-                "denomination",
+                "preferredDenomination",
                 e.target.value
               )
             }
@@ -95,15 +86,13 @@ export default function PreferencesForm({
           </Select>
         </FormField>
 
-        <FormField
-          label="Preferred Education"
-        >
+        <FormField label="Preferred Education">
           <Select
-            value={preferenceInfo.education}
+            value={preferenceInfo.preferredEducation}
             onChange={(e) =>
               updateSection(
                 "preferenceInfo",
-                "education",
+                "preferredEducation",
                 e.target.value
               )
             }
@@ -117,21 +106,14 @@ export default function PreferencesForm({
             <option value="Doctorate">Doctorate</option>
           </Select>
         </FormField>
-
       </div>
 
       <div className="mt-10 flex justify-between">
-        <Button
-          variant="secondary"
-          onClick={onBack}
-        >
+        <Button variant="secondary" onClick={onBack}>
           Back
         </Button>
 
-        <Button
-          variant="primary"
-          onClick={onNext}
-        >
+        <Button variant="primary" onClick={onNext}>
           Continue
         </Button>
       </div>

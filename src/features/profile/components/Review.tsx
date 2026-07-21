@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
+
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 
 import { useProfile } from "@/features/profile/context/useProfile";
+import { useProfileApi } from "@/features/profile/hooks/useProfileApi";
 
 interface ReviewProps {
   onBack: () => void;
@@ -45,17 +48,19 @@ export default function Review({
     photoInfo,
   } = useProfile();
 
-  const handleSubmit = () => {
-    console.log({
-      basicInfo,
-      churchInfo,
-      educationInfo,
-      familyInfo,
-      preferenceInfo,
-      photoInfo,
-    });
+  const { saveProfile, saving, error } = useProfileApi();
 
-    alert("Profile submitted successfully.");
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async () => {
+    setSuccess(false);
+
+    try {
+      await saveProfile();
+      setSuccess(true);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -78,7 +83,7 @@ export default function Review({
         <div className="space-y-4">
           <Status
             label="Email Verification"
-            verified={false}
+            verified={basicInfo.email.trim() !== ""}
           />
 
           <Status
@@ -109,26 +114,44 @@ export default function Review({
         </h3>
 
         <div className="grid gap-5 md:grid-cols-2">
-          <div>
+          <div className="space-y-2">
             <p><strong>Name:</strong> {basicInfo.fullName}</p>
+            <p><strong>Email:</strong> {basicInfo.email}</p>
             <p><strong>Mobile:</strong> {basicInfo.mobile}</p>
             <p><strong>DOB:</strong> {basicInfo.dateOfBirth}</p>
             <p><strong>Gender:</strong> {basicInfo.gender}</p>
+            <p><strong>Marital Status:</strong> {basicInfo.maritalStatus}</p>
           </div>
 
-          <div>
+          <div className="space-y-2">
             <p><strong>Church:</strong> {churchInfo.churchName}</p>
+            <p><strong>Denomination:</strong> {churchInfo.denomination}</p>
             <p><strong>Education:</strong> {educationInfo.highestEducation}</p>
             <p><strong>Profession:</strong> {educationInfo.profession}</p>
+            <p><strong>Father:</strong> {familyInfo.fatherName}</p>
+            <p><strong>Preferred Age:</strong> {preferenceInfo.preferredAgeFrom} - {preferenceInfo.preferredAgeTo}</p>
             <p><strong>Photos:</strong> {photoInfo.photos.length}</p>
           </div>
         </div>
+
+        {success && (
+          <div className="mt-6 rounded-lg bg-green-100 p-4 text-green-700">
+            ✅ Profile saved successfully.
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-6 rounded-lg bg-red-100 p-4 text-red-700">
+            {error}
+          </div>
+        )}
       </Card>
 
       <div className="flex justify-between">
         <Button
           variant="secondary"
           onClick={onBack}
+          disabled={saving}
         >
           Back
         </Button>
@@ -136,8 +159,9 @@ export default function Review({
         <Button
           variant="primary"
           onClick={handleSubmit}
+          disabled={saving}
         >
-          Submit Profile
+          {saving ? "Saving..." : "Submit Profile"}
         </Button>
       </div>
     </div>
