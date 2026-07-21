@@ -1,36 +1,43 @@
 package com.theholymatrimony.backend.security.jwt;
 
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
+
+import java.time.Instant;
 
 @Service
 public class JwtService {
 
+    private final JwtEncoder jwtEncoder;
+    private final JwtProperties jwtProperties;
+
+    public JwtService(
+            JwtEncoder jwtEncoder,
+            JwtProperties jwtProperties
+    ) {
+        this.jwtEncoder = jwtEncoder;
+        this.jwtProperties = jwtProperties;
+    }
+
     public String generateToken(String email) {
 
-        /*
-         * Temporary implementation.
-         * Next pack will replace this with Nimbus JWT.
-         */
+        Instant now = Instant.now();
 
-        return "HM-TOKEN-" + email + "-" + System.currentTimeMillis();
+        Instant expiresAt = now.plusMillis(
+                jwtProperties.getExpiration()
+        );
+
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer("holy-matrimony")
+                .issuedAt(now)
+                .expiresAt(expiresAt)
+                .subject(email)
+                .build();
+
+        return jwtEncoder
+                .encode(JwtEncoderParameters.from(claims))
+                .getTokenValue();
     }
-
-    public String extractUsername(String token) {
-
-        if (token == null || !token.startsWith("HM-TOKEN-")) {
-            return null;
-        }
-
-        String value = token.substring("HM-TOKEN-".length());
-
-        return value.substring(0, value.lastIndexOf("-"));
-    }
-
-    public boolean isTokenValid(String token, String email) {
-
-        String username = extractUsername(token);
-
-        return username != null && username.equals(email);
-    }
-
 }

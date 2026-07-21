@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 import AuthCard from "./AuthCard";
-import { authService } from "./services/auth.service";
+import { authService } from "../services/auth.service";
+import { getToken } from "@/lib/auth";
 
 export default function LoginForm() {
-
   const router = useRouter();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -18,55 +18,61 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
-
   const [error, setError] = useState("");
 
   async function handleSubmit(
     e: React.FormEvent<HTMLFormElement>
   ) {
-
     e.preventDefault();
 
     setLoading(true);
     setError("");
 
     try {
+      console.log("========== LOGIN START ==========");
 
-      await authService.login({
+      const result = await authService.login({
         email,
         password,
       });
 
-      router.push("/dashboard");
+      console.log("Login Response:", result);
 
+      const token = getToken();
+
+      console.log("Stored Token:", token);
+
+      if (!token) {
+        throw new Error("JWT Token was not stored.");
+      }
+
+      console.log("Redirecting to profile...");
+
+      router.replace("/profile");
     } catch (err: any) {
+      console.error("LOGIN ERROR:", err);
 
       if (err.response?.data?.message) {
         setError(err.response.data.message);
+      } else if (err.message) {
+        setError(err.message);
       } else {
-        setError("Invalid email or password");
+        setError("Login failed.");
       }
-
     } finally {
-
       setLoading(false);
-
     }
-
   }
 
   return (
-
     <AuthCard
       title="Welcome Back"
       subtitle="Sign in to continue your Holy Matrimony journey."
     >
-
       <form
         onSubmit={handleSubmit}
         className="space-y-5"
       >
-
         {error && (
           <div className="rounded-lg border border-red-300 bg-red-100 p-3 text-sm text-red-700">
             {error}
@@ -83,7 +89,6 @@ export default function LoginForm() {
         />
 
         <div className="relative">
-
           <input
             required
             type={showPassword ? "text" : "password"}
@@ -96,7 +101,7 @@ export default function LoginForm() {
           <button
             type="button"
             className="absolute right-4 top-1/2 -translate-y-1/2"
-            onClick={() => setShowPassword(!showPassword)}
+            onClick={() => setShowPassword((prev) => !prev)}
           >
             {showPassword ? (
               <EyeOff size={20} />
@@ -104,7 +109,6 @@ export default function LoginForm() {
               <Eye size={20} />
             )}
           </button>
-
         </div>
 
         <button
@@ -112,7 +116,6 @@ export default function LoginForm() {
           disabled={loading}
           className="flex w-full items-center justify-center rounded-xl bg-[#0B2D5C] py-3 font-semibold text-white hover:bg-[#123C73] disabled:opacity-60"
         >
-
           {loading ? (
             <>
               <Loader2
@@ -124,37 +127,27 @@ export default function LoginForm() {
           ) : (
             "Sign In"
           )}
-
         </button>
 
         <div className="text-center">
-
           <Link
             href="/forgot-password"
             className="text-sm text-[#0B2D5C] hover:underline"
           >
             Forgot Password?
           </Link>
-
         </div>
-
       </form>
 
       <p className="mt-8 text-center text-sm">
-
         Don't have an account?{" "}
-
         <Link
           href="/register"
           className="font-semibold text-[#D4AF37]"
         >
           Create Account
         </Link>
-
       </p>
-
     </AuthCard>
-
   );
-
 }

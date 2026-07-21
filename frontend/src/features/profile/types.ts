@@ -1,13 +1,23 @@
+export interface ProfilePhoto {
+  id: string;
+  file: File;
+  preview: string;
+  isPrimary: boolean;
+}
+
 export interface BasicInfo {
   fullName: string;
   mobile: string;
   dateOfBirth: string;
   gender: string;
+  age: string;
+  maritalStatus: string;
+  email: string;
 }
 
 export interface ChurchInfo {
-  churchName: string;
   denomination: string;
+  churchName: string;
   pastorName: string;
   baptized: string;
   membershipId: string;
@@ -31,20 +41,18 @@ export interface FamilyInfo {
 export interface PreferenceInfo {
   preferredAgeFrom: string;
   preferredAgeTo: string;
-  denomination: string;
-  education: string;
+  preferredDenomination: string;
+  preferredEducation: string;
 }
 
-export interface PhotoItem {
-  id: string;
-  file: File;
-  preview: string;
-  isPrimary: boolean;
+export interface LocationInfo {
+  city: string;
+  state: string;
+  country: string;
 }
 
-export interface PhotoInfo {
-  photos: PhotoItem[];
-  primaryPhoto: string;
+export interface AboutInfo {
+  aboutMe: string;
 }
 
 export interface ProfileState {
@@ -53,5 +61,10 @@ export interface ProfileState {
   educationInfo: EducationInfo;
   familyInfo: FamilyInfo;
   preferenceInfo: PreferenceInfo;
-  photoInfo: PhotoInfo;
+  locationInfo: LocationInfo;
+  aboutInfo: AboutInfo;
+  photoInfo: {
+    photos: ProfilePhoto[];
+    primaryPhoto: string;
+  };
 }

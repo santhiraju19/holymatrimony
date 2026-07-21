@@ -20,11 +20,14 @@ export const initialProfile: ProfileState = {
     mobile: "",
     dateOfBirth: "",
     gender: "",
+    age: "",
+    maritalStatus: "",
+    email: "",
   },
 
   churchInfo: {
-    churchName: "",
     denomination: "",
+    churchName: "",
     pastorName: "",
     baptized: "",
     membershipId: "",
@@ -48,8 +51,18 @@ export const initialProfile: ProfileState = {
   preferenceInfo: {
     preferredAgeFrom: "",
     preferredAgeTo: "",
-    denomination: "",
-    education: "",
+    preferredDenomination: "",
+    preferredEducation: "",
+  },
+
+  locationInfo: {
+    city: "",
+    state: "",
+    country: "",
+  },
+
+  aboutInfo: {
+    aboutMe: "",
   },
 
   photoInfo: {

@@ -1,19 +1,18 @@
-import { ReactNode } from "react";
-import { twMerge } from "tailwind-merge";
+import { HTMLAttributes } from "react";
+import { cn } from "@/utils/cn";
 
-interface CardProps {
-  children: ReactNode;
-  className?: string;
-}
+interface CardProps extends HTMLAttributes<HTMLDivElement> {}
 
 export default function Card({
-  children,
   className,
+  children,
+  ...props
 }: CardProps) {
   return (
     <div
-      className={twMerge(
-        "rounded-3xl border border-slate-200 bg-white p-8 shadow-sm",
+      {...props}
+      className={cn(
+        "rounded-3xl border border-slate-200 bg-white shadow-lg transition-all duration-300 hover:shadow-2xl",
         className
       )}
     >
