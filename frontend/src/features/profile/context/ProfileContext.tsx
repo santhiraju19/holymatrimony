@@ -2,16 +2,22 @@
 
 import React, {
   createContext,
+  useEffect,
   useState,
   ReactNode,
 } from "react";
 
 import { ProfileState } from "../types";
+import { useProfileRecovery } from "../hooks/useProfileRecovery";
 
 export interface ProfileContextType extends ProfileState {
   setProfile: React.Dispatch<
     React.SetStateAction<ProfileState>
   >;
+
+  saveStatus: "idle" | "saving" | "saved";
+
+  clearSavedDraft: () => void;
 }
 
 export const initialProfile: ProfileState = {
@@ -75,6 +81,8 @@ export const ProfileContext =
   createContext<ProfileContextType>({
     ...initialProfile,
     setProfile: () => {},
+    saveStatus: "idle",
+    clearSavedDraft: () => {},
   });
 
 interface Props {
@@ -87,11 +95,30 @@ export function ProfileProvider({
   const [profile, setProfile] =
     useState<ProfileState>(initialProfile);
 
+  const {
+    restoreDraft,
+    removeDraft,
+    saveStatus,
+  } = useProfileRecovery(profile);
+
+  /**
+   * Restore profile on first load
+   */
+  useEffect(() => {
+    const draft = restoreDraft();
+
+    if (draft) {
+      setProfile(draft);
+    }
+  }, [restoreDraft]);
+
   return (
     <ProfileContext.Provider
       value={{
         ...profile,
         setProfile,
+        saveStatus,
+        clearSavedDraft: removeDraft,
       }}
     >
       {children}
