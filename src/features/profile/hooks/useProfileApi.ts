@@ -99,6 +99,9 @@ export function useProfileApi() {
       setError(null);
 
       await profileService.updateProfile({
+        fullName: profile.basicInfo.fullName,
+        email: profile.basicInfo.email,
+
         mobile: profile.basicInfo.mobile,
         dateOfBirth: profile.basicInfo.dateOfBirth,
         gender: profile.basicInfo.gender,
@@ -124,14 +127,15 @@ export function useProfileApi() {
         familyLocation:
           profile.familyInfo.familyLocation,
 
-        preferredAgeFrom: Number(
-          profile.preferenceInfo.preferredAgeFrom
-        ),
-        preferredAgeTo: Number(
-          profile.preferenceInfo.preferredAgeTo
-        ),
+        preferredAgeFrom:
+          profile.preferenceInfo.preferredAgeFrom,
+
+        preferredAgeTo:
+          profile.preferenceInfo.preferredAgeTo,
+
         preferredDenomination:
           profile.preferenceInfo.preferredDenomination,
+
         preferredEducation:
           profile.preferenceInfo.preferredEducation,
 

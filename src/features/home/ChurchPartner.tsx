@@ -88,7 +88,7 @@ export default function ChurchPartners() {
         <div className="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {churches.map((church, index) => (
             <motion.div
-              key={church.id}
+              key={church.name}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -108,19 +108,15 @@ export default function ChurchPartners() {
                     {church.name}
                   </h3>
 
-                  {"city" in church && (
-                    <p className="text-sm text-slate-500">
-                      {church.city}
-                    </p>
-                  )}
+                  <p className="text-sm text-slate-500">
+                    {church.city}
+                  </p>
                 </div>
               </div>
 
-              {"description" in church && (
-                <p className="text-sm leading-6 text-slate-600">
-                  {church.description}
-                </p>
-              )}
+              <p className="text-sm leading-6 text-slate-600">
+                {church.description}
+              </p>
             </motion.div>
           ))}
         </div>

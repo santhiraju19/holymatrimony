@@ -60,7 +60,8 @@ const sizes: Record<ButtonSize, string> = {
 };
 
 export default function Button(props: ButtonProps) {
-  if ("href" in props) {
+  // Link Button
+  if (props.href !== undefined) {
     const {
       href,
       children,
@@ -89,6 +90,7 @@ export default function Button(props: ButtonProps) {
     );
   }
 
+  // Normal Button
   const {
     children,
     variant = "primary",
