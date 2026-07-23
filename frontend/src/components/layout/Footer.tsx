@@ -112,13 +112,15 @@ export default function Footer() {
               <div className="flex items-start gap-3">
                 <MapPin className="mt-1 h-5 w-5 text-amber-400" />
                 <span>
-                  Holy Matrimony Services Private Limited
+                  Holy Matrimony Services Pvt Ltd
                   <br />
-                  8-17-154, 1st Line,
+                  5/1 Krishna Nagar,
                   <br />
-                  Mangaldas Nagar,
+                  PF Office Road,
                   <br />
-                  Guntur - 522001,
+                  Brindavan Gardens,
+                  <br />
+                  Guntur - 522002,
                   <br />
                   Andhra Pradesh, India
                 </span>
@@ -126,7 +128,7 @@ export default function Footer() {
 
               <div className="flex items-center gap-3">
                 <Phone className="h-5 w-5 text-amber-400" />
-                <span>+91 7075200000</span>
+                <span>+91 9133919777</span>
               </div>
 
               <div className="flex items-center gap-3">
@@ -152,7 +154,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 border-t border-slate-800 pt-6 text-center text-sm text-slate-500">
-          © {year} Holy Matrimony Services Private Limited.
+          © {year} Holy Matrimony Services Pvt Ltd.
           All Rights Reserved.
         </div>
 

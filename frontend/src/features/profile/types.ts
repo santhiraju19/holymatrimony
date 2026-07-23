@@ -1,9 +1,11 @@
-export interface ProfilePhoto {
+export interface PhotoItem {
   id: string;
   file: File;
   preview: string;
   isPrimary: boolean;
 }
+
+export type ProfilePhoto = PhotoItem;
 
 export interface BasicInfo {
   fullName: string;
@@ -64,7 +66,7 @@ export interface ProfileState {
   locationInfo: LocationInfo;
   aboutInfo: AboutInfo;
   photoInfo: {
-    photos: ProfilePhoto[];
+    photos: PhotoItem[];
     primaryPhoto: string;
   };
 }
