@@ -6,10 +6,11 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 
 import { useProfile } from "@/features/profile/context/useProfile";
-import { useProfileApi } from "@/features/profile/hooks/useProfileApi";
 
 interface ReviewProps {
   onBack: () => void;
+  onSave: () => Promise<void>;
+  saving: boolean;
 }
 
 function Status({
@@ -38,6 +39,8 @@ function Status({
 
 export default function Review({
   onBack,
+  onSave,
+  saving,
 }: ReviewProps) {
   const {
     basicInfo,
@@ -48,18 +51,19 @@ export default function Review({
     photoInfo,
   } = useProfile();
 
-  const { saveProfile, saving, error } = useProfileApi();
-
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async () => {
     setSuccess(false);
+    setError("");
 
     try {
-      await saveProfile();
+      await onSave();
       setSuccess(true);
     } catch (err) {
       console.error(err);
+      setError("Failed to save profile.");
     }
   };
 
@@ -129,7 +133,11 @@ export default function Review({
             <p><strong>Education:</strong> {educationInfo.highestEducation}</p>
             <p><strong>Profession:</strong> {educationInfo.profession}</p>
             <p><strong>Father:</strong> {familyInfo.fatherName}</p>
-            <p><strong>Preferred Age:</strong> {preferenceInfo.preferredAgeFrom} - {preferenceInfo.preferredAgeTo}</p>
+            <p>
+              <strong>Preferred Age:</strong>{" "}
+              {preferenceInfo.preferredAgeFrom} -{" "}
+              {preferenceInfo.preferredAgeTo}
+            </p>
             <p><strong>Photos:</strong> {photoInfo.photos.length}</p>
           </div>
         </div>

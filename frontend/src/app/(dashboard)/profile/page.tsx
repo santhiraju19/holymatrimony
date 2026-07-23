@@ -22,7 +22,12 @@ import Review from "@/features/profile/components/Review";
 export default function ProfilePage() {
   const profile = useProfile();
 
-  const { loading, error } = useProfileApi();
+  const {
+    loading,
+    saving,
+    error,
+    saveProfile,
+  } = useProfileApi();
 
   const { step, next, back } = useProfileWizard();
 
@@ -32,7 +37,10 @@ export default function ProfilePage() {
   );
 
   const forms = [
-    <BasicInfoForm key="basic" onNext={next} />,
+    <BasicInfoForm
+      key="basic"
+      onNext={next}
+    />,
 
     <ChurchInfoForm
       key="church"
@@ -67,6 +75,8 @@ export default function ProfilePage() {
     <Review
       key="review"
       onBack={back}
+      onSave={saveProfile}
+      saving={saving}
     />,
   ];
 
