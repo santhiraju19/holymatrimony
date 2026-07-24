@@ -1,15 +1,22 @@
-+--------------------------------------+
-| Monthly | Quarterly | Yearly         |
-+--------------------------------------+
+export type BillingCycle =
+  | "monthly"
+  | "quarterly"
+  | "yearly";
 
-Monthly selected
+export type MembershipTier =
+  | "silver"
+  | "gold"
+  | "platinum";
 
-₹499/mo
-₹799/mo
-₹1199/mo
+export interface MembershipPlan {
+  id: MembershipTier;
+  name: string;
+  description?: string;
 
-Switch to Yearly
+  monthly: number;
+  quarterly: number;
+  yearly: number;
 
-₹4499
-₹7499
-₹10999
+  features: string[];
+  recommended?: boolean;
+}

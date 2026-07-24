@@ -2,15 +2,14 @@
 
 import { useState } from "react";
 
-import BillingDetails from "@/features/membership/checkout/BillingDetails";
-import OrderSummary from "@/features/membership/checkout/OrderSummary";
-import { CheckoutData } from "@/features/membership/checkout/types";
+import BillingDetails from "../BillingDetails";
+import OrderSummary from "./OrderSummary";
+import { CheckoutData } from "./types";
 
 export default function CheckoutPage() {
-  const [checkout, setCheckout] = useState<CheckoutData>({
-    plan: "gold",
+  const [checkoutData, setCheckoutData] = useState<CheckoutData>({
+    plan: "silver",
     billing: "yearly",
-
     fullName: "",
     email: "",
     phone: "",
@@ -19,38 +18,26 @@ export default function CheckoutPage() {
   });
 
   return (
-    <main className="bg-slate-50 py-16">
-      <div className="container mx-auto px-4">
-
-        <div className="mb-12 text-center">
-
-          <h1 className="text-4xl font-bold">
-            Secure Checkout
-          </h1>
-
-          <p className="mt-4 text-gray-600">
-            Complete your membership purchase securely.
-          </p>
-
-        </div>
+    <main className="min-h-screen bg-slate-50 py-10">
+      <div className="mx-auto max-w-7xl px-4">
+        <h1 className="mb-8 text-3xl font-bold">
+          Membership Checkout
+        </h1>
 
         <div className="grid gap-8 lg:grid-cols-3">
-
           <div className="lg:col-span-2">
-
             <BillingDetails
-              data={checkout}
-              setData={setCheckout}
+              checkoutData={checkoutData}
+              setCheckoutData={setCheckoutData}
             />
-
           </div>
 
-          <OrderSummary
-            data={checkout}
-          />
-
+          <div className="lg:col-span-1">
+            <OrderSummary
+              data={checkoutData}
+            />
+          </div>
         </div>
-
       </div>
     </main>
   );
