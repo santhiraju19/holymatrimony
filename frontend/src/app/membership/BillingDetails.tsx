@@ -1,30 +1,15 @@
 "use client";
 
-import { Dispatch, SetStateAction } from "react";
-
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 
-import { CheckoutData } from "./checkout/types";
+import { useMembership } from "@/features/membership/hooks/useMembership";
 
-interface BillingDetailsProps {
-  checkoutData: CheckoutData;
-  setCheckoutData: Dispatch<SetStateAction<CheckoutData>>;
-}
-
-export default function BillingDetails({
-  checkoutData,
-  setCheckoutData,
-}: BillingDetailsProps) {
-  const updateField = (
-    field: keyof CheckoutData,
-    value: string
-  ) => {
-    setCheckoutData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
+export default function BillingDetails() {
+  const {
+    checkoutData,
+    updateCheckout,
+  } = useMembership();
 
   return (
     <div className="rounded-3xl border bg-white p-8 shadow-sm">
@@ -41,7 +26,11 @@ export default function BillingDetails({
           label="Full Name"
           placeholder="John Doe"
           value={checkoutData.fullName}
-          onChange={(e) => updateField("fullName", e.target.value)}
+          onChange={(e) =>
+            updateCheckout({
+              fullName: e.target.value,
+            })
+          }
         />
 
         <Input
@@ -49,14 +38,22 @@ export default function BillingDetails({
           type="email"
           placeholder="john@example.com"
           value={checkoutData.email}
-          onChange={(e) => updateField("email", e.target.value)}
+          onChange={(e) =>
+            updateCheckout({
+              email: e.target.value,
+            })
+          }
         />
 
         <Input
           label="Phone Number"
           placeholder="+91 9876543210"
           value={checkoutData.phone}
-          onChange={(e) => updateField("phone", e.target.value)}
+          onChange={(e) =>
+            updateCheckout({
+              phone: e.target.value,
+            })
+          }
         />
 
         <Input
@@ -64,7 +61,9 @@ export default function BillingDetails({
           placeholder="29ABCDE1234F1Z5"
           value={checkoutData.gstNumber ?? ""}
           onChange={(e) =>
-            updateField("gstNumber", e.target.value)
+            updateCheckout({
+              gstNumber: e.target.value,
+            })
           }
         />
 
@@ -73,7 +72,9 @@ export default function BillingDetails({
           placeholder="HOLY10"
           value={checkoutData.coupon ?? ""}
           onChange={(e) =>
-            updateField("coupon", e.target.value)
+            updateCheckout({
+              coupon: e.target.value,
+            })
           }
         />
 

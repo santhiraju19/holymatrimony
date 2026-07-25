@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 
 import { useProfileWizard } from "@/features/profile/hooks/useProfileWizard";
-import { useProfileApi } from "@/features/profile/hooks/useProfileApi";
+import { useProfile } from "@/features/profile/context/useProfile";
 import { useProfile } from "@/features/profile/context/useProfile";
 
 import { calculateProfileCompletion } from "@/features/profile/utils/profileCompletion";
@@ -22,12 +22,13 @@ import Review from "@/features/profile/components/Review";
 export default function ProfilePage() {
   const profile = useProfile();
 
-  const {
-    loading,
-    saving,
-    error,
-    saveProfile,
-  } = useProfileApi();
+ const {
+  loading,
+  saving,
+  error,
+  saveProfile,
+  ...profile
+} = useProfile();
 
   const { step, next, back } = useProfileWizard();
 

@@ -1,31 +1,14 @@
-export type BillingCycle = "monthly" | "quarterly" | "yearly";
-
-export interface MembershipPlan {
-  id: string;
-  name: string;
-  badge?: string;
-  description: string;
-
-  price: {
-    monthly: number;
-    quarterly: number;
-    yearly: number;
-  };
-
-  popular?: boolean;
-
-  buttonText: string;
-
-  features: string[];
-
-  limitations?: string[];
-}
+import {
+  BillingCycle,
+  MembershipPlan,
+} from "../types/membership";
 
 export const membershipPlans: MembershipPlan[] = [
   {
     id: "free",
     name: "Free",
     description: "Start your search with essential features.",
+    badge: "Free",
 
     price: {
       monthly: 0,
@@ -70,8 +53,8 @@ export const membershipPlans: MembershipPlan[] = [
       "Unlimited Profile Views",
       "Unlimited Interests",
       "View Phone Number",
-      "Priority Search",
       "Chat Access",
+      "Priority Search",
     ],
   },
 
@@ -79,8 +62,6 @@ export const membershipPlans: MembershipPlan[] = [
     id: "gold",
     name: "Gold",
     badge: "Most Popular",
-
-    popular: true,
 
     description: "Unlock premium matchmaking features.",
 
@@ -90,6 +71,8 @@ export const membershipPlans: MembershipPlan[] = [
       yearly: 7499,
     },
 
+    popular: true,
+
     buttonText: "Choose Gold",
 
     features: [
@@ -98,8 +81,8 @@ export const membershipPlans: MembershipPlan[] = [
       "Unlimited Chat",
       "Who's Viewed Me",
       "Advanced Filters",
-      "Priority Customer Support",
       "Compatibility Score",
+      "Priority Customer Support",
     ],
   },
 
@@ -123,9 +106,26 @@ export const membershipPlans: MembershipPlan[] = [
       "Dedicated Relationship Manager",
       "Top Search Placement",
       "Verified Premium Badge",
+      "Priority Church Verification",
       "Early Access to New Features",
-      "Priority Verification",
-      "VIP Support",
+      "VIP Customer Support",
     ],
   },
 ];
+
+/**
+ * Returns the price for the selected billing cycle.
+ */
+export function getPlanPrice(
+  plan: MembershipPlan,
+  billingCycle: BillingCycle
+): number {
+  return plan.price[billingCycle];
+}
+
+/**
+ * Returns a membership plan by ID.
+ */
+export function getMembershipPlan(id: string): MembershipPlan | undefined {
+  return membershipPlans.find((plan) => plan.id === id);
+}

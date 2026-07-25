@@ -70,3 +70,10 @@ export interface ProfileState {
     primaryPhoto: string;
   };
 }
+export interface PhotoItem {
+  id: string;
+  preview: string;
+  file?: File;
+  isPrimary: boolean;
+  displayOrder?: number;
+}

@@ -13,7 +13,7 @@ import {
 } from "./photos";
 
 import { useProfile } from "@/features/profile/context/useProfile";
-import { PhotoItem } from "../types";
+import { usePhotoManager } from "@/features/profile/hooks/usePhotoManager";
 
 interface Props {
   onBack: () => void;
@@ -26,7 +26,15 @@ export default function PhotoUpload({
   onBack,
   onNext,
 }: Props) {
-  const { photoInfo, setProfile } = useProfile();
+  const { photoInfo } = useProfile();
+
+  const {
+    uploading,
+    error,
+    uploadPhoto,
+    deletePhoto,
+    setPrimaryPhoto,
+  } = usePhotoManager();
 
   const photos = photoInfo.photos;
 
@@ -35,75 +43,26 @@ export default function PhotoUpload({
     [photos]
   );
 
-  const addPhotos = (files: File[]) => {
+  const addPhotos = async (files: File[]) => {
     const available = MAX_PHOTOS - photos.length;
 
     if (available <= 0) return;
 
-    const newPhotos: PhotoItem[] = files
-      .slice(0, available)
-      .map((file, index) => ({
-        id: crypto.randomUUID(),
-        file,
-        preview: URL.createObjectURL(file),
-        isPrimary: photos.length === 0 && index === 0,
-      }));
-
-    setProfile((prev) => ({
-      ...prev,
-      photoInfo: {
-        photos: [...prev.photoInfo.photos, ...newPhotos],
-        primaryPhoto:
-          prev.photoInfo.primaryPhoto ||
-          newPhotos[0]?.id ||
-          "",
-      },
-    }));
+    for (const file of files.slice(0, available)) {
+      await uploadPhoto(file);
+    }
   };
 
-  const removePhoto = (id: string) => {
-    setProfile((prev) => {
-      const updated = prev.photoInfo.photos.filter(
-        (photo) => photo.id !== id
-      );
-
-      if (
-        updated.length &&
-        !updated.some((photo) => photo.isPrimary)
-      ) {
-        updated[0] = {
-          ...updated[0],
-          isPrimary: true,
-        };
-      }
-
-      return {
-        ...prev,
-        photoInfo: {
-          photos: updated,
-          primaryPhoto:
-            updated.find((photo) => photo.isPrimary)?.id ?? "",
-        },
-      };
-    });
+  const removePhoto = async (id: string) => {
+    await deletePhoto(Number(id));
   };
 
-  const setPrimary = (id: string) => {
-    setProfile((prev) => ({
-      ...prev,
-      photoInfo: {
-        photos: prev.photoInfo.photos.map((photo) => ({
-          ...photo,
-          isPrimary: photo.id === id,
-        })),
-        primaryPhoto: id,
-      },
-    }));
+  const setPrimary = async (id: string) => {
+    await setPrimaryPhoto(Number(id));
   };
 
   return (
     <div className="space-y-6">
-
       <Card>
         <div className="mb-6">
           <h2 className="text-3xl font-bold text-[#0B2D5C]">
@@ -121,16 +80,26 @@ export default function PhotoUpload({
           progress={progress}
         />
 
+        {uploading && (
+          <p className="mt-4 text-sm text-blue-600">
+            Uploading photo...
+          </p>
+        )}
+
+        {error && (
+          <p className="mt-4 text-sm text-red-600">
+            {error}
+          </p>
+        )}
+
         {photos.length < MAX_PHOTOS && (
           <div className="mt-8">
             <DropZone onFilesSelected={addPhotos} />
           </div>
         )}
-
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
-
         <div className="lg:col-span-2">
           {photos.length > 0 ? (
             <PhotoGrid
@@ -148,11 +117,9 @@ export default function PhotoUpload({
         </div>
 
         <UploadGuidelines />
-
       </div>
 
       <div className="flex justify-between">
-
         <Button
           variant="secondary"
           onClick={onBack}
@@ -163,12 +130,11 @@ export default function PhotoUpload({
         <Button
           variant="primary"
           onClick={onNext}
+          disabled={uploading}
         >
           Continue
         </Button>
-
       </div>
-
     </div>
   );
 }

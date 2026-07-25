@@ -24,3 +24,4 @@ export default function ProfileProvider({
     </ProfileContext.Provider>
   );
 }
+useProfileAutoSave(profile, saveProfile);

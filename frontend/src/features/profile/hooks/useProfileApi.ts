@@ -29,7 +29,10 @@ export function useProfileApi() {
           mobile: data.mobile ?? "",
           dateOfBirth: data.dateOfBirth ?? "",
           gender: data.gender ?? "",
-          age: data.age ? String(data.age) : "",
+          age:
+            data.age !== undefined && data.age !== null
+              ? String(data.age)
+              : "",
           maritalStatus: data.maritalStatus ?? "",
         },
 
@@ -61,14 +64,21 @@ export function useProfileApi() {
 
         preferenceInfo: {
           ...prev.preferenceInfo,
-          preferredAgeFrom: data.preferredAgeFrom
-            ? String(data.preferredAgeFrom)
-            : "",
-          preferredAgeTo: data.preferredAgeTo
-            ? String(data.preferredAgeTo)
-            : "",
+          preferredAgeFrom:
+            data.preferredAgeFrom !== undefined &&
+            data.preferredAgeFrom !== null
+              ? String(data.preferredAgeFrom)
+              : "",
+
+          preferredAgeTo:
+            data.preferredAgeTo !== undefined &&
+            data.preferredAgeTo !== null
+              ? String(data.preferredAgeTo)
+              : "",
+
           preferredDenomination:
             data.preferredDenomination ?? "",
+
           preferredEducation:
             data.preferredEducation ?? "",
         },
@@ -103,41 +113,73 @@ export function useProfileApi() {
         email: profile.basicInfo.email,
 
         mobile: profile.basicInfo.mobile,
-        dateOfBirth: profile.basicInfo.dateOfBirth,
+
+        dateOfBirth: profile.basicInfo.dateOfBirth || undefined,
+
         gender: profile.basicInfo.gender,
-        age: Number(profile.basicInfo.age),
+
+        age: profile.basicInfo.age
+          ? Number(profile.basicInfo.age)
+          : undefined,
+
         maritalStatus: profile.basicInfo.maritalStatus,
 
         denomination: profile.churchInfo.denomination,
         churchName: profile.churchInfo.churchName,
         pastorName: profile.churchInfo.pastorName,
-        baptized: profile.churchInfo.baptized,
+
+        baptized:
+          profile.churchInfo.baptized === true ||
+          profile.churchInfo.baptized === "true",
+
         membershipId: profile.churchInfo.membershipId,
         churchAddress: profile.churchInfo.churchAddress,
 
         highestEducation:
           profile.educationInfo.highestEducation,
-        profession: profile.educationInfo.profession,
-        company: profile.educationInfo.company,
-        annualIncome: profile.educationInfo.annualIncome,
 
-        fatherName: profile.familyInfo.fatherName,
-        motherName: profile.familyInfo.motherName,
-        siblings: profile.familyInfo.siblings,
+        profession:
+          profile.educationInfo.profession,
+
+        company:
+          profile.educationInfo.company,
+
+        annualIncome:
+          profile.educationInfo.annualIncome,
+
+        fatherName:
+          profile.familyInfo.fatherName,
+
+        motherName:
+          profile.familyInfo.motherName,
+
+        siblings:
+          profile.familyInfo.siblings,
+
         familyLocation:
           profile.familyInfo.familyLocation,
 
         preferredAgeFrom:
-          profile.preferenceInfo.preferredAgeFrom,
+          profile.preferenceInfo.preferredAgeFrom
+            ? Number(
+                profile.preferenceInfo.preferredAgeFrom
+              )
+            : undefined,
 
         preferredAgeTo:
-          profile.preferenceInfo.preferredAgeTo,
+          profile.preferenceInfo.preferredAgeTo
+            ? Number(
+                profile.preferenceInfo.preferredAgeTo
+              )
+            : undefined,
 
         preferredDenomination:
-          profile.preferenceInfo.preferredDenomination,
+          profile.preferenceInfo
+            .preferredDenomination,
 
         preferredEducation:
-          profile.preferenceInfo.preferredEducation,
+          profile.preferenceInfo
+            .preferredEducation,
 
         city: profile.locationInfo.city,
         state: profile.locationInfo.state,
@@ -145,13 +187,16 @@ export function useProfileApi() {
 
         aboutMe: profile.aboutInfo.aboutMe,
       });
+
+      // Reload profile after successful save
+      await loadProfile();
     } catch (err) {
       console.error("Failed to save profile", err);
       setError("Failed to save profile.");
     } finally {
       setSaving(false);
     }
-  }, [profile]);
+  }, [profile, loadProfile]);
 
   useEffect(() => {
     loadProfile();

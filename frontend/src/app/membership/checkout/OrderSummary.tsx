@@ -1,36 +1,98 @@
 "use client";
 
+import { useState } from "react";
 import Button from "@/components/ui/Button";
+import { useMembership } from "@/features/membership/context/MembershipContext";
+import { paymentService } from "@/features/membership/services/payment.service";
 
-import { CheckoutData } from "./types";
-
-interface OrderSummaryProps {
-  data: CheckoutData;
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
 }
 
-const prices = {
-  silver: {
-    monthly: 499,
-    quarterly: 1299,
-    yearly: 4499,
-  },
-  gold: {
-    monthly: 799,
-    quarterly: 2199,
-    yearly: 7499,
-  },
-  platinum: {
-    monthly: 1199,
-    quarterly: 3299,
-    yearly: 10999,
-  },
-};
+export default function OrderSummary() {
+  const {
+    plan,
+    billingCycle,
+    subtotal,
+    discount,
+    gst,
+    total,
+    couponCode,
+    checkoutData,
+  } = useMembership();
 
-export default function OrderSummary({
-  data,
-}: OrderSummaryProps) {
-  const amount =
-    prices[data.plan][data.billing];
+  const [loading, setLoading] = useState(false);
+
+  if (!plan) {
+    return null;
+  }
+
+  async function handlePayment() {
+    try {
+      setLoading(true);
+
+      if (
+        !checkoutData.fullName ||
+        !checkoutData.email ||
+        !checkoutData.phone
+      ) {
+        alert("Please complete your billing details.");
+        return;
+      }
+
+      const order = await paymentService.createOrder(
+        checkoutData.plan.toUpperCase(),
+        checkoutData.billingCycle.toUpperCase(),
+        checkoutData.fullName,
+        checkoutData.email,
+        checkoutData.phone
+      );
+
+      const razorpay = new window.Razorpay({
+        key: order.key,
+        amount: order.amount,
+        currency: order.currency,
+        order_id: order.orderId,
+
+        name: "Holy Matrimony",
+        description: `${plan.name} Membership`,
+
+        prefill: {
+          name: checkoutData.fullName,
+          email: checkoutData.email,
+          contact: checkoutData.phone,
+        },
+
+        theme: {
+          color: "#2563eb",
+        },
+
+        handler: async function (response: any) {
+          try {
+            await paymentService.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            alert("Payment Successful!");
+          } catch (err) {
+            console.error(err);
+            alert("Payment verification failed.");
+          }
+        },
+      });
+
+      razorpay.open();
+    } catch (err) {
+      console.error(err);
+      alert("Unable to initiate payment.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="sticky top-24 rounded-3xl border bg-white p-8 shadow-sm">
@@ -41,42 +103,55 @@ export default function OrderSummary({
       <div className="mt-8 space-y-5">
         <div className="flex justify-between">
           <span>Plan</span>
-          <strong className="capitalize">
-            {data.plan}
-          </strong>
+          <strong>{plan.name}</strong>
         </div>
 
         <div className="flex justify-between">
-          <span>Billing</span>
+          <span>Billing Cycle</span>
           <strong className="capitalize">
-            {data.billing}
+            {billingCycle}
           </strong>
         </div>
 
         <div className="flex justify-between">
           <span>Membership Fee</span>
-          <strong>
-            ₹{amount.toLocaleString()}
-          </strong>
+          <strong>₹{subtotal.toLocaleString()}</strong>
         </div>
 
+        {discount > 0 && (
+          <div className="flex justify-between text-green-600">
+            <span>
+              Discount
+              {couponCode && (
+                <span className="ml-1 text-xs">
+                  ({couponCode})
+                </span>
+              )}
+            </span>
+
+            <strong>-₹{discount.toLocaleString()}</strong>
+          </div>
+        )}
+
         <div className="flex justify-between">
-          <span>GST</span>
-          <strong>Included</strong>
+          <span>GST (18%)</span>
+          <strong>₹{gst.toLocaleString()}</strong>
         </div>
 
         <hr />
 
         <div className="flex justify-between text-xl font-bold">
-          <span>Total</span>
-          <span>
-            ₹{amount.toLocaleString()}
-          </span>
+          <span>Total Payable</span>
+          <span>₹{total.toLocaleString()}</span>
         </div>
       </div>
 
-      <Button className="mt-8 w-full">
-        Pay Securely
+      <Button
+        className="mt-8 w-full"
+        onClick={handlePayment}
+        disabled={loading}
+      >
+        {loading ? "Processing..." : "Pay Securely"}
       </Button>
 
       <p className="mt-5 text-center text-sm text-gray-500">

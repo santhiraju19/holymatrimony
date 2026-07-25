@@ -5,8 +5,10 @@ import { Check, X } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 
-import { MembershipPlan } from "../data/plans";
-import { BillingCycle } from "../types/membership";
+import {
+  MembershipPlan,
+  BillingCycle,
+} from "../types/membership";
 
 interface PricingCardProps {
   plan: MembershipPlan;
