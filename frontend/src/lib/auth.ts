@@ -1,4 +1,4 @@
-const TOKEN_KEY = "hm_access_token";
+const TOKEN_KEY = "hm_token";
 
 export function setToken(token: string) {
   localStorage.setItem(TOKEN_KEY, token);

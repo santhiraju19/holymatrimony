@@ -1,11 +1,13 @@
 export interface PhotoItem {
   id: string;
-  file: File;
   preview: string;
+  file?: File;
   isPrimary: boolean;
+  displayOrder?: number;
 }
 
 export type ProfilePhoto = PhotoItem;
+
 
 export interface BasicInfo {
   fullName: string;
@@ -17,6 +19,7 @@ export interface BasicInfo {
   email: string;
 }
 
+
 export interface ChurchInfo {
   denomination: string;
   churchName: string;
@@ -26,12 +29,14 @@ export interface ChurchInfo {
   churchAddress: string;
 }
 
+
 export interface EducationInfo {
   highestEducation: string;
   profession: string;
   company: string;
   annualIncome: string;
 }
+
 
 export interface FamilyInfo {
   fatherName: string;
@@ -40,6 +45,7 @@ export interface FamilyInfo {
   familyLocation: string;
 }
 
+
 export interface PreferenceInfo {
   preferredAgeFrom: string;
   preferredAgeTo: string;
@@ -47,33 +53,36 @@ export interface PreferenceInfo {
   preferredEducation: string;
 }
 
+
 export interface LocationInfo {
   city: string;
   state: string;
   country: string;
 }
 
+
 export interface AboutInfo {
   aboutMe: string;
 }
 
+
 export interface ProfileState {
   basicInfo: BasicInfo;
+
   churchInfo: ChurchInfo;
+
   educationInfo: EducationInfo;
+
   familyInfo: FamilyInfo;
+
   preferenceInfo: PreferenceInfo;
+
   locationInfo: LocationInfo;
+
   aboutInfo: AboutInfo;
+
   photoInfo: {
     photos: PhotoItem[];
     primaryPhoto: string;
   };
-}
-export interface PhotoItem {
-  id: string;
-  preview: string;
-  file?: File;
-  isPrimary: boolean;
-  displayOrder?: number;
 }

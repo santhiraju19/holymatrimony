@@ -2,9 +2,8 @@
 
 import { useMemo } from "react";
 
+import { useProfile } from "@/features/profile/context/useProfile";
 import { useProfileWizard } from "@/features/profile/hooks/useProfileWizard";
-import { useProfile } from "@/features/profile/context/useProfile";
-import { useProfile } from "@/features/profile/context/useProfile";
 
 import { calculateProfileCompletion } from "@/features/profile/utils/profileCompletion";
 
@@ -20,15 +19,32 @@ import PhotoUpload from "@/features/profile/components/PhotoUpload";
 import Review from "@/features/profile/components/Review";
 
 export default function ProfilePage() {
-  const profile = useProfile();
+  const {
+    loading,
+    saving,
+    error,
+    saveProfile,
 
- const {
-  loading,
-  saving,
-  error,
-  saveProfile,
-  ...profile
-} = useProfile();
+    basicInfo,
+    churchInfo,
+    educationInfo,
+    familyInfo,
+    preferenceInfo,
+    locationInfo,
+    aboutInfo,
+    photoInfo,
+  } = useProfile();
+
+  const profile = {
+    basicInfo,
+    churchInfo,
+    educationInfo,
+    familyInfo,
+    preferenceInfo,
+    locationInfo,
+    aboutInfo,
+    photoInfo,
+  };
 
   const { step, next, back } = useProfileWizard();
 
@@ -38,10 +54,7 @@ export default function ProfilePage() {
   );
 
   const forms = [
-    <BasicInfoForm
-      key="basic"
-      onNext={next}
-    />,
+    <BasicInfoForm key="basic" onNext={next} />,
 
     <ChurchInfoForm
       key="church"

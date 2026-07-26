@@ -21,10 +21,10 @@ export const membershipPlans: MembershipPlan[] = [
     ],
   },
   {
-    title: "Silver",
+    title: "Premium",
     price: "₹999",
     description: "Perfect for active members.",
-    buttonText: "Choose Silver",
+    buttonText: "Choose Premium",
     popular: true,
     features: [
       "Everything in Free",
@@ -36,12 +36,12 @@ export const membershipPlans: MembershipPlan[] = [
     ],
   },
   {
-    title: "Gold",
-    price: "₹1,499",
+    title: "Elite",
+    price: "₹1,999",
     description: "Designed for faster matchmaking.",
-    buttonText: "Choose Gold",
+    buttonText: "Choose Elite",
     features: [
-      "Everything in Silver",
+      "Everything in Premium",
       "Church Verified Badge",
       "Dedicated Relationship Manager",
       "Video Calling",
@@ -50,12 +50,12 @@ export const membershipPlans: MembershipPlan[] = [
     ],
   },
   {
-    title: "Platinum",
-    price: "₹2,499",
+    title: "Signature",
+    price: "₹4,999",
     description: "Our complete premium experience.",
-    buttonText: "Become Platinum",
+    buttonText: "Become Signature",
     features: [
-      "Everything in Gold",
+      "Everything in Elite",
       "Personal Matchmaker",
       "Premium Profile Placement",
       "Marriage Assistance",

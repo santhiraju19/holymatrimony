@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+
 import Button from "@/components/ui/Button";
+
 import { useMembership } from "@/features/membership/context/MembershipContext";
 import { paymentService } from "@/features/membership/services/payment.service";
 
@@ -57,7 +59,7 @@ export default function OrderSummary() {
         order_id: order.orderId,
 
         name: "Holy Matrimony",
-        description: `${plan.name} Membership`,
+        description: `${checkoutData.plan.toUpperCase()} Membership`,
 
         prefill: {
           name: checkoutData.fullName,
@@ -69,13 +71,13 @@ export default function OrderSummary() {
           color: "#2563eb",
         },
 
-        handler: async function (response: any) {
+        handler: async (response: {
+          razorpay_order_id: string;
+          razorpay_payment_id: string;
+          razorpay_signature: string;
+        }) => {
           try {
-            await paymentService.verifyPayment({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            });
+            await paymentService.verifyPayment(response);
 
             alert("Payment Successful!");
           } catch (err) {
@@ -121,9 +123,9 @@ export default function OrderSummary() {
         {discount > 0 && (
           <div className="flex justify-between text-green-600">
             <span>
-              Discount
+              Discount{" "}
               {couponCode && (
-                <span className="ml-1 text-xs">
+                <span className="text-xs">
                   ({couponCode})
                 </span>
               )}

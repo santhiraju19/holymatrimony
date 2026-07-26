@@ -38,27 +38,61 @@ export default function PhotoUpload({
 
   const photos = photoInfo.photos;
 
-  const progress = useMemo(
-    () => (photos.length / MAX_PHOTOS) * 100,
-    [photos]
-  );
+  const progress = useMemo(() => {
+    return Math.min(
+      (photos.length / MAX_PHOTOS) * 100,
+      100,
+    );
+  }, [photos.length]);
 
-  const addPhotos = async (files: File[]) => {
-    const available = MAX_PHOTOS - photos.length;
+  const addPhotos = async (
+    files: File[],
+  ): Promise<void> => {
+    const available =
+      MAX_PHOTOS - photos.length;
 
-    if (available <= 0) return;
+    if (available <= 0 || uploading) {
+      return;
+    }
 
-    for (const file of files.slice(0, available)) {
-      await uploadPhoto(file);
+    const selectedFiles =
+      files.slice(0, available);
+
+    for (const file of selectedFiles) {
+      try {
+        await uploadPhoto(file);
+      } catch {
+        break;
+      }
     }
   };
 
-  const removePhoto = async (id: string) => {
-    await deletePhoto(Number(id));
+  const removePhoto = async (
+    id: string,
+  ): Promise<void> => {
+    if (uploading) {
+      return;
+    }
+
+    await deletePhoto(id);
   };
 
-  const setPrimary = async (id: string) => {
-    await setPrimaryPhoto(Number(id));
+  const setPrimary = async (
+    id: string,
+  ): Promise<void> => {
+    if (uploading) {
+      return;
+    }
+
+    await setPrimaryPhoto(id);
+  };
+
+  const handleContinue = (): void => {
+    if (uploading) {
+      return;
+    }
+
+    onNext();
   };
 
   return (
@@ -70,7 +104,9 @@ export default function PhotoUpload({
           </h2>
 
           <p className="mt-2 text-slate-500">
-            Upload high-quality photos to increase your chances of finding the right life partner.
+            Upload high-quality photos to increase
+            your chances of finding the right life
+            partner.
           </p>
         </div>
 
@@ -81,21 +117,36 @@ export default function PhotoUpload({
         />
 
         {uploading && (
-          <p className="mt-4 text-sm text-blue-600">
+          <p
+            className="mt-4 text-sm text-blue-600"
+            role="status"
+          >
             Uploading photo...
           </p>
         )}
 
         {error && (
-          <p className="mt-4 text-sm text-red-600">
+          <p
+            className="mt-4 text-sm text-red-600"
+            role="alert"
+          >
             {error}
           </p>
         )}
 
         {photos.length < MAX_PHOTOS && (
           <div className="mt-8">
-            <DropZone onFilesSelected={addPhotos} />
+            <DropZone
+              onFilesSelected={addPhotos}
+            />
           </div>
+        )}
+
+        {photos.length >= MAX_PHOTOS && (
+          <p className="mt-6 text-sm font-medium text-slate-600">
+            You have uploaded the maximum of{" "}
+            {MAX_PHOTOS} photos.
+          </p>
         )}
       </Card>
 
@@ -123,16 +174,19 @@ export default function PhotoUpload({
         <Button
           variant="secondary"
           onClick={onBack}
+          disabled={uploading}
         >
           Back
         </Button>
 
         <Button
           variant="primary"
-          onClick={onNext}
+          onClick={handleContinue}
           disabled={uploading}
         >
-          Continue
+          {uploading
+            ? "Uploading..."
+            : "Continue"}
         </Button>
       </div>
     </div>

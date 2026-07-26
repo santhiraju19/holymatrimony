@@ -1,4 +1,13 @@
+import axios from "axios";
+
 import api from "@/lib/api";
+
+export interface PhotoPayload {
+  id: number;
+  imageUrl: string;
+  isPrimary: boolean;
+  displayOrder: number;
+}
 
 export interface ProfilePayload {
   fullName?: string;
@@ -8,13 +17,12 @@ export interface ProfilePayload {
   dateOfBirth?: string;
   gender?: string;
   age?: number;
-
   maritalStatus?: string;
 
   denomination?: string;
   churchName?: string;
   pastorName?: string;
-  baptized?: boolean | string;
+  baptized?: boolean;
   membershipId?: string;
   churchAddress?: string;
 
@@ -28,8 +36,8 @@ export interface ProfilePayload {
   siblings?: string;
   familyLocation?: string;
 
-  preferredAgeFrom?: number | string;
-  preferredAgeTo?: number | string;
+  preferredAgeFrom?: number;
+  preferredAgeTo?: number;
   preferredDenomination?: string;
   preferredEducation?: string;
 
@@ -40,13 +48,8 @@ export interface ProfilePayload {
   aboutMe?: string;
 
   completionPercentage?: number;
-}
 
-export interface PhotoPayload {
-  id: number;
-  imageUrl: string;
-  isPrimary: boolean;
-  displayOrder: number;
+  photos?: PhotoPayload[];
 }
 
 interface ApiResponse<T> {
@@ -56,11 +59,24 @@ interface ApiResponse<T> {
 }
 
 const profileService = {
-  async getProfile(): Promise<ProfilePayload> {
-    const response =
-      await api.get<ApiResponse<ProfilePayload>>("/profile");
+  async getProfile(): Promise<ProfilePayload | null> {
+    try {
+      const response =
+        await api.get<ApiResponse<ProfilePayload>>(
+          "/profile"
+        );
 
-    return response.data.data;
+      return response.data.data ?? null;
+    } catch (error) {
+      if (
+        axios.isAxiosError(error) &&
+        error.response?.status === 404
+      ) {
+        return null;
+      }
+
+      throw error;
+    }
   },
 
   async updateProfile(
@@ -87,19 +103,17 @@ const profileService = {
     return response.data.data;
   },
 
-  async uploadPhoto(file: File): Promise<PhotoPayload> {
+  async uploadPhoto(
+    file: File
+  ): Promise<PhotoPayload> {
     const formData = new FormData();
+
     formData.append("file", file);
 
     const response =
       await api.post<ApiResponse<PhotoPayload>>(
         "/profile/photos",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+        formData
       );
 
     return response.data.data;
@@ -110,10 +124,14 @@ const profileService = {
   },
 
   async setPrimaryPhoto(id: number): Promise<void> {
-    await api.put(`/profile/photos/${id}/primary`);
+    await api.put(
+      `/profile/photos/${id}/primary`
+    );
   },
 
-  async reorderPhotos(photoIds: number[]): Promise<void> {
+  async reorderPhotos(
+    photoIds: number[]
+  ): Promise<void> {
     await api.put("/profile/photos/order", {
       photoIds,
     });
@@ -121,31 +139,3 @@ const profileService = {
 };
 
 export default profileService;
-export interface PhotoPayload {
-  id: number;
-  imageUrl: string;
-  isPrimary: boolean;
-  displayOrder: number;
-}
-
-export interface ProfilePayload {
-  // ...existing fields...
-
-  completionPercentage?: number;
-
-  photos?: PhotoPayload[];
-}
-photoInfo: {
-  photos:
-    api.photos?.map((photo) => ({
-      id: String(photo.id),
-      preview: photo.imageUrl,
-      file: undefined,
-      isPrimary: photo.isPrimary,
-      displayOrder: photo.displayOrder,
-    })) ?? [],
-  primaryPhoto:
-    api.photos
-      ?.find((photo) => photo.isPrimary)
-      ?.id?.toString() ?? "",
-},

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { ProfileState } from "../types";
 
 export function useProfileAutoSave(
   profile: ProfileState,

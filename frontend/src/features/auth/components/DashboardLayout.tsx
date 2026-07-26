@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 
 import ProtectedRoute from "@/features/auth/components/ProtectedRoute";
 
-import { ProfileProvider } from "@/features/profile/context/ProfileContext";
+import ProfileProvider from "@/features/profile/context/ProfileProvider";
 
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
