@@ -1,70 +1,77 @@
 package com.theholymatrimony.backend.payments.entity;
 
-import com.theholymatrimony.backend.auth.entity.User;
-import com.theholymatrimony.backend.payments.enums.BillingCycle;
-import com.theholymatrimony.backend.payments.enums.MembershipPlan;
 import com.theholymatrimony.backend.payments.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "payments")
 @Getter
 @Setter
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Payment {
 
     @Id
-    @Builder.Default
-    @Column(nullable = false, updatable = false)
-    private UUID id = UUID.randomUUID();
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
-    private MembershipPlan plan;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "billing_cycle", nullable = false, length = 20)
-    private BillingCycle billingCycle;
-
-    @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal amount;
-
-    @Builder.Default
-    @Column(nullable = false, length = 10)
-    private String currency = "INR";
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
-    private PaymentStatus status;
-
-    @Column(name = "razorpay_order_id", length = 100)
+    @Column(nullable = false, unique = true)
     private String razorpayOrderId;
 
-    @Column(name = "razorpay_payment_id", length = 100)
+    @Column(unique = true)
     private String razorpayPaymentId;
 
-    @Column(name = "razorpay_signature", columnDefinition = "TEXT")
+    @Column(length = 500)
     private String razorpaySignature;
 
-    @Builder.Default
     @Column(nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private String plan;
+
+    @Column(nullable = false)
+    private String billingCycle;
+
+    @Column(nullable = false)
+    private String customerName;
+
+    @Column(nullable = false)
+    private String email;
+
+    private String phone;
+
+    @Column(nullable = false)
+    private Integer amount;
+
+    @Column(nullable = false)
+    private String currency;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentStatus status;
+
+    private LocalDateTime paidAt;
+
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
 
+    @PrePersist
+    public void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+
+        if (this.status == null) {
+            this.status = PaymentStatus.PENDING;
+        }
+    }
+
     @PreUpdate
-    public void preUpdate() {
-        updatedAt = LocalDateTime.now();
+    public void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

@@ -52,5 +52,42 @@ public class Membership {
 
     @Builder.Default
     @Column(nullable = false)
+    private Boolean autoRenew = false;
+
+    @Builder.Default
+    @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    public void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (createdAt == null) {
+            createdAt = now;
+        }
+
+        updatedAt = now;
+
+        if (status == null) {
+            status = MembershipStatus.ACTIVE;
+        }
+    }
+
+    @PreUpdate
+    public void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    public boolean isActive() {
+        return status == MembershipStatus.ACTIVE
+                && expiryDate.isAfter(LocalDateTime.now());
+    }
+
+    public long getRemainingDays() {
+        return java.time.Duration
+                .between(LocalDateTime.now(), expiryDate)
+                .toDays();
+    }
 }

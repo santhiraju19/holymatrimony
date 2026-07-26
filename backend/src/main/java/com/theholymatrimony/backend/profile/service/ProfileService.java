@@ -9,23 +9,33 @@ import com.theholymatrimony.backend.profile.repository.ProfileRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ProfileService {
 
     private final ProfileRepository profileRepository;
     private final UserRepository userRepository;
 
+    @Transactional(readOnly = true)
     public ProfileResponse getMyProfile(String email) {
 
         Profile profile = profileRepository.findByUserEmail(email)
-                .orElseGet(() -> createEmptyProfile(email));
+                .orElse(null);
+
+        if (profile == null) {
+            profile = createEmptyProfile(email);
+        }
 
         return map(profile);
     }
 
-    public ProfileResponse saveProfile(String email, ProfileRequest request) {
+    public ProfileResponse saveProfile(
+            String email,
+            ProfileRequest request
+    ) {
 
         Profile profile = profileRepository.findByUserEmail(email)
                 .orElseGet(() -> createEmptyProfile(email));
@@ -60,8 +70,12 @@ public class ProfileService {
         // ===== Preferences =====
         profile.setPreferredAgeFrom(request.getPreferredAgeFrom());
         profile.setPreferredAgeTo(request.getPreferredAgeTo());
-        profile.setPreferredDenomination(request.getPreferredDenomination());
-        profile.setPreferredEducation(request.getPreferredEducation());
+        profile.setPreferredDenomination(
+                request.getPreferredDenomination()
+        );
+        profile.setPreferredEducation(
+                request.getPreferredEducation()
+        );
 
         // ===== Location =====
         profile.setCity(request.getCity());
@@ -71,17 +85,24 @@ public class ProfileService {
         // ===== About =====
         profile.setAboutMe(request.getAboutMe());
 
-        profile.setCompletionPercentage(calculateCompletion(profile));
+        profile.setCompletionPercentage(
+                calculateCompletion(profile)
+        );
 
-        profile = profileRepository.save(profile);
+        Profile savedProfile =
+                profileRepository.save(profile);
 
-        return map(profile);
+        return map(savedProfile);
     }
 
     private Profile createEmptyProfile(String email) {
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(
+                        () -> new EntityNotFoundException(
+                                "User not found for email: " + email
+                        )
+                );
 
         Profile profile = Profile.builder()
                 .user(user)
@@ -96,43 +117,112 @@ public class ProfileService {
         int total = 20;
         int completed = 0;
 
-        if (profile.getMobile() != null && !profile.getMobile().isBlank()) completed++;
-        if (profile.getDateOfBirth() != null) completed++;
-        if (profile.getGender() != null && !profile.getGender().isBlank()) completed++;
-        if (profile.getMaritalStatus() != null && !profile.getMaritalStatus().isBlank()) completed++;
-        if (profile.getDenomination() != null && !profile.getDenomination().isBlank()) completed++;
-        if (profile.getChurchName() != null && !profile.getChurchName().isBlank()) completed++;
-        if (profile.getPastorName() != null && !profile.getPastorName().isBlank()) completed++;
-        if (profile.getHighestEducation() != null && !profile.getHighestEducation().isBlank()) completed++;
-        if (profile.getProfession() != null && !profile.getProfession().isBlank()) completed++;
-        if (profile.getCompany() != null && !profile.getCompany().isBlank()) completed++;
-        if (profile.getFatherName() != null && !profile.getFatherName().isBlank()) completed++;
-        if (profile.getMotherName() != null && !profile.getMotherName().isBlank()) completed++;
-        if (profile.getFamilyLocation() != null && !profile.getFamilyLocation().isBlank()) completed++;
-        if (profile.getPreferredAgeFrom() != null) completed++;
-        if (profile.getPreferredAgeTo() != null) completed++;
-        if (profile.getCity() != null && !profile.getCity().isBlank()) completed++;
-        if (profile.getState() != null && !profile.getState().isBlank()) completed++;
-        if (profile.getCountry() != null && !profile.getCountry().isBlank()) completed++;
-        if (profile.getAboutMe() != null && !profile.getAboutMe().isBlank()) completed++;
-        if (profile.getAnnualIncome() != null && !profile.getAnnualIncome().isBlank()) completed++;
+        if (hasText(profile.getMobile())) {
+            completed++;
+        }
+
+        if (profile.getDateOfBirth() != null) {
+            completed++;
+        }
+
+        if (hasText(profile.getGender())) {
+            completed++;
+        }
+
+        if (hasText(profile.getMaritalStatus())) {
+            completed++;
+        }
+
+        if (hasText(profile.getDenomination())) {
+            completed++;
+        }
+
+        if (hasText(profile.getChurchName())) {
+            completed++;
+        }
+
+        if (hasText(profile.getPastorName())) {
+            completed++;
+        }
+
+        if (hasText(profile.getHighestEducation())) {
+            completed++;
+        }
+
+        if (hasText(profile.getProfession())) {
+            completed++;
+        }
+
+        if (hasText(profile.getCompany())) {
+            completed++;
+        }
+
+        if (hasText(profile.getFatherName())) {
+            completed++;
+        }
+
+        if (hasText(profile.getMotherName())) {
+            completed++;
+        }
+
+        if (hasText(profile.getFamilyLocation())) {
+            completed++;
+        }
+
+        if (profile.getPreferredAgeFrom() != null) {
+            completed++;
+        }
+
+        if (profile.getPreferredAgeTo() != null) {
+            completed++;
+        }
+
+        if (hasText(profile.getCity())) {
+            completed++;
+        }
+
+        if (hasText(profile.getState())) {
+            completed++;
+        }
+
+        if (hasText(profile.getCountry())) {
+            completed++;
+        }
+
+        if (hasText(profile.getAboutMe())) {
+            completed++;
+        }
+
+        if (hasText(profile.getAnnualIncome())) {
+            completed++;
+        }
 
         return (completed * 100) / total;
     }
 
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
     private ProfileResponse map(Profile profile) {
+
+        User user = profile.getUser();
 
         return ProfileResponse.builder()
                 .id(profile.getId())
-                .fullName(profile.getUser().getFullName())
-                .email(profile.getUser().getEmail())
 
+                // ===== User =====
+                .fullName(user.getFullName())
+                .email(user.getEmail())
+
+                // ===== Basic =====
                 .mobile(profile.getMobile())
                 .dateOfBirth(profile.getDateOfBirth())
                 .gender(profile.getGender())
                 .age(profile.getAge())
                 .maritalStatus(profile.getMaritalStatus())
 
+                // ===== Church =====
                 .denomination(profile.getDenomination())
                 .churchName(profile.getChurchName())
                 .pastorName(profile.getPastorName())
@@ -140,27 +230,45 @@ public class ProfileService {
                 .membershipId(profile.getMembershipId())
                 .churchAddress(profile.getChurchAddress())
 
-                .highestEducation(profile.getHighestEducation())
+                // ===== Education =====
+                .highestEducation(
+                        profile.getHighestEducation()
+                )
                 .profession(profile.getProfession())
                 .company(profile.getCompany())
                 .annualIncome(profile.getAnnualIncome())
 
+                // ===== Family =====
                 .fatherName(profile.getFatherName())
                 .motherName(profile.getMotherName())
                 .siblings(profile.getSiblings())
                 .familyLocation(profile.getFamilyLocation())
 
-                .preferredAgeFrom(profile.getPreferredAgeFrom())
-                .preferredAgeTo(profile.getPreferredAgeTo())
-                .preferredDenomination(profile.getPreferredDenomination())
-                .preferredEducation(profile.getPreferredEducation())
+                // ===== Preferences =====
+                .preferredAgeFrom(
+                        profile.getPreferredAgeFrom()
+                )
+                .preferredAgeTo(
+                        profile.getPreferredAgeTo()
+                )
+                .preferredDenomination(
+                        profile.getPreferredDenomination()
+                )
+                .preferredEducation(
+                        profile.getPreferredEducation()
+                )
 
+                // ===== Location =====
                 .city(profile.getCity())
                 .state(profile.getState())
                 .country(profile.getCountry())
 
+                // ===== About =====
                 .aboutMe(profile.getAboutMe())
-                .completionPercentage(profile.getCompletionPercentage())
+                .completionPercentage(
+                        profile.getCompletionPercentage()
+                )
+
                 .build();
     }
 }

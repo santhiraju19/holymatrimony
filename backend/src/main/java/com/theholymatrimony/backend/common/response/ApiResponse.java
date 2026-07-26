@@ -1,5 +1,6 @@
 package com.theholymatrimony.backend.common.response;
 
+import com.theholymatrimony.backend.common.response.ApiResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

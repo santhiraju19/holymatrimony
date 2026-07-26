@@ -1,13 +1,15 @@
 package com.theholymatrimony.backend.profile.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 import java.time.LocalDate;
 
-@Getter
-@Setter
+@Data
 public class ProfileRequest {
+
+    // ===== User =====
+    private String fullName;
+    private String email;
 
     // ===== Basic =====
     private String mobile;
@@ -20,7 +22,7 @@ public class ProfileRequest {
     private String denomination;
     private String churchName;
     private String pastorName;
-    private String baptized;
+    private Boolean baptized;
     private String membershipId;
     private String churchAddress;
 

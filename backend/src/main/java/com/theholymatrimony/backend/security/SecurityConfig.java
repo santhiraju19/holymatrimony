@@ -1,10 +1,14 @@
 package com.theholymatrimony.backend.security;
 
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import com.theholymatrimony.backend.security.jwt.JwtAuthenticationConverter;
 import com.theholymatrimony.backend.security.jwt.JwtProperties;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -21,63 +25,73 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 
 @Configuration
+@EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final JwtProperties jwtProperties;
+    private final JwtAuthenticationConverter jwtAuthenticationConverter;
+
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(
+            HttpSecurity http
+    ) throws Exception {
 
         http
-                // Enable CORS using CorsConfig.java
-                .cors(cors -> {})
+                .cors(cors -> {
+                })
 
-                // Disable CSRF for REST APIs
                 .csrf(csrf -> csrf.disable())
 
-                // Stateless JWT authentication
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
                 )
 
-                // Public authentication APIs
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers(
+                                "/api/v1/auth/**",
+                                "/uploads/profile-photos/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/error"
+                        ).permitAll()
+
                         .anyRequest().authenticated()
                 )
 
-                // JWT Resource Server
                 .oauth2ResourceServer(oauth2 ->
-                        oauth2.jwt(jwt -> {})
+                        oauth2.jwt(jwt ->
+                                jwt.jwtAuthenticationConverter(
+                                        jwtAuthenticationConverter
+                                )
+                        )
                 );
 
         return http.build();
     }
 
     @Bean
-    SecretKey jwtSecretKey(JwtProperties jwtProperties) {
+    JwtDecoder jwtDecoder() {
 
-        return new SecretKeySpec(
-                jwtProperties.getSecret()
-                        .getBytes(StandardCharsets.UTF_8),
-                "HmacSHA256"
-        );
-    }
-
-    @Bean
-    JwtEncoder jwtEncoder(SecretKey secretKey) {
-
-        return NimbusJwtEncoder
-                .withSecretKey(secretKey)
-                .algorithm(MacAlgorithm.HS256)
-                .build();
-    }
-
-    @Bean
-    JwtDecoder jwtDecoder(SecretKey secretKey) {
+        SecretKey secretKey = createSecretKey();
 
         return NimbusJwtDecoder
                 .withSecretKey(secretKey)
                 .macAlgorithm(MacAlgorithm.HS256)
                 .build();
+    }
+
+    @Bean
+    JwtEncoder jwtEncoder() {
+
+        SecretKey secretKey = createSecretKey();
+
+        return new NimbusJwtEncoder(
+                new ImmutableSecret<>(secretKey)
+        );
     }
 
     @Bean
@@ -91,5 +105,14 @@ public class SecurityConfig {
     ) throws Exception {
 
         return configuration.getAuthenticationManager();
+    }
+
+    private SecretKey createSecretKey() {
+
+        return new SecretKeySpec(
+                jwtProperties.getSecret()
+                        .getBytes(StandardCharsets.UTF_8),
+                "HmacSHA256"
+        );
     }
 }

@@ -19,10 +19,10 @@ public class User {
     @GeneratedValue
     private UUID id;
 
-    @Column(nullable = false, length = 150)
+    @Column(nullable = false, length = 120)
     private String fullName;
 
-    @Column(nullable = false, unique = true, length = 200)
+    @Column(nullable = false, unique = true, length = 150)
     private String email;
 
     @Column(nullable = false)
@@ -33,6 +33,13 @@ public class User {
     private Boolean enabled = true;
 
     @Builder.Default
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    private LocalDateTime updatedAt;
+
+    @PreUpdate
+    public void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

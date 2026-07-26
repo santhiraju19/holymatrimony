@@ -1,17 +1,14 @@
 package com.theholymatrimony.backend.payments.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class VerifyPaymentRequest {
 
-    @NotBlank
-    private String razorpayOrderId;
+    private String razorpay_order_id;
 
-    @NotBlank
-    private String razorpayPaymentId;
+    private String razorpay_payment_id;
 
-    @NotBlank
-    private String razorpaySignature;
+    private String razorpay_signature;
+
 }

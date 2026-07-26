@@ -1,61 +1,65 @@
 package com.theholymatrimony.backend.profile.dto;
 
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 
 import java.time.LocalDate;
 import java.util.UUID;
 
-@Getter
+@Data
 @Builder
 public class ProfileResponse {
 
     private UUID id;
 
-    // User
+    private UUID userId;
+
+    // ===== User =====
     private String fullName;
     private String email;
 
-    // Basic
+    // ===== Basic =====
     private String mobile;
     private LocalDate dateOfBirth;
     private String gender;
     private Integer age;
     private String maritalStatus;
 
-    // Church
+    // ===== Church =====
     private String denomination;
     private String churchName;
     private String pastorName;
-    private String baptized;
+    private Boolean baptized;
     private String membershipId;
     private String churchAddress;
 
-    // Education
+    // ===== Education =====
     private String highestEducation;
     private String profession;
     private String company;
     private String annualIncome;
 
-    // Family
+    // ===== Family =====
     private String fatherName;
     private String motherName;
     private String siblings;
     private String familyLocation;
 
-    // Preferences
+    // ===== Preferences =====
     private Integer preferredAgeFrom;
     private Integer preferredAgeTo;
     private String preferredDenomination;
     private String preferredEducation;
 
-    // Location
+    // ===== Location =====
     private String city;
     private String state;
     private String country;
 
-    // About
+    // ===== About =====
     private String aboutMe;
 
+    // ===== Completion =====
     private Integer completionPercentage;
+    private Boolean profileCompleted;
 }

@@ -1,14 +1,27 @@
 package com.theholymatrimony.backend.security.jwt;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
-@Component
 @ConfigurationProperties(prefix = "jwt")
 public class JwtProperties {
 
+    /**
+     * Secret key used for signing JWT tokens.
+     * Must be at least 32 characters.
+     */
     private String secret;
-    private long expiration = 86400000L;
+
+    /**
+     * Access Token validity in milliseconds.
+     * Example: 900000 = 15 minutes
+     */
+    private long accessTokenExpiration;
+
+    /**
+     * Refresh Token validity in milliseconds.
+     * Example: 604800000 = 7 days
+     */
+    private long refreshTokenExpiration;
 
     public String getSecret() {
         return secret;
@@ -18,11 +31,19 @@ public class JwtProperties {
         this.secret = secret;
     }
 
-    public long getExpiration() {
-        return expiration;
+    public long getAccessTokenExpiration() {
+        return accessTokenExpiration;
     }
 
-    public void setExpiration(long expiration) {
-        this.expiration = expiration;
+    public void setAccessTokenExpiration(long accessTokenExpiration) {
+        this.accessTokenExpiration = accessTokenExpiration;
+    }
+
+    public long getRefreshTokenExpiration() {
+        return refreshTokenExpiration;
+    }
+
+    public void setRefreshTokenExpiration(long refreshTokenExpiration) {
+        this.refreshTokenExpiration = refreshTokenExpiration;
     }
 }

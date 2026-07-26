@@ -1,16 +1,17 @@
 package com.theholymatrimony.backend.payments.dto;
 
-import com.theholymatrimony.backend.payments.enums.BillingCycle;
-import com.theholymatrimony.backend.payments.enums.MembershipPlan;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 public class CreateOrderRequest {
 
-    @NotNull
-    private MembershipPlan plan;
+    private String plan;
 
-    @NotNull
-    private BillingCycle billingCycle;
+    private String billingCycle;
+
+    private String fullName;
+
+    private String email;
+
+    private String phone;
 }
