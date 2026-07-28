@@ -16,13 +16,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class ProfileService {
 
+    private static final int PROFILE_COMPLETION_THRESHOLD = 100;
+
     private final ProfileRepository profileRepository;
     private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public ProfileResponse getMyProfile(String email) {
 
-        Profile profile = profileRepository.findByUserEmail(email)
+        Profile profile = profileRepository
+                .findByUserEmail(email)
                 .orElse(null);
 
         if (profile == null) {
@@ -37,7 +40,8 @@ public class ProfileService {
             ProfileRequest request
     ) {
 
-        Profile profile = profileRepository.findByUserEmail(email)
+        Profile profile = profileRepository
+                .findByUserEmail(email)
                 .orElseGet(() -> createEmptyProfile(email));
 
         // ===== Basic =====
@@ -45,31 +49,65 @@ public class ProfileService {
         profile.setDateOfBirth(request.getDateOfBirth());
         profile.setGender(request.getGender());
         profile.setAge(request.getAge());
-        profile.setMaritalStatus(request.getMaritalStatus());
+        profile.setMaritalStatus(
+                request.getMaritalStatus()
+        );
 
         // ===== Church =====
-        profile.setDenomination(request.getDenomination());
-        profile.setChurchName(request.getChurchName());
-        profile.setPastorName(request.getPastorName());
-        profile.setBaptized(request.getBaptized());
-        profile.setMembershipId(request.getMembershipId());
-        profile.setChurchAddress(request.getChurchAddress());
+        profile.setDenomination(
+                request.getDenomination()
+        );
+        profile.setChurchName(
+                request.getChurchName()
+        );
+        profile.setPastorName(
+                request.getPastorName()
+        );
+        profile.setBaptized(
+                request.getBaptized()
+        );
+        profile.setMembershipId(
+                request.getMembershipId()
+        );
+        profile.setChurchAddress(
+                request.getChurchAddress()
+        );
 
         // ===== Education =====
-        profile.setHighestEducation(request.getHighestEducation());
-        profile.setProfession(request.getProfession());
-        profile.setCompany(request.getCompany());
-        profile.setAnnualIncome(request.getAnnualIncome());
+        profile.setHighestEducation(
+                request.getHighestEducation()
+        );
+        profile.setProfession(
+                request.getProfession()
+        );
+        profile.setCompany(
+                request.getCompany()
+        );
+        profile.setAnnualIncome(
+                request.getAnnualIncome()
+        );
 
         // ===== Family =====
-        profile.setFatherName(request.getFatherName());
-        profile.setMotherName(request.getMotherName());
-        profile.setSiblings(request.getSiblings());
-        profile.setFamilyLocation(request.getFamilyLocation());
+        profile.setFatherName(
+                request.getFatherName()
+        );
+        profile.setMotherName(
+                request.getMotherName()
+        );
+        profile.setSiblings(
+                request.getSiblings()
+        );
+        profile.setFamilyLocation(
+                request.getFamilyLocation()
+        );
 
         // ===== Preferences =====
-        profile.setPreferredAgeFrom(request.getPreferredAgeFrom());
-        profile.setPreferredAgeTo(request.getPreferredAgeTo());
+        profile.setPreferredAgeFrom(
+                request.getPreferredAgeFrom()
+        );
+        profile.setPreferredAgeTo(
+                request.getPreferredAgeTo()
+        );
         profile.setPreferredDenomination(
                 request.getPreferredDenomination()
         );
@@ -85,8 +123,19 @@ public class ProfileService {
         // ===== About =====
         profile.setAboutMe(request.getAboutMe());
 
+        /*
+         * Calculate and persist profile completion state.
+         */
+        int completionPercentage =
+                calculateCompletion(profile);
+
         profile.setCompletionPercentage(
-                calculateCompletion(profile)
+                completionPercentage
+        );
+
+        profile.setProfileCompleted(
+                completionPercentage
+                        >= PROFILE_COMPLETION_THRESHOLD
         );
 
         Profile savedProfile =
@@ -95,24 +144,31 @@ public class ProfileService {
         return map(savedProfile);
     }
 
-    private Profile createEmptyProfile(String email) {
+    private Profile createEmptyProfile(
+            String email
+    ) {
 
-        User user = userRepository.findByEmail(email)
+        User user = userRepository
+                .findByEmail(email)
                 .orElseThrow(
                         () -> new EntityNotFoundException(
-                                "User not found for email: " + email
+                                "User not found for email: "
+                                        + email
                         )
                 );
 
         Profile profile = Profile.builder()
                 .user(user)
                 .completionPercentage(0)
+                .profileCompleted(false)
                 .build();
 
         return profileRepository.save(profile);
     }
 
-    private int calculateCompletion(Profile profile) {
+    private int calculateCompletion(
+            Profile profile
+    ) {
 
         int total = 20;
         int completed = 0;
@@ -201,10 +257,13 @@ public class ProfileService {
     }
 
     private boolean hasText(String value) {
-        return value != null && !value.isBlank();
+        return value != null
+                && !value.isBlank();
     }
 
-    private ProfileResponse map(Profile profile) {
+    private ProfileResponse map(
+            Profile profile
+    ) {
 
         User user = profile.getUser();
 
@@ -217,32 +276,56 @@ public class ProfileService {
 
                 // ===== Basic =====
                 .mobile(profile.getMobile())
-                .dateOfBirth(profile.getDateOfBirth())
+                .dateOfBirth(
+                        profile.getDateOfBirth()
+                )
                 .gender(profile.getGender())
                 .age(profile.getAge())
-                .maritalStatus(profile.getMaritalStatus())
+                .maritalStatus(
+                        profile.getMaritalStatus()
+                )
 
                 // ===== Church =====
-                .denomination(profile.getDenomination())
-                .churchName(profile.getChurchName())
-                .pastorName(profile.getPastorName())
+                .denomination(
+                        profile.getDenomination()
+                )
+                .churchName(
+                        profile.getChurchName()
+                )
+                .pastorName(
+                        profile.getPastorName()
+                )
                 .baptized(profile.getBaptized())
-                .membershipId(profile.getMembershipId())
-                .churchAddress(profile.getChurchAddress())
+                .membershipId(
+                        profile.getMembershipId()
+                )
+                .churchAddress(
+                        profile.getChurchAddress()
+                )
 
                 // ===== Education =====
                 .highestEducation(
                         profile.getHighestEducation()
                 )
-                .profession(profile.getProfession())
+                .profession(
+                        profile.getProfession()
+                )
                 .company(profile.getCompany())
-                .annualIncome(profile.getAnnualIncome())
+                .annualIncome(
+                        profile.getAnnualIncome()
+                )
 
                 // ===== Family =====
-                .fatherName(profile.getFatherName())
-                .motherName(profile.getMotherName())
+                .fatherName(
+                        profile.getFatherName()
+                )
+                .motherName(
+                        profile.getMotherName()
+                )
                 .siblings(profile.getSiblings())
-                .familyLocation(profile.getFamilyLocation())
+                .familyLocation(
+                        profile.getFamilyLocation()
+                )
 
                 // ===== Preferences =====
                 .preferredAgeFrom(
@@ -265,6 +348,8 @@ public class ProfileService {
 
                 // ===== About =====
                 .aboutMe(profile.getAboutMe())
+
+                // ===== Completion =====
                 .completionPercentage(
                         profile.getCompletionPercentage()
                 )

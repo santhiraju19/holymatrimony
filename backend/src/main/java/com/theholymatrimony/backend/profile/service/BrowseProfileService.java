@@ -1,0 +1,267 @@
+package com.theholymatrimony.backend.profile.service;
+
+import com.theholymatrimony.backend.profile.dto.BrowseProfileResponse;
+import com.theholymatrimony.backend.profile.dto.BrowseProfilesPageResponse;
+import com.theholymatrimony.backend.profile.dto.SearchProfileRequest;
+import com.theholymatrimony.backend.profile.entity.Profile;
+import com.theholymatrimony.backend.profile.entity.ProfilePhoto;
+import com.theholymatrimony.backend.profile.repository.ProfilePhotoRepository;
+import com.theholymatrimony.backend.profile.repository.ProfileRepository;
+import com.theholymatrimony.backend.profile.repository.ProfileSpecification;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class BrowseProfileService {
+
+    private static final int DEFAULT_PAGE_SIZE = 12;
+
+    private static final int MAXIMUM_PAGE_SIZE = 24;
+
+    private final ProfileRepository profileRepository;
+
+    private final ProfilePhotoRepository
+            profilePhotoRepository;
+
+    public BrowseProfilesPageResponse browseProfiles(
+            String authenticatedEmail,
+            int page,
+            int size
+    ) {
+
+        Pageable pageable =
+                createPageable(page, size);
+
+        Page<Profile> profilePage =
+                profileRepository
+                        .findByProfileCompletedTrueAndUserEmailNot(
+                                authenticatedEmail,
+                                pageable
+                        );
+
+        return mapPage(profilePage);
+    }
+
+    public BrowseProfilesPageResponse searchProfiles(
+            String authenticatedEmail,
+            SearchProfileRequest request,
+            int page,
+            int size
+    ) {
+
+        validateSearchRequest(request);
+
+        Pageable pageable =
+                createPageable(page, size);
+
+        Page<Profile> profilePage =
+                profileRepository.findAll(
+                        ProfileSpecification.search(
+                                request,
+                                authenticatedEmail
+                        ),
+                        pageable
+                );
+
+        return mapPage(profilePage);
+    }
+
+    public BrowseProfileResponse getProfile(
+            String authenticatedEmail,
+            UUID profileId
+    ) {
+
+        Profile profile =
+                profileRepository
+                        .findByIdAndProfileCompletedTrueAndUserEmailNot(
+                                profileId,
+                                authenticatedEmail
+                        )
+                        .orElseThrow(
+                                () ->
+                                        new EntityNotFoundException(
+                                                "Profile not found"
+                                        )
+                        );
+
+        return map(profile);
+    }
+
+    private Pageable createPageable(
+            int page,
+            int size
+    ) {
+
+        int safePage =
+                Math.max(page, 0);
+
+        int requestedSize =
+                size <= 0
+                        ? DEFAULT_PAGE_SIZE
+                        : size;
+
+        int safeSize =
+                Math.min(
+                        requestedSize,
+                        MAXIMUM_PAGE_SIZE
+                );
+
+        return PageRequest.of(
+                safePage,
+                safeSize,
+                Sort.by(
+                        Sort.Direction.DESC,
+                        "createdAt"
+                )
+        );
+    }
+
+    private void validateSearchRequest(
+            SearchProfileRequest request
+    ) {
+
+        if (request == null) {
+            return;
+        }
+
+        Integer ageFrom =
+                request.getAgeFrom();
+
+        Integer ageTo =
+                request.getAgeTo();
+
+        if (ageFrom != null
+                && ageFrom < 18) {
+
+            throw new IllegalArgumentException(
+                    "Minimum age must be at least 18"
+            );
+        }
+
+        if (ageTo != null
+                && ageTo < 18) {
+
+            throw new IllegalArgumentException(
+                    "Maximum age must be at least 18"
+            );
+        }
+
+        if (ageFrom != null
+                && ageTo != null
+                && ageFrom > ageTo) {
+
+            throw new IllegalArgumentException(
+                    "Minimum age cannot be greater than maximum age"
+            );
+        }
+    }
+
+    private BrowseProfilesPageResponse mapPage(
+            Page<Profile> profilePage
+    ) {
+
+        List<BrowseProfileResponse> profiles =
+                profilePage
+                        .getContent()
+                        .stream()
+                        .map(this::map)
+                        .toList();
+
+        return BrowseProfilesPageResponse.builder()
+                .profiles(profiles)
+                .page(profilePage.getNumber())
+                .size(profilePage.getSize())
+                .totalElements(
+                        profilePage.getTotalElements()
+                )
+                .totalPages(
+                        profilePage.getTotalPages()
+                )
+                .first(profilePage.isFirst())
+                .last(profilePage.isLast())
+                .hasNext(profilePage.hasNext())
+                .hasPrevious(
+                        profilePage.hasPrevious()
+                )
+                .build();
+    }
+
+    private BrowseProfileResponse map(
+            Profile profile
+    ) {
+
+        UUID userId =
+                profile.getUser().getId();
+
+        ProfilePhoto primaryPhoto =
+                profilePhotoRepository
+                        .findFirstByUserIdAndPrimaryPhotoTrue(
+                                userId
+                        )
+                        .orElse(null);
+
+        return BrowseProfileResponse.builder()
+                .id(profile.getId())
+                .userId(userId)
+                .fullName(
+                        profile.getUser().getFullName()
+                )
+                .dateOfBirth(
+                        profile.getDateOfBirth()
+                )
+                .gender(profile.getGender())
+                .age(profile.getAge())
+                .maritalStatus(
+                        profile.getMaritalStatus()
+                )
+                .denomination(
+                        profile.getDenomination()
+                )
+                .churchName(
+                        profile.getChurchName()
+                )
+                .baptized(profile.getBaptized())
+                .highestEducation(
+                        profile.getHighestEducation()
+                )
+                .profession(
+                        profile.getProfession()
+                )
+                .company(profile.getCompany())
+                .annualIncome(
+                        profile.getAnnualIncome()
+                )
+                .city(profile.getCity())
+                .state(profile.getState())
+                .country(profile.getCountry())
+                .aboutMe(profile.getAboutMe())
+                .completionPercentage(
+                        profile.getCompletionPercentage()
+                )
+                .profileCompleted(
+                        profile.getProfileCompleted()
+                )
+                .primaryPhotoId(
+                        primaryPhoto == null
+                                ? null
+                                : primaryPhoto.getId()
+                )
+                .primaryPhotoUrl(
+                        primaryPhoto == null
+                                ? null
+                                : primaryPhoto.getImageUrl()
+                )
+                .build();
+    }
+}
