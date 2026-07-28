@@ -45,7 +45,12 @@ export function useProfileApi() {
           denomination: data.denomination ?? "",
           churchName: data.churchName ?? "",
           pastorName: data.pastorName ?? "",
-          baptized: data.baptized ?? "",
+          baptized:
+  data.baptized === true
+    ? "true"
+    : data.baptized === false
+      ? "false"
+      : "",
           membershipId: data.membershipId ?? "",
           churchAddress: data.churchAddress ?? "",
         },

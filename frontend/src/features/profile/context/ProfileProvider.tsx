@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, {
@@ -13,25 +14,32 @@ import {
 } from "./ProfileContext";
 
 import { ProfileState } from "../types";
-
 import { useProfileRecovery } from "../hooks/useProfileRecovery";
 
 import profileService, {
   ProfilePayload,
 } from "../services/profile.service";
 
-
 interface Props {
   children: ReactNode;
 }
 
-
 function mapApiToState(
   api: ProfilePayload
 ): ProfileState {
+  const photos = [...(api.photos ?? [])]
+    .sort(
+      (first, second) =>
+        first.displayOrder - second.displayOrder
+    )
+    .map((photo) => ({
+      id: String(photo.id),
+      preview: photo.imageUrl,
+      isPrimary: photo.isPrimary,
+      displayOrder: photo.displayOrder,
+    }));
 
   return {
-
     basicInfo: {
       fullName: api.fullName ?? "",
       mobile: api.mobile ?? "",
@@ -41,7 +49,6 @@ function mapApiToState(
       maritalStatus: api.maritalStatus ?? "",
       email: api.email ?? "",
     },
-
 
     churchInfo: {
       denomination: api.denomination ?? "",
@@ -55,326 +62,235 @@ function mapApiToState(
       churchAddress: api.churchAddress ?? "",
     },
 
-
     educationInfo: {
       highestEducation:
         api.highestEducation ?? "",
-
-      profession:
-        api.profession ?? "",
-
-      company:
-        api.company ?? "",
-
-      annualIncome:
-        api.annualIncome ?? "",
+      profession: api.profession ?? "",
+      company: api.company ?? "",
+      annualIncome: api.annualIncome ?? "",
     },
 
-
     familyInfo: {
-      fatherName:
-        api.fatherName ?? "",
-
-      motherName:
-        api.motherName ?? "",
-
-      siblings:
-        api.siblings ?? "",
-
+      fatherName: api.fatherName ?? "",
+      motherName: api.motherName ?? "",
+      siblings: api.siblings ?? "",
       familyLocation:
         api.familyLocation ?? "",
     },
 
-
     preferenceInfo: {
       preferredAgeFrom:
         api.preferredAgeFrom?.toString() ?? "",
-
       preferredAgeTo:
         api.preferredAgeTo?.toString() ?? "",
-
       preferredDenomination:
         api.preferredDenomination ?? "",
-
       preferredEducation:
         api.preferredEducation ?? "",
     },
 
-
     locationInfo: {
-      city:
-        api.city ?? "",
-
-      state:
-        api.state ?? "",
-
-      country:
-        api.country ?? "",
+      city: api.city ?? "",
+      state: api.state ?? "",
+      country: api.country ?? "",
     },
-
 
     aboutInfo: {
-      aboutMe:
-        api.aboutMe ?? "",
+      aboutMe: api.aboutMe ?? "",
     },
 
-
-   photoInfo: {
-  photos: (api.photos ?? [])
-    .sort((a, b) => a.displayOrder - b.displayOrder)
-    .map((photo) => ({
-      id: String(photo.id),
-      preview: photo.imageUrl,
-      isPrimary: photo.isPrimary,
-      displayOrder: photo.displayOrder,
-    })),
-
-  primaryPhoto:
-    api.photos?.find((photo) => photo.isPrimary)?.imageUrl ?? "",
+    photoInfo: {
+      photos,
+      primaryPhoto:
+        photos.find((photo) => photo.isPrimary)
+          ?.preview ?? "",
     },
-
   };
 }
-
-
 
 function mapStateToApi(
   profile: ProfileState
 ): ProfilePayload {
-
   return {
-
     ...profile.basicInfo,
-
     ...profile.churchInfo,
-
     ...profile.educationInfo,
-
     ...profile.familyInfo,
-
     ...profile.preferenceInfo,
-
     ...profile.locationInfo,
-
     ...profile.aboutInfo,
 
-
-    age:
-      profile.basicInfo.age
-        ? Number(profile.basicInfo.age)
-        : undefined,
-
+    age: profile.basicInfo.age
+      ? Number(profile.basicInfo.age)
+      : undefined,
 
     preferredAgeFrom:
       profile.preferenceInfo.preferredAgeFrom
         ? Number(
-            profile.preferenceInfo.preferredAgeFrom
+            profile.preferenceInfo
+              .preferredAgeFrom
           )
         : undefined,
-
 
     preferredAgeTo:
       profile.preferenceInfo.preferredAgeTo
         ? Number(
-            profile.preferenceInfo.preferredAgeTo
+            profile.preferenceInfo
+              .preferredAgeTo
           )
         : undefined,
-
 
     baptized:
       profile.churchInfo.baptized === ""
         ? undefined
-        : profile.churchInfo.baptized === "true",
-
+        : profile.churchInfo.baptized ===
+          "true",
   };
 }
-
-
 
 export default function ProfileProvider({
   children,
 }: Props) {
-
-
   const [profile, setProfile] =
-    useState<ProfileState>(
-      initialProfile
-    );
-
+    useState<ProfileState>(initialProfile);
 
   const [loading, setLoading] =
     useState(true);
 
-
   const [saving, setSaving] =
     useState(false);
 
-
   const [error, setError] =
     useState<string | null>(null);
-
-
 
   const {
     restoreDraft,
     removeDraft,
     saveStatus,
-
   } = useProfileRecovery(profile);
-
-
 
   const refreshProfile =
     useCallback(async () => {
-
       setLoading(true);
-
       setError(null);
 
-
       try {
+        const data =
+          await profileService.getProfile();
 
-        const data = await profileService.getProfile();
-
-if (!data) {
-  return;
-}
-
-setProfile(
-  mapApiToState(data)
-);
-
-
-      } catch (err) {
-
-        console.error(err);
-
-
-        const draft =
-          restoreDraft();
-
-
-        if (draft) {
-
-          setProfile(draft);
-
-        } else {
-
-          setError(
-            "Unable to load your profile."
-          );
-
+        if (data) {
+          setProfile(mapApiToState(data));
+          return;
         }
 
+        /*
+         * A missing backend profile is valid for
+         * a newly registered user.
+         */
+        const draft = restoreDraft();
 
-      } finally {
-
-        setLoading(false);
-
-      }
-
-    }, [restoreDraft]);
-
-
-
-
-  const saveProfile =
-    useCallback(async () => {
-
-
-      setSaving(true);
-
-      setError(null);
-
-
-
-      try {
-
-
-        await profileService.updateProfile(
-
-          mapStateToApi(profile)
-
+        if (draft) {
+          setProfile(draft);
+        }
+      } catch (err) {
+        console.error(
+          "Unable to load profile:",
+          err
         );
 
+        const draft = restoreDraft();
+
+        if (draft) {
+          setProfile(draft);
+        } else {
+          setError(
+            "Unable to load your profile. Please refresh and try again."
+          );
+        }
+      } finally {
+        setLoading(false);
+      }
+    }, [restoreDraft]);
+
+  const saveProfile =
+    useCallback(async (): Promise<boolean> => {
+      if (saving) {
+        return false;
+      }
+
+      setSaving(true);
+      setError(null);
+
+      try {
+        const savedProfile =
+          await profileService.updateProfile(
+            mapStateToApi(profile)
+          );
+
+        /*
+         * Keep the backend as the source of truth,
+         * but preserve the current photos when the
+         * profile update response does not include them.
+         */
+        const mappedProfile =
+          mapApiToState(savedProfile);
+
+        setProfile((currentProfile) => ({
+          ...mappedProfile,
+
+          photoInfo:
+            savedProfile.photos !== undefined
+              ? mappedProfile.photoInfo
+              : currentProfile.photoInfo,
+        }));
 
         removeDraft();
 
-
+        return true;
       } catch (err) {
-
-
-        console.error(err);
-
-
-        setError(
-          "Unable to save your profile."
+        console.error(
+          "Unable to save profile:",
+          err
         );
 
+        setError(
+          "Unable to save your profile. Please check your connection and try again."
+        );
 
+        return false;
       } finally {
-
-
         setSaving(false);
-
-
       }
-
-
     }, [
       profile,
       removeDraft,
+      saving,
     ]);
 
-
-
-
   useEffect(() => {
-
-    refreshProfile();
-
+    void refreshProfile();
   }, [refreshProfile]);
 
-
-
-
   return (
-
     <ProfileContext.Provider
-
       value={{
-
         ...profile,
 
         setProfile,
 
-
         saveStatus,
 
-
         loading,
-
         saving,
-
         error,
 
-
         refreshProfile,
-
         saveProfile,
 
-
-        clearSavedDraft:
-          removeDraft,
-
+        clearSavedDraft: removeDraft,
       }}
-
     >
-
       {children}
-
     </ProfileContext.Provider>
-
   );
-
 }

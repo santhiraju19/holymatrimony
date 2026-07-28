@@ -159,12 +159,7 @@ export default function ChurchInfoForm({
           <Select
 
             value={
-              churchInfo.baptized === true
-                ? "true"
-                : churchInfo.baptized === false
-                ? "false"
-                : churchInfo.baptized
-            }
+              churchInfo.baptized}
 
             onChange={(e) =>
               updateChurchInfo(

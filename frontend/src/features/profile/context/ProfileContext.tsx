@@ -1,16 +1,18 @@
+
 "use client";
 
 import {
   createContext,
+  Dispatch,
+  SetStateAction,
 } from "react";
 
 import { ProfileState } from "../types";
 
 export interface ProfileContextType
   extends ProfileState {
-
-  setProfile: React.Dispatch<
-    React.SetStateAction<ProfileState>
+  setProfile: Dispatch<
+    SetStateAction<ProfileState>
   >;
 
   saveStatus:
@@ -19,21 +21,21 @@ export interface ProfileContextType
     | "saved";
 
   loading: boolean;
-
   saving: boolean;
-
   error: string | null;
 
   refreshProfile: () => Promise<void>;
 
-  saveProfile: () => Promise<void>;
+  /*
+   * Returns true when the backend save succeeds.
+   * Returns false when the save fails.
+   */
+  saveProfile: () => Promise<boolean>;
 
   clearSavedDraft: () => void;
 }
 
-
 export const initialProfile: ProfileState = {
-
   basicInfo: {
     fullName: "",
     mobile: "",
@@ -44,7 +46,6 @@ export const initialProfile: ProfileState = {
     email: "",
   },
 
-
   churchInfo: {
     denomination: "",
     churchName: "",
@@ -54,14 +55,12 @@ export const initialProfile: ProfileState = {
     churchAddress: "",
   },
 
-
   educationInfo: {
     highestEducation: "",
     profession: "",
     company: "",
     annualIncome: "",
   },
-
 
   familyInfo: {
     fatherName: "",
@@ -70,7 +69,6 @@ export const initialProfile: ProfileState = {
     familyLocation: "",
   },
 
-
   preferenceInfo: {
     preferredAgeFrom: "",
     preferredAgeTo: "",
@@ -78,18 +76,15 @@ export const initialProfile: ProfileState = {
     preferredEducation: "",
   },
 
-
   locationInfo: {
     city: "",
     state: "",
     country: "",
   },
 
-
   aboutInfo: {
     aboutMe: "",
   },
-
 
   photoInfo: {
     photos: [],
@@ -97,10 +92,8 @@ export const initialProfile: ProfileState = {
   },
 };
 
-
 export const ProfileContext =
   createContext<ProfileContextType>({
-
     ...initialProfile,
 
     setProfile: () => {},
@@ -108,15 +101,12 @@ export const ProfileContext =
     saveStatus: "idle",
 
     loading: false,
-
     saving: false,
-
     error: null,
 
     refreshProfile: async () => {},
 
-    saveProfile: async () => {},
+    saveProfile: async () => false,
 
     clearSavedDraft: () => {},
-
   });

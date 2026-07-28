@@ -19,9 +19,11 @@ interface PhotoOrderRequest {
 }
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080/api/v1";
 
-const PHOTO_API_URL = `${API_BASE_URL}/api/v1/profile/photos`;
+const PHOTO_API_URL =
+  `${API_BASE_URL.replace(/\/$/, "")}/profile/photos`;
 
 function getAccessToken(): string | null {
   if (typeof window === "undefined") {
@@ -29,6 +31,7 @@ function getAccessToken(): string | null {
   }
 
   return (
+    localStorage.getItem("hm_token") ??
     localStorage.getItem("accessToken") ??
     localStorage.getItem("access_token") ??
     localStorage.getItem("token")
@@ -39,6 +42,12 @@ function buildHeaders(
   contentType?: string,
 ): HeadersInit {
   const token = getAccessToken();
+
+ if (!token) {
+  throw new Error(
+    "Authentication token not found. Please log in again."
+  );
+}
 
   const headers: Record<string, string> = {};
 
@@ -147,112 +156,114 @@ function uploadWithXmlHttpRequest(
   file: File,
   options: UploadPhotoOptions,
 ): Promise<ProfilePhotoResponse> {
-  return new Promise(
-    (resolve, reject) => {
-      const request = new XMLHttpRequest();
-      const formData = new FormData();
-      const token = getAccessToken();
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    const formData = new FormData();
+    const token = getAccessToken();
 
-      formData.append("file", file);
+    if (!token) {
+      reject(
+        new Error(
+          "Authentication token not found. Please log in again.",
+        ),
+      );
+      return;
+    }
 
-      request.open(
-        "POST",
-        PHOTO_API_URL,
-        true,
+    formData.append("file", file);
+
+    request.open(
+      "POST",
+      PHOTO_API_URL,
+      true,
+    );
+
+    request.withCredentials = true;
+
+    request.setRequestHeader(
+      "Authorization",
+      `Bearer ${token}`,
+    );
+
+    request.upload.onprogress = (
+      event: ProgressEvent,
+    ) => {
+      if (
+        !event.lengthComputable ||
+        !options.onProgress
+      ) {
+        return;
+      }
+
+      const percentage = Math.round(
+        (event.loaded / event.total) * 100,
       );
 
-      request.withCredentials = true;
+      options.onProgress(percentage);
+    };
 
-      if (token) {
-        request.setRequestHeader(
-          "Authorization",
-          `Bearer ${token}`,
-        );
-      }
+    request.onload = () => {
+      if (
+        request.status >= 200 &&
+        request.status < 300
+      ) {
+        try {
+          const response = JSON.parse(
+            request.responseText,
+          ) as ProfilePhotoResponse;
 
-      request.upload.onprogress = (
-        event: ProgressEvent,
-      ) => {
-        if (
-          !event.lengthComputable ||
-          !options.onProgress
-        ) {
-          return;
-        }
-
-        const percentage = Math.round(
-          (event.loaded / event.total) * 100,
-        );
-
-        options.onProgress(percentage);
-      };
-
-      request.onload = () => {
-        if (
-          request.status >= 200 &&
-          request.status < 300
-        ) {
-          try {
-            const response =
-              JSON.parse(
-                request.responseText,
-              ) as ProfilePhotoResponse;
-
-            options.onProgress?.(100);
-            resolve(response);
-          } catch {
-            reject(
-              new Error(
-                "The photo upload response was invalid",
-              ),
-            );
-          }
-
-          return;
-        }
-
-        reject(
-          new Error(
-            extractXmlHttpRequestError(
-              request,
+          options.onProgress?.(100);
+          resolve(response);
+        } catch {
+          reject(
+            new Error(
+              "The photo upload response was invalid",
             ),
-          ),
-        );
-      };
-
-      request.onerror = () => {
-        reject(
-          new Error(
-            "Unable to connect to the photo upload service",
-          ),
-        );
-      };
-
-      request.onabort = () => {
-        reject(
-          new DOMException(
-            "Photo upload was cancelled",
-            "AbortError",
-          ),
-        );
-      };
-
-      if (options.signal) {
-        if (options.signal.aborted) {
-          request.abort();
-          return;
+          );
         }
 
-        options.signal.addEventListener(
-          "abort",
-          () => request.abort(),
-          { once: true },
-        );
+        return;
       }
 
-      request.send(formData);
-    },
-  );
+      reject(
+        new Error(
+          extractXmlHttpRequestError(request),
+        ),
+      );
+    };
+
+    request.onerror = () => {
+      reject(
+        new Error(
+          "Unable to connect to the photo upload service",
+        ),
+      );
+    };
+
+    request.onabort = () => {
+      reject(
+        new DOMException(
+          "Photo upload was cancelled",
+          "AbortError",
+        ),
+      );
+    };
+
+    if (options.signal) {
+      if (options.signal.aborted) {
+        request.abort();
+        return;
+      }
+
+      options.signal.addEventListener(
+        "abort",
+        () => request.abort(),
+        { once: true },
+      );
+    }
+
+    request.send(formData);
+  });
 }
 
 function extractXmlHttpRequestError(
