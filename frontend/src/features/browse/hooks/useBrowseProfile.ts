@@ -1,14 +1,9 @@
-
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { getBrowseProfileById } from "../api/browseApi";
-import { BrowseProfile } from "../types";
+import type { BrowseProfile } from "../types";
 
 interface UseBrowseProfileReturn {
   profile: BrowseProfile | null;
@@ -17,45 +12,47 @@ interface UseBrowseProfileReturn {
   refresh: () => Promise<void>;
 }
 
-export function useBrowseProfile(
-  profileId: string | null | undefined
+export default function useBrowseProfile(
+  profileId: string
 ): UseBrowseProfileReturn {
   const [profile, setProfile] =
     useState<BrowseProfile | null>(null);
 
-  const [loading, setLoading] =
-    useState<boolean>(false);
-
+  const [loading, setLoading] = useState(true);
   const [error, setError] =
     useState<string | null>(null);
 
-  const loadProfile = useCallback(async () => {
-    if (!profileId) {
-      setProfile(null);
-      setError("Profile ID is required.");
-      return;
-    }
+  const loadProfile = useCallback(
+    async (): Promise<void> => {
+      if (!profileId.trim()) {
+        setProfile(null);
+        setError("Profile ID is required.");
+        setLoading(false);
+        return;
+      }
 
-    setLoading(true);
-    setError(null);
+      setLoading(true);
+      setError(null);
 
-    try {
-      const result =
-        await getBrowseProfileById(profileId);
+      try {
+        const result =
+          await getBrowseProfileById(profileId);
 
-      setProfile(result);
-    } catch (requestError) {
-      const message =
-        requestError instanceof Error
-          ? requestError.message
-          : "Unable to load the profile.";
+        setProfile(result);
+      } catch (caughtError: unknown) {
+        setProfile(null);
 
-      setProfile(null);
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, [profileId]);
+        setError(
+          caughtError instanceof Error
+            ? caughtError.message
+            : "Unable to load profile."
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [profileId]
+  );
 
   useEffect(() => {
     void loadProfile();
@@ -68,5 +65,3 @@ export function useBrowseProfile(
     refresh: loadProfile,
   };
 }
-
-export default useBrowseProfile;

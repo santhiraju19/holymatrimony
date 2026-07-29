@@ -1,8 +1,12 @@
 import api from "@/lib/api";
+
 import {
+  clearAuthStorage,
+  getStoredUser,
   getToken,
-  removeToken,
+  setStoredUser,
   setToken,
+  StoredAuthUser,
 } from "@/lib/auth";
 
 export interface LoginRequest {
@@ -16,7 +20,7 @@ export interface RegisterRequest {
   password: string;
 }
 
-export interface AuthUser {
+export interface AuthUser extends StoredAuthUser {
   id?: string;
   fullName?: string;
   email: string;
@@ -26,35 +30,113 @@ export interface AuthUser {
 export interface AuthResponse {
   success?: boolean;
   message?: string;
+
   accessToken?: string;
+  refreshToken?: string;
   tokenType?: string;
   expiresIn?: number;
+
   user?: AuthUser;
+
   id?: string;
   fullName?: string;
   email?: string;
   role?: string;
+
+  data?: {
+    accessToken?: string;
+    refreshToken?: string;
+    tokenType?: string;
+    expiresIn?: number;
+    user?: AuthUser;
+
+    id?: string;
+    fullName?: string;
+    email?: string;
+    role?: string;
+  };
 }
 
-function extractUser(response: AuthResponse): AuthUser | null {
+export interface AuthSession {
+  accessToken: string;
+  user: AuthUser | null;
+  message?: string;
+}
+
+function extractAccessToken(
+  response: AuthResponse
+): string | null {
+  return (
+    response.accessToken ??
+    response.data?.accessToken ??
+    null
+  );
+}
+
+function extractUser(
+  response: AuthResponse
+): AuthUser | null {
   if (response.user) {
     return response.user;
   }
 
-  if (response.email) {
-    return {
-      id: response.id,
-      fullName: response.fullName,
-      email: response.email,
-      role: response.role,
-    };
+  if (response.data?.user) {
+    return response.data.user;
   }
 
-  return null;
+  const email =
+    response.email ??
+    response.data?.email;
+
+  if (!email) {
+    return null;
+  }
+
+  return {
+    id:
+      response.id ??
+      response.data?.id,
+    fullName:
+      response.fullName ??
+      response.data?.fullName,
+    email,
+    role:
+      response.role ??
+      response.data?.role,
+  };
+}
+
+function saveSession(
+  response: AuthResponse
+): AuthSession {
+  const accessToken = extractAccessToken(response);
+
+  if (!accessToken) {
+    throw new Error(
+      response.message ??
+        "Access token was not returned."
+    );
+  }
+
+  const user = extractUser(response);
+
+  setToken(accessToken);
+
+  if (user) {
+    setStoredUser(user);
+  }
+
+  return {
+    accessToken,
+    user,
+    message: response.message,
+  };
 }
 
 export const authService = {
-  async register(data: RegisterRequest) {
+  async register(
+    data: RegisterRequest
+  ): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>(
       "/auth/register",
       data
@@ -63,105 +145,48 @@ export const authService = {
     return response.data;
   },
 
-  async login(data: LoginRequest) {
+  async login(
+    data: LoginRequest
+  ): Promise<AuthSession> {
     const response = await api.post<AuthResponse>(
       "/auth/login",
       data
     );
 
-    const result = response.data;
-
-    if (!result.accessToken) {
-      throw new Error(
-        result.message ?? "Access token was not returned."
-      );
-    }
-
-    setToken(result.accessToken);
-
-    const user = extractUser(result);
-
-    if (user && typeof window !== "undefined") {
-      localStorage.setItem(
-        "hm_user",
-        JSON.stringify(user)
-      );
-    }
-
-    return {
-      ...result,
-      user,
-    };
+    return saveSession(response.data);
   },
 
-  async refresh() {
+  async refresh(): Promise<AuthSession> {
     const response = await api.post<AuthResponse>(
       "/auth/refresh",
       {}
     );
 
-    const result = response.data;
-
-    if (!result.accessToken) {
-      throw new Error(
-        result.message ?? "Unable to refresh session."
-      );
-    }
-
-    setToken(result.accessToken);
-
-    const user = extractUser(result);
-
-    if (user && typeof window !== "undefined") {
-      localStorage.setItem(
-        "hm_user",
-        JSON.stringify(user)
-      );
-    }
-
-    return {
-      ...result,
-      user,
-    };
+    return saveSession(response.data);
   },
 
-  async logout() {
+  async logout(): Promise<void> {
     try {
       await api.post("/auth/logout", {});
+    } catch {
+      /*
+       * The local session must still be cleared
+       * if the backend logout request fails.
+       */
     } finally {
-      removeToken();
-
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("hm_user");
-      }
+      clearAuthStorage();
     }
   },
 
-  getToken() {
+  getToken(): string | null {
     return getToken();
   },
 
   getUser(): AuthUser | null {
-    if (typeof window === "undefined") {
-      return null;
-    }
-
-    const storedUser =
-      localStorage.getItem("hm_user");
-
-    if (!storedUser) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(storedUser) as AuthUser;
-    } catch {
-      localStorage.removeItem("hm_user");
-      return null;
-    }
+    return getStoredUser();
   },
 
-  isLoggedIn() {
+  isLoggedIn(): boolean {
     return Boolean(getToken());
   },
 };

@@ -1,174 +1,108 @@
 import axios, {
   AxiosError,
+  AxiosHeaders,
   InternalAxiosRequestConfig,
 } from "axios";
 
 import {
+  clearAuthStorage,
   getToken,
-  removeToken,
-  setToken,
 } from "@/lib/auth";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:8080/api/v1";
+  "http://localhost:8081/api/v1";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,
   timeout: 15000,
-
   headers: {
-    Accept: "application/json",
     "Content-Type": "application/json",
+    Accept: "application/json",
   },
 });
 
-if (typeof window !== "undefined") {
-  console.log("API BASE URL:", API_BASE_URL);
-  console.log("FRONTEND ORIGIN:", window.location.origin);
-}
-
-function isPublicAuthRequest(url?: string): boolean {
-  if (!url) return false;
-
-  return (
-    url.includes("/auth/login") ||
-    url.includes("/auth/register") ||
-    url.includes("/auth/refresh") ||
-    url.includes("/auth/forgot-password") ||
-    url.includes("/auth/reset-password")
-  );
-}
-
 api.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
+  (
+    config: InternalAxiosRequestConfig
+  ): InternalAxiosRequestConfig => {
     const token = getToken();
 
-    if (token && !isPublicAuthRequest(config.url)) {
-      config.headers.Authorization = `Bearer ${token}`;
-    } else {
-      delete config.headers.Authorization;
+    if (token) {
+      if (!config.headers) {
+        config.headers = new AxiosHeaders();
+      }
+
+      config.headers.set(
+        "Authorization",
+        `Bearer ${token}`
+      );
     }
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error: AxiosError) => {
+    return Promise.reject(error);
+  }
 );
-
-let refreshing = false;
-
-let queue: Array<{
-  resolve: (token: string) => void;
-  reject: (error: unknown) => void;
-}> = [];
-
-function processQueue(
-  error: unknown,
-  token?: string
-) {
-  queue.forEach((promise) => {
-    if (error) {
-      promise.reject(error);
-    } else if (token) {
-      promise.resolve(token);
-    }
-  });
-
-  queue = [];
-}
 
 api.interceptors.response.use(
   (response) => response,
+  (error: AxiosError) => {
+    const status = error.response?.status;
+    const requestUrl = error.config?.url ?? "";
 
-  async (error: AxiosError) => {
-    const originalRequest =
-      error.config as
-        | (InternalAxiosRequestConfig & {
-            _retry?: boolean;
-          })
-        | undefined;
-
-    if (!originalRequest) {
-      return Promise.reject(error);
-    }
-
-    const isUnauthorized =
-      error.response?.status === 401;
+    const isAuthenticationRequest =
+      requestUrl.includes("/auth/login") ||
+      requestUrl.includes("/auth/register") ||
+      requestUrl.includes("/auth/refresh");
 
     if (
-      !isUnauthorized ||
-      originalRequest._retry ||
-      isPublicAuthRequest(originalRequest.url)
+      status === 401 &&
+      !isAuthenticationRequest &&
+      typeof window !== "undefined"
     ) {
-      return Promise.reject(error);
-    }
+      clearAuthStorage();
 
-    if (refreshing) {
-      return new Promise((resolve, reject) => {
-        queue.push({
-          resolve: (token: string) => {
-            originalRequest.headers.Authorization =
-              `Bearer ${token}`;
+      const currentPath =
+        window.location.pathname +
+        window.location.search;
 
-            resolve(api(originalRequest));
-          },
-          reject,
-        });
-      });
-    }
+      if (!window.location.pathname.startsWith("/login")) {
+        const redirect = encodeURIComponent(currentPath);
 
-    originalRequest._retry = true;
-    refreshing = true;
-
-    try {
-      const response = await axios.post<{
-        accessToken?: string;
-      }>(
-        `${API_BASE_URL}/auth/refresh`,
-        {},
-        {
-          withCredentials: true,
-          timeout: 15000,
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      const accessToken =
-        response.data.accessToken;
-
-      if (!accessToken) {
-        throw new Error(
-          "Refresh endpoint did not return an access token."
-        );
+        window.location.href =
+          `/login?redirect=${redirect}`;
       }
-
-      setToken(accessToken);
-      processQueue(null, accessToken);
-
-      originalRequest.headers.Authorization =
-        `Bearer ${accessToken}`;
-
-      return api(originalRequest);
-    } catch (refreshError) {
-      processQueue(refreshError);
-      removeToken();
-
-      if (
-        typeof window !== "undefined" &&
-        window.location.pathname !== "/login"
-      ) {
-        window.location.href = "/login";
-      }
-
-      return Promise.reject(refreshError);
-    } finally {
-      refreshing = false;
     }
+
+    return Promise.reject(error);
   }
 );
+
+export function getApiErrorMessage(
+  error: unknown,
+  fallback = "Something went wrong. Please try again."
+): string {
+  if (!axios.isAxiosError(error)) {
+    return error instanceof Error
+      ? error.message
+      : fallback;
+  }
+
+  const responseData = error.response?.data as
+    | {
+        message?: string;
+        error?: string;
+      }
+    | undefined;
+
+  return (
+    responseData?.message ??
+    responseData?.error ??
+    error.message ??
+    fallback
+  );
+}
 
 export default api;

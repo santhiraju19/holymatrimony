@@ -27,17 +27,8 @@ interface Props {
 function mapApiToState(
   api: ProfilePayload
 ): ProfileState {
-  const photos = [...(api.photos ?? [])]
-    .sort(
-      (first, second) =>
-        first.displayOrder - second.displayOrder
-    )
-    .map((photo) => ({
-      id: String(photo.id),
-      preview: photo.imageUrl,
-      isPrimary: photo.isPrimary,
-      displayOrder: photo.displayOrder,
-    }));
+ const photos: ProfileState["photoInfo"]["photos"] = [];
+  
 
   return {
     basicInfo: {
@@ -238,10 +229,7 @@ export default function ProfileProvider({
         setProfile((currentProfile) => ({
           ...mappedProfile,
 
-          photoInfo:
-            savedProfile.photos !== undefined
-              ? mappedProfile.photoInfo
-              : currentProfile.photoInfo,
+          photoInfo: currentProfile.photoInfo,
         }));
 
         removeDraft();

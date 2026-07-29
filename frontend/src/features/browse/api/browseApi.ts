@@ -1,83 +1,89 @@
-import axios from "axios";
-
 import api from "@/lib/api";
 
-import {
-  ApiResponse,
+import type {
+  BrowsePaginationParams,
   BrowseProfile,
-  BrowseProfilesData,
-  BrowseProfilesParams,
   BrowseProfilesResult,
+  BrowseSearchParams,
 } from "../types";
 
-const DEFAULT_PAGE_SIZE = 12;
+interface ApiEnvelope<T> {
+  success?: boolean;
+  message?: string;
+  data: T;
+}
 
-function createEmptyResult(
-  page = 0,
-  size = DEFAULT_PAGE_SIZE
-): BrowseProfilesResult {
-  return {
-    profiles: [],
-    page,
-    size,
-    totalElements: 0,
-    totalPages: 0,
-    first: true,
-    last: true,
-    hasNext: false,
-    hasPrevious: false,
-  };
+function unwrapApiResponse<T>(
+  response: ApiEnvelope<T> | T
+): T {
+  if (
+    response &&
+    typeof response === "object" &&
+    "data" in response
+  ) {
+    return (response as ApiEnvelope<T>).data;
+  }
+
+  return response as T;
+}
+
+function cleanParams<
+  T extends Record<string, unknown>
+>(params: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(params).filter(
+      ([, value]) =>
+        value !== undefined &&
+        value !== null &&
+        value !== ""
+    )
+  ) as Partial<T>;
 }
 
 export async function getBrowseProfiles(
-  params: BrowseProfilesParams = {}
+  params: BrowsePaginationParams = {}
 ): Promise<BrowseProfilesResult> {
-  const {
-    page = 0,
-    size = DEFAULT_PAGE_SIZE,
-    sortBy,
-    sortDirection,
-  } = params;
+  const response = await api.get<
+    ApiEnvelope<BrowseProfilesResult> | BrowseProfilesResult
+  >("/profiles", {
+    params: cleanParams({
+      page: params.page ?? 0,
+      size: params.size ?? 12,
+    }),
+  });
 
-  try {
-    const response = await api.get<
-      ApiResponse<BrowseProfilesData>
-    >("/profiles", {
-      params: {
-        page,
-        size,
-        ...(sortBy ? { sortBy } : {}),
-        ...(sortDirection ? { sortDirection } : {}),
-      },
-    });
+  return unwrapApiResponse(response.data);
+}
 
-    if (!response.data.success) {
-      throw new Error(
-        response.data.message ||
-          "Unable to load profiles."
-      );
-    }
+export async function searchBrowseProfiles(
+  params: BrowseSearchParams
+): Promise<BrowseProfilesResult> {
+  const response = await api.get<
+    ApiEnvelope<BrowseProfilesResult> | BrowseProfilesResult
+  >("/profiles/search", {
+    params: cleanParams({
+      page: params.page ?? 0,
+      size: params.size ?? 12,
 
-    const data = response.data.data;
+      ageFrom: params.ageFrom,
+      ageTo: params.ageTo,
 
-    if (!data) {
-      return createEmptyResult(page, size);
-    }
+      gender: params.gender,
+      denomination: params.denomination,
+      maritalStatus: params.maritalStatus,
 
-    return {
-      profiles: data.profiles ?? [],
-      page: data.page ?? page,
-      size: data.size ?? size,
-      totalElements: data.totalElements ?? 0,
-      totalPages: data.totalPages ?? 0,
-      first: data.first ?? page === 0,
-      last: data.last ?? true,
-      hasNext: data.hasNext ?? false,
-      hasPrevious: data.hasPrevious ?? page > 0,
-    };
-  } catch (error) {
-    throw new Error(getBrowseApiErrorMessage(error));
-  }
+      state: params.state,
+      city: params.city,
+
+      highestEducation:
+        params.highestEducation,
+
+      profession: params.profession,
+      baptized: params.baptized,
+    }),
+  });
+
+  return unwrapApiResponse(response.data);
 }
 
 export async function getBrowseProfileById(
@@ -87,79 +93,9 @@ export async function getBrowseProfileById(
     throw new Error("Profile ID is required.");
   }
 
-  try {
-    const response = await api.get<
-      ApiResponse<BrowseProfile>
-    >(`/profiles/${profileId}`);
+  const response = await api.get<
+    ApiEnvelope<BrowseProfile> | BrowseProfile
+  >(`/profiles/${profileId}`);
 
-    if (!response.data.success) {
-      throw new Error(
-        response.data.message ||
-          "Unable to load the profile."
-      );
-    }
-
-    if (!response.data.data) {
-      throw new Error("Profile was not found.");
-    }
-
-    return response.data.data;
-  } catch (error) {
-    throw new Error(getBrowseApiErrorMessage(error));
-  }
-}
-
-function getBrowseApiErrorMessage(
-  error: unknown
-): string {
-  if (axios.isAxiosError(error)) {
-    const responseData = error.response?.data as
-      | {
-          message?: string;
-          error?: string;
-        }
-      | undefined;
-
-    if (responseData?.message) {
-      return responseData.message;
-    }
-
-    if (responseData?.error) {
-      return responseData.error;
-    }
-
-    switch (error.response?.status) {
-      case 400:
-        return "The profile request is invalid.";
-
-      case 401:
-        return "Your session has expired. Please log in again.";
-
-      case 403:
-        return "You are not allowed to view these profiles.";
-
-      case 404:
-        return "The requested profile was not found.";
-
-      case 500:
-        return "The server could not load profiles. Please try again.";
-
-      default:
-        if (error.code === "ECONNABORTED") {
-          return "The request timed out. Please try again.";
-        }
-
-        if (!error.response) {
-          return "Unable to connect to the server.";
-        }
-
-        return "Unable to load profiles.";
-    }
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "An unexpected error occurred.";
+  return unwrapApiResponse(response.data);
 }

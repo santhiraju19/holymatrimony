@@ -2,42 +2,94 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { removeToken } from "@/lib/auth";
-import { authService } from "../services/auth.service";
 
-export interface RegisterRequest {
-  fullName: string;
-  email: string;
-  mobile: string;
-  password: string;
-}
+import {
+  authService,
+  LoginRequest,
+  RegisterRequest,
+} from "@/features/auth/services/auth.service";
+
+import { useAuthContext } from "@/features/auth/context/AuthContext";
 
 export default function useAuth() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
 
-  async function register(data: RegisterRequest) {
+  const {
+    user,
+    token,
+    loading: sessionLoading,
+    isAuthenticated,
+    login: saveContextSession,
+    logout: clearContextSession,
+  } = useAuthContext();
+
+  const [loading, setLoading] =
+    useState(false);
+
+  async function login(
+    credentials: LoginRequest,
+    redirectTo = "/dashboard"
+  ) {
     setLoading(true);
 
     try {
-      const response = await authService.register(data);
+      const session =
+        await authService.login(credentials);
 
-      if (response.success) {
-        router.push("/login");
+      if (!session.user) {
+        throw new Error(
+          "User details were not returned."
+        );
       }
+
+      saveContextSession(
+        session.user,
+        session.accessToken
+      );
+
+      router.replace(redirectTo);
+
+      return session;
     } finally {
       setLoading(false);
     }
   }
 
-  function logout() {
-    authService.logout();
-    removeToken();
-    router.replace("/login");
+  async function register(
+    data: RegisterRequest
+  ) {
+    setLoading(true);
+
+    try {
+      const response =
+        await authService.register(data);
+
+      router.push("/login");
+
+      return response;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function logout() {
+    setLoading(true);
+
+    try {
+      await authService.logout();
+    } finally {
+      clearContextSession();
+      setLoading(false);
+      router.replace("/login");
+    }
   }
 
   return {
-    loading,
+    user,
+    token,
+    loading: loading || sessionLoading,
+    isAuthenticated,
+    login,
     register,
     logout,
   };

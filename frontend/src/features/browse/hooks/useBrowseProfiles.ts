@@ -1,210 +1,260 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
-
-import { getBrowseProfiles } from "../api/browseApi";
+import { useCallback, useEffect, useState } from "react";
 
 import {
+  getBrowseProfiles,
+  searchBrowseProfiles,
+} from "../api/browseApi";
+
+import {
+  buildBrowseSearchParams,
+  EMPTY_BROWSE_SEARCH_FILTERS,
+  hasActiveBrowseFilters,
+} from "../types";
+
+import type {
   BrowseProfile,
   BrowseProfilesResult,
+  BrowseSearchFilters,
 } from "../types";
 
 interface UseBrowseProfilesOptions {
   initialPage?: number;
   pageSize?: number;
-  autoLoad?: boolean;
 }
 
 interface UseBrowseProfilesReturn {
   profiles: BrowseProfile[];
+  filters: BrowseSearchFilters;
+  appliedFilters: BrowseSearchFilters;
 
   page: number;
-  pageSize: number;
-
+  size: number;
   totalElements: number;
   totalPages: number;
 
   first: boolean;
   last: boolean;
-
   hasNext: boolean;
   hasPrevious: boolean;
 
   loading: boolean;
   error: string | null;
+  isFiltering: boolean;
 
-  loadProfiles: (
-    requestedPage?: number
-  ) => Promise<void>;
+  updateFilter: (
+    name: keyof BrowseSearchFilters,
+    value: string
+  ) => void;
+
+  applyFilters: () => void;
+  resetFilters: () => void;
 
   nextPage: () => void;
   previousPage: () => void;
-  goToPage: (pageNumber: number) => void;
+  goToPage: (page: number) => void;
 
   refresh: () => Promise<void>;
 }
 
-const EMPTY_RESULT: BrowseProfilesResult = {
-  profiles: [],
-  page: 0,
-  size: 12,
-  totalElements: 0,
-  totalPages: 0,
-  first: true,
-  last: true,
-  hasNext: false,
-  hasPrevious: false,
-};
+function createEmptyFilters(): BrowseSearchFilters {
+  return { ...EMPTY_BROWSE_SEARCH_FILTERS };
+}
 
-export function useBrowseProfiles(
+export default function useBrowseProfiles(
   options: UseBrowseProfilesOptions = {}
 ): UseBrowseProfilesReturn {
-  const {
-    initialPage = 0,
-    pageSize = 12,
-    autoLoad = true,
-  } = options;
+  const initialPage = options.initialPage ?? 0;
+  const pageSize = options.pageSize ?? 12;
 
-  const [result, setResult] =
-    useState<BrowseProfilesResult>({
-      ...EMPTY_RESULT,
-      page: initialPage,
-      size: pageSize,
-    });
+  const [profiles, setProfiles] = useState<BrowseProfile[]>([]);
+  const [filters, setFilters] = useState<BrowseSearchFilters>(
+    createEmptyFilters
+  );
+  const [appliedFilters, setAppliedFilters] =
+    useState<BrowseSearchFilters>(createEmptyFilters);
 
-  const [loading, setLoading] =
-    useState<boolean>(false);
+  const [page, setPage] = useState(initialPage);
+  const [size] = useState(pageSize);
 
-  const [error, setError] =
-    useState<string | null>(null);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  const [first, setFirst] = useState(true);
+  const [last, setLast] = useState(true);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrevious, setHasPrevious] = useState(false);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const isFiltering = hasActiveBrowseFilters(appliedFilters);
+
+  const applyResult = useCallback(
+    (result: BrowseProfilesResult): void => {
+      setProfiles(result.profiles ?? []);
+      setPage(result.page ?? 0);
+      setTotalElements(result.totalElements ?? 0);
+      setTotalPages(result.totalPages ?? 0);
+      setFirst(result.first ?? true);
+      setLast(result.last ?? true);
+      setHasNext(result.hasNext ?? false);
+      setHasPrevious(result.hasPrevious ?? false);
+    },
+    []
+  );
 
   const loadProfiles = useCallback(
-    async (requestedPage = initialPage) => {
+    async (
+      targetPage: number,
+      activeFilters: BrowseSearchFilters
+    ): Promise<void> => {
       setLoading(true);
       setError(null);
 
       try {
-        const browseResult =
-          await getBrowseProfiles({
-            page: requestedPage,
-            size: pageSize,
-          });
+        const result = hasActiveBrowseFilters(activeFilters)
+          ? await searchBrowseProfiles(
+              buildBrowseSearchParams(activeFilters, {
+                page: targetPage,
+                size,
+              })
+            )
+          : await getBrowseProfiles({
+              page: targetPage,
+              size,
+            });
 
-        setResult(browseResult);
-      } catch (requestError) {
-        const message =
-          requestError instanceof Error
-            ? requestError.message
-            : "Unable to load profiles.";
+        applyResult(result);
+      } catch (caughtError: unknown) {
+        setProfiles([]);
+        setTotalElements(0);
+        setTotalPages(0);
+        setFirst(true);
+        setLast(true);
+        setHasNext(false);
+        setHasPrevious(false);
 
-        setError(message);
-
-        setResult((current) => ({
-          ...current,
-          profiles: [],
-        }));
+        setError(
+          caughtError instanceof Error
+            ? caughtError.message
+            : "Unable to load profiles."
+        );
       } finally {
         setLoading(false);
       }
     },
-    [initialPage, pageSize]
+    [applyResult, size]
   );
 
   useEffect(() => {
-    if (!autoLoad) {
+    void loadProfiles(page, appliedFilters);
+  }, [page, appliedFilters, loadProfiles]);
+
+  const updateFilter = useCallback(
+    (
+      name: keyof BrowseSearchFilters,
+      value: string
+    ): void => {
+      setFilters((currentFilters) => ({
+        ...currentFilters,
+        [name]: value,
+      }));
+    },
+    []
+  );
+
+  const applyFilters = useCallback((): void => {
+    const nextFilters = { ...filters };
+
+    if (page === 0) {
+      setAppliedFilters(nextFilters);
       return;
     }
 
-    void loadProfiles(initialPage);
-  }, [
-    autoLoad,
-    initialPage,
-    loadProfiles,
-  ]);
+    setPage(0);
+    setAppliedFilters(nextFilters);
+  }, [filters, page]);
 
-  const nextPage = useCallback(() => {
-    if (!result.hasNext || loading) {
+  const resetFilters = useCallback((): void => {
+    const emptyFilters = createEmptyFilters();
+
+    setFilters(emptyFilters);
+
+    if (page === 0) {
+      setAppliedFilters({ ...emptyFilters });
       return;
     }
 
-    void loadProfiles(result.page + 1);
-  }, [
-    loadProfiles,
-    loading,
-    result.hasNext,
-    result.page,
-  ]);
+    setPage(0);
+    setAppliedFilters({ ...emptyFilters });
+  }, [page]);
 
-  const previousPage = useCallback(() => {
-    if (!result.hasPrevious || loading) {
+  const nextPage = useCallback((): void => {
+    if (loading || !hasNext) {
       return;
     }
 
-    void loadProfiles(
-      Math.max(0, result.page - 1)
-    );
-  }, [
-    loadProfiles,
-    loading,
-    result.hasPrevious,
-    result.page,
-  ]);
+    setPage((currentPage) => currentPage + 1);
+  }, [hasNext, loading]);
+
+  const previousPage = useCallback((): void => {
+    if (loading || !hasPrevious) {
+      return;
+    }
+
+    setPage((currentPage) => Math.max(currentPage - 1, 0));
+  }, [hasPrevious, loading]);
 
   const goToPage = useCallback(
-    (pageNumber: number) => {
+    (targetPage: number): void => {
       if (loading) {
         return;
       }
 
-      const safePage = Math.max(
-        0,
-        Math.min(
-          pageNumber,
-          Math.max(0, result.totalPages - 1)
-        )
+      const maximumPage = Math.max(totalPages - 1, 0);
+      const safePage = Math.min(
+        Math.max(targetPage, 0),
+        maximumPage
       );
 
-      void loadProfiles(safePage);
+      setPage(safePage);
     },
-    [
-      loadProfiles,
-      loading,
-      result.totalPages,
-    ]
+    [loading, totalPages]
   );
 
-  const refresh = useCallback(async () => {
-    await loadProfiles(result.page);
-  }, [loadProfiles, result.page]);
+  const refresh = useCallback(async (): Promise<void> => {
+    await loadProfiles(page, appliedFilters);
+  }, [appliedFilters, loadProfiles, page]);
 
   return {
-    profiles: result.profiles,
+    profiles,
+    filters,
+    appliedFilters,
 
-    page: result.page,
-    pageSize: result.size,
+    page,
+    size,
+    totalElements,
+    totalPages,
 
-    totalElements: result.totalElements,
-    totalPages: result.totalPages,
-
-    first: result.first,
-    last: result.last,
-
-    hasNext: result.hasNext,
-    hasPrevious: result.hasPrevious,
+    first,
+    last,
+    hasNext,
+    hasPrevious,
 
     loading,
     error,
+    isFiltering,
 
-    loadProfiles,
+    updateFilter,
+    applyFilters,
+    resetFilters,
+
     nextPage,
     previousPage,
     goToPage,
+
     refresh,
   };
 }
-
-export default useBrowseProfiles;
