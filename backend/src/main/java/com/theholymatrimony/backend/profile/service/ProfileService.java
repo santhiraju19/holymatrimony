@@ -268,92 +268,61 @@ public class ProfileService {
         User user = profile.getUser();
 
         return ProfileResponse.builder()
-                .id(profile.getId())
+        .id(profile.getId())
+        .userId(user.getId())
 
-                // ===== User =====
-                .fullName(user.getFullName())
-                .email(user.getEmail())
+        // ===== User =====
+        .fullName(user.getFullName())
+        .email(user.getEmail())
 
-                // ===== Basic =====
-                .mobile(profile.getMobile())
-                .dateOfBirth(
-                        profile.getDateOfBirth()
-                )
-                .gender(profile.getGender())
-                .age(profile.getAge())
-                .maritalStatus(
-                        profile.getMaritalStatus()
-                )
+        // ===== Basic =====
+        .mobile(profile.getMobile())
+        .dateOfBirth(profile.getDateOfBirth())
+        .gender(profile.getGender())
+        .age(profile.getAge())
+        .maritalStatus(profile.getMaritalStatus())
 
-                // ===== Church =====
-                .denomination(
-                        profile.getDenomination()
-                )
-                .churchName(
-                        profile.getChurchName()
-                )
-                .pastorName(
-                        profile.getPastorName()
-                )
-                .baptized(profile.getBaptized())
-                .membershipId(
-                        profile.getMembershipId()
-                )
-                .churchAddress(
-                        profile.getChurchAddress()
-                )
+        // ===== Church =====
+        .denomination(profile.getDenomination())
+        .churchName(profile.getChurchName())
+        .pastorName(profile.getPastorName())
+        .baptized(profile.getBaptized())
+        .membershipId(profile.getMembershipId())
+        .churchAddress(profile.getChurchAddress())
 
-                // ===== Education =====
-                .highestEducation(
-                        profile.getHighestEducation()
-                )
-                .profession(
-                        profile.getProfession()
-                )
-                .company(profile.getCompany())
-                .annualIncome(
-                        profile.getAnnualIncome()
-                )
+        // ===== Education =====
+        .highestEducation(profile.getHighestEducation())
+        .profession(profile.getProfession())
+        .company(profile.getCompany())
+        .annualIncome(profile.getAnnualIncome())
 
-                // ===== Family =====
-                .fatherName(
-                        profile.getFatherName()
-                )
-                .motherName(
-                        profile.getMotherName()
-                )
-                .siblings(profile.getSiblings())
-                .familyLocation(
-                        profile.getFamilyLocation()
-                )
+        // ===== Family =====
+        .fatherName(profile.getFatherName())
+        .motherName(profile.getMotherName())
+        .siblings(profile.getSiblings())
+        .familyLocation(profile.getFamilyLocation())
 
-                // ===== Preferences =====
-                .preferredAgeFrom(
-                        profile.getPreferredAgeFrom()
-                )
-                .preferredAgeTo(
-                        profile.getPreferredAgeTo()
-                )
-                .preferredDenomination(
-                        profile.getPreferredDenomination()
-                )
-                .preferredEducation(
-                        profile.getPreferredEducation()
-                )
+        // ===== Preferences =====
+        .preferredAgeFrom(profile.getPreferredAgeFrom())
+        .preferredAgeTo(profile.getPreferredAgeTo())
+        .preferredDenomination(profile.getPreferredDenomination())
+        .preferredEducation(profile.getPreferredEducation())
 
-                // ===== Location =====
-                .city(profile.getCity())
-                .state(profile.getState())
-                .country(profile.getCountry())
+        // ===== Location =====
+        .city(profile.getCity())
+        .state(profile.getState())
+        .country(profile.getCountry())
 
-                // ===== About =====
-                .aboutMe(profile.getAboutMe())
+        // ===== About =====
+        .aboutMe(profile.getAboutMe())
 
-                // ===== Completion =====
-                .completionPercentage(
-                        profile.getCompletionPercentage()
+        // ===== Completion =====
+        .completionPercentage(profile.getCompletionPercentage())
+        .profileCompleted(
+                Boolean.TRUE.equals(
+                        profile.getProfileCompleted()
                 )
-
-                .build();
+        )
+        .build();
     }
 }

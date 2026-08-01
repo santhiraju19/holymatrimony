@@ -1,13 +1,14 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
 
 import Button from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 
-import {
-  MembershipPlan,
+import type {
   BillingCycle,
+  MembershipPlan,
 } from "../types/membership";
 
 interface PricingCardProps {
@@ -19,144 +20,197 @@ export default function PricingCard({
   plan,
   billingCycle,
 }: PricingCardProps) {
+  const router = useRouter();
+
   const price = plan.price[billingCycle];
 
-  const billingLabel = {
+  const billingLabel: Record<
+    BillingCycle,
+    string
+  > = {
     monthly: "/month",
     quarterly: "/3 months",
     yearly: "/year",
-  }[billingCycle];
+  };
 
-  const savings = {
+  const yearlySavings: Record<
+    MembershipPlan["id"],
+    string
+  > = {
     free: "",
     silver: "Save 25%",
     gold: "Save 22%",
     platinum: "Save 24%",
   };
 
+  function handlePlanSelection() {
+    if (plan.id === "free") {
+      router.push("/register");
+      return;
+    }
+
+    const params =
+      new URLSearchParams({
+        plan: plan.id,
+        billingCycle,
+      });
+
+    router.push(
+      `/membership/checkout?${params.toString()}`
+    );
+  }
+
   return (
-    <div
-      className={cn(
-        "relative flex h-full flex-col overflow-hidden rounded-3xl border bg-white p-8 shadow-sm transition-all duration-300",
-        "hover:-translate-y-2 hover:shadow-2xl",
-        plan.popular
-          ? "border-primary ring-2 ring-primary/20"
-          : "border-gray-200"
-      )}
-    >
-      {/* Popular Badge */}
+    <div className="relative pt-5">
       {plan.badge && (
         <div
           className={cn(
-            "absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full px-4 py-1 text-xs font-bold shadow-md",
-            plan.popular
-              ? "bg-primary text-white"
-              : "bg-slate-900 text-white"
+            "absolute left-1/2 top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded-full px-5 py-2 text-xs font-bold shadow-lg",
+            plan.id === "free" &&
+              "bg-emerald-600 text-white",
+
+            plan.id === "silver" &&
+              "bg-blue-600 text-white",
+
+            plan.id === "gold" &&
+              "bg-amber-500 text-slate-950",
+
+            plan.id === "platinum" &&
+              "bg-violet-700 text-white"
           )}
         >
           {plan.badge}
         </div>
       )}
 
-      {/* Plan Name */}
-      <h3 className="mt-4 text-2xl font-bold text-gray-900">
-        {plan.name}
-      </h3>
-
-      <p className="mt-3 text-sm leading-6 text-gray-500">
-        {plan.description}
-      </p>
-
-      {/* Price */}
-      <div className="mt-8">
-        {price === 0 ? (
-          <>
-            <div className="text-5xl font-extrabold text-primary">
-              Free
-            </div>
-
-            <p className="mt-2 text-sm text-gray-500">
-              Start your journey today
-            </p>
-          </>
-        ) : (
-          <>
-            <div className="flex items-end gap-2">
-              <span className="text-5xl font-extrabold tracking-tight">
-                ₹{price.toLocaleString()}
-              </span>
-
-              <span className="pb-2 text-gray-500">
-                {billingLabel}
-              </span>
-            </div>
-
-            {billingCycle === "yearly" &&
-              savings[plan.id as keyof typeof savings] && (
-                <div className="mt-3 inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                  {savings[plan.id as keyof typeof savings]}
-                </div>
-              )}
-          </>
+      <div
+        className={cn(
+          "relative flex h-full flex-col rounded-3xl border bg-white px-6 pb-8 pt-14 shadow-sm transition-all duration-300 md:px-8",
+          "hover:-translate-y-2 hover:shadow-2xl",
+          plan.popular
+            ? "border-blue-500 ring-2 ring-blue-500/20"
+            : "border-slate-200"
         )}
-      </div>
+      >
+        <h3 className="text-2xl font-bold text-slate-900">
+          {plan.name}
+        </h3>
 
-      {/* CTA */}
-      <div className="mt-8">
-        <Button
-          className={cn(
-            "w-full",
-            plan.popular && "shadow-lg"
-          )}
-        >
-          {plan.buttonText}
-        </Button>
-      </div>
-
-      {/* Features */}
-      <div className="mt-10 flex-1 space-y-4">
-        {plan.features.map((feature) => (
-          <div
-            key={feature}
-            className="flex items-start gap-3"
-          >
-            <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-green-100">
-              <Check
-                size={14}
-                className="text-green-600"
-              />
-            </div>
-
-            <span className="text-sm text-gray-700">
-              {feature}
-            </span>
-          </div>
-        ))}
-
-        {plan.limitations?.map((feature) => (
-          <div
-            key={feature}
-            className="flex items-start gap-3 opacity-60"
-          >
-            <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-red-100">
-              <X
-                size={14}
-                className="text-red-500"
-              />
-            </div>
-
-            <span className="text-sm text-gray-500 line-through">
-              {feature}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Footer */}
-      <div className="mt-8 border-t pt-6">
-        <p className="text-center text-xs text-gray-400">
-          Upgrade or downgrade your membership anytime.
+        <p className="mt-3 min-h-12 text-sm leading-6 text-slate-500">
+          {plan.description}
         </p>
+
+        <div className="mt-7">
+          {price === 0 ? (
+            <>
+              <div className="text-5xl font-extrabold text-[#0B2D5C]">
+                Free
+              </div>
+
+              <p className="mt-2 text-sm text-slate-500">
+                Start your journey today
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-end gap-2">
+                <span className="text-4xl font-extrabold tracking-tight text-slate-950 xl:text-5xl">
+                  ₹
+                  {price.toLocaleString(
+                    "en-IN"
+                  )}
+                </span>
+
+                <span className="pb-1 text-sm text-slate-500">
+                  {
+                    billingLabel[
+                      billingCycle
+                    ]
+                  }
+                </span>
+              </div>
+
+              {billingCycle ===
+                "yearly" &&
+                yearlySavings[
+                  plan.id
+                ] && (
+                  <div className="mt-3 inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                    {
+                      yearlySavings[
+                        plan.id
+                      ]
+                    }
+                  </div>
+                )}
+            </>
+          )}
+        </div>
+
+        <div className="mt-8">
+          <Button
+            type="button"
+            className={cn(
+              "w-full",
+              plan.popular &&
+                "shadow-lg"
+            )}
+            onClick={
+              handlePlanSelection
+            }
+          >
+            {plan.buttonText}
+          </Button>
+        </div>
+
+        <div className="mt-10 flex-1 space-y-4">
+          {plan.features.map(
+            (feature) => (
+              <div
+                key={feature}
+                className="flex items-start gap-3"
+              >
+                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                  <Check
+                    size={14}
+                    className="text-emerald-600"
+                  />
+                </div>
+
+                <span className="text-sm leading-6 text-slate-700">
+                  {feature}
+                </span>
+              </div>
+            )
+          )}
+
+          {plan.limitations?.map(
+            (feature) => (
+              <div
+                key={feature}
+                className="flex items-start gap-3 opacity-65"
+              >
+                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100">
+                  <X
+                    size={14}
+                    className="text-red-500"
+                  />
+                </div>
+
+                <span className="text-sm leading-6 text-slate-500 line-through">
+                  {feature}
+                </span>
+              </div>
+            )
+          )}
+        </div>
+
+        <div className="mt-8 border-t border-slate-200 pt-6">
+          <p className="text-center text-xs text-slate-400">
+            Upgrade or downgrade your
+            membership anytime.
+          </p>
+        </div>
       </div>
     </div>
   );

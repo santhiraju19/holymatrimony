@@ -2,6 +2,7 @@ import api from "@/lib/api";
 
 import {
   ApiResponse,
+  ChatMediaUploadResponse,
   ChatMessage,
   ConversationsPage,
   MessagesPage,
@@ -55,14 +56,38 @@ export const communicationService = {
     const response = await api.post<
       ApiResponse<ChatMessage>
     >("/communication/messages", {
-      receiverUserId: request.receiverUserId,
-      content: request.content,
+      receiverUserId:
+        request.receiverUserId,
+
+      content:
+        request.content ?? null,
+
+      mediaUrl:
+        request.mediaUrl ?? null,
+
       messageType:
         request.messageType ?? "TEXT",
     });
 
     return response.data.data;
   },
+
+async uploadChatImage(
+  file: File
+): Promise<ChatMediaUploadResponse> {
+  const formData = new FormData();
+
+  formData.append("file", file);
+
+  const response = await api.post<
+    ApiResponse<ChatMediaUploadResponse>
+  >(
+    "/communication/media/images",
+    formData
+  );
+
+  return response.data.data;
+},
 
   async markConversationAsRead(
     conversationId: string
@@ -85,7 +110,9 @@ export const communicationService = {
       return data;
     }
 
-    return data.unreadCount ?? data.count ?? 0;
+    return data.unreadCount ??
+      data.count ??
+      0;
   },
 
   async getConversationUnreadCount(
@@ -105,7 +132,9 @@ export const communicationService = {
       return data;
     }
 
-    return data.unreadCount ?? data.count ?? 0;
+    return data.unreadCount ??
+      data.count ??
+      0;
   },
 };
 

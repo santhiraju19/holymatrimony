@@ -15,16 +15,24 @@ export default function ChatLayout() {
     conversations,
     selectedConversation,
     selectedConversationId,
+    selectedUserPresence,
     messages,
     loadingConversations,
     loadingMessages,
     sending,
+    uploadingImage,
+    sendImage,
     error,
+    isRealtimeConnected,
+    isOtherUserTyping,
     selectConversation,
     clearSelection,
     sendMessage,
+    sendTypingStatus,
     refresh,
+    
   } = useChat();
+  
 
   const hasSelectedConversation =
     Boolean(selectedConversation);
@@ -65,18 +73,12 @@ export default function ChatLayout() {
             }
           >
             <ConversationList
-              conversations={
-                conversations
-              }
+              conversations={conversations}
               selectedConversationId={
                 selectedConversationId
               }
-              loading={
-                loadingConversations
-              }
-              onSelect={
-                selectConversation
-              }
+              loading={loadingConversations}
+              onSelect={selectConversation}
               onRefresh={() => {
                 void refresh();
               }}
@@ -90,18 +92,36 @@ export default function ChatLayout() {
                 : "hidden min-h-0 md:block"
             }
           >
-            <ChatWindow
-              conversation={
-                selectedConversation
-              }
-              messages={messages}
-              loadingMessages={
-                loadingMessages
-              }
-              sending={sending}
-              onBack={clearSelection}
-              onSend={sendMessage}
-            />
+     <ChatWindow
+  conversation={
+    selectedConversation
+  }
+  presence={
+    selectedUserPresence
+  }
+  messages={messages}
+  loadingMessages={
+    loadingMessages
+  }
+  sending={sending}
+  uploadingImage={
+    uploadingImage
+  }
+  realtimeConnected={
+    isRealtimeConnected
+  }
+  otherUserTyping={
+    isOtherUserTyping
+  }
+  onBack={clearSelection}
+  onSend={sendMessage}
+  onSendImage={
+    sendImage
+  }
+  onTypingChange={
+    sendTypingStatus
+  }
+/>
           </div>
         </div>
       </div>

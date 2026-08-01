@@ -1,27 +1,78 @@
-
 import api from "@/lib/api";
 
-import {
+import type {
+  MembershipApiEnvelope,
   MembershipResponse,
-  UpgradeMembershipRequest,
 } from "./types";
+
+type MembershipApiResult =
+  | MembershipResponse
+  | MembershipApiEnvelope;
+
+function isMembershipResponse(
+  value: unknown
+): value is MembershipResponse {
+  if (
+    typeof value !== "object" ||
+    value === null
+  ) {
+    return false;
+  }
+
+  const membership =
+    value as Partial<MembershipResponse>;
+
+  return (
+    typeof membership.plan === "string" &&
+    typeof membership.status === "string"
+  );
+}
 
 export async function getMembership(): Promise<MembershipResponse> {
   const response =
-    await api.get<MembershipResponse>(
+    await api.get<MembershipApiResult>(
       "/membership/me"
     );
 
-  return response.data;
-}
+  const responseBody = response.data;
 
-export async function upgradeMembership(
-  request: UpgradeMembershipRequest
-) {
-  const response = await api.post(
-    "/membership/upgrade",
-    request
+  /*
+   * Supports a direct response:
+   *
+   * {
+   *   "plan": "PREMIUM",
+   *   "status": "ACTIVE"
+   * }
+   */
+  if (isMembershipResponse(responseBody)) {
+    return responseBody;
+  }
+
+  /*
+   * Supports a wrapped response:
+   *
+   * {
+   *   "success": true,
+   *   "data": {
+   *     "plan": "PREMIUM",
+   *     "status": "ACTIVE"
+   *   }
+   * }
+   */
+  if (
+    responseBody.data &&
+    isMembershipResponse(responseBody.data)
+  ) {
+    return responseBody.data;
+  }
+
+  console.error(
+    "Unexpected membership API response:",
+    responseBody
   );
 
-  return response.data;
+  throw new Error(
+    responseBody.message ??
+      "The membership API returned an invalid response."
+  );
 }

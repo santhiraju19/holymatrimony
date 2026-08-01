@@ -1,0 +1,226 @@
+package com.theholymatrimony.backend.presence.service;
+
+import com.theholymatrimony.backend.auth.entity.User;
+import com.theholymatrimony.backend.auth.repository.UserRepository;
+import com.theholymatrimony.backend.presence.dto.PresenceStatusResponse;
+import com.theholymatrimony.backend.privacy.service.PrivacyPolicyService;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+@Service
+@RequiredArgsConstructor
+public class PresenceService {
+
+    private final UserRepository userRepository;
+
+    private final PrivacyPolicyService
+            privacyPolicyService;
+
+    /*
+     * A member can have multiple active
+     * WebSocket sessions from different
+     * tabs, browsers, or devices.
+     */
+    private final Map<UUID, Set<String>>
+            activeSessions =
+            new ConcurrentHashMap<>();
+
+    /*
+     * Session ID to user mapping.
+     */
+    private final Map<String, UUID>
+            sessionUsers =
+            new ConcurrentHashMap<>();
+
+    /*
+     * Last time all WebSocket sessions
+     * belonging to a member disconnected.
+     */
+    private final Map<UUID, LocalDateTime>
+            lastSeenTimes =
+            new ConcurrentHashMap<>();
+
+    @Transactional(readOnly = true)
+    public synchronized void userConnected(
+            String email,
+            String sessionId
+    ) {
+        if (
+                !StringUtils.hasText(email) ||
+                !StringUtils.hasText(sessionId)
+        ) {
+            return;
+        }
+
+        User user =
+                getUserByEmail(email);
+
+        UUID userId =
+                user.getId();
+
+        Set<String> sessions =
+                activeSessions.computeIfAbsent(
+                        userId,
+                        ignored ->
+                                ConcurrentHashMap
+                                        .newKeySet()
+                );
+
+        sessions.add(sessionId);
+
+        sessionUsers.put(
+                sessionId,
+                userId
+        );
+
+        /*
+         * Do not globally broadcast raw presence.
+         *
+         * Presence must be resolved individually
+         * for each authenticated viewer through
+         * getPresence(viewerEmail, targetUserId).
+         */
+    }
+
+    public synchronized void userDisconnected(
+            String sessionId
+    ) {
+        if (!StringUtils.hasText(sessionId)) {
+            return;
+        }
+
+        UUID userId =
+                sessionUsers.remove(sessionId);
+
+        if (userId == null) {
+            return;
+        }
+
+        Set<String> sessions =
+                activeSessions.get(userId);
+
+        if (sessions == null) {
+            return;
+        }
+
+        sessions.remove(sessionId);
+
+        if (!sessions.isEmpty()) {
+            return;
+        }
+
+        activeSessions.remove(userId);
+
+        lastSeenTimes.put(
+                userId,
+                LocalDateTime.now()
+        );
+
+        /*
+         * Do not globally broadcast raw last-seen
+         * information because each viewer may have
+         * different visibility permission.
+         */
+    }
+
+    @Transactional(readOnly = true)
+    public PresenceStatusResponse getPresence(
+            String viewerEmail,
+            UUID targetUserId
+    ) {
+        if (!StringUtils.hasText(viewerEmail)) {
+            throw new IllegalArgumentException(
+                    "Authenticated viewer is required"
+            );
+        }
+
+        if (targetUserId == null) {
+            throw new IllegalArgumentException(
+                    "Target user ID is required"
+            );
+        }
+
+        User viewer =
+                getUserByEmail(viewerEmail);
+
+        User target =
+                getUserById(targetUserId);
+
+        boolean canSeeOnline =
+                privacyPolicyService
+                        .canSeeOnlineStatus(
+                                viewer,
+                                target
+                        );
+
+        boolean canSeeLastSeen =
+                privacyPolicyService
+                        .canSeeLastSeen(
+                                viewer,
+                                target
+                        );
+
+        Set<String> sessions =
+                activeSessions.get(
+                        targetUserId
+                );
+
+        boolean actuallyOnline =
+                sessions != null &&
+                !sessions.isEmpty();
+
+        boolean visibleOnline =
+                canSeeOnline &&
+                actuallyOnline;
+
+        LocalDateTime visibleLastSeen =
+                canSeeLastSeen
+                        ? lastSeenTimes.get(
+                                targetUserId
+                        )
+                        : null;
+
+        return PresenceStatusResponse.builder()
+                .userId(targetUserId)
+                .online(visibleOnline)
+                .lastSeenAt(
+                        visibleLastSeen
+                )
+                .build();
+    }
+
+    private User getUserByEmail(
+            String email
+    ) {
+        return userRepository
+                .findByEmail(
+                        email.trim()
+                )
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Authenticated user was not found"
+                        )
+                );
+    }
+
+    private User getUserById(
+            UUID userId
+    ) {
+        return userRepository
+                .findById(userId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Target user was not found"
+                        )
+                );
+    }
+}

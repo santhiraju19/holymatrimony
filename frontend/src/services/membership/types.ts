@@ -1,12 +1,40 @@
+export type MembershipPlan =
+  | "FREE"
+  | "PREMIUM"
+  | "ELITE"
+  | "SIGNATURE";
+
+export type MembershipBillingCycle =
+  | "MONTHLY"
+  | "QUARTERLY"
+  | "YEARLY";
+
+export type MembershipStatus =
+  | "ACTIVE"
+  | "EXPIRED"
+  | "PENDING"
+  | "CANCELLED";
+
 export interface MembershipResponse {
-  plan: "FREE" | "SILVER" | "GOLD" | "PLATINUM";
-  billingCycle: "MONTHLY" | "QUARTERLY" | "YEARLY";
-  status: "ACTIVE" | "EXPIRED" | "PENDING";
-  startDate: string;
-  expiryDate: string;
+  membershipId: string | null;
+
+  plan: MembershipPlan;
+
+  billingCycle: MembershipBillingCycle | null;
+
+  status: MembershipStatus;
+
+  startDate: string | null;
+
+  expiryDate: string | null;
+
+  daysRemaining: number;
+
+  autoRenew: boolean;
 }
 
-export interface UpgradeMembershipRequest {
-  plan: "SILVER" | "GOLD" | "PLATINUM";
-  billingCycle: "MONTHLY" | "QUARTERLY" | "YEARLY";
+export interface MembershipApiEnvelope {
+  success?: boolean;
+  message?: string;
+  data?: MembershipResponse;
 }

@@ -20,6 +20,8 @@ public interface ProfileRepository
 
     Optional<Profile> findByUserEmail(String email);
 
+    Optional<Profile> findByUserId(UUID userId);
+
     boolean existsByUser(User user);
 
     /*

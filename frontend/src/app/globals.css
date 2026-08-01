@@ -128,3 +128,95 @@
     @apply font-sans;
   }
 }
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* ===========================================
+   Holy Matrimony Premium Logo
+=========================================== */
+
+.hm-logo {
+  position: relative;
+  overflow: hidden;
+  border-radius: 9999px;
+
+  filter: drop-shadow(0 0 0 rgba(212,175,55,0));
+
+  animation: logoGlow 4s ease-in-out infinite;
+}
+
+@keyframes logoGlow {
+
+  0%,
+  100% {
+    filter:
+      drop-shadow(0 0 0 rgba(212,175,55,0));
+  }
+
+  50% {
+    filter:
+      drop-shadow(
+        0 0 14px
+        rgba(212,175,55,.55)
+      );
+  }
+}
+
+.hm-logo::before {
+
+  content: "";
+
+  position: absolute;
+
+  top: -120%;
+  left: -120%;
+
+  width: 60%;
+  height: 300%;
+
+  background: linear-gradient(
+      115deg,
+      transparent,
+      rgba(255,255,255,.85),
+      transparent
+  );
+
+  transform: rotate(25deg);
+
+  animation:
+      logoShine 6s ease-in-out infinite;
+
+  pointer-events: none;
+}
+
+@keyframes logoShine {
+
+  0%,
+  70% {
+      left: -140%;
+  }
+
+  100% {
+      left: 220%;
+  }
+
+}

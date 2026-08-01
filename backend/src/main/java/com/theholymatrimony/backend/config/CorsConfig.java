@@ -13,14 +13,15 @@ public class CorsConfig {
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
 
-        CorsConfiguration configuration = new CorsConfiguration();
+        CorsConfiguration configuration =
+                new CorsConfiguration();
 
-        configuration.setAllowedOrigins(
+        configuration.setAllowedOriginPatterns(
                 List.of(
-                        "http://localhost:3000",
-                        "http://127.0.0.1:3000",
-                        "http://localhost:3001",
-                        "http://127.0.0.1:3001"
+                        "http://localhost:*",
+                        "http://127.0.0.1:*",
+                        "https://theholymatrimony.com",
+                        "https://www.theholymatrimony.com"
                 )
         );
 
@@ -36,17 +37,11 @@ public class CorsConfig {
         );
 
         configuration.setAllowedHeaders(
-                List.of(
-                        "Authorization",
-                        "Content-Type",
-                        "Accept",
-                        "Origin",
-                        "X-Requested-With"
-                )
+                List.of("*")
         );
 
         configuration.setExposedHeaders(
-                List.of("Authorization")
+                List.of("*")
         );
 
         configuration.setAllowCredentials(true);

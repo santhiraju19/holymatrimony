@@ -7,8 +7,27 @@ import Footer from "@/components/layout/Footer";
 import Providers from "@/components/providers/Providers";
 
 export const metadata: Metadata = {
-  title: "Holy Matrimony",
-  description: "India's Trusted Christian Matrimony",
+  title: {
+    default: "Holy Matrimony",
+    template: "%s | Holy Matrimony",
+  },
+  description:
+    "India's trusted privacy-first Christian matrimony platform.",
+
+  icons: {
+    icon: [
+      {
+        url: "/icon.png",
+        type: "image/png",
+      },
+    ],
+    apple: [
+      {
+        url: "/apple-icon.png",
+        type: "image/png",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({

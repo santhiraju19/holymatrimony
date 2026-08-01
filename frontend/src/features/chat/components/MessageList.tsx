@@ -37,12 +37,41 @@ export default function MessageList({
       null
     );
 
+  const previousMessageCountRef =
+    useRef(0);
+
+  const previousOtherUserIdRef =
+    useRef<string | null>(null);
+
   useEffect(() => {
+    const conversationChanged =
+      previousOtherUserIdRef.current !==
+      otherUserId;
+
+    const receivedNewMessage =
+      messages.length >
+      previousMessageCountRef.current;
+
     bottomRef.current?.scrollIntoView({
-      behavior: "smooth",
+      behavior:
+        conversationChanged
+          ? "auto"
+          : receivedNewMessage
+            ? "smooth"
+            : "auto",
+
       block: "end",
     });
-  }, [messages]);
+
+    previousOtherUserIdRef.current =
+      otherUserId;
+
+    previousMessageCountRef.current =
+      messages.length;
+  }, [
+    messages,
+    otherUserId,
+  ]);
 
   if (loading) {
     return <MessageListSkeleton />;
@@ -52,7 +81,9 @@ export default function MessageList({
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-          <MessageCircle size={30} />
+          <MessageCircle
+            size={30}
+          />
         </div>
 
         <h3 className="mt-4 font-semibold text-slate-800">
@@ -60,8 +91,9 @@ export default function MessageList({
         </h3>
 
         <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
-          Send a respectful greeting and
-          begin getting to know each other.
+          Send a respectful greeting
+          and begin getting to know
+          each other.
         </p>
       </div>
     );
@@ -105,7 +137,10 @@ export default function MessageList({
           }
         )}
 
-        <div ref={bottomRef} />
+        <div
+          ref={bottomRef}
+          aria-hidden="true"
+        />
       </div>
     </div>
   );
@@ -115,8 +150,11 @@ function MessageListSkeleton() {
   return (
     <div className="flex-1 space-y-4 overflow-hidden bg-slate-50 p-6">
       <div className="h-14 w-2/3 animate-pulse rounded-2xl bg-slate-200" />
+
       <div className="ml-auto h-16 w-3/5 animate-pulse rounded-2xl bg-slate-300" />
+
       <div className="h-12 w-1/2 animate-pulse rounded-2xl bg-slate-200" />
+
       <div className="ml-auto h-20 w-2/3 animate-pulse rounded-2xl bg-slate-300" />
     </div>
   );

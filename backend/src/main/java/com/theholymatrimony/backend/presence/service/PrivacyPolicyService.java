@@ -1,0 +1,283 @@
+
+package com.theholymatrimony.backend.privacy.service;
+
+import com.theholymatrimony.backend.auth.entity.User;
+import com.theholymatrimony.backend.interest.enums.InterestStatus;
+import com.theholymatrimony.backend.interest.repository.InterestRepository;
+import com.theholymatrimony.backend.privacy.entity.PrivacySettings;
+import com.theholymatrimony.backend.privacy.enums.CallPermission;
+import com.theholymatrimony.backend.privacy.enums.VisibilityScope;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class PrivacyPolicyService {
+
+    private final PrivacySettingsService privacySettingsService;
+    private final InterestRepository interestRepository;
+
+    @Transactional(readOnly = true)
+    public boolean canSeeOnlineStatus(
+            User viewer,
+            User target
+    ) {
+        PrivacySettings settings =
+                privacySettingsService
+                        .getSettingsForUser(target);
+
+        return canView(
+                viewer,
+                target,
+                settings.getOnlineVisibility()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canSeeLastSeen(
+            User viewer,
+            User target
+    ) {
+        PrivacySettings settings =
+                privacySettingsService
+                        .getSettingsForUser(target);
+
+        return canView(
+                viewer,
+                target,
+                settings.getLastSeenVisibility()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canSeePhotos(
+            User viewer,
+            User target
+    ) {
+        PrivacySettings settings =
+                privacySettingsService
+                        .getSettingsForUser(target);
+
+        return canView(
+                viewer,
+                target,
+                settings.getPhotoVisibility()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canSeePhone(
+            User viewer,
+            User target
+    ) {
+        PrivacySettings settings =
+                privacySettingsService
+                        .getSettingsForUser(target);
+
+        return canView(
+                viewer,
+                target,
+                settings.getPhoneVisibility()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canSeeEmail(
+            User viewer,
+            User target
+    ) {
+        PrivacySettings settings =
+                privacySettingsService
+                        .getSettingsForUser(target);
+
+        return canView(
+                viewer,
+                target,
+                settings.getEmailVisibility()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canSeeAddress(
+            User viewer,
+            User target
+    ) {
+        PrivacySettings settings =
+                privacySettingsService
+                        .getSettingsForUser(target);
+
+        return canView(
+                viewer,
+                target,
+                settings.getAddressVisibility()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canSeeChurch(
+            User viewer,
+            User target
+    ) {
+        PrivacySettings settings =
+                privacySettingsService
+                        .getSettingsForUser(target);
+
+        return canView(
+                viewer,
+                target,
+                settings.getChurchVisibility()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canSeeFamily(
+            User viewer,
+            User target
+    ) {
+        PrivacySettings settings =
+                privacySettingsService
+                        .getSettingsForUser(target);
+
+        return canView(
+                viewer,
+                target,
+                settings.getFamilyVisibility()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canStartAudioCall(
+            User caller,
+            User receiver
+    ) {
+        PrivacySettings settings =
+                privacySettingsService
+                        .getSettingsForUser(receiver);
+
+        return canCall(
+                caller,
+                receiver,
+                settings.getAudioCallPermission()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canStartVideoCall(
+            User caller,
+            User receiver
+    ) {
+        PrivacySettings settings =
+                privacySettingsService
+                        .getSettingsForUser(receiver);
+
+        return canCall(
+                caller,
+                receiver,
+                settings.getVideoCallPermission()
+        );
+    }
+
+    private boolean canView(
+            User viewer,
+            User target,
+            VisibilityScope scope
+    ) {
+        if (
+                viewer == null ||
+                target == null ||
+                viewer.getId() == null ||
+                target.getId() == null
+        ) {
+            return false;
+        }
+
+        if (
+                viewer.getId().equals(
+                        target.getId()
+                )
+        ) {
+            return true;
+        }
+
+        if (scope == null) {
+            return false;
+        }
+
+        return switch (scope) {
+            case EVERYONE,
+                 REGISTERED_MEMBERS ->
+                    true;
+
+            case VERIFIED_MEMBERS ->
+                    false;
+
+            case INTEREST_ACCEPTED ->
+                    hasAcceptedInterest(
+                            viewer.getId(),
+                            target.getId()
+                    );
+
+            case MUTUAL_APPROVAL,
+                 NOBODY ->
+                    false;
+        };
+    }
+
+    private boolean canCall(
+            User caller,
+            User receiver,
+            CallPermission permission
+    ) {
+        if (
+                caller == null ||
+                receiver == null ||
+                caller.getId() == null ||
+                receiver.getId() == null ||
+                caller.getId().equals(
+                        receiver.getId()
+                )
+        ) {
+            return false;
+        }
+
+        if (permission == null) {
+            return false;
+        }
+
+        return switch (permission) {
+            case DISABLED ->
+                    false;
+
+            case INTEREST_ACCEPTED ->
+                    hasAcceptedInterest(
+                            caller.getId(),
+                            receiver.getId()
+                    );
+
+            case MUTUAL_APPROVAL ->
+                    false;
+        };
+    }
+
+    private boolean hasAcceptedInterest(
+            UUID firstUserId,
+            UUID secondUserId
+    ) {
+        return interestRepository
+                .existsBySenderIdAndReceiverIdAndStatus(
+                        firstUserId,
+                        secondUserId,
+                        InterestStatus.ACCEPTED
+                )
+                ||
+                interestRepository
+                        .existsBySenderIdAndReceiverIdAndStatus(
+                                secondUserId,
+                                firstUserId,
+                                InterestStatus.ACCEPTED
+                        );
+    }
+}

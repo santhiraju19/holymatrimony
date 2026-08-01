@@ -49,25 +49,32 @@ export interface ConversationsPage
 export type MessageType =
   | "TEXT"
   | "IMAGE"
+  | "VIDEO"
+  | "AUDIO"
+  | "VOICE_NOTE"
   | "FILE"
-  | string;
+  | "LOCATION"
+  | "SYSTEM";
 
 export type MessageStatus =
   | "SENT"
   | "DELIVERED"
   | "READ"
-  | string;
+  | "PENDING"
+  | "FAILED";
 
 export interface ChatMessage {
   id: string;
   conversationId: string;
   senderId: string;
   receiverId: string;
-  content: string;
-  messageType: MessageType;
-  status: MessageStatus;
-  readAt?: string | null;
+  content: string | null;
+  mediaUrl?: string | null;
+  messageType: MessageType | string;
+  status: MessageStatus | string;
   createdAt: string;
+  readAt?: string | null;
+  deliveredAt?: string | null;
 }
 
 export interface MessagesPage
@@ -77,8 +84,18 @@ export interface MessagesPage
 
 export interface SendMessageRequest {
   receiverUserId: string;
-  content: string;
-  messageType?: "TEXT";
+  content?: string | null;
+  mediaUrl?: string | null;
+  messageType?: MessageType;
+}
+
+export interface ChatMediaUploadResponse {
+  originalFileName: string;
+  storedFileName: string;
+  mediaUrl: string;
+  contentType: string;
+  fileSize: number;
+  messageType: "IMAGE";
 }
 
 export interface UnreadCountData {

@@ -9,38 +9,86 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Configuration
-public class WebMvcConfig implements WebMvcConfigurer {
+public class WebMvcConfig
+        implements WebMvcConfigurer {
 
     private final String profilePhotoDirectory;
+
     private final String profilePhotoUrl;
+
+    private final String chatMediaDirectory;
+
+    private final String chatMediaUrl;
 
     public WebMvcConfig(
             @Value("${app.upload.profile-photos-directory}")
             String profilePhotoDirectory,
 
             @Value("${app.upload.profile-photos-url}")
-            String profilePhotoUrl
+            String profilePhotoUrl,
+
+            @Value("${app.upload.chat-media-directory}")
+            String chatMediaDirectory,
+
+            @Value("${app.upload.chat-media-url}")
+            String chatMediaUrl
     ) {
-        this.profilePhotoDirectory = profilePhotoDirectory;
-        this.profilePhotoUrl = profilePhotoUrl;
+        this.profilePhotoDirectory =
+                profilePhotoDirectory;
+
+        this.profilePhotoUrl =
+                profilePhotoUrl;
+
+        this.chatMediaDirectory =
+                chatMediaDirectory;
+
+        this.chatMediaUrl =
+                chatMediaUrl;
     }
 
     @Override
     public void addResourceHandlers(
             ResourceHandlerRegistry registry
     ) {
+        addFileResourceHandler(
+                registry,
+                profilePhotoUrl,
+                profilePhotoDirectory
+        );
 
+        addFileResourceHandler(
+                registry,
+                chatMediaUrl,
+                chatMediaDirectory
+        );
+    }
+
+    private void addFileResourceHandler(
+            ResourceHandlerRegistry registry,
+            String publicUrl,
+            String directory
+    ) {
         Path uploadDirectory =
-                Paths.get(profilePhotoDirectory)
+                Paths.get(directory)
                         .toAbsolutePath()
                         .normalize();
 
         String resourceLocation =
-                uploadDirectory.toUri().toString();
+                uploadDirectory
+                        .toUri()
+                        .toString();
 
-        registry.addResourceHandler(
-                        profilePhotoUrl + "/**"
+        String urlPattern =
+                publicUrl.endsWith("/")
+                        ? publicUrl + "**"
+                        : publicUrl + "/**";
+
+        registry
+                .addResourceHandler(
+                        urlPattern
                 )
-                .addResourceLocations(resourceLocation);
+                .addResourceLocations(
+                        resourceLocation
+                );
     }
 }

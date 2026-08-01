@@ -9,17 +9,26 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface MembershipRepository extends JpaRepository<Membership, UUID> {
+public interface MembershipRepository
+        extends JpaRepository<Membership, UUID> {
 
-    Optional<Membership> findByUser(User user);
-
-    Optional<Membership> findByUserAndStatus(
+    Optional<Membership>
+    findFirstByUserAndStatusOrderByStartDateDesc(
             User user,
             MembershipStatus status
     );
 
-    boolean existsByUser(User user);
+    Optional<Membership>
+    findFirstByUserOrderByStartDateDesc(
+            User user
+    );
+
+    List<Membership>
+    findAllByUserOrderByStartDateDesc(
+            User user
+    );
 
     List<Membership> findAllByUser(User user);
 
+    boolean existsByUser(User user);
 }

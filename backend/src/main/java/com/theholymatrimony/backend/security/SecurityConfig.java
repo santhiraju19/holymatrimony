@@ -49,26 +49,24 @@ public class SecurityConfig {
                         )
                 )
 
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/v1/auth/**",
-                                "/uploads/profile-photos/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/v3/api-docs/**",
-                                "/error"
-                        ).permitAll()
+         .authorizeHttpRequests(auth -> auth
+        .requestMatchers(
+                "/api/v1/auth/**",
+                "/api/v1/uploads/profile-photos/**",
+                "/api/v1/uploads/chat-media/**",
+                "/ws/**",
+                "/ws-sockjs/**"
+        ).permitAll()
+        .anyRequest().authenticated()
+)
 
-                        .anyRequest().authenticated()
+.oauth2ResourceServer(oauth2 ->
+        oauth2.jwt(jwt ->
+                jwt.jwtAuthenticationConverter(
+                        jwtAuthenticationConverter
                 )
-
-                .oauth2ResourceServer(oauth2 ->
-                        oauth2.jwt(jwt ->
-                                jwt.jwtAuthenticationConverter(
-                                        jwtAuthenticationConverter
-                                )
-                        )
-                );
+        )
+);
 
         return http.build();
     }

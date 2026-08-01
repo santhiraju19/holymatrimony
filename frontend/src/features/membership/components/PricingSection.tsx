@@ -14,7 +14,7 @@ export default function PricingSection() {
 
   return (
     <section className="bg-gradient-to-b from-slate-50 to-white py-20">
-      <div className="container mx-auto px-4">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Heading */}
         <div className="mx-auto max-w-3xl text-center">
           <span className="inline-flex rounded-full bg-primary/10 px-4 py-1 text-sm font-semibold text-primary">
@@ -41,7 +41,7 @@ export default function PricingSection() {
         </div>
 
         {/* Pricing Cards */}
-        <div className="mt-16 grid gap-8 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 xl:mt-16 xl:grid-cols-4">
           {membershipPlans.map((plan) => (
             <PricingCard
               key={plan.id}

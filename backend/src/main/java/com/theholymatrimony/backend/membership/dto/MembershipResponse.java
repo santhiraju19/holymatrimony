@@ -7,10 +7,13 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @Builder
 public class MembershipResponse {
+
+    private UUID membershipId;
 
     private MembershipPlan plan;
 
@@ -21,4 +24,8 @@ public class MembershipResponse {
     private LocalDateTime startDate;
 
     private LocalDateTime expiryDate;
+
+    private long daysRemaining;
+
+    private boolean autoRenew;
 }
