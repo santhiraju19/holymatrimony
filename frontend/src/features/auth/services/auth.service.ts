@@ -6,7 +6,7 @@ import {
   getToken,
   setStoredUser,
   setToken,
-  StoredAuthUser,
+  type StoredAuthUser,
 } from "@/lib/auth";
 
 export interface LoginRequest {
@@ -17,10 +17,62 @@ export interface LoginRequest {
 export interface RegisterRequest {
   fullName: string;
   email: string;
+  mobile: string;
   password: string;
 }
 
-export interface AuthUser extends StoredAuthUser {
+export interface RegisterResponse {
+  userId?: string;
+  fullName?: string;
+  email?: string;
+  mobile?: string;
+  message?: string;
+}
+
+export interface VerifyEmailOtpRequest {
+  email: string;
+  otp: string;
+}
+
+export interface ResendEmailOtpRequest {
+  email: string;
+}
+
+export interface EmailVerificationResponse {
+  userId?: string;
+  email: string;
+  emailVerified: boolean;
+  message?: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface PasswordResetResponse {
+  success?: boolean;
+  message: string;
+}
+
+export interface VerifyPasswordResetOtpRequest {
+  email: string;
+  otp: string;
+}
+
+export interface VerifyPasswordResetOtpResponse {
+  success?: boolean;
+  message: string;
+  resetToken: string;
+}
+
+export interface ResetPasswordRequest {
+  resetToken: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface AuthUser
+  extends StoredAuthUser {
   id?: string;
   fullName?: string;
   email: string;
@@ -48,6 +100,7 @@ export interface AuthResponse {
     refreshToken?: string;
     tokenType?: string;
     expiresIn?: number;
+
     user?: AuthUser;
 
     id?: string;
@@ -96,10 +149,13 @@ function extractUser(
     id:
       response.id ??
       response.data?.id,
+
     fullName:
       response.fullName ??
       response.data?.fullName,
+
     email,
+
     role:
       response.role ??
       response.data?.role,
@@ -109,7 +165,8 @@ function extractUser(
 function saveSession(
   response: AuthResponse
 ): AuthSession {
-  const accessToken = extractAccessToken(response);
+  const accessToken =
+    extractAccessToken(response);
 
   if (!accessToken) {
     throw new Error(
@@ -118,7 +175,8 @@ function saveSession(
     );
   }
 
-  const user = extractUser(response);
+  const user =
+    extractUser(response);
 
   setToken(accessToken);
 
@@ -136,11 +194,88 @@ function saveSession(
 export const authService = {
   async register(
     data: RegisterRequest
-  ): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>(
-      "/auth/register",
-      data
-    );
+  ): Promise<RegisterResponse> {
+    const response =
+      await api.post<RegisterResponse>(
+        "/auth/register",
+        data
+      );
+
+    return response.data;
+  },
+
+  async verifyEmailOtp(
+    data: VerifyEmailOtpRequest
+  ): Promise<EmailVerificationResponse> {
+    const response =
+      await api.post<EmailVerificationResponse>(
+        "/auth/verify-email-otp",
+        data
+      );
+
+    return response.data;
+  },
+
+  async resendEmailOtp(
+    data: ResendEmailOtpRequest
+  ): Promise<EmailVerificationResponse> {
+    const response =
+      await api.post<EmailVerificationResponse>(
+        "/auth/resend-email-otp",
+        data
+      );
+
+    return response.data;
+  },
+
+  async getEmailVerificationStatus(
+    email: string
+  ): Promise<EmailVerificationResponse> {
+    const response =
+      await api.get<EmailVerificationResponse>(
+        "/auth/email-verification-status",
+        {
+          params: {
+            email,
+          },
+        }
+      );
+
+    return response.data;
+  },
+
+  async requestPasswordResetOtp(
+    data: ForgotPasswordRequest
+  ): Promise<PasswordResetResponse> {
+    const response =
+      await api.post<PasswordResetResponse>(
+        "/auth/forgot-password/request-otp",
+        data
+      );
+
+    return response.data;
+  },
+
+  async verifyPasswordResetOtp(
+    data: VerifyPasswordResetOtpRequest
+  ): Promise<VerifyPasswordResetOtpResponse> {
+    const response =
+      await api.post<VerifyPasswordResetOtpResponse>(
+        "/auth/forgot-password/verify-otp",
+        data
+      );
+
+    return response.data;
+  },
+
+  async resetPassword(
+    data: ResetPasswordRequest
+  ): Promise<PasswordResetResponse> {
+    const response =
+      await api.post<PasswordResetResponse>(
+        "/auth/forgot-password/reset",
+        data
+      );
 
     return response.data;
   },
@@ -148,31 +283,38 @@ export const authService = {
   async login(
     data: LoginRequest
   ): Promise<AuthSession> {
-    const response = await api.post<AuthResponse>(
-      "/auth/login",
-      data
-    );
+    const response =
+      await api.post<AuthResponse>(
+        "/auth/login",
+        data
+      );
 
-    return saveSession(response.data);
+    return saveSession(
+      response.data
+    );
   },
 
   async refresh(): Promise<AuthSession> {
-    const response = await api.post<AuthResponse>(
-      "/auth/refresh",
-      {}
-    );
+    const response =
+      await api.post<AuthResponse>(
+        "/auth/refresh",
+        {}
+      );
 
-    return saveSession(response.data);
+    return saveSession(
+      response.data
+    );
   },
 
   async logout(): Promise<void> {
     try {
-      await api.post("/auth/logout", {});
+      await api.post(
+        "/auth/logout",
+        {}
+      );
     } catch {
-      /*
-       * The local session must still be cleared
-       * if the backend logout request fails.
-       */
+      // Clear local authentication even
+      // if the backend logout request fails.
     } finally {
       clearAuthStorage();
     }

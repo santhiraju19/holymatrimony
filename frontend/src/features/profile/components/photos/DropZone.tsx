@@ -1,76 +1,151 @@
 "use client";
 
-import { useState } from "react";
-import { UploadCloud, ImagePlus } from "lucide-react";
+import {
+  ChangeEvent,
+  DragEvent,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  ImagePlus,
+  UploadCloud,
+} from "lucide-react";
 
 interface DropZoneProps {
-  onFilesSelected: (files: File[]) => void;
+  onFilesSelected: (
+    files: File[]
+  ) => void;
 }
 
 export default function DropZone({
   onFilesSelected,
 }: DropZoneProps) {
-  const [dragging, setDragging] = useState(false);
+  const [
+    dragging,
+    setDragging,
+  ] = useState(false);
 
-  const processFiles = (files: FileList | null) => {
-    if (!files) return;
-
-    const validFiles = Array.from(files).filter((file) =>
-      ["image/jpeg", "image/png", "image/webp"].includes(file.type)
+  const inputRef =
+    useRef<HTMLInputElement | null>(
+      null
     );
 
-    if (validFiles.length === 0) return;
+  function processFiles(
+    files: FileList | null
+  ): void {
+    if (!files) {
+      return;
+    }
+
+    const validFiles =
+      Array.from(files).filter(
+        (file) =>
+          [
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+          ].includes(file.type)
+      );
+
+    if (
+      validFiles.length === 0
+    ) {
+      return;
+    }
 
     onFilesSelected(validFiles);
-  };
+
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
+  }
+
+  function handleDrop(
+    event: DragEvent<HTMLDivElement>
+  ): void {
+    event.preventDefault();
+    setDragging(false);
+
+    processFiles(
+      event.dataTransfer.files
+    );
+  }
+
+  function handleFileChange(
+    event: ChangeEvent<HTMLInputElement>
+  ): void {
+    processFiles(
+      event.target.files
+    );
+  }
 
   return (
-    <label
-      onDragOver={(e) => {
-        e.preventDefault();
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label="Upload profile photos"
+      onClick={() =>
+        inputRef.current?.click()
+      }
+      onKeyDown={(event) => {
+        if (
+          event.key === "Enter" ||
+          event.key === " "
+        ) {
+          event.preventDefault();
+
+          inputRef.current?.click();
+        }
+      }}
+      onDragOver={(event) => {
+        event.preventDefault();
         setDragging(true);
       }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setDragging(false);
-        processFiles(e.dataTransfer.files);
-      }}
-      className={`flex h-56 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all duration-300 ${
+      onDragLeave={() =>
+        setDragging(false)
+      }
+      onDrop={handleDrop}
+      className={[
+        "group flex min-h-64 w-full cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed px-5 py-10 text-center outline-none transition-all duration-300",
+        "focus:ring-4 focus:ring-blue-100",
         dragging
-          ? "border-[#0B2D5C] bg-blue-50"
-          : "border-slate-300 bg-slate-50 hover:border-[#0B2D5C] hover:bg-slate-100"
-      }`}
+          ? "scale-[1.01] border-[#0B2D5C] bg-blue-50 shadow-lg"
+          : "border-slate-300 bg-gradient-to-br from-slate-50 to-white hover:border-[#0B2D5C] hover:bg-blue-50/50 hover:shadow-lg",
+      ].join(" ")}
     >
-      <UploadCloud
-        size={54}
-        className="mb-4 text-[#0B2D5C]"
-      />
+      <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[#0B2D5C] text-white shadow-lg transition-transform duration-300 group-hover:-translate-y-1">
+        <UploadCloud size={31} />
+      </div>
 
-      <h3 className="text-xl font-bold text-[#0B2D5C]">
-        Drag & Drop Photos
+      <h3 className="mt-5 text-xl font-bold text-[#0B2D5C] sm:text-2xl">
+        Drag and drop photos
       </h3>
 
-      <p className="mt-2 text-sm text-slate-500">
-        or click to browse from your computer
+      <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
+        Drop your photos here or click
+        to browse from your device.
       </p>
 
-      <div className="mt-6 flex items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-medium shadow">
+      <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[#0B2D5C] shadow-md ring-1 ring-slate-200 transition group-hover:shadow-lg">
         <ImagePlus size={18} />
+
         Choose Photos
       </div>
 
-      <p className="mt-5 text-xs text-slate-400">
-        JPG • PNG • WEBP • Maximum 6 Photos
+      <p className="mt-5 text-xs font-medium uppercase tracking-wide text-slate-400">
+        JPEG, PNG or WebP • Maximum
+        10 MB each • Up to 6 photos
       </p>
 
       <input
+        ref={inputRef}
         hidden
         multiple
         type="file"
         accept="image/png,image/jpeg,image/webp"
-        onChange={(e) => processFiles(e.target.files)}
+        onChange={handleFileChange}
       />
-    </label>
+    </div>
   );
 }

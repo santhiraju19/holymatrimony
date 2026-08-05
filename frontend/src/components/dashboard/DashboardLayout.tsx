@@ -11,6 +11,7 @@ import {
 
 import ProfileProvider from "@/features/profile/context/ProfileProvider";
 
+import DashboardFooter from "./DashboardFooter";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 
@@ -35,7 +36,7 @@ export default function DashboardLayout({
   useEffect(() => {
     function handleKeyDown(
       event: KeyboardEvent
-    ) {
+    ): void {
       if (event.key === "Escape") {
         setMobileSidebarOpen(false);
       }
@@ -73,28 +74,32 @@ export default function DashboardLayout({
 
   return (
     <ProfileProvider>
-      <div className="min-h-screen bg-slate-100">
-        <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:block lg:w-72">
+      <div className="relative min-h-screen overflow-x-hidden bg-[#F5F7FB]">
+        <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.07),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(212,175,55,0.06),transparent_35%)]" />
+
+        <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-[80] lg:block lg:w-[84px]">
           <Sidebar />
         </div>
 
-        <div className="min-w-0 lg:pl-72">
+        <div className="relative flex min-h-screen min-w-0 flex-col lg:pl-[84px]">
           <Header
             onOpenSidebar={() =>
               setMobileSidebarOpen(true)
             }
           />
 
-          <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
-            <div className="mx-auto w-full max-w-[1600px]">
+          <main className="min-w-0 flex-1 p-3 sm:p-5 lg:p-6 xl:p-8">
+            <div className="mx-auto w-full max-w-[1720px]">
               {children}
             </div>
           </main>
+
+          <DashboardFooter />
         </div>
 
         <div
           className={[
-            "fixed inset-0 z-[70] lg:hidden",
+            "fixed inset-0 z-[100] lg:hidden",
             mobileSidebarOpen
               ? "pointer-events-auto"
               : "pointer-events-none",
@@ -110,7 +115,7 @@ export default function DashboardLayout({
               setMobileSidebarOpen(false)
             }
             className={[
-              "absolute inset-0 bg-slate-950/55 backdrop-blur-sm transition-opacity",
+              "absolute inset-0 bg-[#020817]/70 backdrop-blur-sm transition-opacity duration-300",
               mobileSidebarOpen
                 ? "opacity-100"
                 : "opacity-0",
@@ -118,8 +123,11 @@ export default function DashboardLayout({
           />
 
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Dashboard navigation"
             className={[
-              "absolute inset-y-0 left-0 w-[86%] max-w-72 transition-transform duration-300",
+              "absolute inset-y-0 left-0 w-[90%] max-w-[320px] shadow-2xl transition-transform duration-300 ease-out",
               mobileSidebarOpen
                 ? "translate-x-0"
                 : "-translate-x-full",

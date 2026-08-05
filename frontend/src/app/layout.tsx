@@ -1,16 +1,21 @@
 import "./globals.css";
-import type { Metadata } from "next";
+
+import type {
+  Metadata,
+} from "next";
+
 import Script from "next/script";
 
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import AppChrome from "@/components/layout/AppChrome";
 import Providers from "@/components/providers/Providers";
 
 export const metadata: Metadata = {
   title: {
     default: "Holy Matrimony",
-    template: "%s | Holy Matrimony",
+    template:
+      "%s | Holy Matrimony",
   },
+
   description:
     "India's trusted privacy-first Christian matrimony platform.",
 
@@ -21,6 +26,7 @@ export const metadata: Metadata = {
         type: "image/png",
       },
     ],
+
     apple: [
       {
         url: "/apple-icon.png",
@@ -39,11 +45,9 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen bg-white text-slate-900">
         <Providers>
-          <Navbar />
-
-          <main>{children}</main>
-
-          <Footer />
+          <AppChrome>
+            {children}
+          </AppChrome>
         </Providers>
 
         <Script
