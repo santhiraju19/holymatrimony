@@ -19,5 +19,7 @@ public class RegisterResponse {
 
     private String email;
 
+    private String mobile;
+
     private String message;
 }

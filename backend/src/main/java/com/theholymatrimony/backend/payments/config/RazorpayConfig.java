@@ -2,10 +2,15 @@ package com.theholymatrimony.backend.payments.config;
 
 import com.razorpay.RazorpayClient;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@ConditionalOnProperty(
+        name = "payments.enabled",
+        havingValue = "true"
+)
 public class RazorpayConfig {
 
     private static final String TEST_KEY_PREFIX = "rzp_test_";
@@ -20,14 +25,6 @@ public class RazorpayConfig {
         String keyId = sanitize(rawKeyId);
         String keySecret = sanitize(rawKeySecret);
 
-        System.out.println("===== RAZORPAY CONFIGURATION =====");
-        System.out.println("Key ID preview: " + maskKeyId(keyId));
-        System.out.println("Key ID length: " + keyId.length());
-        System.out.println("Key Secret length: " + keySecret.length());
-        System.out.println("Test mode: " + keyId.startsWith(TEST_KEY_PREFIX));
-        System.out.println("Live mode: " + keyId.startsWith(LIVE_KEY_PREFIX));
-        System.out.println("=================================");
-
         if (keyId.isBlank()) {
             throw new IllegalStateException(
                     "RAZORPAY_KEY_ID is missing."
@@ -40,26 +37,25 @@ public class RazorpayConfig {
             );
         }
 
-        if (!keyId.startsWith(TEST_KEY_PREFIX)
-                && !keyId.startsWith(LIVE_KEY_PREFIX)) {
-
-            if (keySecret.startsWith(TEST_KEY_PREFIX)
-                    || keySecret.startsWith(LIVE_KEY_PREFIX)) {
-                throw new IllegalStateException(
-                        "Razorpay Key ID and Key Secret appear to be swapped."
-                );
-            }
-
+        if (
+                !keyId.startsWith(TEST_KEY_PREFIX)
+                        && !keyId.startsWith(LIVE_KEY_PREFIX)
+        ) {
             throw new IllegalStateException(
                     "Invalid Razorpay Key ID. It must start with "
                             + "'rzp_test_' or 'rzp_live_'."
             );
         }
 
-        return new RazorpayClient(keyId, keySecret);
+        return new RazorpayClient(
+                keyId,
+                keySecret
+        );
     }
 
-    private String sanitize(String value) {
+    private String sanitize(
+            String value
+    ) {
         if (value == null) {
             return "";
         }
@@ -68,19 +64,5 @@ public class RazorpayConfig {
                 .trim()
                 .replace("\"", "")
                 .replace("'", "");
-    }
-
-    private String maskKeyId(String keyId) {
-        if (keyId == null || keyId.isBlank()) {
-            return "[empty]";
-        }
-
-        if (keyId.length() <= 12) {
-            return "[invalid]";
-        }
-
-        return keyId.substring(0, 9)
-                + "****"
-                + keyId.substring(keyId.length() - 4);
     }
 }

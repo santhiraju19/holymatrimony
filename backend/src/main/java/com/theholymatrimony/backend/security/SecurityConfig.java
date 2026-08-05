@@ -30,7 +30,9 @@ import java.nio.charset.StandardCharsets;
 public class SecurityConfig {
 
     private final JwtProperties jwtProperties;
-    private final JwtAuthenticationConverter jwtAuthenticationConverter;
+
+    private final JwtAuthenticationConverter
+            jwtAuthenticationConverter;
 
     @Bean
     SecurityFilterChain securityFilterChain(
@@ -41,7 +43,9 @@ public class SecurityConfig {
                 .cors(cors -> {
                 })
 
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf ->
+                        csrf.disable()
+                )
 
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
@@ -49,24 +53,67 @@ public class SecurityConfig {
                         )
                 )
 
-         .authorizeHttpRequests(auth -> auth
-        .requestMatchers(
-                "/api/v1/auth/**",
-                "/api/v1/uploads/profile-photos/**",
-                "/api/v1/uploads/chat-media/**",
-                "/ws/**",
-                "/ws-sockjs/**"
-        ).permitAll()
-        .anyRequest().authenticated()
-)
+                .authorizeHttpRequests(auth -> auth
 
-.oauth2ResourceServer(oauth2 ->
-        oauth2.jwt(jwt ->
-                jwt.jwtAuthenticationConverter(
-                        jwtAuthenticationConverter
+                        /*
+                         * Public authentication endpoints.
+                         *
+                         * This includes:
+                         * register
+                         * login
+                         * refresh
+                         * logout
+                         * verify-otp
+                         * resend-otp
+                         * verification-status
+                         */
+                        .requestMatchers(
+                                "/api/v1/auth/**"
+                        ).permitAll()
+
+                        /*
+                         * Publicly accessible uploaded files.
+                         *
+                         * Nginx may serve these directly in
+                         * production, while Spring can serve
+                         * them during local development.
+                         */
+                        .requestMatchers(
+                                "/uploads/**",
+                                "/api/v1/uploads/**"
+                        ).permitAll()
+
+                        /*
+                         * WebSocket handshake endpoints.
+                         */
+                        .requestMatchers(
+                                "/ws/**",
+                                "/ws-sockjs/**"
+                        ).permitAll()
+
+                        /*
+                         * Optional Swagger/OpenAPI endpoints.
+                         */
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
+
+                        /*
+                         * Every other API requires a valid JWT.
+                         */
+                        .anyRequest()
+                        .authenticated()
                 )
-        )
-);
+
+                .oauth2ResourceServer(oauth2 ->
+                        oauth2.jwt(jwt ->
+                                jwt.jwtAuthenticationConverter(
+                                        jwtAuthenticationConverter
+                                )
+                        )
+                );
 
         return http.build();
     }
@@ -74,26 +121,33 @@ public class SecurityConfig {
     @Bean
     JwtDecoder jwtDecoder() {
 
-        SecretKey secretKey = createSecretKey();
+        SecretKey secretKey =
+                createSecretKey();
 
         return NimbusJwtDecoder
                 .withSecretKey(secretKey)
-                .macAlgorithm(MacAlgorithm.HS256)
+                .macAlgorithm(
+                        MacAlgorithm.HS256
+                )
                 .build();
     }
 
     @Bean
     JwtEncoder jwtEncoder() {
 
-        SecretKey secretKey = createSecretKey();
+        SecretKey secretKey =
+                createSecretKey();
 
         return new NimbusJwtEncoder(
-                new ImmutableSecret<>(secretKey)
+                new ImmutableSecret<>(
+                        secretKey
+                )
         );
     }
 
     @Bean
     PasswordEncoder passwordEncoder() {
+
         return new BCryptPasswordEncoder();
     }
 
@@ -102,14 +156,18 @@ public class SecurityConfig {
             AuthenticationConfiguration configuration
     ) throws Exception {
 
-        return configuration.getAuthenticationManager();
+        return configuration
+                .getAuthenticationManager();
     }
 
     private SecretKey createSecretKey() {
 
         return new SecretKeySpec(
-                jwtProperties.getSecret()
-                        .getBytes(StandardCharsets.UTF_8),
+                jwtProperties
+                        .getSecret()
+                        .getBytes(
+                                StandardCharsets.UTF_8
+                        ),
                 "HmacSHA256"
         );
     }

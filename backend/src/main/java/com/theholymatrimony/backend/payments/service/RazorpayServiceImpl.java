@@ -18,6 +18,7 @@ import com.theholymatrimony.backend.payments.enums.PaymentStatus;
 import com.theholymatrimony.backend.payments.repository.MembershipRepository;
 import com.theholymatrimony.backend.payments.repository.PaymentRepository;
 import com.theholymatrimony.backend.payments.dto.PaymentReceiptResponse;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDate;
 import java.util.List;
+
+@ConditionalOnProperty(
+        name = "payments.enabled",
+        havingValue = "true"
+)
 
 @Service
 @RequiredArgsConstructor

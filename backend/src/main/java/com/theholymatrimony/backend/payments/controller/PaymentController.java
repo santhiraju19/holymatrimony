@@ -18,8 +18,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.util.List;
+
+@ConditionalOnProperty(
+        name = "payments.enabled",
+        havingValue = "true"
+)
 
 @RestController
 @RequestMapping("/api/v1/payments")
