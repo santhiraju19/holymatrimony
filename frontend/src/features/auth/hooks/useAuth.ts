@@ -23,8 +23,7 @@ export default function useAuth() {
     logout: clearContextSession,
   } = useAuthContext();
 
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
   async function login(
     credentials: LoginRequest,
@@ -33,8 +32,7 @@ export default function useAuth() {
     setLoading(true);
 
     try {
-      const session =
-        await authService.login(credentials);
+      const session = await authService.login(credentials);
 
       if (!session.user) {
         throw new Error(
@@ -47,7 +45,12 @@ export default function useAuth() {
         session.accessToken
       );
 
-      router.replace(redirectTo);
+      /*
+       * authService.login() has already persisted the access token
+       * and user. A full navigation ensures AuthProvider restores that
+       * stored session before protected dashboard components execute.
+       */
+      window.location.replace(redirectTo);
 
       return session;
     } finally {
@@ -55,14 +58,11 @@ export default function useAuth() {
     }
   }
 
-  async function register(
-    data: RegisterRequest
-  ) {
+  async function register(data: RegisterRequest) {
     setLoading(true);
 
     try {
-      const response =
-        await authService.register(data);
+      const response = await authService.register(data);
 
       router.push("/login");
 
@@ -80,7 +80,7 @@ export default function useAuth() {
     } finally {
       clearContextSession();
       setLoading(false);
-      router.replace("/login");
+      window.location.replace("/login");
     }
   }
 

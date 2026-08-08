@@ -1,20 +1,35 @@
 import type {
+  AboutInfo,
   BasicInfo,
   ChurchInfo,
   EducationInfo,
   FamilyInfo,
+  LocationInfo,
   PreferenceInfo,
 } from "@/features/profile/types";
 
-export type FieldErrors<T> = Partial<
-  Record<keyof T, string>
->;
+export type FieldErrors<T> =
+  Partial<
+    Record<keyof T, string>
+  >;
 
 export interface LocationSelection {
   state: string;
   district: string;
   city: string;
 }
+
+/*
+ * Basic Information now also owns
+ * Current Location + About Me in the UI.
+ */
+export type BasicFormErrors =
+  FieldErrors<BasicInfo> & {
+    city?: string;
+    state?: string;
+    country?: string;
+    aboutMe?: string;
+  };
 
 export type ChurchFormErrors =
   FieldErrors<ChurchInfo> & {
@@ -30,7 +45,9 @@ export type FamilyFormErrors =
     familyCity?: string;
   };
 
-function isBlank(value: string): boolean {
+function isBlank(
+  value: string
+): boolean {
   return !value.trim();
 }
 
@@ -41,9 +58,10 @@ function calculateAge(
     return null;
   }
 
-  const birthDate = new Date(
-    dateOfBirth
-  );
+  const birthDate =
+    new Date(
+      dateOfBirth
+    );
 
   if (
     Number.isNaN(
@@ -53,7 +71,8 @@ function calculateAge(
     return null;
   }
 
-  const today = new Date();
+  const today =
+    new Date();
 
   let age =
     today.getFullYear() -
@@ -77,23 +96,41 @@ function calculateAge(
   return age;
 }
 
-export function validateBasicInfo(
-  values: BasicInfo
-): FieldErrors<BasicInfo> {
-  const errors: FieldErrors<BasicInfo> =
-    {};
+/*
+ * =========================================================
+ * Basic + Current Location + About Me
+ * =========================================================
+ */
 
-  if (isBlank(values.fullName)) {
+export function validateBasicInfo(
+  values: BasicInfo,
+  location: LocationInfo,
+  about: AboutInfo
+): BasicFormErrors {
+  const errors:
+    BasicFormErrors = {};
+
+  if (
+    isBlank(
+      values.fullName
+    )
+  ) {
     errors.fullName =
       "Please enter your full name.";
   } else if (
-    values.fullName.trim().length < 3
+    values.fullName
+      .trim()
+      .length < 3
   ) {
     errors.fullName =
       "Full name must contain at least 3 characters.";
   }
 
-  if (isBlank(values.email)) {
+  if (
+    isBlank(
+      values.email
+    )
+  ) {
     errors.email =
       "Please enter your email address.";
   } else {
@@ -110,7 +147,11 @@ export function validateBasicInfo(
     }
   }
 
-  if (isBlank(values.mobile)) {
+  if (
+    isBlank(
+      values.mobile
+    )
+  ) {
     errors.mobile =
       "Please enter your mobile number.";
   } else {
@@ -129,7 +170,11 @@ export function validateBasicInfo(
     }
   }
 
-  if (isBlank(values.dateOfBirth)) {
+  if (
+    isBlank(
+      values.dateOfBirth
+    )
+  ) {
     errors.dateOfBirth =
       "Please select your date of birth.";
   } else {
@@ -138,7 +183,10 @@ export function validateBasicInfo(
         values.dateOfBirth
       );
 
-    if (calculatedAge === null) {
+    if (
+      calculatedAge ===
+      null
+    ) {
       errors.dateOfBirth =
         "Please select a valid date of birth.";
     } else if (
@@ -154,13 +202,19 @@ export function validateBasicInfo(
     }
   }
 
-  if (isBlank(values.gender)) {
+  if (
+    isBlank(
+      values.gender
+    )
+  ) {
     errors.gender =
       "Please select your gender.";
   }
 
   if (
-    isBlank(values.maritalStatus)
+    isBlank(
+      values.maritalStatus
+    )
   ) {
     errors.maritalStatus =
       "Please select your marital status.";
@@ -169,70 +223,203 @@ export function validateBasicInfo(
   if (
     values.age.trim() &&
     (
-      Number(values.age) < 18 ||
-      Number(values.age) > 100
+      Number(
+        values.age
+      ) < 18 ||
+      Number(
+        values.age
+      ) > 100
     )
   ) {
     errors.age =
       "Age must be between 18 and 100.";
   }
 
+  /*
+   * Current location is required.
+   */
+
+  if (
+    isBlank(
+      location.country
+    )
+  ) {
+    errors.country =
+      "Please select your current country.";
+  }
+
+  if (
+    isBlank(
+      location.state
+    )
+  ) {
+    errors.state =
+      "Please select your current state.";
+  }
+
+  if (
+    isBlank(
+      location.city
+    )
+  ) {
+    errors.city =
+      "Please select your current city.";
+  }
+
+  /*
+   * About Me is required under the
+   * final unified completion rule.
+   */
+  if (
+    isBlank(
+      about.aboutMe
+    )
+  ) {
+    errors.aboutMe =
+      "Please tell us a little about yourself.";
+  } else if (
+    about.aboutMe
+      .trim()
+      .length < 30
+  ) {
+    errors.aboutMe =
+      "About Me should contain at least 30 characters.";
+  } else if (
+    about.aboutMe
+      .trim()
+      .length > 2000
+  ) {
+    errors.aboutMe =
+      "About Me cannot exceed 2000 characters.";
+  }
+
   return errors;
 }
+
+/*
+ * =========================================================
+ * Church Information
+ * =========================================================
+ */
 
 export function validateChurchInfo(
   values: ChurchInfo,
   location: LocationSelection
 ): ChurchFormErrors {
-  const errors: ChurchFormErrors =
-    {};
+  const errors:
+    ChurchFormErrors = {};
 
-  if (isBlank(values.churchName)) {
+  if (
+    isBlank(
+      values.churchName
+    )
+  ) {
     errors.churchName =
       "Please enter your church name.";
   } else if (
-    values.churchName.trim().length < 2
+    values.churchName
+      .trim()
+      .length < 2
   ) {
     errors.churchName =
       "Church name must contain at least 2 characters.";
   }
 
   if (
-    isBlank(values.denomination)
+    isBlank(
+      values.denomination
+    )
   ) {
     errors.denomination =
       "Please select your denomination.";
   }
 
-  if (isBlank(location.state)) {
+  /*
+   * Final rule: pastor information
+   * is required.
+   */
+  if (
+    isBlank(
+      values.pastorName
+    )
+  ) {
+    errors.pastorName =
+      "Please enter your pastor's name.";
+  }
+
+  /*
+   * Baptism answer is required.
+   */
+  if (
+    isBlank(
+      values.baptized
+    )
+  ) {
+    errors.baptized =
+      "Please select your baptism status.";
+  }
+
+  /*
+   * Membership information is part
+   * of complete church information.
+   */
+ 
+
+  if (
+    isBlank(
+      location.state
+    )
+  ) {
     errors.churchState =
       "Please select the church state.";
   }
 
   if (
-    !isBlank(location.state) &&
-    isBlank(location.district)
+    !isBlank(
+      location.state
+    ) &&
+    isBlank(
+      location.district
+    )
   ) {
     errors.churchDistrict =
       "Please select the church district.";
   }
 
   if (
-    !isBlank(location.state) &&
-    isBlank(location.city)
+    !isBlank(
+      location.state
+    ) &&
+    isBlank(
+      location.city
+    )
   ) {
     errors.churchCity =
       "Please select the church city.";
   }
 
+  /*
+   * The Church form serializes the
+   * selected location into churchAddress,
+   * so a complete location satisfies
+   * the backend churchAddress field.
+   */
+
   return errors;
 }
+
+/*
+ * =========================================================
+ * Education & Career
+ * =========================================================
+ */
 
 export function validateEducationInfo(
   values: EducationInfo
 ): FieldErrors<EducationInfo> {
-  const errors: FieldErrors<EducationInfo> =
-    {};
+  const errors:
+    FieldErrors<EducationInfo> =
+      {};
 
   if (
     isBlank(
@@ -243,22 +430,48 @@ export function validateEducationInfo(
       "Please select your highest education.";
   }
 
-  if (isBlank(values.profession)) {
+  if (
+    isBlank(
+      values.profession
+    )
+  ) {
     errors.profession =
       "Please select your profession.";
   }
 
+  /*
+   * Company is now required.
+   */
   if (
-    values.company.trim() &&
-    values.company.trim().length < 2
+    isBlank(
+      values.company
+    )
   ) {
     errors.company =
-      "Please enter a valid company or organization name.";
+      "Please enter your company or organization. If not applicable, enter N/A.";
+  } else if (
+    values.company
+      .trim()
+      .length < 2
+  ) {
+    errors.company =
+      "Please enter a valid company or organization.";
   }
 
+  /*
+   * Annual income is now required.
+   */
   if (
-    values.annualIncome.trim() &&
-    values.annualIncome.trim().length < 2
+    isBlank(
+      values.annualIncome
+    )
+  ) {
+    errors.annualIncome =
+      "Please enter your annual income.";
+  } else if (
+    values.annualIncome
+      .trim()
+      .length < 2
   ) {
     errors.annualIncome =
       "Please enter a valid annual income.";
@@ -267,39 +480,72 @@ export function validateEducationInfo(
   return errors;
 }
 
+/*
+ * =========================================================
+ * Family Information
+ * =========================================================
+ */
+
 export function validateFamilyInfo(
   values: FamilyInfo,
   location: LocationSelection
 ): FamilyFormErrors {
-  const errors: FamilyFormErrors =
-    {};
+  const errors:
+    FamilyFormErrors = {};
 
-  if (isBlank(values.fatherName)) {
+  if (
+    isBlank(
+      values.fatherName
+    )
+  ) {
     errors.fatherName =
       "Please enter your father's name.";
   } else if (
-    values.fatherName.trim().length < 2
+    values.fatherName
+      .trim()
+      .length < 2
   ) {
     errors.fatherName =
       "Father's name must contain at least 2 characters.";
   }
 
-  if (isBlank(values.motherName)) {
+  if (
+    isBlank(
+      values.motherName
+    )
+  ) {
     errors.motherName =
       "Please enter your mother's name.";
   } else if (
-    values.motherName.trim().length < 2
+    values.motherName
+      .trim()
+      .length < 2
   ) {
     errors.motherName =
       "Mother's name must contain at least 2 characters.";
   }
 
-  if (values.siblings.trim()) {
+  /*
+   * Siblings is now required.
+   * 0 is a valid answer.
+   */
+  if (
+    isBlank(
+      values.siblings
+    )
+  ) {
+    errors.siblings =
+      "Please enter the number of siblings. Enter 0 if none.";
+  } else {
     const siblings =
-      Number(values.siblings);
+      Number(
+        values.siblings
+      );
 
     if (
-      !Number.isInteger(siblings) ||
+      !Number.isInteger(
+        siblings
+      ) ||
       siblings < 0 ||
       siblings > 20
     ) {
@@ -308,22 +554,34 @@ export function validateFamilyInfo(
     }
   }
 
-  if (isBlank(location.state)) {
+  if (
+    isBlank(
+      location.state
+    )
+  ) {
     errors.familyState =
       "Please select your family state.";
   }
 
   if (
-    !isBlank(location.state) &&
-    isBlank(location.district)
+    !isBlank(
+      location.state
+    ) &&
+    isBlank(
+      location.district
+    )
   ) {
     errors.familyDistrict =
       "Please select your family district.";
   }
 
   if (
-    !isBlank(location.state) &&
-    isBlank(location.city)
+    !isBlank(
+      location.state
+    ) &&
+    isBlank(
+      location.city
+    )
   ) {
     errors.familyCity =
       "Please select your family city.";
@@ -332,11 +590,18 @@ export function validateFamilyInfo(
   return errors;
 }
 
+/*
+ * =========================================================
+ * Partner Preferences
+ * =========================================================
+ */
+
 export function validatePreferenceInfo(
   values: PreferenceInfo
 ): FieldErrors<PreferenceInfo> {
-  const errors: FieldErrors<PreferenceInfo> =
-    {};
+  const errors:
+    FieldErrors<PreferenceInfo> =
+      {};
 
   const ageFrom =
     Number(
@@ -356,7 +621,9 @@ export function validatePreferenceInfo(
     errors.preferredAgeFrom =
       "Please enter the minimum preferred age.";
   } else if (
-    !Number.isInteger(ageFrom) ||
+    !Number.isInteger(
+      ageFrom
+    ) ||
     ageFrom < 18 ||
     ageFrom > 100
   ) {
@@ -372,7 +639,9 @@ export function validatePreferenceInfo(
     errors.preferredAgeTo =
       "Please enter the maximum preferred age.";
   } else if (
-    !Number.isInteger(ageTo) ||
+    !Number.isInteger(
+      ageTo
+    ) ||
     ageTo < 18 ||
     ageTo > 100
   ) {
@@ -419,32 +688,34 @@ export function hasValidationErrors<T>(
 }
 
 export function focusFirstInvalidField(): void {
-  window.requestAnimationFrame(() => {
-    const wrapper =
-      document.querySelector<HTMLElement>(
-        '[data-field-error="true"]'
-      );
+  window.requestAnimationFrame(
+    () => {
+      const wrapper =
+        document.querySelector<HTMLElement>(
+          '[data-field-error="true"]'
+        );
 
-    if (!wrapper) {
-      return;
+      if (!wrapper) {
+        return;
+      }
+
+      wrapper.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+
+      const control =
+        wrapper.querySelector<
+          | HTMLInputElement
+          | HTMLSelectElement
+          | HTMLTextAreaElement
+        >(
+          "input, select, textarea"
+        );
+
+      control?.focus({
+        preventScroll: true,
+      });
     }
-
-    wrapper.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-    });
-
-    const control =
-      wrapper.querySelector<
-        | HTMLInputElement
-        | HTMLSelectElement
-        | HTMLTextAreaElement
-      >(
-        "input, select, textarea"
-      );
-
-    control?.focus({
-      preventScroll: true,
-    });
-  });
+  );
 }

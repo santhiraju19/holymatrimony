@@ -1,6 +1,7 @@
 package com.theholymatrimony.backend.security;
 
 import com.theholymatrimony.backend.auth.entity.User;
+import com.theholymatrimony.backend.auth.enums.Role;
 import com.theholymatrimony.backend.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,7 +14,8 @@ import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
-public class CustomUserDetailsService implements UserDetailsService {
+public class CustomUserDetailsService
+        implements UserDetailsService {
 
     private final UserRepository userRepository;
 
@@ -23,30 +25,56 @@ public class CustomUserDetailsService implements UserDetailsService {
             String email
     ) throws UsernameNotFoundException {
 
-        String normalizedEmail = normalizeEmail(email);
+        String normalizedEmail =
+                normalizeEmail(email);
 
-        User user = userRepository
-                .findByEmail(normalizedEmail)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException(
-                                "Invalid email address or password."
+        User user =
+                userRepository
+                        .findByEmail(
+                                normalizedEmail
                         )
-                );
+                        .orElseThrow(
+                                () ->
+                                        new UsernameNotFoundException(
+                                                "Invalid email address or password."
+                                        )
+                        );
 
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getEmail())
-                .password(user.getPassword())
-                .authorities("ROLE_USER")
-                .disabled(!Boolean.TRUE.equals(user.getEnabled()))
+        Role role =
+                user.getRole() == null
+                        ? Role.ROLE_USER
+                        : user.getRole();
+
+        return org.springframework.security
+                .core.userdetails.User
+                .withUsername(
+                        user.getEmail()
+                )
+                .password(
+                        user.getPassword()
+                )
+                .authorities(
+                        role.name()
+                )
+                .disabled(
+                        !Boolean.TRUE.equals(
+                                user.getEnabled()
+                        )
+                )
                 .accountExpired(false)
                 .accountLocked(false)
                 .credentialsExpired(false)
                 .build();
     }
 
-    private String normalizeEmail(String email) {
+    private String normalizeEmail(
+            String email
+    ) {
 
-        if (email == null || email.isBlank()) {
+        if (
+                email == null ||
+                email.isBlank()
+        ) {
             throw new UsernameNotFoundException(
                     "Invalid email address or password."
             );
@@ -54,6 +82,8 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         return email
                 .trim()
-                .toLowerCase(Locale.ROOT);
+                .toLowerCase(
+                        Locale.ROOT
+                );
     }
 }

@@ -2,6 +2,12 @@ import axios from "axios";
 
 import api from "@/lib/api";
 
+export type ProfileVerificationStatus =
+  | "NOT_SUBMITTED"
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED";
+
 export interface PhotoPayload {
   id: number;
   imageUrl: string;
@@ -10,6 +16,9 @@ export interface PhotoPayload {
 }
 
 export interface ProfilePayload {
+  id?: string;
+  userId?: string;
+
   fullName?: string;
   email?: string;
 
@@ -48,6 +57,12 @@ export interface ProfilePayload {
   aboutMe?: string;
 
   completionPercentage?: number;
+  profileCompleted?: boolean;
+
+  verificationStatus?: ProfileVerificationStatus;
+  verificationSubmittedAt?: string | null;
+  verificationReviewedAt?: string | null;
+  verificationReason?: string | null;
 
   photos?: PhotoPayload[];
 }
@@ -103,6 +118,15 @@ const profileService = {
     return response.data.data;
   },
 
+  async submitForVerification(): Promise<ProfilePayload> {
+    const response =
+      await api.post<ApiResponse<ProfilePayload>>(
+        "/profile/verification/submit"
+      );
+
+    return response.data.data;
+  },
+
   async uploadPhoto(
     file: File
   ): Promise<PhotoPayload> {
@@ -119,11 +143,17 @@ const profileService = {
     return response.data.data;
   },
 
-  async deletePhoto(id: number): Promise<void> {
-    await api.delete(`/profile/photos/${id}`);
+  async deletePhoto(
+    id: number
+  ): Promise<void> {
+    await api.delete(
+      `/profile/photos/${id}`
+    );
   },
 
-  async setPrimaryPhoto(id: number): Promise<void> {
+  async setPrimaryPhoto(
+    id: number
+  ): Promise<void> {
     await api.put(
       `/profile/photos/${id}/primary`
     );
@@ -132,9 +162,12 @@ const profileService = {
   async reorderPhotos(
     photoIds: number[]
   ): Promise<void> {
-    await api.put("/profile/photos/order", {
-      photoIds,
-    });
+    await api.put(
+      "/profile/photos/order",
+      {
+        photoIds,
+      }
+    );
   },
 };
 

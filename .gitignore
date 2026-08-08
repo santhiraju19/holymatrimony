@@ -166,3 +166,11 @@ backend_old/
 Thumbs.db
 frontend-backup-*/
 *.zip
+
+# Local backups
+backend-backup-*/
+frontend-backup-*/
+
+# Environment secrets
+backend/.env
+frontend/.env.local

@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Builder
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class PaymentReceiptResponse {
 
-    private Long paymentRecordId;
+    private UUID paymentRecordId;
 
     private String invoiceNumber;
 

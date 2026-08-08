@@ -7,12 +7,18 @@ import {
 
 import Link from "next/link";
 
+
+
 import {
   usePathname,
   useRouter,
 } from "next/navigation";
 
+
+
 import {
+  Bookmark,
+  ChevronDown,
   Crown,
   Heart,
   Home,
@@ -21,11 +27,14 @@ import {
   LogOut,
   MessageCircle,
   Search,
+  Send,
   ShieldCheck,
   Sparkles,
   UserRound,
   X,
 } from "lucide-react";
+
+
 
 import authService, {
   AuthUser,
@@ -36,12 +45,20 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-interface MenuItem {
+interface MenuChild {
   name: string;
   description: string;
   href: string;
   icon: typeof Home;
+}
+
+interface MenuItem {
+  name: string;
+  description: string;
+  href?: string;
+  icon: typeof Home;
   badge?: string;
+  children?: MenuChild[];
 }
 
 const menuItems: MenuItem[] = [
@@ -64,24 +81,43 @@ const menuItems: MenuItem[] = [
     icon: Search,
   },
   {
-    name: "Received Interests",
-    description: "View member interests",
-    href: "/received-interests",
-    icon: Heart,
-  },
-  {
-    name: "Chat",
-    description: "Private conversations",
-    href: "/chat",
-    icon: MessageCircle,
-  },
- {
-  name: "Membership",
-  description: "Manage your subscription",
-  href: "/dashboard/membership",
-  icon: Crown,
-  badge: "Premium",
+  name: "Interests",
+  description: "Sent and received interests",
+  icon: Heart,
+  children: [
+    {
+      name: "Received Interests",
+      description: "Review member interests",
+      href: "/received-interests",
+      icon: Heart,
+    },
+    {
+      name: "Sent Interests",
+      description: "Track interests you sent",
+      href: "/sent-interests",
+      icon: Send,
+    },
+  ],
 },
+{
+  name: "My Shortlists",
+  description: "Saved member profiles",
+  href: "/shortlists",
+  icon: Bookmark,
+},
+{
+  name: "Chat",
+  description: "Private conversations",
+  href: "/chat",
+  icon: MessageCircle,
+},
+  {
+    name: "Membership",
+    description: "Manage your subscription",
+    href: "/dashboard/membership",
+    icon: Crown,
+    badge: "Premium",
+  },
   {
     name: "Privacy Settings",
     description: "Control your visibility",
@@ -126,10 +162,27 @@ export default function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
 
+  const interestsRouteActive =
+    pathname === "/received-interests" ||
+    pathname.startsWith(
+      "/received-interests/"
+    ) ||
+    pathname === "/sent-interests" ||
+    pathname.startsWith(
+      "/sent-interests/"
+    );
+
   const [
     expanded,
     setExpanded,
   ] = useState(mobile);
+
+  const [
+    interestsOpen,
+    setInterestsOpen,
+  ] = useState(
+    interestsRouteActive
+  );
 
   const [
     user,
@@ -154,6 +207,12 @@ export default function Sidebar({
       setExpanded(true);
     }
   }, [mobile]);
+
+  useEffect(() => {
+    if (interestsRouteActive) {
+      setInterestsOpen(true);
+    }
+  }, [interestsRouteActive]);
 
   function isActive(
     href: string
@@ -346,8 +405,191 @@ export default function Sidebar({
 
         {menuItems.map((item) => {
           const Icon = item.icon;
+
+          const childActive =
+            item.children?.some(
+              (child) =>
+                isActive(
+                  child.href
+                )
+            ) ?? false;
+
           const active =
-            isActive(item.href);
+            item.href
+              ? isActive(item.href)
+              : childActive;
+
+          if (item.children) {
+            return (
+              <div
+                key={item.name}
+                className="space-y-1.5"
+              >
+                <button
+                  type="button"
+                  aria-expanded={
+                    interestsOpen
+                  }
+                  title={
+                    showLabels
+                      ? undefined
+                      : item.name
+                  }
+                  onClick={() => {
+                    if (!showLabels) {
+                      setExpanded(true);
+                      setInterestsOpen(true);
+                      return;
+                    }
+
+                    setInterestsOpen(
+                      (current) =>
+                        !current
+                    );
+                  }}
+                  className={[
+                    "group relative flex min-h-[56px] w-full items-center overflow-hidden rounded-2xl text-left transition-all duration-300",
+                    showLabels
+                      ? "gap-3 px-3.5 py-2.5"
+                      : "justify-center px-2 py-2.5",
+                    active
+                      ? "bg-white/[0.10] text-white"
+                      : "text-slate-300 hover:bg-white/[0.08] hover:text-white",
+                  ].join(" ")}
+                >
+                  {active && (
+                    <span className="absolute bottom-2 left-0 top-2 w-1 rounded-r-full bg-[#D4AF37]" />
+                  )}
+
+                  <div
+                    className={[
+                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all duration-300",
+                      active
+                        ? "border-[#D4AF37]/30 bg-[#D4AF37]/15 text-[#F2D675]"
+                        : "border-white/10 bg-white/[0.06] text-slate-300 group-hover:border-white/20 group-hover:bg-white/10 group-hover:text-[#F2D675]",
+                    ].join(" ")}
+                  >
+                    <Icon size={19} />
+                  </div>
+
+                  <div
+                    className={[
+                      "min-w-0 flex-1 overflow-hidden transition-all duration-300",
+                      showLabels
+                        ? "w-auto opacity-100"
+                        : "w-0 opacity-0",
+                    ].join(" ")}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate whitespace-nowrap text-sm font-bold">
+                        {item.name}
+                      </span>
+
+                      <ChevronDown
+                        size={17}
+                        className={[
+                          "shrink-0 transition-transform duration-200",
+                          interestsOpen
+                            ? "rotate-180"
+                            : "",
+                        ].join(" ")}
+                      />
+                    </div>
+
+                    <p className="mt-0.5 truncate whitespace-nowrap text-[11px] text-slate-500 group-hover:text-slate-300">
+                      {item.description}
+                    </p>
+                  </div>
+                </button>
+
+                {showLabels &&
+                  interestsOpen && (
+                    <div className="ml-5 space-y-1 border-l border-white/10 pl-4">
+                      {item.children.map(
+                        (child) => {
+                          const ChildIcon =
+                            child.icon;
+
+                          const childIsActive =
+                            isActive(
+                              child.href
+                            );
+
+                          return (
+                            <Link
+                              key={
+                                child.href
+                              }
+                              href={
+                                child.href
+                              }
+                              onClick={
+                                onClose
+                              }
+                              aria-current={
+                                childIsActive
+                                  ? "page"
+                                  : undefined
+                              }
+                              className={[
+                                "group flex min-h-[50px] items-center gap-3 rounded-xl px-3 py-2 transition-all duration-200",
+                                childIsActive
+                                  ? "bg-gradient-to-r from-[#D4AF37] to-[#F0D576] text-[#071B36] shadow-[0_10px_24px_rgba(212,175,55,0.18)]"
+                                  : "text-slate-400 hover:bg-white/[0.07] hover:text-white",
+                              ].join(
+                                " "
+                              )}
+                            >
+                              <div
+                                className={[
+                                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                                  childIsActive
+                                    ? "bg-[#071B36]/10 text-[#071B36]"
+                                    : "bg-white/[0.06] text-slate-400 group-hover:text-[#F2D675]",
+                                ].join(
+                                  " "
+                                )}
+                              >
+                                <ChildIcon
+                                  size={16}
+                                />
+                              </div>
+
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-bold">
+                                  {
+                                    child.name
+                                  }
+                                </p>
+
+                                <p
+                                  className={[
+                                    "truncate text-[10px]",
+                                    childIsActive
+                                      ? "text-[#071B36]/65"
+                                      : "text-slate-500",
+                                  ].join(
+                                    " "
+                                  )}
+                                >
+                                  {
+                                    child.description
+                                  }
+                                </p>
+                              </div>
+                            </Link>
+                          );
+                        }
+                      )}
+                    </div>
+                  )}
+              </div>
+            );
+          }
+
+          if (!item.href) {
+            return null;
+          }
 
           return (
             <Link

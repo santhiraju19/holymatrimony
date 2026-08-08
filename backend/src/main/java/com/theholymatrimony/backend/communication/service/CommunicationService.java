@@ -440,7 +440,43 @@ public String getUserEmail(
                 .unreadCount(unreadCount)
                 .build();
     }
+/*
+ * ============================================================
+ * CREATE CONVERSATION AFTER INTEREST ACCEPTANCE
+ * ============================================================
+ */
 
+@Transactional
+public UUID ensureConversationExists(
+        UUID firstUserId,
+        UUID secondUserId
+) {
+    User firstUser =
+            getUserById(firstUserId);
+
+    User secondUser =
+            getUserById(secondUserId);
+
+    communicationValidator
+            .validateDifferentUsers(
+                    firstUser.getId(),
+                    secondUser.getId()
+            );
+
+    communicationValidator
+            .validateAcceptedInterest(
+                    firstUser.getId(),
+                    secondUser.getId()
+            );
+
+    Conversation conversation =
+            getOrCreateConversation(
+                    firstUser,
+                    secondUser
+            );
+
+    return conversation.getId();
+}
     /*
      * ============================================================
      * GET OR CREATE CONVERSATION

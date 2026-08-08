@@ -68,6 +68,12 @@ public class EmailOtpDeliveryService {
             String html,
             String emailType
     ) {
+
+        LOGGER.info(
+        "Mail configuration: fromAddress='{}', fromName='{}'",
+        fromAddress,
+        fromName
+);
         try {
             LOGGER.info(
                     "Preparing {} email for {}",

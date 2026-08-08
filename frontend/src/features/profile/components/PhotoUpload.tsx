@@ -16,6 +16,7 @@ import {
   Loader2,
   ShieldCheck,
   Sparkles,
+  TrendingUp,
 } from "lucide-react";
 
 import Button from "@/components/ui/Button";
@@ -59,9 +60,7 @@ function mapApiPhoto(
 ): PhotoItem {
   return {
     id: photo.id,
-    preview: resolvePhotoUrl(
-      photo.imageUrl
-    ),
+    preview: resolvePhotoUrl(photo.imageUrl),
     isPrimary: photo.primaryPhoto,
     displayOrder: photo.displayOrder,
   };
@@ -120,16 +119,12 @@ export default function PhotoUpload({
   const [
     processingPhotoId,
     setProcessingPhotoId,
-  ] = useState<string | null>(
-    null
-  );
+  ] = useState<string | null>(null);
 
   const [
     error,
     setError,
-  ] = useState<string | null>(
-    null
-  );
+  ] = useState<string | null>(null);
 
   const primaryPhoto =
     photos.find(
@@ -331,10 +326,11 @@ export default function PhotoUpload({
       setUploadPercentage(100);
 
       /*
-       * When users choose to upload photos,
+       * Photos are optional.
+       *
+       * If a user chooses to upload photos,
        * automatically make the first photo
-       * primary if the backend did not assign
-       * a primary photo.
+       * primary when no primary photo exists.
        */
       const hasPrimary =
         combinedPhotos.some(
@@ -462,6 +458,18 @@ export default function PhotoUpload({
     }
   }
 
+  /*
+   * FINAL RULE:
+   *
+   * Photos are OPTIONAL.
+   *
+   * A user can continue to Review without
+   * uploading any photos.
+   *
+   * Photo count must never be used here
+   * to block profile completion or
+   * verification eligibility.
+   */
   function handleContinue(): void {
     if (
       loading ||
@@ -481,6 +489,10 @@ export default function PhotoUpload({
 
   return (
     <div className="space-y-6">
+      {/* =====================================================
+          Header
+          ===================================================== */}
+
       <Card className="overflow-hidden p-0">
         <div className="border-b border-slate-200 bg-gradient-to-r from-violet-50 via-white to-blue-50 px-4 py-6 sm:px-7 sm:py-8 lg:px-10">
           <div className="flex items-start gap-4">
@@ -489,25 +501,66 @@ export default function PhotoUpload({
             </div>
 
             <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#B38B19]">
-                Step 6 of 7
-              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#B38B19]">
+                  Step 6 of 7
+                </p>
+
+                <span className="rounded-full bg-blue-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-blue-700">
+                  Optional
+                </span>
+              </div>
 
               <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#0B2D5C] sm:text-3xl">
                 Profile Photos
               </h2>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                Photos are optional. You
-                can upload them now or add
-                them later from your
-                profile.
+                Photos are optional and do not
+                affect your profile completion
+                or eligibility for profile
+                verification. You can upload
+                them now or add them later.
               </p>
             </div>
           </div>
         </div>
 
         <div className="p-4 sm:p-7 lg:p-10">
+          {/* =================================================
+              Main recommendation
+              ================================================= */}
+
+          <div className="mb-7 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-blue-50 p-5 sm:p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                <TrendingUp size={22} />
+              </div>
+
+              <div>
+                <h3 className="font-bold text-[#0B2D5C]">
+                  Add photos for better profile
+                  visibility
+                </h3>
+
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                  While photos are not required,
+                  adding clear and recent photos
+                  can help your profile attract
+                  more attention and relevant
+                  match interest. A complete
+                  profile with good photos also
+                  helps other members get to
+                  know you better.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* =================================================
+              Information cards
+              ================================================= */}
+
           <div className="mb-7 grid gap-4 sm:grid-cols-3">
             <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
               <ImagePlus
@@ -516,13 +569,14 @@ export default function PhotoUpload({
               />
 
               <p className="mt-3 text-sm font-bold text-blue-950">
-                Photos are optional
+                Completely optional
               </p>
 
               <p className="mt-1 text-xs leading-5 text-blue-700">
-                Continue now and add
-                photos later whenever you
-                are ready.
+                Skip this step if you prefer.
+                Photos are not counted toward
+                your profile completion
+                percentage.
               </p>
             </div>
 
@@ -533,13 +587,13 @@ export default function PhotoUpload({
               />
 
               <p className="mt-3 text-sm font-bold text-amber-950">
-                Choose a primary
+                Better visibility
               </p>
 
               <p className="mt-1 text-xs leading-5 text-amber-700">
-                When photos are uploaded,
-                one can be selected as
-                your main profile picture.
+                Adding a clear primary photo can
+                make your profile more
+                noticeable to potential matches.
               </p>
             </div>
 
@@ -550,12 +604,14 @@ export default function PhotoUpload({
               />
 
               <p className="mt-3 text-sm font-bold text-emerald-950">
-                Private and secure
+                Verification unaffected
               </p>
 
               <p className="mt-1 text-xs leading-5 text-emerald-700">
-                Your photos are handled
-                securely.
+                You can complete your profile
+                and become eligible for
+                verification without uploading
+                photos.
               </p>
             </div>
           </div>
@@ -566,16 +622,41 @@ export default function PhotoUpload({
             progress={progress}
           />
 
+          {/* =================================================
+              No-photo recommendation
+              ================================================= */}
+
           {photos.length === 0 &&
             !loading && (
-              <div className="mt-6 rounded-2xl border border-violet-100 bg-violet-50/70 px-4 py-4 text-sm leading-6 text-violet-800">
-                You may skip this step.
-                Adding a clear profile
-                photo later can help
-                people recognize your
-                profile.
+              <div className="mt-6 rounded-2xl border border-violet-100 bg-violet-50/70 px-4 py-4">
+                <div className="flex items-start gap-3">
+                  <Sparkles
+                    size={20}
+                    className="mt-0.5 shrink-0 text-violet-700"
+                  />
+
+                  <div>
+                    <p className="text-sm font-bold text-violet-900">
+                      You can skip photos for now
+                    </p>
+
+                    <p className="mt-1 text-sm leading-6 text-violet-700">
+                      Your profile can still
+                      reach 100% completion and
+                      become eligible for
+                      verification. We recommend
+                      adding photos later for
+                      better visibility and
+                      stronger match interest.
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
+
+          {/* =================================================
+              Status
+              ================================================= */}
 
           {loading && (
             <div
@@ -650,6 +731,10 @@ export default function PhotoUpload({
             </div>
           )}
 
+          {/* =================================================
+              Upload area
+              ================================================= */}
+
           {!loading &&
             photos.length <
               MAX_PHOTOS && (
@@ -682,6 +767,10 @@ export default function PhotoUpload({
         </div>
       </Card>
 
+      {/* =====================================================
+          Photo grid / guidelines
+          ===================================================== */}
+
       <div className="grid gap-6 xl:grid-cols-3">
         <div className="xl:col-span-2">
           {loading ? (
@@ -706,9 +795,8 @@ export default function PhotoUpload({
                   </h3>
 
                   <p className="mt-1 text-sm text-slate-500">
-                    Preview, delete or
-                    select your primary
-                    photo.
+                    Preview, delete or select
+                    your primary photo.
                   </p>
                 </div>
 
@@ -745,11 +833,13 @@ export default function PhotoUpload({
                   No photos uploaded
                 </h3>
 
-                <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
-                  You can continue without
-                  uploading photos and add
-                  them later from your
-                  profile.
+                <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
+                  That's okay. Photos are
+                  optional and do not prevent
+                  profile completion or
+                  verification. You can add
+                  photos later to improve your
+                  profile visibility.
                 </p>
               </div>
             </Card>
@@ -758,6 +848,39 @@ export default function PhotoUpload({
 
         <UploadGuidelines />
       </div>
+
+      {/* =====================================================
+          Final reminder
+          ===================================================== */}
+
+      <Card className="border-blue-100 bg-gradient-to-r from-blue-50 via-white to-amber-50 p-5 sm:p-6">
+        <div className="flex items-start gap-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0B2D5C] text-white">
+            <ShieldCheck size={21} />
+          </div>
+
+          <div>
+            <h3 className="font-bold text-[#0B2D5C]">
+              Photos do not affect verification
+              eligibility
+            </h3>
+
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Complete all required information
+              in your profile to reach 100% and
+              become eligible for profile
+              verification. Photos are optional,
+              but adding clear photos is strongly
+              recommended for better visibility
+              and match interest.
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      {/* =====================================================
+          Navigation
+          ===================================================== */}
 
       <Card className="p-4 sm:p-6">
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">

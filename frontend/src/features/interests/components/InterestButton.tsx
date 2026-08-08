@@ -1,24 +1,59 @@
 "use client";
 
-import { Heart, Loader2 } from "lucide-react";
+import {
+  CheckCircle2,
+  Heart,
+  Loader2,
+} from "lucide-react";
+
 import useInterest from "../hooks/useInterest";
 
 interface Props {
-  memberId: number;
+  receiverProfileId: string;
   memberName: string;
+  message?: string;
 }
 
 export default function InterestButton({
-  memberId,
+  receiverProfileId,
   memberName,
+  message,
 }: Props) {
-  const { loading, sendInterest } = useInterest();
+  const {
+    loading,
+    sent,
+    sendInterest,
+  } = useInterest();
 
   return (
     <button
-      disabled={loading}
-      onClick={() => sendInterest(memberId, memberName)}
-      className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B2D5C] py-3 font-semibold text-white transition hover:bg-[#123C73] disabled:opacity-60"
+      type="button"
+      disabled={loading || sent}
+    onClick={(event) => {
+  event.preventDefault();
+  event.stopPropagation();
+
+  console.log(
+    "Express Interest clicked",
+    receiverProfileId,
+    memberName
+  );
+
+  alert("Express Interest button clicked");
+
+  void sendInterest(
+    receiverProfileId,
+    memberName,
+    message
+  );
+}}
+      className={[
+        "flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold text-white transition",
+        sent
+          ? "cursor-default bg-emerald-600"
+          : "bg-[#0B2D5C] hover:bg-[#123C73]",
+        "disabled:opacity-70",
+      ].join(" ")}
     >
       {loading ? (
         <>
@@ -28,10 +63,15 @@ export default function InterestButton({
           />
           Sending...
         </>
+      ) : sent ? (
+        <>
+          <CheckCircle2 size={18} />
+          Interest Sent
+        </>
       ) : (
         <>
           <Heart size={18} />
-          Send Interest
+          Express Interest
         </>
       )}
     </button>

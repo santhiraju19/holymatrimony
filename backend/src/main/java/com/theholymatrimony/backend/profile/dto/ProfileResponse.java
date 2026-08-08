@@ -1,9 +1,11 @@
 package com.theholymatrimony.backend.profile.dto;
 
+import com.theholymatrimony.backend.profile.enums.ProfileVerificationStatus;
 import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -62,4 +64,10 @@ public class ProfileResponse {
     // ===== Completion =====
     private Integer completionPercentage;
     private Boolean profileCompleted;
+
+    // ===== Verification =====
+    private ProfileVerificationStatus verificationStatus;
+    private LocalDateTime verificationSubmittedAt;
+    private LocalDateTime verificationReviewedAt;
+    private String verificationReason;
 }

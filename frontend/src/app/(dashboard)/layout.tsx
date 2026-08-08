@@ -1,3 +1,4 @@
+import ProtectedRoute from "@/features/auth/components/ProtectedRoute";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
 export default function Layout({
@@ -6,8 +7,10 @@ export default function Layout({
   children: React.ReactNode;
 }) {
   return (
-    <DashboardLayout>
-      {children}
-    </DashboardLayout>
+    <ProtectedRoute>
+      <DashboardLayout>
+        {children}
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

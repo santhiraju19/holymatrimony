@@ -7,6 +7,7 @@ import com.theholymatrimony.backend.payments.dto.PaymentReceiptResponse;
 import com.theholymatrimony.backend.payments.dto.VerifyPaymentRequest;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface PaymentService {
 
@@ -25,7 +26,7 @@ public interface PaymentService {
     );
 
     PaymentReceiptResponse getPaymentReceipt(
-            Long paymentId,
+            UUID paymentId,
             String authenticatedEmail
     );
 }

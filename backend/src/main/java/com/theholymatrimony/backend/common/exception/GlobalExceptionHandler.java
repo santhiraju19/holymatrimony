@@ -1,6 +1,7 @@
 package com.theholymatrimony.backend.common.exception;
 
 import com.theholymatrimony.backend.auth.exception.InvalidRefreshTokenException;
+import com.theholymatrimony.backend.auth.exception.AccountStatusException;
 import com.theholymatrimony.backend.common.response.ApiResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -303,6 +304,25 @@ public ApiResponse handleAccessDenied(
      *
      * Do not expose exception details to API clients.
      */
+
+    /*
+ * 403 Forbidden
+ *
+ * Account has been suspended,
+ * blocked, or deactivated by admin.
+ */
+@ExceptionHandler(AccountStatusException.class)
+@ResponseStatus(HttpStatus.FORBIDDEN)
+public ApiResponse handleAccountStatusException(
+        AccountStatusException exception
+) {
+    return buildResponse(
+            resolveMessage(
+                    exception,
+                    "Your account is not currently active."
+            )
+    );
+}
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiResponse handleUnexpectedException(

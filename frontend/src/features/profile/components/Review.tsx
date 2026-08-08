@@ -124,7 +124,7 @@ function ReviewSection({
 
           {complete
             ? "Complete"
-            : "Can improve"}
+            : "Needs attention"}
         </div>
       </div>
 
@@ -132,6 +132,14 @@ function ReviewSection({
         {children}
       </div>
     </Card>
+  );
+}
+
+function hasText(
+  value?: string | null
+): boolean {
+  return Boolean(
+    value?.trim()
   );
 }
 
@@ -151,77 +159,234 @@ export default function Review({
     photoInfo,
   } = useProfile();
 
+  /*
+   * =========================================================
+   * Section completion
+   * =========================================================
+   *
+   * FINAL RULE:
+   *
+   * Every profile-information field is required.
+   * Photos are the only optional profile item.
+   */
+
   const basicComplete =
-    Boolean(basicInfo.fullName.trim()) &&
-    Boolean(basicInfo.email.trim()) &&
-    Boolean(basicInfo.mobile.trim()) &&
-    Boolean(basicInfo.dateOfBirth.trim()) &&
-    Boolean(basicInfo.gender.trim()) &&
-    Boolean(
-      basicInfo.maritalStatus.trim()
+    hasText(
+      basicInfo.mobile
+    ) &&
+    hasText(
+      basicInfo.dateOfBirth
+    ) &&
+    hasText(
+      basicInfo.gender
+    ) &&
+    hasText(
+      basicInfo.maritalStatus
+    ) &&
+    hasText(
+      locationInfo.city
+    ) &&
+    hasText(
+      locationInfo.state
+    ) &&
+    hasText(
+      locationInfo.country
+    ) &&
+    hasText(
+      aboutInfo.aboutMe
     );
 
   const churchComplete =
-    Boolean(
-      churchInfo.churchName.trim()
+    hasText(
+      churchInfo.denomination
     ) &&
-    Boolean(
-      churchInfo.denomination.trim()
+    hasText(
+      churchInfo.churchName
     ) &&
-    Boolean(
-      churchInfo.churchAddress.trim()
+    hasText(
+      churchInfo.pastorName
+    ) &&
+    hasText(
+      churchInfo.baptized
+    ) &&
+  
+    hasText(
+      churchInfo.churchAddress
     );
 
   const educationComplete =
-    Boolean(
-      educationInfo.highestEducation.trim()
+    hasText(
+      educationInfo.highestEducation
     ) &&
-    Boolean(
-      educationInfo.profession.trim()
+    hasText(
+      educationInfo.profession
+    ) &&
+    hasText(
+      educationInfo.company
+    ) &&
+    hasText(
+      educationInfo.annualIncome
     );
 
   const familyComplete =
-    Boolean(
-      familyInfo.fatherName.trim()
+    hasText(
+      familyInfo.fatherName
     ) &&
-    Boolean(
-      familyInfo.motherName.trim()
+    hasText(
+      familyInfo.motherName
     ) &&
-    Boolean(
-      familyInfo.familyLocation.trim()
+    hasText(
+      familyInfo.siblings
+    ) &&
+    hasText(
+      familyInfo.familyLocation
     );
 
   const preferenceComplete =
-    Boolean(
-      preferenceInfo.preferredAgeFrom.trim()
+    hasText(
+      preferenceInfo.preferredAgeFrom
     ) &&
-    Boolean(
-      preferenceInfo.preferredAgeTo.trim()
+    hasText(
+      preferenceInfo.preferredAgeTo
     ) &&
-    Boolean(
-      preferenceInfo.preferredDenomination.trim()
+    hasText(
+      preferenceInfo.preferredDenomination
     ) &&
-    Boolean(
-      preferenceInfo.preferredEducation.trim()
+    hasText(
+      preferenceInfo.preferredEducation
     );
+
+  /*
+   * =========================================================
+   * Exact 26-field completion
+   * =========================================================
+   *
+   * This intentionally mirrors the backend
+   * ProfileService completion rule.
+   *
+   * Photos are excluded.
+   */
+
+  const requiredFields = [
+    // Basic
+    hasText(
+      basicInfo.mobile
+    ),
+    hasText(
+      basicInfo.dateOfBirth
+    ),
+    hasText(
+      basicInfo.gender
+    ),
+    hasText(
+      basicInfo.maritalStatus
+    ),
+
+    // Current location
+    hasText(
+      locationInfo.city
+    ),
+    hasText(
+      locationInfo.state
+    ),
+    hasText(
+      locationInfo.country
+    ),
+
+    // About
+    hasText(
+      aboutInfo.aboutMe
+    ),
+
+    // Church
+    hasText(
+      churchInfo.denomination
+    ),
+    hasText(
+      churchInfo.churchName
+    ),
+    hasText(
+      churchInfo.pastorName
+    ),
+    hasText(
+      churchInfo.baptized
+    ),
+    hasText(
+      churchInfo.membershipId
+    ),
+    hasText(
+      churchInfo.churchAddress
+    ),
+
+    // Education
+    hasText(
+      educationInfo.highestEducation
+    ),
+    hasText(
+      educationInfo.profession
+    ),
+    hasText(
+      educationInfo.company
+    ),
+    hasText(
+      educationInfo.annualIncome
+    ),
+
+    // Family
+    hasText(
+      familyInfo.fatherName
+    ),
+    hasText(
+      familyInfo.motherName
+    ),
+    hasText(
+      familyInfo.siblings
+    ),
+    hasText(
+      familyInfo.familyLocation
+    ),
+
+    // Preferences
+    hasText(
+      preferenceInfo.preferredAgeFrom
+    ),
+    hasText(
+      preferenceInfo.preferredAgeTo
+    ),
+    hasText(
+      preferenceInfo.preferredDenomination
+    ),
+    hasText(
+      preferenceInfo.preferredEducation
+    ),
+  ];
+
+  const completedFields =
+    requiredFields.filter(
+      Boolean
+    ).length;
+
+  const totalRequiredFields =
+    requiredFields.length;
+
+  const completionPercentage =
+    Math.floor(
+      (
+        completedFields /
+        totalRequiredFields
+      ) *
+        100
+    );
+
+  const profileInformationComplete =
+    completedFields ===
+    totalRequiredFields;
 
   const primaryPhoto =
     photoInfo.photos.find(
-      (photo) => photo.isPrimary
+      (photo) =>
+        photo.isPrimary
     ) ?? null;
-
-  const completedSections = [
-    basicComplete,
-    churchComplete,
-    educationComplete,
-    familyComplete,
-    preferenceComplete,
-  ].filter(Boolean).length;
-
-  const completionPercentage =
-    Math.round(
-      (completedSections / 5) * 100
-    );
 
   async function handleSubmit(): Promise<void> {
     if (saving) {
@@ -233,11 +398,17 @@ export default function Review({
 
   return (
     <div className="space-y-6">
+      {/* =====================================================
+          Review completion summary
+          ===================================================== */}
+
       <Card className="overflow-hidden p-0">
         <div className="border-b border-slate-200 bg-gradient-to-r from-emerald-50 via-white to-amber-50 px-4 py-6 sm:px-7 sm:py-8 lg:px-10">
           <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#0B2D5C] text-white shadow-lg sm:h-14 sm:w-14">
-              <ShieldCheck size={27} />
+              <ShieldCheck
+                size={27}
+              />
             </div>
 
             <div className="min-w-0">
@@ -246,12 +417,14 @@ export default function Review({
               </p>
 
               <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#0B2D5C] sm:text-3xl">
-                Review Your Profile
+                Review Your
+                Profile
               </h2>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                Review your information
-                before saving your Holy
+                Review all of your
+                information before
+                saving your Holy
                 Matrimony profile.
               </p>
             </div>
@@ -259,90 +432,155 @@ export default function Review({
         </div>
 
         <div className="p-4 sm:p-7 lg:p-10">
-          <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
+          <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
             <div>
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className="text-sm font-semibold text-slate-500">
-                    Required sections
+                    Required profile
+                    information
                   </p>
 
                   <p className="mt-1 text-2xl font-bold text-[#0B2D5C] sm:text-3xl">
-                    {completionPercentage}%
-                    complete
+                    {
+                      completionPercentage
+                    }
+                    % complete
                   </p>
                 </div>
 
                 <p className="text-sm font-bold text-slate-500">
-                  {completedSections}/5
+                  {
+                    completedFields
+                  }
+                  /
+                  {
+                    totalRequiredFields
+                  }
                 </p>
               </div>
 
               <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-200">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#0B2D5C] to-blue-500 transition-all duration-500"
+                  className={[
+                    "h-full rounded-full transition-all duration-500",
+                    profileInformationComplete
+                      ? "bg-gradient-to-r from-emerald-500 to-emerald-600"
+                      : "bg-gradient-to-r from-[#0B2D5C] to-blue-500",
+                  ].join(
+                    " "
+                  )}
                   style={{
                     width: `${completionPercentage}%`,
                   }}
                 />
               </div>
 
-              <p className="mt-3 text-sm leading-6 text-slate-500">
-                Photos, company, income,
-                pastor information and
-                About Me are optional and
-                may be added later.
-              </p>
+              {profileInformationComplete ? (
+                <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+                  <CheckCircle2
+                    size={18}
+                    className="mt-0.5 shrink-0"
+                  />
+
+                  <span>
+                    All required
+                    profile
+                    information is
+                    complete. Photos
+                    are optional and
+                    may be added
+                    later.
+                  </span>
+                </div>
+              ) : (
+                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+                  Complete all
+                  required profile
+                  information to
+                  reach 100% and
+                  become eligible
+                  for profile
+                  verification.
+                </div>
+              )}
             </div>
 
             <div
               className={[
                 "flex h-24 w-24 items-center justify-center rounded-full border-8 text-xl font-bold shadow-inner",
-                completionPercentage === 100
+                profileInformationComplete
                   ? "border-emerald-100 bg-emerald-50 text-emerald-700"
                   : "border-amber-100 bg-amber-50 text-amber-700",
-              ].join(" ")}
+              ].join(
+                " "
+              )}
             >
-              {completionPercentage}%
+              {
+                completionPercentage
+              }
+              %
             </div>
           </div>
         </div>
       </Card>
 
+      {/* =====================================================
+          Basic Information
+          ===================================================== */}
+
       <ReviewSection
         title="Basic Information"
-        description="Your personal and contact details."
-        icon={<UserRound size={22} />}
-        complete={basicComplete}
+        description="Your personal details, current location and profile introduction."
+        icon={
+          <UserRound
+            size={22}
+          />
+        }
+        complete={
+          basicComplete
+        }
       >
         <SummaryItem
           label="Full Name"
-          value={basicInfo.fullName}
+          value={
+            basicInfo.fullName
+          }
         />
 
         <SummaryItem
           label="Email"
-          value={basicInfo.email}
+          value={
+            basicInfo.email
+          }
         />
 
         <SummaryItem
           label="Mobile"
-          value={basicInfo.mobile}
+          value={
+            basicInfo.mobile
+          }
         />
 
         <SummaryItem
           label="Date of Birth"
-          value={basicInfo.dateOfBirth}
+          value={
+            basicInfo.dateOfBirth
+          }
         />
 
         <SummaryItem
           label="Age"
-          value={basicInfo.age}
+          value={
+            basicInfo.age
+          }
         />
 
         <SummaryItem
           label="Gender"
-          value={basicInfo.gender}
+          value={
+            basicInfo.gender
+          }
         />
 
         <SummaryItem
@@ -351,17 +589,59 @@ export default function Review({
             basicInfo.maritalStatus
           }
         />
+
+        <SummaryItem
+          label="Current Country"
+          value={
+            locationInfo.country
+          }
+        />
+
+        <SummaryItem
+          label="Current State"
+          value={
+            locationInfo.state
+          }
+        />
+
+        <SummaryItem
+          label="Current City"
+          value={
+            locationInfo.city
+          }
+        />
+
+        <div className="sm:col-span-2">
+          <SummaryItem
+            label="About Me"
+            value={
+              aboutInfo.aboutMe
+            }
+          />
+        </div>
       </ReviewSection>
+
+      {/* =====================================================
+          Church Information
+          ===================================================== */}
 
       <ReviewSection
         title="Church Information"
-        description="Your church and spiritual background."
-        icon={<Church size={22} />}
-        complete={churchComplete}
+        description="Your church membership and spiritual background."
+        icon={
+          <Church
+            size={22}
+          />
+        }
+        complete={
+          churchComplete
+        }
       >
         <SummaryItem
           label="Church Name"
-          value={churchInfo.churchName}
+          value={
+            churchInfo.churchName
+          }
         />
 
         <SummaryItem
@@ -373,13 +653,16 @@ export default function Review({
 
         <SummaryItem
           label="Pastor Name"
-          value={churchInfo.pastorName}
+          value={
+            churchInfo.pastorName
+          }
         />
 
         <SummaryItem
           label="Baptized"
           value={
-            churchInfo.baptized === "true"
+            churchInfo.baptized ===
+            "true"
               ? "Yes"
               : churchInfo.baptized ===
                   "false"
@@ -406,13 +689,21 @@ export default function Review({
         />
       </ReviewSection>
 
+      {/* =====================================================
+          Education & Career
+          ===================================================== */}
+
       <ReviewSection
         title="Education & Career"
-        description="Your education and professional background."
+        description="Your education, profession and employment information."
         icon={
-          <BriefcaseBusiness size={22} />
+          <BriefcaseBusiness
+            size={22}
+          />
         }
-        complete={educationComplete}
+        complete={
+          educationComplete
+        }
       >
         <SummaryItem
           label="Highest Education"
@@ -430,7 +721,9 @@ export default function Review({
 
         <SummaryItem
           label="Company / Organization"
-          value={educationInfo.company}
+          value={
+            educationInfo.company
+          }
         />
 
         <SummaryItem
@@ -441,25 +734,41 @@ export default function Review({
         />
       </ReviewSection>
 
+      {/* =====================================================
+          Family
+          ===================================================== */}
+
       <ReviewSection
         title="Family Details"
-        description="Your family information and home location."
-        icon={<UsersRound size={22} />}
-        complete={familyComplete}
+        description="Your family information and family home location."
+        icon={
+          <UsersRound
+            size={22}
+          />
+        }
+        complete={
+          familyComplete
+        }
       >
         <SummaryItem
           label="Father's Name"
-          value={familyInfo.fatherName}
+          value={
+            familyInfo.fatherName
+          }
         />
 
         <SummaryItem
           label="Mother's Name"
-          value={familyInfo.motherName}
+          value={
+            familyInfo.motherName
+          }
         />
 
         <SummaryItem
           label="Number of Siblings"
-          value={familyInfo.siblings}
+          value={
+            familyInfo.siblings
+          }
         />
 
         <SummaryItem
@@ -470,17 +779,29 @@ export default function Review({
         />
       </ReviewSection>
 
+      {/* =====================================================
+          Preferences
+          ===================================================== */}
+
       <ReviewSection
         title="Partner Preferences"
-        description="The preferences used for match recommendations."
-        icon={<Heart size={22} />}
-        complete={preferenceComplete}
+        description="The preferences used to help find compatible matches."
+        icon={
+          <Heart
+            size={22}
+          />
+        }
+        complete={
+          preferenceComplete
+        }
       >
         <SummaryItem
           label="Preferred Age"
           value={
-            preferenceInfo.preferredAgeFrom &&
-            preferenceInfo.preferredAgeTo
+            preferenceInfo
+              .preferredAgeFrom &&
+            preferenceInfo
+              .preferredAgeTo
               ? `${preferenceInfo.preferredAgeFrom} – ${preferenceInfo.preferredAgeTo}`
               : ""
           }
@@ -501,58 +822,35 @@ export default function Review({
         />
       </ReviewSection>
 
-      {(locationInfo.city ||
-        locationInfo.state ||
-        locationInfo.country ||
-        aboutInfo.aboutMe) && (
-        <ReviewSection
-          title="Additional Information"
-          description="Additional location and profile introduction."
-          icon={<MapPin size={22} />}
-          complete={Boolean(
-            locationInfo.city ||
-              locationInfo.state ||
-              locationInfo.country ||
-              aboutInfo.aboutMe
-          )}
-        >
-          <SummaryItem
-            label="City"
-            value={locationInfo.city}
-          />
-
-          <SummaryItem
-            label="State"
-            value={locationInfo.state}
-          />
-
-          <SummaryItem
-            label="Country"
-            value={locationInfo.country}
-          />
-
-          <SummaryItem
-            label="About Me"
-            value={aboutInfo.aboutMe}
-          />
-        </ReviewSection>
-      )}
+      {/* =====================================================
+          Photos — OPTIONAL
+          ===================================================== */}
 
       <Card className="overflow-hidden p-0">
         <div className="flex flex-col gap-4 border-b border-slate-200 bg-gradient-to-r from-violet-50 via-white to-blue-50 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div className="flex items-start gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#0B2D5C] text-white shadow-md">
-              <Camera size={22} />
+              <Camera
+                size={22}
+              />
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-[#0B2D5C]">
-                Profile Photos
-              </h3>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-lg font-bold text-[#0B2D5C]">
+                  Profile Photos
+                </h3>
+
+                <span className="rounded-full bg-blue-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-blue-700">
+                  Optional
+                </span>
+              </div>
 
               <p className="mt-1 text-sm text-slate-500">
-                Photos are optional and
-                may be added later.
+                Photos are not
+                required for
+                profile completion
+                or verification.
               </p>
             </div>
           </div>
@@ -560,29 +858,72 @@ export default function Review({
           <div
             className={[
               "inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold",
-              photoInfo.photos.length > 0
+              photoInfo.photos
+                .length > 0
                 ? "bg-emerald-100 text-emerald-700"
                 : "bg-slate-100 text-slate-600",
-            ].join(" ")}
+            ].join(
+              " "
+            )}
           >
-            {photoInfo.photos.length > 0 ? (
-              <CheckCircle2 size={15} />
+            {photoInfo.photos
+              .length > 0 ? (
+              <CheckCircle2
+                size={15}
+              />
             ) : (
-              <Camera size={15} />
+              <Camera
+                size={15}
+              />
             )}
 
-            {photoInfo.photos.length > 0
+            {photoInfo.photos
+              .length > 0
               ? `${photoInfo.photos.length} uploaded`
               : "Skipped for now"}
           </div>
         </div>
 
         <div className="p-4 sm:p-6">
+          {/* Recommendation */}
+
+          <div className="mb-5 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 to-amber-50 px-4 py-4">
+            <div className="flex items-start gap-3">
+              <Sparkles
+                size={20}
+                className="mt-0.5 shrink-0 text-[#B38B19]"
+              />
+
+              <div>
+                <p className="text-sm font-bold text-[#0B2D5C]">
+                  Photos are
+                  strongly
+                  recommended
+                </p>
+
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Adding clear,
+                  recent photos can
+                  help your profile
+                  attract more
+                  attention and
+                  relevant match
+                  interest. You can
+                  also upload or
+                  update photos
+                  later.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {primaryPhoto ? (
             <div className="grid gap-5 sm:grid-cols-[120px_1fr] sm:items-center">
               <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-slate-100 shadow-md">
                 <img
-                  src={primaryPhoto.preview}
+                  src={
+                    primaryPhoto.preview
+                  }
                   alt="Primary profile"
                   className="h-full w-full object-cover"
                 />
@@ -594,13 +935,22 @@ export default function Review({
 
               <div>
                 <h4 className="font-bold text-[#0B2D5C]">
-                  Primary photo selected
+                  Primary photo
+                  selected
                 </h4>
 
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Your selected primary
-                  image will appear first
-                  on your public profile.
+                  Your primary
+                  photo will appear
+                  first when other
+                  members view your
+                  profile.
+                </p>
+
+                <p className="mt-2 text-sm font-semibold text-emerald-700">
+                  Great — your
+                  profile includes
+                  a photo.
                 </p>
               </div>
             </div>
@@ -616,45 +966,97 @@ export default function Review({
               </h4>
 
               <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-                You may save your profile
-                now and upload photos later
-                from My Profile.
+                You can complete,
+                save and submit
+                your profile for
+                verification
+                without a photo.
+                We recommend adding
+                one later to
+                improve profile
+                visibility and help
+                potential matches
+                know you better.
               </p>
             </div>
           )}
         </div>
       </Card>
 
-      <Card className="overflow-hidden border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-5 sm:p-7">
+      {/* =====================================================
+          Final readiness
+          ===================================================== */}
+
+      <Card
+        className={[
+          "overflow-hidden p-5 sm:p-7",
+          profileInformationComplete
+            ? "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-amber-50"
+            : "border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50",
+        ].join(" ")}
+      >
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg">
-              <BookOpenCheck size={25} />
+            <div
+              className={[
+                "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg",
+                profileInformationComplete
+                  ? "bg-emerald-600"
+                  : "bg-amber-500",
+              ].join(
+                " "
+              )}
+            >
+              {profileInformationComplete ? (
+                <BookOpenCheck
+                  size={25}
+                />
+              ) : (
+                <Sparkles
+                  size={25}
+                />
+              )}
             </div>
 
             <div>
               <h3 className="text-xl font-bold text-[#0B2D5C]">
-                Ready to save your
-                profile?
+                {profileInformationComplete
+                  ? "Your profile information is complete"
+                  : "Your profile still needs information"}
               </h3>
 
               <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
-                Required information has
-                already been validated on
-                each step. Optional
-                information and photos may
-                be updated later.
+                {profileInformationComplete
+                  ? "All required profile information has been completed. Save your profile to keep the latest details. Photos remain optional."
+                  : "Please return to the relevant steps and complete all required profile information. Photos are the only optional profile item."}
               </p>
             </div>
           </div>
 
-          <div className="inline-flex w-fit items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-emerald-700 shadow-sm ring-1 ring-emerald-200">
-            <ShieldCheck size={17} />
+          <div
+            className={[
+              "inline-flex w-fit items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold shadow-sm ring-1",
+              profileInformationComplete
+                ? "text-emerald-700 ring-emerald-200"
+                : "text-amber-700 ring-amber-200",
+            ].join(
+              " "
+            )}
+          >
+            <ShieldCheck
+              size={17}
+            />
 
-            Secure profile save
+            {profileInformationComplete
+              ? "Ready to save"
+              : `${completedFields}/${totalRequiredFields} fields complete`}
           </div>
         </div>
       </Card>
+
+      {/* =====================================================
+          Navigation
+          ===================================================== */}
 
       <Card className="p-4 sm:p-6">
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -663,8 +1065,12 @@ export default function Review({
             variant="secondary"
             fullWidth
             className="sm:w-auto"
-            onClick={onBack}
-            disabled={saving}
+            onClick={
+              onBack
+            }
+            disabled={
+              saving
+            }
           >
             Back
           </Button>
@@ -677,7 +1083,9 @@ export default function Review({
             onClick={() => {
               void handleSubmit();
             }}
-            disabled={saving}
+            disabled={
+              saving
+            }
             leftIcon={
               saving ? (
                 <Loader2
@@ -685,7 +1093,9 @@ export default function Review({
                   className="animate-spin"
                 />
               ) : (
-                <ShieldCheck size={18} />
+                <ShieldCheck
+                  size={18}
+                />
               )
             }
           >

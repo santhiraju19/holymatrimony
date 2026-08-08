@@ -15,8 +15,12 @@ import com.theholymatrimony.backend.profile.entity.Profile;
 import com.theholymatrimony.backend.profile.entity.ProfilePhoto;
 import com.theholymatrimony.backend.profile.repository.ProfilePhotoRepository;
 import com.theholymatrimony.backend.profile.repository.ProfileRepository;
+import com.theholymatrimony.backend.communication.service.CommunicationService;
+
 import jakarta.persistence.EntityNotFoundException;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -35,6 +39,7 @@ public class InterestService {
     private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
     private final ProfilePhotoRepository profilePhotoRepository;
+    private final CommunicationService communicationService;
 
     /*
      * ============================================================
@@ -46,21 +51,22 @@ public class InterestService {
             String authenticatedEmail,
             SendInterestRequest request
     ) {
-
         if (request == null) {
             throw new IllegalArgumentException(
                     "Interest request is required"
             );
         }
 
-        User sender = findUserByEmail(authenticatedEmail);
+        User sender =
+                findUserByEmail(authenticatedEmail);
 
         Profile receiverProfile =
-                findCompletedReceiverProfile(
+                findReceiverProfile(
                         request.getReceiverProfileId()
                 );
 
-        User receiver = receiverProfile.getUser();
+        User receiver =
+                receiverProfile.getUser();
 
         validateNotSelfInterest(
                 sender.getId(),
@@ -72,15 +78,22 @@ public class InterestService {
                 receiver.getId()
         );
 
-        Interest interest = Interest.builder()
-                .sender(sender)
-                .receiver(receiver)
-                .status(InterestStatus.PENDING)
-                .message(normalizeMessage(request.getMessage()))
-                .build();
+        Interest interest =
+                Interest.builder()
+                        .sender(sender)
+                        .receiver(receiver)
+                        .status(InterestStatus.PENDING)
+                        .message(
+                                normalizeMessage(
+                                        request.getMessage()
+                                )
+                        )
+                        .build();
 
         Interest savedInterest =
-                interestRepository.save(interest);
+                interestRepository.save(
+                        interest
+                );
 
         Profile senderProfile =
                 findProfileByUser(sender);
@@ -104,25 +117,29 @@ public class InterestService {
             InterestStatus status,
             Pageable pageable
     ) {
-
         validatePageable(pageable);
 
         User authenticatedUser =
-                findUserByEmail(authenticatedEmail);
+                findUserByEmail(
+                        authenticatedEmail
+                );
 
         Page<Interest> interestPage;
 
         if (status == null) {
             interestPage =
-                    interestRepository.findAllBySenderEmail(
-                            authenticatedUser.getEmail(),
-                            pageable
-                    );
+                    interestRepository
+                            .findAllBySenderEmail(
+                                    authenticatedUser
+                                            .getEmail(),
+                                    pageable
+                            );
         } else {
             interestPage =
                     interestRepository
                             .findAllBySenderEmailAndStatus(
-                                    authenticatedUser.getEmail(),
+                                    authenticatedUser
+                                            .getEmail(),
                                     status,
                                     pageable
                             );
@@ -143,25 +160,29 @@ public class InterestService {
             InterestStatus status,
             Pageable pageable
     ) {
-
         validatePageable(pageable);
 
         User authenticatedUser =
-                findUserByEmail(authenticatedEmail);
+                findUserByEmail(
+                        authenticatedEmail
+                );
 
         Page<Interest> interestPage;
 
         if (status == null) {
             interestPage =
-                    interestRepository.findAllByReceiverEmail(
-                            authenticatedUser.getEmail(),
-                            pageable
-                    );
+                    interestRepository
+                            .findAllByReceiverEmail(
+                                    authenticatedUser
+                                            .getEmail(),
+                                    pageable
+                            );
         } else {
             interestPage =
                     interestRepository
                             .findAllByReceiverEmailAndStatus(
-                                    authenticatedUser.getEmail(),
+                                    authenticatedUser
+                                            .getEmail(),
                                     status,
                                     pageable
                             );
@@ -180,28 +201,47 @@ public class InterestService {
             String authenticatedEmail,
             UUID interestId
     ) {
-
         User authenticatedUser =
-                findUserByEmail(authenticatedEmail);
+                findUserByEmail(
+                        authenticatedEmail
+                );
 
         Interest interest =
-                findInterestById(interestId);
+                findInterestById(
+                        interestId
+                );
 
         validateReceiverOwnership(
                 interest,
                 authenticatedUser
         );
 
-        validatePendingStatus(interest);
+        validatePendingStatus(
+                interest
+        );
 
         interest.setStatus(
                 InterestStatus.ACCEPTED
         );
 
-        Interest savedInterest =
-                interestRepository.save(interest);
+     Interest savedInterest =
+        interestRepository.saveAndFlush(
+                interest
+        );
 
-        return mapInterest(savedInterest);
+communicationService
+        .ensureConversationExists(
+                savedInterest
+                        .getSender()
+                        .getId(),
+                savedInterest
+                        .getReceiver()
+                        .getId()
+        );
+
+return mapInterest(
+        savedInterest
+);
     }
 
     /*
@@ -214,28 +254,37 @@ public class InterestService {
             String authenticatedEmail,
             UUID interestId
     ) {
-
         User authenticatedUser =
-                findUserByEmail(authenticatedEmail);
+                findUserByEmail(
+                        authenticatedEmail
+                );
 
         Interest interest =
-                findInterestById(interestId);
+                findInterestById(
+                        interestId
+                );
 
         validateReceiverOwnership(
                 interest,
                 authenticatedUser
         );
 
-        validatePendingStatus(interest);
+        validatePendingStatus(
+                interest
+        );
 
         interest.setStatus(
                 InterestStatus.DECLINED
         );
 
         Interest savedInterest =
-                interestRepository.save(interest);
+                interestRepository.save(
+                        interest
+                );
 
-        return mapInterest(savedInterest);
+        return mapInterest(
+                savedInterest
+        );
     }
 
     /*
@@ -248,21 +297,28 @@ public class InterestService {
             String authenticatedEmail,
             UUID interestId
     ) {
-
         User authenticatedUser =
-                findUserByEmail(authenticatedEmail);
+                findUserByEmail(
+                        authenticatedEmail
+                );
 
         Interest interest =
-                findInterestById(interestId);
+                findInterestById(
+                        interestId
+                );
 
         validateSenderOwnership(
                 interest,
                 authenticatedUser
         );
 
-        validatePendingStatus(interest);
+        validatePendingStatus(
+                interest
+        );
 
-        interestRepository.delete(interest);
+        interestRepository.delete(
+                interest
+        );
     }
 
     /*
@@ -275,19 +331,24 @@ public class InterestService {
     public InterestCountResponse getPendingReceivedCount(
             String authenticatedEmail
     ) {
-
         User authenticatedUser =
-                findUserByEmail(authenticatedEmail);
+                findUserByEmail(
+                        authenticatedEmail
+                );
 
         long pendingReceived =
                 interestRepository
                         .countByReceiverEmailAndStatus(
-                                authenticatedUser.getEmail(),
+                                authenticatedUser
+                                        .getEmail(),
                                 InterestStatus.PENDING
                         );
 
-        return InterestCountResponse.builder()
-                .pendingReceived(pendingReceived)
+        return InterestCountResponse
+                .builder()
+                .pendingReceived(
+                        pendingReceived
+                )
                 .build();
     }
 
@@ -300,29 +361,34 @@ public class InterestService {
     private User findUserByEmail(
             String email
     ) {
-
-        if (email == null || email.isBlank()) {
+        if (
+                email == null ||
+                email.isBlank()
+        ) {
             throw new IllegalArgumentException(
                     "Authenticated email is required"
             );
         }
 
         String normalizedEmail =
-                email.trim().toLowerCase();
+                email.trim()
+                        .toLowerCase();
 
         return userRepository
-                .findByEmail(normalizedEmail)
+                .findByEmail(
+                        normalizedEmail
+                )
                 .orElseThrow(
-                        () -> new EntityNotFoundException(
-                                "Authenticated user not found"
-                        )
+                        () ->
+                                new EntityNotFoundException(
+                                        "Authenticated user not found"
+                                )
                 );
     }
 
     private Interest findInterestById(
             UUID interestId
     ) {
-
         if (interestId == null) {
             throw new IllegalArgumentException(
                     "Interest ID is required"
@@ -330,18 +396,23 @@ public class InterestService {
         }
 
         return interestRepository
-                .findById(interestId)
+                .findById(
+                        interestId
+                )
                 .orElseThrow(
-                        () -> new EntityNotFoundException(
-                                "Interest not found"
-                        )
+                        () ->
+                                new EntityNotFoundException(
+                                        "Interest not found"
+                                )
                 );
     }
 
-    private Profile findCompletedReceiverProfile(
+    /*
+     * Allows interests to incomplete profiles too.
+     */
+    private Profile findReceiverProfile(
             UUID profileId
     ) {
-
         if (profileId == null) {
             throw new IllegalArgumentException(
                     "Receiver profile ID is required"
@@ -350,24 +421,19 @@ public class InterestService {
 
         Profile profile =
                 profileRepository
-                        .findById(profileId)
+                        .findById(
+                                profileId
+                        )
                         .orElseThrow(
-                                () -> new EntityNotFoundException(
-                                        "Receiver profile not found"
-                                )
+                                () ->
+                                        new EntityNotFoundException(
+                                                "Receiver profile not found"
+                                        )
                         );
 
         if (profile.getUser() == null) {
             throw new IllegalStateException(
                     "Receiver profile is not connected to a user"
-            );
-        }
-
-        if (!Boolean.TRUE.equals(
-                profile.getProfileCompleted()
-        )) {
-            throw new IllegalArgumentException(
-                    "Interest can only be sent to a completed profile"
             );
         }
 
@@ -377,13 +443,14 @@ public class InterestService {
     private Profile findProfileByUser(
             User user
     ) {
-
         if (user == null) {
             return null;
         }
 
         return profileRepository
-                .findByUser(user)
+                .findByUser(
+                        user
+                )
                 .orElse(null);
     }
 
@@ -397,17 +464,18 @@ public class InterestService {
             Interest interest,
             User authenticatedUser
     ) {
+        User receiver =
+                interest.getReceiver();
 
-        User receiver = interest.getReceiver();
-
-        if (receiver == null
-                || receiver.getId() == null
-                || authenticatedUser == null
-                || authenticatedUser.getId() == null
-                || !receiver.getId().equals(
+        if (
+                receiver == null ||
+                receiver.getId() == null ||
+                authenticatedUser == null ||
+                authenticatedUser.getId() == null ||
+                !receiver.getId().equals(
                         authenticatedUser.getId()
-                )) {
-
+                )
+        ) {
             throw new AccessDeniedException(
                     "You are not authorized to update this received interest"
             );
@@ -418,17 +486,18 @@ public class InterestService {
             Interest interest,
             User authenticatedUser
     ) {
+        User sender =
+                interest.getSender();
 
-        User sender = interest.getSender();
-
-        if (sender == null
-                || sender.getId() == null
-                || authenticatedUser == null
-                || authenticatedUser.getId() == null
-                || !sender.getId().equals(
+        if (
+                sender == null ||
+                sender.getId() == null ||
+                authenticatedUser == null ||
+                authenticatedUser.getId() == null ||
+                !sender.getId().equals(
                         authenticatedUser.getId()
-                )) {
-
+                )
+        ) {
             throw new AccessDeniedException(
                     "You are not authorized to withdraw this interest"
             );
@@ -445,14 +514,20 @@ public class InterestService {
             UUID senderId,
             UUID receiverId
     ) {
-
-        if (senderId == null || receiverId == null) {
+        if (
+                senderId == null ||
+                receiverId == null
+        ) {
             throw new IllegalArgumentException(
                     "Sender and receiver are required"
             );
         }
 
-        if (senderId.equals(receiverId)) {
+        if (
+                senderId.equals(
+                        receiverId
+                )
+        ) {
             throw new IllegalArgumentException(
                     "You cannot send interest to your own profile"
             );
@@ -463,7 +538,6 @@ public class InterestService {
             UUID senderId,
             UUID receiverId
     ) {
-
         boolean directInterestExists =
                 interestRepository
                         .existsBySenderIdAndReceiverId(
@@ -494,16 +568,16 @@ public class InterestService {
     private void validatePendingStatus(
             Interest interest
     ) {
-
         if (interest == null) {
             throw new IllegalArgumentException(
                     "Interest is required"
             );
         }
 
-        if (interest.getStatus()
-                != InterestStatus.PENDING) {
-
+        if (
+                interest.getStatus() !=
+                InterestStatus.PENDING
+        ) {
             throw new IllegalStateException(
                     "Only pending interests can be updated"
             );
@@ -513,26 +587,31 @@ public class InterestService {
     private void validatePageable(
             Pageable pageable
     ) {
-
         if (pageable == null) {
             throw new IllegalArgumentException(
                     "Pagination information is required"
             );
         }
 
-        if (pageable.getPageNumber() < 0) {
+        if (
+                pageable.getPageNumber() < 0
+        ) {
             throw new IllegalArgumentException(
                     "Page number cannot be negative"
             );
         }
 
-        if (pageable.getPageSize() <= 0) {
+        if (
+                pageable.getPageSize() <= 0
+        ) {
             throw new IllegalArgumentException(
                     "Page size must be greater than zero"
             );
         }
 
-        if (pageable.getPageSize() > 100) {
+        if (
+                pageable.getPageSize() > 100
+        ) {
             throw new IllegalArgumentException(
                     "Page size cannot exceed 100"
             );
@@ -548,12 +627,12 @@ public class InterestService {
     private String normalizeMessage(
             String message
     ) {
-
         if (message == null) {
             return null;
         }
 
-        String normalized = message.trim();
+        String normalized =
+                message.trim();
 
         return normalized.isEmpty()
                 ? null
@@ -569,29 +648,49 @@ public class InterestService {
     private InterestPageResponse mapPage(
             Page<Interest> interestPage
     ) {
-
         List<InterestResponse> interests =
                 interestPage
                         .getContent()
                         .stream()
-                        .map(this::mapInterest)
+                        .map(
+                                this::mapInterest
+                        )
                         .toList();
 
-        return InterestPageResponse.builder()
+        return InterestPageResponse
+                .builder()
                 .interests(interests)
-                .page(interestPage.getNumber())
-                .size(interestPage.getSize())
+                .page(
+                        interestPage
+                                .getNumber()
+                )
+                .size(
+                        interestPage
+                                .getSize()
+                )
                 .totalElements(
-                        interestPage.getTotalElements()
+                        interestPage
+                                .getTotalElements()
                 )
                 .totalPages(
-                        interestPage.getTotalPages()
+                        interestPage
+                                .getTotalPages()
                 )
-                .first(interestPage.isFirst())
-                .last(interestPage.isLast())
-                .hasNext(interestPage.hasNext())
+                .first(
+                        interestPage
+                                .isFirst()
+                )
+                .last(
+                        interestPage
+                                .isLast()
+                )
+                .hasNext(
+                        interestPage
+                                .hasNext()
+                )
                 .hasPrevious(
-                        interestPage.hasPrevious()
+                        interestPage
+                                .hasPrevious()
                 )
                 .build();
     }
@@ -605,7 +704,6 @@ public class InterestService {
     private InterestResponse mapInterest(
             Interest interest
     ) {
-
         Profile senderProfile =
                 findProfileByUser(
                         interest.getSender()
@@ -628,9 +726,11 @@ public class InterestService {
             Profile senderProfile,
             Profile receiverProfile
     ) {
-
-        return InterestResponse.builder()
-                .id(interest.getId())
+        return InterestResponse
+                .builder()
+                .id(
+                        interest.getId()
+                )
                 .sender(
                         mapUser(
                                 interest.getSender(),
@@ -643,10 +743,18 @@ public class InterestService {
                                 receiverProfile
                         )
                 )
-                .status(interest.getStatus())
-                .message(interest.getMessage())
-                .createdAt(interest.getCreatedAt())
-                .updatedAt(interest.getUpdatedAt())
+                .status(
+                        interest.getStatus()
+                )
+                .message(
+                        interest.getMessage()
+                )
+                .createdAt(
+                        interest.getCreatedAt()
+                )
+                .updatedAt(
+                        interest.getUpdatedAt()
+                )
                 .build();
     }
 
@@ -660,7 +768,6 @@ public class InterestService {
             User user,
             Profile profile
     ) {
-
         if (user == null) {
             return null;
         }
@@ -672,14 +779,19 @@ public class InterestService {
                         )
                         .orElse(null);
 
-        return InterestUserResponse.builder()
-                .userId(user.getId())
+        return InterestUserResponse
+                .builder()
+                .userId(
+                        user.getId()
+                )
                 .profileId(
                         profile == null
                                 ? null
                                 : profile.getId()
                 )
-                .fullName(user.getFullName())
+                .fullName(
+                        user.getFullName()
+                )
                 .gender(
                         profile == null
                                 ? null

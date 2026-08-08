@@ -7,7 +7,11 @@ import com.theholymatrimony.backend.payments.dto.PaymentReceiptResponse;
 import com.theholymatrimony.backend.payments.dto.VerifyPaymentRequest;
 import com.theholymatrimony.backend.payments.service.PaymentReceiptPdfService;
 import com.theholymatrimony.backend.payments.service.PaymentService;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,31 +22,38 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 
 @ConditionalOnProperty(
         name = "payments.enabled",
         havingValue = "true"
 )
-
 @RestController
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
 public class PaymentController {
 
     private final PaymentService paymentService;
-    private final PaymentReceiptPdfService paymentReceiptPdfService;
+
+    private final PaymentReceiptPdfService
+            paymentReceiptPdfService;
 
     @PostMapping("/create-order")
-    public ResponseEntity<CreateOrderResponse> createOrder(
-            @RequestBody CreateOrderRequest request,
+    public ResponseEntity<CreateOrderResponse>
+    createOrder(
+            @RequestBody
+            CreateOrderRequest request,
+
             Authentication authentication
     ) throws Exception {
 
         String authenticatedEmail =
-                getAuthenticatedEmail(authentication);
+                getAuthenticatedEmail(
+                        authentication
+                );
 
         CreateOrderResponse response =
                 paymentService.createOrder(
@@ -54,68 +65,61 @@ public class PaymentController {
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<String> verifyPayment(
-            @RequestBody VerifyPaymentRequest request,
+    public ResponseEntity<Void>
+    verifyPayment(
+            @RequestBody
+            VerifyPaymentRequest request,
+
             Authentication authentication
     ) throws Exception {
 
         String authenticatedEmail =
-                getAuthenticatedEmail(authentication);
+                getAuthenticatedEmail(
+                        authentication
+                );
 
         paymentService.verifyPayment(
                 request,
                 authenticatedEmail
         );
 
-        return ResponseEntity.ok(
-                "Payment verified and membership activated successfully"
-        );
+        return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<List<PaymentHistoryResponse>>
-    getMyPaymentHistory(
+    @GetMapping("/history")
+    public ResponseEntity<
+            List<PaymentHistoryResponse>
+            >
+    getPaymentHistory(
             Authentication authentication
     ) {
-        String authenticatedEmail =
-                getAuthenticatedEmail(authentication);
 
-        List<PaymentHistoryResponse> payments =
+        String authenticatedEmail =
+                getAuthenticatedEmail(
+                        authentication
+                );
+
+        List<PaymentHistoryResponse> history =
                 paymentService.getPaymentHistory(
                         authenticatedEmail
                 );
 
-        return ResponseEntity.ok(payments);
+        return ResponseEntity.ok(history);
     }
 
     @GetMapping("/{paymentId}/receipt")
-    public ResponseEntity<PaymentReceiptResponse>
-    getPaymentReceipt(
-            @PathVariable Long paymentId,
+    public ResponseEntity<byte[]>
+    downloadReceipt(
+            @PathVariable
+            UUID paymentId,
+
             Authentication authentication
     ) {
-        String authenticatedEmail =
-                getAuthenticatedEmail(authentication);
 
-        PaymentReceiptResponse receipt =
-                paymentService.getPaymentReceipt(
-                        paymentId,
-                        authenticatedEmail
+        String authenticatedEmail =
+                getAuthenticatedEmail(
+                        authentication
                 );
-
-        return ResponseEntity.ok(receipt);
-    }
-
-    @GetMapping(
-            value = "/{paymentId}/receipt/pdf",
-            produces = MediaType.APPLICATION_PDF_VALUE
-    )
-    public ResponseEntity<byte[]> downloadPaymentReceipt(
-            @PathVariable Long paymentId,
-            Authentication authentication
-    ) {
-        String authenticatedEmail =
-                getAuthenticatedEmail(authentication);
 
         PaymentReceiptResponse receipt =
                 paymentService.getPaymentReceipt(
@@ -124,21 +128,30 @@ public class PaymentController {
                 );
 
         byte[] pdf =
-                paymentReceiptPdfService.generateReceipt(
-                        receipt
-                );
+                paymentReceiptPdfService
+                        .generateReceipt(receipt);
 
         String filename =
-                receipt.getInvoiceNumber() + ".pdf";
+                buildReceiptFilename(receipt);
 
-        return ResponseEntity.ok()
+        ContentDisposition disposition =
+                ContentDisposition
+                        .attachment()
+                        .filename(
+                                filename,
+                                StandardCharsets.UTF_8
+                        )
+                        .build();
+
+        return ResponseEntity
+                .ok()
+                .contentType(
+                        MediaType.APPLICATION_PDF
+                )
                 .header(
                         HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" +
-                                filename +
-                                "\""
+                        disposition.toString()
                 )
-                .contentType(MediaType.APPLICATION_PDF)
                 .contentLength(pdf.length)
                 .body(pdf);
     }
@@ -146,8 +159,10 @@ public class PaymentController {
     private String getAuthenticatedEmail(
             Authentication authentication
     ) {
+
         if (
                 authentication == null ||
+                !authentication.isAuthenticated() ||
                 authentication.getName() == null ||
                 authentication.getName().isBlank()
         ) {
@@ -159,5 +174,29 @@ public class PaymentController {
         return authentication
                 .getName()
                 .trim();
+    }
+
+    private String buildReceiptFilename(
+            PaymentReceiptResponse receipt
+    ) {
+
+        String invoiceNumber =
+                receipt.getInvoiceNumber();
+
+        if (
+                invoiceNumber == null ||
+                invoiceNumber.isBlank()
+        ) {
+            invoiceNumber =
+                    "HOLY-MATRIMONY-RECEIPT";
+        }
+
+        String safeInvoiceNumber =
+                invoiceNumber.replaceAll(
+                        "[^a-zA-Z0-9_-]",
+                        "-"
+                );
+
+        return safeInvoiceNumber + ".pdf";
     }
 }

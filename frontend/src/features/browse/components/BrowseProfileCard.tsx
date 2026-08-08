@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+
 import {
   BriefcaseBusiness,
   CheckCircle2,
@@ -10,6 +11,8 @@ import {
   MapPin,
   UserRound,
 } from "lucide-react";
+
+import InterestButton from "@/features/interests/components/InterestButton";
 
 import type { BrowseProfile } from "../types";
 import { resolveBrowsePhotoUrl } from "../utils/photoUrl";
@@ -29,17 +32,20 @@ export default function BrowseProfileCard({
     profile.fullName?.trim() ||
     "Holy Matrimony Member";
 
-  const location = buildLocation(profile);
+  const location =
+    buildLocation(profile);
 
-  const churchDetails = buildChurchDetails(profile);
+  const churchDetails =
+    buildChurchDetails(profile);
 
-  const completionPercentage = Math.min(
-    Math.max(
-      profile.completionPercentage ?? 0,
-      0
-    ),
-    100
-  );
+  const completionPercentage =
+    Math.min(
+      Math.max(
+        profile.completionPercentage ?? 0,
+        0
+      ),
+      100
+    );
 
   return (
     <article className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
@@ -94,7 +100,9 @@ export default function BrowseProfileCard({
           <div className="space-y-3">
             <ProfileDetail
               icon={
-                <BriefcaseBusiness size={17} />
+                <BriefcaseBusiness
+                  size={17}
+                />
               }
               value={
                 profile.profession?.trim() ||
@@ -103,7 +111,9 @@ export default function BrowseProfileCard({
             />
 
             <ProfileDetail
-              icon={<GraduationCap size={17} />}
+              icon={
+                <GraduationCap size={17} />
+              }
               value={
                 profile.highestEducation?.trim() ||
                 "Education not specified"
@@ -111,7 +121,9 @@ export default function BrowseProfileCard({
             />
 
             <ProfileDetail
-              icon={<Church size={17} />}
+              icon={
+                <Church size={17} />
+              }
               value={
                 churchDetails ||
                 "Church information not specified"
@@ -119,7 +131,9 @@ export default function BrowseProfileCard({
             />
 
             <ProfileDetail
-              icon={<MapPin size={17} />}
+              icon={
+                <MapPin size={17} />
+              }
               value={
                 location ||
                 "Location not specified"
@@ -159,6 +173,14 @@ export default function BrowseProfileCard({
           </div>
         </div>
       </Link>
+
+      <div className="border-t border-slate-100 p-5 pt-4">
+        <InterestButton
+          receiverProfileId={profile.id}
+          memberName={displayName}
+          message={`Hello ${displayName}, I am interested in connecting with you through Holy Matrimony.`}
+        />
+      </div>
     </article>
   );
 }
@@ -178,7 +200,9 @@ function ProfileDetail({
         {icon}
       </span>
 
-      <span className="truncate">{value}</span>
+      <span className="truncate">
+        {value}
+      </span>
     </div>
   );
 }
@@ -188,16 +212,28 @@ function buildBasicDetails(
 ): string {
   const details: string[] = [];
 
-  if (profile.age !== null) {
-    details.push(`${profile.age} years`);
+  if (
+    profile.age !== null &&
+    profile.age !== undefined &&
+    profile.age > 0
+  ) {
+    details.push(
+      `${profile.age} years`
+    );
   }
 
   if (profile.gender?.trim()) {
-    details.push(profile.gender.trim());
+    details.push(
+      profile.gender.trim()
+    );
   }
 
-  if (profile.maritalStatus?.trim()) {
-    details.push(profile.maritalStatus.trim());
+  if (
+    profile.maritalStatus?.trim()
+  ) {
+    details.push(
+      profile.maritalStatus.trim()
+    );
   }
 
   return details.length > 0

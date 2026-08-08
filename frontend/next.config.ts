@@ -7,10 +7,21 @@ const nextConfig: NextConfig = {
         protocol: "http",
         hostname: "localhost",
         port: "8080",
-        pathname: "/api/v1/uploads/profile-photos/**",
+        pathname: "/api/v1/uploads/**",
+      },
+      {
+        protocol: "https",
+        hostname: "theholymatrimony.com",
+        pathname: "/uploads/**",
+      },
+      {
+        protocol: "https",
+        hostname: "www.theholymatrimony.com",
+        pathname: "/uploads/**",
       },
     ],
   },
 };
 
 export default nextConfig;
+

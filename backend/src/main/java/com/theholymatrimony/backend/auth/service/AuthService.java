@@ -11,6 +11,11 @@ import com.theholymatrimony.backend.auth.emailotp.EmailOtpService;
 import com.theholymatrimony.backend.auth.entity.RefreshToken;
 import com.theholymatrimony.backend.auth.entity.User;
 
+import com.theholymatrimony.backend.auth.enums.Role;
+import com.theholymatrimony.backend.auth.enums.UserStatus;
+
+import com.theholymatrimony.backend.auth.exception.AccountStatusException;
+
 import com.theholymatrimony.backend.auth.repository.UserRepository;
 
 import com.theholymatrimony.backend.security.jwt.JwtService;
@@ -54,10 +59,17 @@ public class AuthService {
     private final EmailOtpService
             emailOtpService;
 
+    /*
+     * ---------------------------------------------------------
+     * Registration
+     * ---------------------------------------------------------
+     */
+
     @Transactional
     public RegisterResponse register(
             RegisterRequest request
     ) {
+
         String normalizedEmail =
                 normalizeEmail(
                         request.getEmail()
@@ -73,6 +85,7 @@ public class AuthService {
                         normalizedEmail
                 )
         ) {
+
             throw new IllegalArgumentException(
                     "An account already exists with this email."
             );
@@ -83,6 +96,7 @@ public class AuthService {
                         normalizedMobile
                 )
         ) {
+
             throw new IllegalArgumentException(
                     "An account already exists with this mobile number."
             );
@@ -112,17 +126,35 @@ public class AuthService {
         );
 
         /*
-         * Enabled remains true so the existing
-         * UserDetails implementation remains stable.
+         * New registrations are always
+         * normal platform members.
          *
-         * Login is blocked explicitly until
-         * email verification is complete.
+         * Admin access is granted separately.
+         */
+        user.setRole(
+                Role.ROLE_USER
+        );
+
+        /*
+         * New accounts begin as ACTIVE.
+         */
+        user.setStatus(
+                UserStatus.ACTIVE
+        );
+
+        /*
+         * Enabled remains true during registration.
+         *
+         * Email verification is handled separately.
          */
         user.setEnabled(true);
+
         user.setEmailVerified(false);
 
         User savedUser =
-                userRepository.save(user);
+                userRepository.save(
+                        user
+                );
 
         emailOtpService
                 .issueRegistrationOtp(
@@ -138,11 +170,18 @@ public class AuthService {
         );
     }
 
+    /*
+     * ---------------------------------------------------------
+     * Login
+     * ---------------------------------------------------------
+     */
+
     @Transactional
     public AuthSession login(
             LoginRequest request,
             String clientIp
     ) {
+
         String normalizedEmail =
                 normalizeEmail(
                         request.getEmail()
@@ -160,14 +199,42 @@ public class AuthService {
                                         )
                         );
 
+        /*
+         * -----------------------------------------------------
+         * Administrative account status
+         * -----------------------------------------------------
+         *
+         * Admin User Management keeps:
+         *
+         * ACTIVE
+         * SUSPENDED
+         * BLOCKED
+         * DEACTIVATED
+         *
+         * Only ACTIVE accounts may sign in.
+         */
+        validateAccountStatus(
+                user
+        );
+
+        /*
+         * Existing email-verification behaviour.
+         */
         if (
                 !user.isEmailVerificationComplete()
         ) {
+
             throw new IllegalArgumentException(
                     "Please verify your email address before signing in."
             );
         }
 
+        /*
+         * Password authentication.
+         *
+         * CustomUserDetailsService still checks
+         * enabled=false as an additional security layer.
+         */
         Authentication authentication =
                 authenticationManager
                         .authenticate(
@@ -200,6 +267,17 @@ public class AuthService {
                                 clientIp
                         );
 
+        /*
+         * Track successful login.
+         */
+        user.setLastLoginAt(
+                java.time.LocalDateTime.now()
+        );
+
+        userRepository.save(
+                user
+        );
+
         AuthResponse response =
                 new AuthResponse(
                         accessToken,
@@ -216,11 +294,18 @@ public class AuthService {
         );
     }
 
+    /*
+     * ---------------------------------------------------------
+     * Refresh
+     * ---------------------------------------------------------
+     */
+
     @Transactional
     public AuthSession refresh(
             String currentRefreshToken,
             String clientIp
     ) {
+
         RefreshToken storedToken =
                 refreshTokenService
                         .validateRefreshToken(
@@ -230,19 +315,35 @@ public class AuthService {
         User user =
                 storedToken.getUser();
 
+        /*
+         * A suspended/blocked/deactivated user
+         * must not continue using an old refresh token.
+         */
+        validateAccountStatus(
+                user
+        );
+
         if (
                 !user.isEmailVerificationComplete()
         ) {
+
             throw new IllegalArgumentException(
                     "Email verification is required."
             );
         }
 
+        Role role =
+                user.getRole() == null
+                        ? Role.ROLE_USER
+                        : user.getRole();
+
         String accessToken =
                 jwtService
                         .generateAccessToken(
                                 user.getEmail(),
-                                List.of("ROLE_USER")
+                                List.of(
+                                        role.name()
+                                )
                         );
 
         String replacementRefreshToken =
@@ -268,11 +369,18 @@ public class AuthService {
         );
     }
 
+    /*
+     * ---------------------------------------------------------
+     * Logout
+     * ---------------------------------------------------------
+     */
+
     @Transactional
     public void logout(
             String refreshToken,
             String clientIp
     ) {
+
         refreshTokenService
                 .revokeRefreshToken(
                         refreshToken,
@@ -281,13 +389,61 @@ public class AuthService {
                 );
     }
 
+    /*
+     * ---------------------------------------------------------
+     * Account status validation
+     * ---------------------------------------------------------
+     */
+
+    private void validateAccountStatus(
+            User user
+    ) {
+
+        UserStatus status =
+                user.getStatus() == null
+                        ? UserStatus.ACTIVE
+                        : user.getStatus();
+
+        switch (status) {
+
+            case ACTIVE -> {
+                /*
+                 * Account can continue.
+                 */
+            }
+
+            case SUSPENDED ->
+                    throw new AccountStatusException(
+                            "Your account has been suspended. Please contact support."
+                    );
+
+            case BLOCKED ->
+                    throw new AccountStatusException(
+                            "Your account has been blocked. Please contact support."
+                    );
+
+            case DEACTIVATED ->
+                    throw new AccountStatusException(
+                            "Your account has been deactivated."
+                    );
+        }
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * Normalization
+     * ---------------------------------------------------------
+     */
+
     private String normalizeEmail(
             String email
     ) {
+
         if (
                 email == null ||
                 email.isBlank()
         ) {
+
             throw new IllegalArgumentException(
                     "Email is required."
             );
@@ -303,51 +459,34 @@ public class AuthService {
     private String normalizeMobile(
             String mobile
     ) {
+
         if (
                 mobile == null ||
                 mobile.isBlank()
         ) {
+
             throw new IllegalArgumentException(
                     "Mobile number is required."
             );
         }
 
-        String normalized =
-                mobile.replaceAll(
-                        "[\\s()-]",
-                        ""
-                );
-
-        if (
-                !normalized.matches(
-                        "^\\+[1-9]\\d{7,14}$"
-                )
-        ) {
-            throw new IllegalArgumentException(
-                    "Enter a valid mobile number with country code."
-            );
-        }
-
-        return normalized;
+        return mobile.trim();
     }
 
     private String normalizeName(
             String fullName
     ) {
+
         if (
                 fullName == null ||
                 fullName.isBlank()
         ) {
+
             throw new IllegalArgumentException(
                     "Full name is required."
             );
         }
 
-        return fullName
-                .trim()
-                .replaceAll(
-                        "\\s+",
-                        " "
-                );
+        return fullName.trim();
     }
 }

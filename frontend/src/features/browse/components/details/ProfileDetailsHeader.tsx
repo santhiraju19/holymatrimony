@@ -1,5 +1,9 @@
+"use client";
 
 import Link from "next/link";
+
+import InterestButton from "@/features/interests/components/InterestButton";
+import ShortlistButton from "@/features/shortlist/components/ShortlistButton";
 
 import type { BrowseProfile } from "../../types";
 import { resolveBrowsePhotoUrl } from "../../utils/photoUrl";
@@ -8,19 +12,27 @@ interface ProfileDetailsHeaderProps {
   profile: BrowseProfile;
 }
 
-function getInitials(fullName: string): string {
+function getInitials(
+  fullName: string
+): string {
   return fullName
     .trim()
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
+    .map((part) =>
+      part.charAt(0).toUpperCase()
+    )
     .join("");
 }
 
-function buildSummary(profile: BrowseProfile): string {
+function buildSummary(
+  profile: BrowseProfile
+): string {
   return [
-    profile.age ? `${profile.age} years` : null,
+    profile.age
+      ? `${profile.age} years`
+      : null,
     profile.gender,
     profile.maritalStatus,
   ]
@@ -28,8 +40,14 @@ function buildSummary(profile: BrowseProfile): string {
     .join(" • ");
 }
 
-function buildLocation(profile: BrowseProfile): string {
-  return [profile.city, profile.state, profile.country]
+function buildLocation(
+  profile: BrowseProfile
+): string {
+  return [
+    profile.city,
+    profile.state,
+    profile.country,
+  ]
     .filter(Boolean)
     .join(", ");
 }
@@ -37,12 +55,20 @@ function buildLocation(profile: BrowseProfile): string {
 export default function ProfileDetailsHeader({
   profile,
 }: ProfileDetailsHeaderProps) {
-  const photoUrl = resolveBrowsePhotoUrl(
-    profile.primaryPhotoUrl
-  );
+  const photoUrl =
+    resolveBrowsePhotoUrl(
+      profile.primaryPhotoUrl
+    );
 
-  const summary = buildSummary(profile);
-  const location = buildLocation(profile);
+  const displayName =
+    profile.fullName?.trim() ||
+    "Holy Matrimony Member";
+
+  const summary =
+    buildSummary(profile);
+
+  const location =
+    buildLocation(profile);
 
   return (
     <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -51,22 +77,20 @@ export default function ProfileDetailsHeader({
           {photoUrl ? (
             <img
               src={photoUrl}
-              alt={profile.fullName || "Profile photo"}
+              alt={`${displayName} profile photo`}
               className="absolute inset-0 h-full w-full object-cover"
             />
           ) : (
             <div className="flex min-h-[460px] items-center justify-center">
               <div className="flex h-32 w-32 items-center justify-center rounded-full bg-white text-4xl font-bold text-blue-700 shadow-lg">
-                {getInitials(
-                  profile.fullName || "Profile"
-                )}
+                {getInitials(displayName)}
               </div>
             </div>
           )}
 
           {profile.profileCompleted && (
             <span className="absolute left-5 top-5 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-lg">
-              Verified profile
+              Verified Profile
             </span>
           )}
         </div>
@@ -77,26 +101,28 @@ export default function ProfileDetailsHeader({
               href="/browse"
               className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition hover:text-blue-800"
             >
-              <span aria-hidden="true">←</span>
+              <span aria-hidden="true">
+                ←
+              </span>
+
               Back to profiles
             </Link>
 
             <div className="mt-7">
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-                  {profile.fullName ||
-                    "Matrimony profile"}
+                  {displayName}
                 </h1>
 
-                {profile.completionPercentage !==
-                  null &&
-                  profile.completionPercentage !==
-                    undefined && (
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700">
-                      {profile.completionPercentage}%
-                      complete
-                    </span>
-                  )}
+                {profile.completionPercentage !=
+                  null && (
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700">
+                    {
+                      profile.completionPercentage
+                    }
+                    % complete
+                  </span>
+                )}
               </div>
 
               {summary && (
@@ -126,19 +152,20 @@ export default function ProfileDetailsHeader({
           </div>
 
           <div className="mt-10 grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-lg"
-            >
-              Express interest
-            </button>
+            <InterestButton
+              receiverProfileId={
+                profile.id
+              }
+              memberName={
+                displayName
+              }
+              message={`Hello ${displayName}, I am interested in connecting with you through Holy Matrimony.`}
+            />
 
-            <button
-              type="button"
-              className="rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Shortlist profile
-            </button>
+            <ShortlistButton
+              profileId={profile.id}
+              memberName={displayName}
+            />
           </div>
         </div>
       </div>

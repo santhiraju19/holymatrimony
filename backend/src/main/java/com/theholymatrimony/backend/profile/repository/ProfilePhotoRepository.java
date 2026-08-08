@@ -67,4 +67,8 @@ public interface ProfilePhotoRepository
             @Param("email")
             String email
     );
+    List<ProfilePhoto>
+findAllByUserIdOrderByDisplayOrderAsc(
+        UUID userId
+);
 }

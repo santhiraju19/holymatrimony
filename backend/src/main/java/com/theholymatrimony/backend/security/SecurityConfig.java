@@ -100,6 +100,11 @@ public class SecurityConfig {
                                 "/swagger-ui.html"
                         ).permitAll()
 
+                             .requestMatchers(
+                "/api/v1/admin/**"
+        )
+        .hasRole("ADMIN")
+
                         /*
                          * Every other API requires a valid JWT.
                          */
