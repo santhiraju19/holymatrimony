@@ -6,7 +6,7 @@ import Section from "@/components/ui/Section";
 import Container from "@/components/ui/Container";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Card from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
+import Button from "@/components/ui/button";
 
 const stories = [
   {

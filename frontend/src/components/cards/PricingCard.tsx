@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Check, Sparkles } from "lucide-react";
 
 import Badge from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
+import Button from "@/components/ui/button";
 import Card from "@/components/ui/Card";
 
 export interface PricingCardProps {

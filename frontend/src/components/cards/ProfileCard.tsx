@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 import Badge from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
+import Button from "@/components/ui/button";
 import Card from "@/components/ui/Card";
 
 export interface ProfileCardProps {

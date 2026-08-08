@@ -13,11 +13,11 @@ import {
   Users,
 } from "lucide-react";
 
-import Button from "@/components/ui/Button";
+import Button from "@/components/ui/button";
 import Card from "@/components/ui/Card";
 import FormField from "@/components/ui/FormField";
 import Input from "@/components/ui/Input";
-import Select from "@/components/ui/Select";
+import Select from "@/components/ui/select";
 
 import { useProfile } from "@/features/profile/context/useProfile";
 
