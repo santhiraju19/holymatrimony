@@ -104,7 +104,7 @@ class PaymentService {
   > {
     const response: AxiosResponse<
       PaymentHistory[]
-    > = await this.api.get("/payments/me");
+    > = await this.api.get("/payments/history");
 
     return response.data;
   }
@@ -114,7 +114,7 @@ class PaymentService {
   ): Promise<void> {
     const response: AxiosResponse<Blob> =
       await this.api.get(
-        `/payments/${paymentId}/receipt/pdf`,
+        `/payments/${paymentId}/receipt`,
         {
           responseType: "blob",
         }
