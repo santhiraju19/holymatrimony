@@ -3,9 +3,12 @@ package com.theholymatrimony.backend.security;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.theholymatrimony.backend.security.jwt.JwtAuthenticationConverter;
 import com.theholymatrimony.backend.security.jwt.JwtProperties;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -22,6 +25,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+
 import java.nio.charset.StandardCharsets;
 
 @Configuration
@@ -56,57 +60,92 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         /*
-                         * Public authentication endpoints.
+                         * =====================================================
+                         * Public Authentication Endpoints
+                         * =====================================================
                          *
-                         * This includes:
                          * register
                          * login
                          * refresh
                          * logout
-                         * verify-otp
-                         * resend-otp
-                         * verification-status
+                         * verify OTP
+                         * resend OTP
+                         * forgot password
+                         * password reset
                          */
                         .requestMatchers(
                                 "/api/v1/auth/**"
-                        ).permitAll()
+                        )
+                        .permitAll()
 
                         /*
-                         * Publicly accessible uploaded files.
-                         *
-                         * Nginx may serve these directly in
-                         * production, while Spring can serve
-                         * them during local development.
+                         * =====================================================
+                         * Public Uploaded Files
+                         * =====================================================
                          */
                         .requestMatchers(
                                 "/uploads/**",
                                 "/api/v1/uploads/**"
-                        ).permitAll()
+                        )
+                        .permitAll()
 
                         /*
-                         * WebSocket handshake endpoints.
+                         * =====================================================
+                         * WebSocket Handshake
+                         * =====================================================
                          */
                         .requestMatchers(
                                 "/ws/**",
                                 "/ws-sockjs/**"
-                        ).permitAll()
+                        )
+                        .permitAll()
 
                         /*
-                         * Optional Swagger/OpenAPI endpoints.
+                         * =====================================================
+                         * Swagger / OpenAPI
+                         * =====================================================
                          */
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
-                        ).permitAll()
-
-                             .requestMatchers(
-                "/api/v1/admin/**"
-        )
-        .hasRole("ADMIN")
+                        )
+                        .permitAll()
 
                         /*
-                         * Every other API requires a valid JWT.
+                         * =====================================================
+                         * Razorpay Webhook
+                         * =====================================================
+                         *
+                         * Razorpay calls this endpoint directly.
+                         *
+                         * It does not use the member JWT.
+                         *
+                         * Authentication is performed inside the webhook
+                         * service using the X-Razorpay-Signature header and
+                         * RAZORPAY_WEBHOOK_SECRET.
+                         */
+                        .requestMatchers(
+                                "/api/v1/payments/webhook/razorpay"
+                        )
+                        .permitAll()
+
+                        /*
+                         * =====================================================
+                         * Admin API
+                         * =====================================================
+                         */
+                        .requestMatchers(
+                                "/api/v1/admin/**"
+                        )
+                        .hasRole("ADMIN")
+
+                        /*
+                         * =====================================================
+                         * All Remaining API Requests
+                         * =====================================================
+                         *
+                         * Requires a valid JWT.
                          */
                         .anyRequest()
                         .authenticated()
@@ -123,6 +162,12 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /*
+     * ============================================================
+     * JWT Decoder
+     * ============================================================
+     */
+
     @Bean
     JwtDecoder jwtDecoder() {
 
@@ -137,6 +182,12 @@ public class SecurityConfig {
                 .build();
     }
 
+    /*
+     * ============================================================
+     * JWT Encoder
+     * ============================================================
+     */
+
     @Bean
     JwtEncoder jwtEncoder() {
 
@@ -150,11 +201,23 @@ public class SecurityConfig {
         );
     }
 
+    /*
+     * ============================================================
+     * Password Encoder
+     * ============================================================
+     */
+
     @Bean
     PasswordEncoder passwordEncoder() {
 
         return new BCryptPasswordEncoder();
     }
+
+    /*
+     * ============================================================
+     * Authentication Manager
+     * ============================================================
+     */
 
     @Bean
     AuthenticationManager authenticationManager(
@@ -165,14 +228,33 @@ public class SecurityConfig {
                 .getAuthenticationManager();
     }
 
+    /*
+     * ============================================================
+     * JWT Secret Key
+     * ============================================================
+     */
+
     private SecretKey createSecretKey() {
 
+        String secret =
+                jwtProperties.getSecret();
+
+        if (
+                secret == null ||
+                secret.isBlank()
+        ) {
+            throw new IllegalStateException(
+                    "JWT secret must be configured."
+            );
+        }
+
+        byte[] secretBytes =
+                secret.getBytes(
+                        StandardCharsets.UTF_8
+                );
+
         return new SecretKeySpec(
-                jwtProperties
-                        .getSecret()
-                        .getBytes(
-                                StandardCharsets.UTF_8
-                        ),
+                secretBytes,
                 "HmacSHA256"
         );
     }

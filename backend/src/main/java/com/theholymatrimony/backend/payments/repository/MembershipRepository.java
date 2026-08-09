@@ -47,6 +47,22 @@ public interface MembershipRepository
 
     /*
      * =====================================================
+     * Payment Finalization
+     * =====================================================
+     */
+
+    Optional<Membership> findByPaymentId(
+            UUID paymentId
+    );
+
+    Optional<Membership>
+    findFirstByUserIdAndStatusOrderByStartDateDesc(
+            UUID userId,
+            MembershipStatus status
+    );
+
+    /*
+     * =====================================================
      * Admin Membership Management
      * =====================================================
      */

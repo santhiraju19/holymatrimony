@@ -4,6 +4,7 @@ import com.theholymatrimony.backend.admin.payment.dto.AdminPaymentPageResponse;
 import com.theholymatrimony.backend.admin.payment.dto.AdminPaymentResponse;
 import com.theholymatrimony.backend.admin.payment.service.AdminPaymentService;
 
+
 import com.theholymatrimony.backend.common.response.ApiResponse;
 
 import com.theholymatrimony.backend.payments.dto.PaymentReceiptResponse;
@@ -22,9 +23,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
+
+@ConditionalOnProperty(
+        name = "payments.enabled",
+        havingValue = "true"
+)
 
 @RestController
 @RequestMapping(

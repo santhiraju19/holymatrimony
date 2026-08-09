@@ -3,20 +3,22 @@ package com.theholymatrimony.backend.payments.service;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
 import com.razorpay.Utils;
+
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.auth.repository.UserRepository;
+
 import com.theholymatrimony.backend.payments.dto.CreateOrderRequest;
 import com.theholymatrimony.backend.payments.dto.CreateOrderResponse;
 import com.theholymatrimony.backend.payments.dto.PaymentHistoryResponse;
 import com.theholymatrimony.backend.payments.dto.PaymentReceiptResponse;
 import com.theholymatrimony.backend.payments.dto.VerifyPaymentRequest;
-import com.theholymatrimony.backend.payments.entity.Membership;
+
 import com.theholymatrimony.backend.payments.entity.Payment;
+
 import com.theholymatrimony.backend.payments.enums.BillingCycle;
 import com.theholymatrimony.backend.payments.enums.MembershipPlan;
-import com.theholymatrimony.backend.payments.enums.MembershipStatus;
 import com.theholymatrimony.backend.payments.enums.PaymentStatus;
-import com.theholymatrimony.backend.payments.repository.MembershipRepository;
+
 import com.theholymatrimony.backend.payments.repository.PaymentRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -32,9 +34,12 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
 import java.time.format.DateTimeFormatter;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -53,9 +58,20 @@ public class RazorpayServiceImpl
 
     private final PaymentRepository paymentRepository;
 
-    private final MembershipRepository membershipRepository;
-
     private final UserRepository userRepository;
+
+    /*
+     * Successful payment completion is intentionally
+     * centralized here.
+     *
+     * Razorpay checkout verification records the
+     * authenticated payment details.
+     *
+     * payment.captured webhook performs final
+     * SUCCESS + membership activation.
+     */
+    private final PaymentFinalizationService
+            paymentFinalizationService;
 
     @Value("${razorpay.key.id}")
     private String keyId;
@@ -63,25 +79,47 @@ public class RazorpayServiceImpl
     @Value("${razorpay.key.secret}")
     private String keySecret;
 
+    /*
+     * ============================================================
+     * CREATE ORDER
+     * ============================================================
+     */
+
     @Override
     public CreateOrderResponse createOrder(
             CreateOrderRequest request,
             String authenticatedEmail
     ) throws Exception {
 
-        validateCreateOrderRequest(request);
-
-        User user = userRepository
-                .findByEmail(authenticatedEmail)
-                .orElseThrow(
-                        () -> new IllegalArgumentException(
-                                "Authenticated user was not found."
-                        )
-                );
-
-        MembershipPlan plan = parsePlan(
-                request.getPlan()
+        validateCreateOrderRequest(
+                request
         );
+
+        if (
+                authenticatedEmail == null ||
+                authenticatedEmail.isBlank()
+        ) {
+            throw new IllegalArgumentException(
+                    "Authenticated user was not found."
+            );
+        }
+
+        User user =
+                userRepository
+                        .findByEmail(
+                                authenticatedEmail.trim()
+                        )
+                        .orElseThrow(
+                                () ->
+                                        new IllegalArgumentException(
+                                                "Authenticated user was not found."
+                                        )
+                        );
+
+        MembershipPlan plan =
+                parsePlan(
+                        request.getPlan()
+                );
 
         BillingCycle billingCycle =
                 parseBillingCycle(
@@ -109,7 +147,8 @@ public class RazorpayServiceImpl
 
         options.put(
                 "receipt",
-                "HM-" + System.currentTimeMillis()
+                "HM-" +
+                        System.currentTimeMillis()
         );
 
         JSONObject notes =
@@ -136,15 +175,22 @@ public class RazorpayServiceImpl
         );
 
         Order razorpayOrder =
-                razorpayClient.orders
-                        .create(options);
+                razorpayClient
+                        .orders
+                        .create(
+                                options
+                        );
 
         String razorpayOrderId =
-                razorpayOrder.get("id");
+                razorpayOrder.get(
+                        "id"
+                );
 
         Payment payment =
                 Payment.builder()
-                        .user(user)
+                        .user(
+                                user
+                        )
                         .razorpayOrderId(
                                 razorpayOrderId
                         )
@@ -155,7 +201,8 @@ public class RazorpayServiceImpl
                                 billingCycle.name()
                         )
                         .customerName(
-                                request.getFullName()
+                                request
+                                        .getFullName()
                                         .trim()
                         )
                         .email(
@@ -164,19 +211,24 @@ public class RazorpayServiceImpl
                         .phone(
                                 request.getPhone() == null
                                         ? null
-                                        : request.getPhone()
+                                        : request
+                                                .getPhone()
                                                 .trim()
                         )
                         .amount(
                                 amountInPaise
                         )
-                        .currency("INR")
+                        .currency(
+                                "INR"
+                        )
                         .status(
                                 PaymentStatus.PENDING
                         )
                         .build();
 
-        paymentRepository.save(payment);
+        paymentRepository.save(
+                payment
+        );
 
         return new CreateOrderResponse(
                 razorpayOrderId,
@@ -186,13 +238,35 @@ public class RazorpayServiceImpl
         );
     }
 
+    /*
+     * ============================================================
+     * VERIFY CHECKOUT SIGNATURE
+     * ============================================================
+     *
+     * This endpoint verifies the checkout response.
+     *
+     * It intentionally does NOT mark the payment SUCCESS.
+     * Fulfilment occurs when Razorpay sends payment.captured.
+     */
+
     @Override
     public void verifyPayment(
             VerifyPaymentRequest request,
             String authenticatedEmail
     ) throws Exception {
 
-        validateVerificationRequest(request);
+        validateVerificationRequest(
+                request
+        );
+
+        if (
+                authenticatedEmail == null ||
+                authenticatedEmail.isBlank()
+        ) {
+            throw new IllegalArgumentException(
+                    "Authenticated user was not found."
+            );
+        }
 
         Payment payment =
                 paymentRepository
@@ -200,15 +274,18 @@ public class RazorpayServiceImpl
                                 request.getRazorpay_order_id()
                         )
                         .orElseThrow(
-                                () -> new IllegalArgumentException(
-                                        "Payment order was not found."
-                                )
+                                () ->
+                                        new IllegalArgumentException(
+                                                "Payment order was not found."
+                                        )
                         );
 
         if (
-                !payment.getEmail()
+                payment.getEmail() == null ||
+                !payment
+                        .getEmail()
                         .equalsIgnoreCase(
-                                authenticatedEmail
+                                authenticatedEmail.trim()
                         )
         ) {
             throw new IllegalArgumentException(
@@ -216,6 +293,10 @@ public class RazorpayServiceImpl
             );
         }
 
+        /*
+         * payment.captured webhook may have completed
+         * the transaction before the browser callback.
+         */
         if (
                 payment.getStatus()
                         == PaymentStatus.SUCCESS
@@ -223,23 +304,40 @@ public class RazorpayServiceImpl
             return;
         }
 
-        if (
-                paymentRepository
-                        .existsByRazorpayPaymentId(
-                                request.getRazorpay_payment_id()
-                        )
-        ) {
-            throw new IllegalArgumentException(
-                    "This payment has already been processed."
-            );
-        }
+        /*
+         * Protect against assigning one Razorpay payment
+         * to multiple local payment records.
+         */
+        paymentRepository
+                .findByRazorpayPaymentId(
+                        request.getRazorpay_payment_id()
+                )
+                .ifPresent(existingPayment -> {
+
+                    if (
+                            !existingPayment
+                                    .getId()
+                                    .equals(
+                                            payment.getId()
+                                    )
+                    ) {
+                        throw new IllegalArgumentException(
+                                "This payment has already been processed."
+                        );
+                    }
+                });
 
         JSONObject signatureAttributes =
                 new JSONObject();
 
+        /*
+         * Use the order ID stored by our server.
+         * Do not trust a different order identifier
+         * supplied by the browser.
+         */
         signatureAttributes.put(
                 "razorpay_order_id",
-                request.getRazorpay_order_id()
+                payment.getRazorpayOrderId()
         );
 
         signatureAttributes.put(
@@ -259,17 +357,23 @@ public class RazorpayServiceImpl
                 );
 
         if (!signatureValid) {
-            payment.setStatus(
-                    PaymentStatus.FAILED
-            );
 
-            paymentRepository.save(payment);
-
+            /*
+             * We reject the checkout response.
+             *
+             * Do not activate membership.
+             */
             throw new IllegalArgumentException(
                     "Invalid Razorpay payment signature."
             );
         }
 
+        /*
+         * Signature is genuine.
+         *
+         * Store the identifiers, but remain PENDING until
+         * payment.captured confirms that money was captured.
+         */
         payment.setRazorpayPaymentId(
                 request.getRazorpay_payment_id()
         );
@@ -278,18 +382,16 @@ public class RazorpayServiceImpl
                 request.getRazorpay_signature()
         );
 
-        payment.setStatus(
-                PaymentStatus.SUCCESS
+        paymentRepository.save(
+                payment
         );
-
-        payment.setPaidAt(
-                LocalDateTime.now()
-        );
-
-        paymentRepository.save(payment);
-
-        activateMembership(payment);
     }
+
+    /*
+     * ============================================================
+     * PAYMENT HISTORY
+     * ============================================================
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -311,11 +413,14 @@ public class RazorpayServiceImpl
                 authenticatedEmail.trim();
 
         userRepository
-                .findByEmail(normalizedEmail)
+                .findByEmail(
+                        normalizedEmail
+                )
                 .orElseThrow(
-                        () -> new IllegalArgumentException(
-                                "Authenticated user was not found."
-                        )
+                        () ->
+                                new IllegalArgumentException(
+                                        "Authenticated user was not found."
+                                )
                 );
 
         return paymentRepository
@@ -328,6 +433,12 @@ public class RazorpayServiceImpl
                 )
                 .toList();
     }
+
+    /*
+     * ============================================================
+     * PAYMENT RECEIPT
+     * ============================================================
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -363,10 +474,11 @@ public class RazorpayServiceImpl
                                 normalizedEmail
                         )
                         .orElseThrow(
-                                () -> new ResponseStatusException(
-                                        HttpStatus.NOT_FOUND,
-                                        "Payment receipt was not found."
-                                )
+                                () ->
+                                        new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "Payment receipt was not found."
+                                        )
                         );
 
         if (
@@ -391,9 +503,13 @@ public class RazorpayServiceImpl
 
         BigDecimal amountInRupees =
                 BigDecimal
-                        .valueOf(amountInPaise)
+                        .valueOf(
+                                amountInPaise
+                        )
                         .divide(
-                                BigDecimal.valueOf(100),
+                                BigDecimal.valueOf(
+                                        100
+                                ),
                                 2,
                                 RoundingMode.HALF_UP
                         );
@@ -440,7 +556,8 @@ public class RazorpayServiceImpl
                         payment.getCurrency()
                 )
                 .status(
-                        payment.getStatus()
+                        payment
+                                .getStatus()
                                 .name()
                 )
                 .paidAt(
@@ -461,6 +578,12 @@ public class RazorpayServiceImpl
                 )
                 .build();
     }
+
+    /*
+     * ============================================================
+     * PAYMENT HISTORY MAPPING
+     * ============================================================
+     */
 
     private PaymentHistoryResponse
     toPaymentHistoryResponse(
@@ -510,6 +633,12 @@ public class RazorpayServiceImpl
                 .build();
     }
 
+    /*
+     * ============================================================
+     * RECEIPT NUMBER
+     * ============================================================
+     */
+
     private String buildInvoiceNumber(
             UUID paymentId,
             LocalDateTime receiptDate
@@ -528,8 +657,14 @@ public class RazorpayServiceImpl
         String paymentReference =
                 paymentId
                         .toString()
-                        .replace("-", "")
-                        .substring(0, 10)
+                        .replace(
+                                "-",
+                                ""
+                        )
+                        .substring(
+                                0,
+                                10
+                        )
                         .toUpperCase(
                                 Locale.ROOT
                         );
@@ -540,92 +675,11 @@ public class RazorpayServiceImpl
                 paymentReference;
     }
 
-    private void activateMembership(
-            Payment payment
-    ) {
-
-        User user =
-                payment.getUser();
-
-        if (user == null) {
-            user = userRepository
-                    .findByEmail(
-                            payment.getEmail()
-                    )
-                    .orElseThrow(
-                            () -> new IllegalArgumentException(
-                                    "User was not found."
-                            )
-                    );
-        }
-
-        MembershipPlan plan =
-                MembershipPlan.valueOf(
-                        payment.getPlan()
-                );
-
-        BillingCycle billingCycle =
-                BillingCycle.valueOf(
-                        payment.getBillingCycle()
-                );
-
-        List<Membership> memberships =
-                membershipRepository
-                        .findAllByUser(user);
-
-        for (
-                Membership membership :
-                memberships
-        ) {
-            if (
-                    membership.getStatus()
-                            == MembershipStatus.ACTIVE
-            ) {
-                membership.setStatus(
-                        MembershipStatus.CANCELLED
-                );
-
-                membershipRepository.save(
-                        membership
-                );
-            }
-        }
-
-        LocalDateTime startDate =
-                LocalDateTime.now();
-
-        LocalDateTime expiryDate =
-                calculateExpiryDate(
-                        startDate,
-                        billingCycle
-                );
-
-        Membership membership =
-                Membership.builder()
-                        .user(user)
-                        .plan(plan)
-                        .billingCycle(
-                                billingCycle
-                        )
-                        .startDate(
-                                startDate
-                        )
-                        .expiryDate(
-                                expiryDate
-                        )
-                        .status(
-                                MembershipStatus.ACTIVE
-                        )
-                        .payment(
-                                payment
-                        )
-                        .autoRenew(false)
-                        .build();
-
-        membershipRepository.save(
-                membership
-        );
-    }
+    /*
+     * ============================================================
+     * PRICE CALCULATION
+     * ============================================================
+     */
 
     private int calculateAmountInPaise(
             MembershipPlan plan,
@@ -657,25 +711,44 @@ public class RazorpayServiceImpl
     ) {
 
         return switch (plan) {
+
             case SILVER ->
                     switch (billingCycle) {
-                        case MONTHLY -> 499;
-                        case QUARTERLY -> 1299;
-                        case YEARLY -> 4499;
+
+                        case MONTHLY ->
+                                499;
+
+                        case QUARTERLY ->
+                                1299;
+
+                        case YEARLY ->
+                                4499;
                     };
 
             case GOLD ->
                     switch (billingCycle) {
-                        case MONTHLY -> 799;
-                        case QUARTERLY -> 2199;
-                        case YEARLY -> 7499;
+
+                        case MONTHLY ->
+                                799;
+
+                        case QUARTERLY ->
+                                2199;
+
+                        case YEARLY ->
+                                7499;
                     };
 
             case PLATINUM ->
                     switch (billingCycle) {
-                        case MONTHLY -> 1199;
-                        case QUARTERLY -> 3299;
-                        case YEARLY -> 10999;
+
+                        case MONTHLY ->
+                                1199;
+
+                        case QUARTERLY ->
+                                3299;
+
+                        case YEARLY ->
+                                10999;
                     };
 
             case FREE ->
@@ -685,22 +758,11 @@ public class RazorpayServiceImpl
         };
     }
 
-    private LocalDateTime calculateExpiryDate(
-            LocalDateTime startDate,
-            BillingCycle billingCycle
-    ) {
-
-        return switch (billingCycle) {
-            case MONTHLY ->
-                    startDate.plusMonths(1);
-
-            case QUARTERLY ->
-                    startDate.plusMonths(3);
-
-            case YEARLY ->
-                    startDate.plusYears(1);
-        };
-    }
+    /*
+     * ============================================================
+     * PLAN PARSING
+     * ============================================================
+     */
 
     private MembershipPlan parsePlan(
             String value
@@ -716,16 +778,19 @@ public class RazorpayServiceImpl
         }
 
         try {
+
             MembershipPlan plan =
                     MembershipPlan.valueOf(
-                            value.trim()
+                            value
+                                    .trim()
                                     .toUpperCase(
                                             Locale.ROOT
                                     )
                     );
 
             if (
-                    plan == MembershipPlan.FREE
+                    plan ==
+                            MembershipPlan.FREE
             ) {
                 throw new IllegalArgumentException(
                         "The FREE plan does not require payment."
@@ -734,12 +799,20 @@ public class RazorpayServiceImpl
 
             return plan;
 
-        } catch (IllegalArgumentException exception) {
+        } catch (
+                IllegalArgumentException exception
+        ) {
             throw new IllegalArgumentException(
                     "Invalid membership plan."
             );
         }
     }
+
+    /*
+     * ============================================================
+     * BILLING CYCLE PARSING
+     * ============================================================
+     */
 
     private BillingCycle parseBillingCycle(
             String value
@@ -755,19 +828,29 @@ public class RazorpayServiceImpl
         }
 
         try {
+
             return BillingCycle.valueOf(
-                    value.trim()
+                    value
+                            .trim()
                             .toUpperCase(
                                     Locale.ROOT
                             )
             );
 
-        } catch (IllegalArgumentException exception) {
+        } catch (
+                IllegalArgumentException exception
+        ) {
             throw new IllegalArgumentException(
                     "Invalid billing cycle."
             );
         }
     }
+
+    /*
+     * ============================================================
+     * CREATE ORDER VALIDATION
+     * ============================================================
+     */
 
     private void validateCreateOrderRequest(
             CreateOrderRequest request
@@ -790,7 +873,9 @@ public class RazorpayServiceImpl
 
         if (
                 request.getBillingCycle() == null ||
-                request.getBillingCycle().isBlank()
+                request
+                        .getBillingCycle()
+                        .isBlank()
         ) {
             throw new IllegalArgumentException(
                     "Billing cycle is required."
@@ -799,13 +884,21 @@ public class RazorpayServiceImpl
 
         if (
                 request.getFullName() == null ||
-                request.getFullName().isBlank()
+                request
+                        .getFullName()
+                        .isBlank()
         ) {
             throw new IllegalArgumentException(
                     "Customer name is required."
             );
         }
     }
+
+    /*
+     * ============================================================
+     * CHECKOUT VERIFICATION VALIDATION
+     * ============================================================
+     */
 
     private void validateVerificationRequest(
             VerifyPaymentRequest request
@@ -819,7 +912,9 @@ public class RazorpayServiceImpl
 
         if (
                 request.getRazorpay_order_id() == null ||
-                request.getRazorpay_order_id().isBlank()
+                request
+                        .getRazorpay_order_id()
+                        .isBlank()
         ) {
             throw new IllegalArgumentException(
                     "Razorpay order ID is required."
@@ -828,7 +923,9 @@ public class RazorpayServiceImpl
 
         if (
                 request.getRazorpay_payment_id() == null ||
-                request.getRazorpay_payment_id().isBlank()
+                request
+                        .getRazorpay_payment_id()
+                        .isBlank()
         ) {
             throw new IllegalArgumentException(
                     "Razorpay payment ID is required."
@@ -837,7 +934,9 @@ public class RazorpayServiceImpl
 
         if (
                 request.getRazorpay_signature() == null ||
-                request.getRazorpay_signature().isBlank()
+                request
+                        .getRazorpay_signature()
+                        .isBlank()
         ) {
             throw new IllegalArgumentException(
                     "Razorpay signature is required."

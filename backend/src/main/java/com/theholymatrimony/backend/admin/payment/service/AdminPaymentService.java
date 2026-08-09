@@ -11,6 +11,7 @@ import com.theholymatrimony.backend.payments.service.PaymentService;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,16 +22,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+@ConditionalOnProperty(
+        name = "payments.enabled",
+        havingValue = "true"
+)
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminPaymentService {
 
-    private final PaymentRepository
-            paymentRepository;
+    private final PaymentRepository paymentRepository;
 
-    private final PaymentService
-            paymentService;
+    private final PaymentService paymentService;
 
     /*
      * =====================================================
@@ -135,7 +138,7 @@ public class AdminPaymentService {
      * Admin Payment Receipt
      * =====================================================
      *
-     * The existing member receipt service already:
+     * The member payment service already:
      *
      * - validates successful payment
      * - builds invoice number
@@ -143,11 +146,8 @@ public class AdminPaymentService {
      * - adds Holy Matrimony company information
      * - creates PaymentReceiptResponse
      *
-     * We intentionally reuse that implementation rather
-     * than creating a second receipt-generation rule.
-     *
-     * Admin authorization is provided by the
-     * /api/v1/admin/** security rules.
+     * We reuse that implementation rather than creating
+     * a second receipt-generation implementation.
      */
 
     public PaymentReceiptResponse getPaymentReceipt(
@@ -160,13 +160,13 @@ public class AdminPaymentService {
                 );
 
         /*
-         * PaymentService.getPaymentReceipt currently validates
-         * ownership using the payment email.
+         * PaymentService.getPaymentReceipt validates ownership
+         * using the payment email.
          *
-         * Since this Admin service has already securely loaded
-         * the payment through the admin endpoint, we pass the
-         * payment's actual email so the existing receipt builder
-         * can be reused without weakening the member endpoint.
+         * Since this admin service has already loaded the payment
+         * through an admin-protected endpoint, pass the payment's
+         * actual email so the existing receipt implementation can
+         * safely be reused.
          */
         String paymentEmail =
                 payment.getEmail();
@@ -244,8 +244,7 @@ public class AdminPaymentService {
                 .amountInRupees(
                         payment.getAmount() == null
                                 ? null
-                                : payment.getAmount()
-                                / 100.0
+                                : payment.getAmount() / 100.0
                 )
                 .currency(
                         payment.getCurrency()
@@ -275,9 +274,7 @@ public class AdminPaymentService {
             UUID paymentId
     ) {
 
-        if (
-                paymentId == null
-        ) {
+        if (paymentId == null) {
             throw new IllegalArgumentException(
                     "Payment ID is required."
             );
