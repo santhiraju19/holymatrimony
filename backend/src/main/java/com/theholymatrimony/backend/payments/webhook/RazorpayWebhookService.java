@@ -14,6 +14,9 @@ import lombok.RequiredArgsConstructor;
 
 import org.json.JSONObject;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -27,6 +30,11 @@ import org.springframework.transaction.annotation.Transactional;
         havingValue = "true"
 )
 public class RazorpayWebhookService {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(
+                    RazorpayWebhookService.class
+            );
 
     private final PaymentRepository
             paymentRepository;
@@ -76,10 +84,8 @@ public class RazorpayWebhookService {
         }
 
         /*
-         * IMPORTANT:
-         *
-         * Verify the signature using the exact raw request
-         * body before parsing or modifying it.
+         * Verify the signature using the exact
+         * raw request body before parsing it.
          */
         boolean valid =
                 Utils.verifyWebhookSignature(
@@ -89,6 +95,11 @@ public class RazorpayWebhookService {
                 );
 
         if (!valid) {
+
+            log.warn(
+                    "Rejected Razorpay webhook because the signature was invalid."
+            );
+
             throw new IllegalArgumentException(
                     "Invalid Razorpay webhook signature."
             );
@@ -105,6 +116,11 @@ public class RazorpayWebhookService {
                         ""
                 );
 
+        log.info(
+                "Razorpay webhook received: event={}",
+                eventType
+        );
+
         switch (eventType) {
 
             case "payment.captured" ->
@@ -117,16 +133,11 @@ public class RazorpayWebhookService {
                             event
                     );
 
-            default -> {
-                /*
-                 * Event is valid but not required by the
-                 * Holy Matrimony payment workflow.
-                 *
-                 * Return successfully so Razorpay does
-                 * not continually retry an event that
-                 * we intentionally ignore.
-                 */
-            }
+            default ->
+                    log.debug(
+                            "Ignoring unsupported Razorpay webhook event: {}",
+                            eventType
+                    );
         }
     }
 
@@ -169,18 +180,32 @@ public class RazorpayWebhookService {
                         )
                 );
 
+        log.info(
+                "Processing Razorpay payment.captured: orderId={}, paymentId={}, gatewayStatus={}",
+                razorpayOrderId,
+                razorpayPaymentId,
+                gatewayStatus
+        );
+
         if (
                 razorpayPaymentId == null ||
                 razorpayOrderId == null
         ) {
+
+            log.error(
+                    "Captured Razorpay payment payload is incomplete: orderId={}, paymentId={}",
+                    razorpayOrderId,
+                    razorpayPaymentId
+            );
+
             throw new IllegalArgumentException(
                     "Razorpay captured payment payload is incomplete."
             );
         }
 
         /*
-         * Be defensive even though this handler is invoked
-         * for the payment.captured event.
+         * Be defensive even though this method
+         * is called only for payment.captured.
          */
         if (
                 gatewayStatus != null &&
@@ -189,6 +214,14 @@ public class RazorpayWebhookService {
                                 gatewayStatus
                         )
         ) {
+
+            log.error(
+                    "Razorpay payment.captured event contains unexpected gateway status: orderId={}, paymentId={}, status={}",
+                    razorpayOrderId,
+                    razorpayPaymentId,
+                    gatewayStatus
+            );
+
             throw new IllegalArgumentException(
                     "Razorpay payment is not captured."
             );
@@ -200,16 +233,23 @@ public class RazorpayWebhookService {
                                 razorpayOrderId
                         )
                         .orElseThrow(
-                                () ->
-                                        new IllegalArgumentException(
-                                                "Payment order was not found."
-                                        )
+                                () -> {
+
+                                    log.error(
+                                            "Local payment record was not found for captured Razorpay order: orderId={}, paymentId={}",
+                                            razorpayOrderId,
+                                            razorpayPaymentId
+                                    );
+
+                                    return new IllegalArgumentException(
+                                            "Payment order was not found."
+                                    );
+                                }
                         );
 
         /*
-         * Protect against a webhook containing an order
-         * identifier associated with another Razorpay
-         * payment already stored locally.
+         * Protect against assigning the same
+         * Razorpay payment to another local row.
          */
         paymentRepository
                 .findByRazorpayPaymentId(
@@ -224,6 +264,14 @@ public class RazorpayWebhookService {
                                             payment.getId()
                                     )
                     ) {
+
+                        log.error(
+                                "Razorpay payment ID is already linked to another local payment: paymentId={}, existingLocalPaymentId={}, requestedLocalPaymentId={}",
+                                razorpayPaymentId,
+                                existingPayment.getId(),
+                                payment.getId()
+                        );
+
                         throw new IllegalArgumentException(
                                 "Razorpay payment ID is already associated with another payment."
                         );
@@ -231,8 +279,8 @@ public class RazorpayWebhookService {
                 });
 
         /*
-         * Browser verification may already have stored
-         * the payment ID.
+         * Browser verification may already have
+         * stored the payment ID.
          *
          * If so, it must match the webhook.
          */
@@ -247,16 +295,23 @@ public class RazorpayWebhookService {
                                 razorpayPaymentId
                         )
         ) {
+
+            log.error(
+                    "Captured Razorpay payment ID does not match previously verified payment ID: orderId={}, webhookPaymentId={}, storedPaymentId={}",
+                    razorpayOrderId,
+                    razorpayPaymentId,
+                    payment.getRazorpayPaymentId()
+            );
+
             throw new IllegalArgumentException(
                     "Razorpay payment ID does not match the verified checkout payment."
             );
         }
 
         /*
-         * Idempotent finalization:
-         *
-         * PaymentFinalizationService is responsible for
-         * SUCCESS status and membership activation.
+         * PaymentFinalizationService performs
+         * idempotent SUCCESS + membership
+         * activation.
          */
         paymentFinalizationService
                 .finalizeSuccessfulPayment(
@@ -264,6 +319,13 @@ public class RazorpayWebhookService {
                         razorpayPaymentId,
                         payment.getRazorpaySignature()
                 );
+
+        log.info(
+                "Razorpay payment finalized successfully: localPaymentId={}, orderId={}, paymentId={}",
+                payment.getId(),
+                razorpayOrderId,
+                razorpayPaymentId
+        );
     }
 
     /*
@@ -297,7 +359,18 @@ public class RazorpayWebhookService {
                         )
                 );
 
+        log.info(
+                "Processing Razorpay payment.failed: orderId={}, paymentId={}",
+                razorpayOrderId,
+                razorpayPaymentId
+        );
+
         if (razorpayOrderId == null) {
+
+            log.warn(
+                    "Ignoring Razorpay payment.failed event because order_id is missing."
+            );
+
             return;
         }
 
@@ -305,43 +378,66 @@ public class RazorpayWebhookService {
                 .findByRazorpayOrderId(
                         razorpayOrderId
                 )
-                .ifPresent(payment -> {
+                .ifPresentOrElse(
+                        payment -> {
 
-                    /*
-                     * Webhook ordering is not guaranteed.
-                     *
-                     * Never downgrade a payment already
-                     * confirmed SUCCESS.
-                     */
-                    if (
-                            payment.getStatus()
-                                    == PaymentStatus.SUCCESS
-                    ) {
-                        return;
-                    }
+                            /*
+                             * Webhook ordering is not guaranteed.
+                             *
+                             * Never downgrade a payment already
+                             * confirmed SUCCESS.
+                             */
+                            if (
+                                    payment.getStatus()
+                                            == PaymentStatus.SUCCESS
+                            ) {
 
-                    if (
-                            razorpayPaymentId != null &&
-                            (
-                                    payment.getRazorpayPaymentId()
-                                            == null ||
-                                    payment.getRazorpayPaymentId()
-                                            .isBlank()
-                            )
-                    ) {
-                        payment.setRazorpayPaymentId(
-                                razorpayPaymentId
-                        );
-                    }
+                                log.warn(
+                                        "Ignoring payment.failed because local payment is already SUCCESS: localPaymentId={}, orderId={}, paymentId={}",
+                                        payment.getId(),
+                                        razorpayOrderId,
+                                        razorpayPaymentId
+                                );
 
-                    payment.setStatus(
-                            PaymentStatus.FAILED
-                    );
+                                return;
+                            }
 
-                    paymentRepository.save(
-                            payment
-                    );
-                });
+                            if (
+                                    razorpayPaymentId != null &&
+                                    (
+                                            payment.getRazorpayPaymentId()
+                                                == null ||
+                                            payment.getRazorpayPaymentId()
+                                                .isBlank()
+                                    )
+                            ) {
+                                payment.setRazorpayPaymentId(
+                                        razorpayPaymentId
+                                );
+                            }
+
+                            payment.setStatus(
+                                    PaymentStatus.FAILED
+                            );
+
+                            paymentRepository.save(
+                                    payment
+                            );
+
+                            log.info(
+                                    "Razorpay payment marked FAILED: localPaymentId={}, orderId={}, paymentId={}",
+                                    payment.getId(),
+                                    razorpayOrderId,
+                                    razorpayPaymentId
+                            );
+                        },
+                        () ->
+                                log.warn(
+                                        "No local payment record found for Razorpay payment.failed event: orderId={}, paymentId={}",
+                                        razorpayOrderId,
+                                        razorpayPaymentId
+                                )
+                );
     }
 
     /*
