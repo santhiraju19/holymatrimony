@@ -163,6 +163,9 @@ public class User {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    @Column(name = "last_seen_at")
+private LocalDateTime lastSeenAt;
+
     @Builder.Default
     @Column(
             nullable = false,

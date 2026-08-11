@@ -4,8 +4,11 @@ import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.auth.repository.UserRepository;
 import com.theholymatrimony.backend.presence.dto.PresenceStatusResponse;
 import com.theholymatrimony.backend.privacy.service.PrivacyPolicyService;
+
 import jakarta.persistence.EntityNotFoundException;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -20,28 +23,53 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class PresenceService {
 
-    private final UserRepository userRepository;
+    private final UserRepository
+            userRepository;
 
     private final PrivacyPolicyService
             privacyPolicyService;
 
+    /*
+     * User -> active WebSocket session IDs.
+     *
+     * Multiple sessions are supported so a user
+     * can be logged in from multiple tabs/devices.
+     */
     private final Map<UUID, Set<String>>
             activeSessions =
             new ConcurrentHashMap<>();
 
+    /*
+     * WebSocket session -> user.
+     *
+     * Used when SessionDisconnectEvent only gives
+     * us the session ID.
+     */
     private final Map<String, UUID>
             sessionUsers =
             new ConcurrentHashMap<>();
 
+    /*
+     * Fast in-memory Last Seen cache.
+     *
+     * PostgreSQL remains the durable source.
+     */
     private final Map<UUID, LocalDateTime>
             lastSeenTimes =
             new ConcurrentHashMap<>();
+
+    /*
+     * ============================================================
+     * USER CONNECTED
+     * ============================================================
+     */
 
     @Transactional(readOnly = true)
     public synchronized void userConnected(
             String email,
             String sessionId
     ) {
+
         if (
                 !StringUtils.hasText(email) ||
                 !StringUtils.hasText(sessionId)
@@ -50,20 +78,25 @@ public class PresenceService {
         }
 
         User user =
-                getUserByEmail(email);
+                getUserByEmail(
+                        email
+                );
 
         UUID userId =
                 user.getId();
 
         Set<String> sessions =
-                activeSessions.computeIfAbsent(
-                        userId,
-                        ignored ->
-                                ConcurrentHashMap
-                                        .newKeySet()
-                );
+                activeSessions
+                        .computeIfAbsent(
+                                userId,
+                                ignored ->
+                                        ConcurrentHashMap
+                                                .newKeySet()
+                        );
 
-        sessions.add(sessionId);
+        sessions.add(
+                sessionId
+        );
 
         sessionUsers.put(
                 sessionId,
@@ -71,47 +104,104 @@ public class PresenceService {
         );
     }
 
+    /*
+     * ============================================================
+     * USER DISCONNECTED
+     * ============================================================
+     */
+
+    @Transactional
     public synchronized void userDisconnected(
             String sessionId
     ) {
-        if (!StringUtils.hasText(sessionId)) {
+
+        if (
+                !StringUtils.hasText(
+                        sessionId
+                )
+        ) {
             return;
         }
 
         UUID userId =
-                sessionUsers.remove(sessionId);
+                sessionUsers.remove(
+                        sessionId
+                );
 
         if (userId == null) {
             return;
         }
 
         Set<String> sessions =
-                activeSessions.get(userId);
+                activeSessions.get(
+                        userId
+                );
 
         if (sessions == null) {
             return;
         }
 
-        sessions.remove(sessionId);
+        sessions.remove(
+                sessionId
+        );
 
+        /*
+         * User may still be connected through
+         * another tab or another device.
+         */
         if (!sessions.isEmpty()) {
             return;
         }
 
-        activeSessions.remove(userId);
+        activeSessions.remove(
+                userId
+        );
+
+        LocalDateTime now =
+                LocalDateTime.now();
 
         lastSeenTimes.put(
                 userId,
-                LocalDateTime.now()
+                now
         );
+
+        /*
+         * Persist Last Seen so it survives
+         * application/server restarts.
+         */
+        userRepository
+                .findById(
+                        userId
+                )
+                .ifPresent(user -> {
+
+                    user.setLastSeenAt(
+                            now
+                    );
+
+                    userRepository.save(
+                            user
+                    );
+                });
     }
+
+    /*
+     * ============================================================
+     * GET PRESENCE
+     * ============================================================
+     */
 
     @Transactional(readOnly = true)
     public PresenceStatusResponse getPresence(
             String viewerEmail,
             UUID targetUserId
     ) {
-        if (!StringUtils.hasText(viewerEmail)) {
+
+        if (
+                !StringUtils.hasText(
+                        viewerEmail
+                )
+        ) {
             throw new IllegalArgumentException(
                     "Authenticated viewer is required"
             );
@@ -124,10 +214,14 @@ public class PresenceService {
         }
 
         User viewer =
-                getUserByEmail(viewerEmail);
+                getUserByEmail(
+                        viewerEmail
+                );
 
         User target =
-                getUserById(targetUserId);
+                getUserById(
+                        targetUserId
+                );
 
         boolean canSeeOnline =
                 privacyPolicyService
@@ -156,45 +250,74 @@ public class PresenceService {
                 canSeeOnline &&
                 actuallyOnline;
 
+        /*
+         * Prefer the fast in-memory value if
+         * available, otherwise use PostgreSQL.
+         */
+        LocalDateTime lastSeen =
+                lastSeenTimes.get(
+                        targetUserId
+                );
+
+        if (lastSeen == null) {
+            lastSeen =
+                    target.getLastSeenAt();
+        }
+
         LocalDateTime visibleLastSeen =
                 canSeeLastSeen
-                        ? lastSeenTimes.get(
-                                targetUserId
-                        )
+                        ? lastSeen
                         : null;
 
-        return PresenceStatusResponse.builder()
-                .userId(targetUserId)
-                .online(visibleOnline)
+        return PresenceStatusResponse
+                .builder()
+                .userId(
+                        targetUserId
+                )
+                .online(
+                        visibleOnline
+                )
                 .lastSeenAt(
                         visibleLastSeen
                 )
                 .build();
     }
 
+    /*
+     * ============================================================
+     * USER LOOKUPS
+     * ============================================================
+     */
+
     private User getUserByEmail(
             String email
     ) {
+
         return userRepository
                 .findByEmail(
                         email.trim()
                 )
-                .orElseThrow(() ->
-                        new EntityNotFoundException(
-                                "Authenticated user was not found"
-                        )
+                .orElseThrow(
+                        () ->
+                                new EntityNotFoundException(
+                                        "Authenticated user was not found"
+                                )
                 );
     }
 
     private User getUserById(
             UUID userId
     ) {
+
         return userRepository
-                .findById(userId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException(
-                                "Target user was not found"
-                        )
+                .findById(
+                        userId
+                )
+                .orElseThrow(
+                        () ->
+                                new EntityNotFoundException(
+                                        "Target user was not found"
+                                )
                 );
     }
 }
