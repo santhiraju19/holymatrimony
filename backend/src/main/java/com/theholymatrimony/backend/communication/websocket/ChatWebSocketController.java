@@ -59,6 +59,70 @@ public class ChatWebSocketController {
         );
     }
 
+    /*
+ * ============================================================
+ * MESSAGE DELIVERED RECEIPT
+ * ============================================================
+ */
+
+@MessageMapping("/chat.delivered")
+public void markMessageAsDelivered(
+        Principal principal,
+        @Payload DeliveryReceiptRequest request
+) {
+
+    String receiverEmail =
+            getAuthenticatedEmail(
+                    principal
+            );
+
+    if (
+            request == null ||
+            request.messageId() == null
+    ) {
+        throw new IllegalArgumentException(
+                "Message ID is required"
+        );
+    }
+
+    MessageResponse updatedMessage =
+            communicationService
+                    .markMessageAsDelivered(
+                            receiverEmail,
+                            request.messageId()
+                    );
+
+    /*
+     * Tell original sender that the receiver
+     * has received the message.
+     */
+    String senderEmail =
+            communicationService
+                    .getUserEmail(
+                            updatedMessage
+                                    .getSenderId()
+                    );
+
+    messagingTemplate
+            .convertAndSendToUser(
+                    senderEmail,
+                    "/queue/messages",
+                    updatedMessage
+            );
+
+    /*
+     * Also return it to the receiver so any
+     * additional tabs/devices stay synchronized.
+     */
+    messagingTemplate
+            .convertAndSendToUser(
+                    receiverEmail,
+                    "/queue/messages",
+                    updatedMessage
+            );
+}
+
+
     @MessageMapping("/chat.typing")
     public void handleTyping(
             Principal principal,
@@ -166,6 +230,10 @@ public class ChatWebSocketController {
             boolean typing
     ) {
     }
+    public record DeliveryReceiptRequest(
+        UUID messageId
+) {
+}
 
     public record TypingEventResponse(
             UUID conversationId,

@@ -34,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/communication")
@@ -315,41 +316,77 @@ public class CommunicationController {
      * ============================================================
      */
 
-    @PostMapping(
-            "/conversations/{conversationId}/read"
-    )
-    public ResponseEntity<
-            ApiResponse<
-                    Map<String, Integer>
-            >
-            >
-    markConversationAsRead(
-            Authentication authentication,
+@PostMapping(
+        "/conversations/{conversationId}/read"
+)
+public ResponseEntity<
+        ApiResponse<
+                Map<String, Integer>
+        >
+        >
+markConversationAsRead(
+        Authentication authentication,
 
-            @PathVariable
-            UUID conversationId
-    ) {
+        @PathVariable
+        UUID conversationId
+) {
 
-        int updatedMessages =
+    String readerEmail =
+            getAuthenticatedEmail(
+                    authentication
+            );
+
+    List<MessageResponse> readMessages =
+            communicationService
+                    .markConversationAsRead(
+                            readerEmail,
+                            conversationId
+                    );
+
+    /*
+     * Push every changed message back to its original
+     * sender. The sender's existing /queue/messages
+     * subscription will merge the same message ID and
+     * immediately render the blue double-check.
+     *
+     * Also send it to the reader so additional tabs
+     * and devices remain synchronized.
+     */
+    for (MessageResponse message :
+            readMessages) {
+
+        String senderEmail =
                 communicationService
-                        .markConversationAsRead(
-                                getAuthenticatedEmail(
-                                        authentication
-                                ),
-                                conversationId
+                        .getUserEmail(
+                                message.getSenderId()
                         );
 
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Messages marked as read",
+        messagingTemplate
+                .convertAndSendToUser(
+                        senderEmail,
+                        "/queue/messages",
+                        message
+                );
 
-                        Map.of(
-                                "updatedMessages",
-                                updatedMessages
-                        )
-                )
-        );
+        messagingTemplate
+                .convertAndSendToUser(
+                        readerEmail,
+                        "/queue/messages",
+                        message
+                );
     }
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    "Messages marked as read",
+
+                    Map.of(
+                            "updatedMessages",
+                            readMessages.size()
+                    )
+            )
+    );
+}
 
     /*
      * ============================================================

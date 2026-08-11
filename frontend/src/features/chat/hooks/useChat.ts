@@ -30,87 +30,179 @@ import {
   sortMessagesChronologically,
 } from "@/features/chat/utils/chat.utils";
 
-import { getApiErrorMessage } from "@/lib/api";
+import {
+  getApiErrorMessage,
+} from "@/lib/api";
 
-const FALLBACK_POLLING_INTERVAL = 5000;
-const PRESENCE_REFRESH_INTERVAL = 10000;
-const SEND_TIMEOUT = 10000;
-const INCOMING_TYPING_TIMEOUT = 3000;
+const FALLBACK_POLLING_INTERVAL =
+  5000;
+
+const PRESENCE_REFRESH_INTERVAL =
+  10000;
+
+const SEND_TIMEOUT =
+  10000;
+
+const INCOMING_TYPING_TIMEOUT =
+  3000;
 
 function normalizeId(
-  value: string | null | undefined
+  value:
+    | string
+    | null
+    | undefined
 ): string {
-  return String(value ?? "")
+  return String(
+    value ?? ""
+  )
     .trim()
     .toLowerCase();
 }
 
 export default function useChat() {
-  const [conversations, setConversations] =
-    useState<Conversation[]>([]);
+  /*
+   * ============================================================
+   * STATE
+   * ============================================================
+   */
+
+  const [
+    conversations,
+    setConversations,
+  ] =
+    useState<
+      Conversation[]
+    >([]);
 
   const [
     selectedConversationId,
     setSelectedConversationId,
-  ] = useState<string | null>(null);
+  ] =
+    useState<
+      string | null
+    >(null);
 
-  const [messages, setMessages] =
-    useState<ChatMessage[]>([]);
+  const [
+    messages,
+    setMessages,
+  ] =
+    useState<
+      ChatMessage[]
+    >([]);
 
   const [
     loadingConversations,
     setLoadingConversations,
-  ] = useState(true);
+  ] =
+    useState(true);
 
   const [
     loadingMessages,
     setLoadingMessages,
-  ] = useState(false);
+  ] =
+    useState(false);
 
-  const [sending, setSending] =
+  const [
+    sending,
+    setSending,
+  ] =
     useState(false);
 
   const [
     uploadingImage,
     setUploadingImage,
-  ] = useState(false);
+  ] =
+    useState(false);
 
-  const [error, setError] =
-    useState<string | null>(null);
+  const [
+    error,
+    setError,
+  ] =
+    useState<
+      string | null
+    >(null);
 
   const [
     webSocketStatus,
     setWebSocketStatus,
-  ] = useState<WebSocketConnectionStatus>(
-    "disconnected"
-  );
+  ] =
+    useState<
+      WebSocketConnectionStatus
+    >(
+      "disconnected"
+    );
 
   const [
     typingConversationId,
     setTypingConversationId,
-  ] = useState<string | null>(null);
+  ] =
+    useState<
+      string | null
+    >(null);
 
   const [
     presenceByUserId,
     setPresenceByUserId,
-  ] = useState<
-    Record<string, PresenceStatus>
-  >({});
+  ] =
+    useState<
+      Record<
+        string,
+        PresenceStatus
+      >
+    >({});
+
+  /*
+   * ============================================================
+   * REFS
+   * ============================================================
+   */
 
   const selectedConversationIdRef =
-    useRef<string | null>(null);
+    useRef<
+      string | null
+    >(null);
+
+  const conversationsRef =
+    useRef<
+      Conversation[]
+    >([]);
 
   const incomingTypingTimeoutRef =
-    useRef<number | null>(null);
+    useRef<
+      number | null
+    >(null);
+
+  /*
+   * Keep references synchronized without forcing
+   * WebSocket handlers to be recreated every time
+   * conversation state changes.
+   */
 
   useEffect(() => {
     selectedConversationIdRef.current =
       selectedConversationId;
-  }, [selectedConversationId]);
+  }, [
+    selectedConversationId,
+  ]);
+
+  useEffect(() => {
+    conversationsRef.current =
+      conversations;
+  }, [
+    conversations,
+  ]);
+
+  /*
+   * ============================================================
+   * SELECTED CONVERSATION
+   * ============================================================
+   */
 
   const selectedConversation =
     useMemo(() => {
-      if (!selectedConversationId) {
+      if (
+        !selectedConversationId
+      ) {
         return null;
       }
 
@@ -130,53 +222,85 @@ export default function useChat() {
       selectedConversationId,
     ]);
 
+  /*
+   * ============================================================
+   * SELECTED USER PRESENCE
+   * ============================================================
+   */
+
   const selectedUserPresence =
     useMemo(() => {
-      if (!selectedConversation) {
+      if (
+        !selectedConversation
+      ) {
         return null;
       }
 
       const userId =
         normalizeId(
           selectedConversation
-            .otherUser.userId
+            .otherUser
+            .userId
         );
 
       return (
-        presenceByUserId[userId] ??
-        null
+        presenceByUserId[
+          userId
+        ] ?? null
       );
     }, [
       presenceByUserId,
       selectedConversation,
     ]);
 
+  /*
+   * ============================================================
+   * TYPING HELPERS
+   * ============================================================
+   */
+
   const clearIncomingTypingTimer =
     useCallback(() => {
       if (
-        incomingTypingTimeoutRef.current !==
-        null
+        incomingTypingTimeoutRef
+          .current !== null
       ) {
         window.clearTimeout(
-          incomingTypingTimeoutRef.current
+          incomingTypingTimeoutRef
+            .current
         );
 
-        incomingTypingTimeoutRef.current =
-          null;
+        incomingTypingTimeoutRef
+          .current = null;
       }
     }, []);
 
   const clearIncomingTypingState =
     useCallback(() => {
       clearIncomingTypingTimer();
-      setTypingConversationId(null);
-    }, [clearIncomingTypingTimer]);
+
+      setTypingConversationId(
+        null
+      );
+    }, [
+      clearIncomingTypingTimer,
+    ]);
+
+  /*
+   * ============================================================
+   * LOAD CONVERSATIONS
+   * ============================================================
+   */
 
   const loadConversations =
     useCallback(
-      async (silent = false) => {
+      async (
+        silent = false
+      ) => {
         if (!silent) {
-          setLoadingConversations(true);
+          setLoadingConversations(
+            true
+          );
         }
 
         try {
@@ -191,33 +315,52 @@ export default function useChat() {
             data.conversations
           );
 
+          /*
+           * Update ref immediately as well.
+           *
+           * This avoids waiting for the next React
+           * render before WebSocket delivery checks
+           * know about the conversations.
+           */
+          conversationsRef.current =
+            data.conversations;
+
           setSelectedConversationId(
-            (currentId) => {
+            (
+              currentId
+            ) => {
               if (
                 currentId &&
-                data.conversations.some(
-                  (conversation) =>
-                    normalizeId(
-                      conversation.id
-                    ) ===
-                    normalizeId(
-                      currentId
-                    )
-                )
+                data.conversations
+                  .some(
+                    (
+                      conversation
+                    ) =>
+                      normalizeId(
+                        conversation.id
+                      ) ===
+                      normalizeId(
+                        currentId
+                      )
+                  )
               ) {
                 return currentId;
               }
 
               return (
-                data.conversations[0]
-                  ?.id ?? null
+                data.conversations[
+                  0
+                ]?.id ??
+                null
               );
             }
           );
 
           setError(null);
+
         } catch (
-          caughtError: unknown
+          caughtError:
+            unknown
         ) {
           if (!silent) {
             setError(
@@ -227,6 +370,7 @@ export default function useChat() {
               )
             );
           }
+
         } finally {
           if (!silent) {
             setLoadingConversations(
@@ -238,164 +382,295 @@ export default function useChat() {
       []
     );
 
-  const markAsRead = useCallback(
-    async (
-      conversationId: string
-    ) => {
-      try {
-        await communicationService
-          .markConversationAsRead(
+  /*
+   * ============================================================
+   * MARK CONVERSATION AS READ
+   * ============================================================
+   */
+
+  const markAsRead =
+    useCallback(
+      async (
+        conversationId:
+          string
+      ) => {
+        try {
+          await communicationService
+            .markConversationAsRead(
+              conversationId
+            );
+
+          setConversations(
+            (
+              current
+            ) =>
+              current.map(
+                (
+                  conversation
+                ) =>
+                  normalizeId(
+                    conversation.id
+                  ) ===
+                  normalizeId(
+                    conversationId
+                  )
+                    ? {
+                        ...conversation,
+
+                        unreadCount:
+                          0,
+                      }
+                    : conversation
+              )
+          );
+
+          /*
+           * Keep the ref synchronized because
+           * WebSocket handlers read from it.
+           */
+          conversationsRef.current =
+            conversationsRef.current
+              .map(
+                (
+                  conversation
+                ) =>
+                  normalizeId(
+                    conversation.id
+                  ) ===
+                  normalizeId(
+                    conversationId
+                  )
+                    ? {
+                        ...conversation,
+
+                        unreadCount:
+                          0,
+                      }
+                    : conversation
+              );
+
+        } catch {
+          /*
+           * Read-status failure must never block
+           * normal chat operation.
+           */
+        }
+      },
+      []
+    );
+
+  /*
+   * ============================================================
+   * LOAD MESSAGES
+   * ============================================================
+   */
+
+  const loadMessages =
+    useCallback(
+      async (
+        conversationId:
+          string,
+
+        silent = false
+      ) => {
+        if (!silent) {
+          setLoadingMessages(
+            true
+          );
+        }
+
+        try {
+          const data =
+            await communicationService
+              .getMessages(
+                conversationId,
+                {
+                  page: 0,
+                  size: 100,
+                }
+              );
+
+          const orderedMessages =
+            sortMessagesChronologically(
+              data.messages
+            );
+
+          setMessages(
+            (
+              current
+            ) =>
+              silent
+                ? mergeMessages(
+                    current,
+                    orderedMessages
+                  )
+                : orderedMessages
+          );
+
+          /*
+           * Loading an open conversation means
+           * the user has viewed the messages.
+           */
+          await markAsRead(
             conversationId
           );
 
-        setConversations(
-          (current) =>
-            current.map(
-              (conversation) =>
-                normalizeId(
-                  conversation.id
-                ) ===
-                normalizeId(
-                  conversationId
-                )
-                  ? {
-                      ...conversation,
-                      unreadCount: 0,
-                    }
-                  : conversation
-            )
-        );
-      } catch {
-        // Read status should not block chat.
-      }
-    },
-    []
-  );
+          setError(null);
 
-  const loadMessages = useCallback(
-    async (
-      conversationId: string,
-      silent = false
-    ) => {
-      if (!silent) {
-        setLoadingMessages(true);
-      }
-
-      try {
-        const data =
-          await communicationService
-            .getMessages(
-              conversationId,
-              {
-                page: 0,
-                size: 100,
-              }
+        } catch (
+          caughtError:
+            unknown
+        ) {
+          if (!silent) {
+            setMessages(
+              []
             );
 
-        const orderedMessages =
-          sortMessagesChronologically(
-            data.messages
-          );
-
-        setMessages((current) =>
-          silent
-            ? mergeMessages(
-                current,
-                orderedMessages
+            setError(
+              getApiErrorMessage(
+                caughtError,
+                "Unable to load messages."
               )
-            : orderedMessages
-        );
+            );
+          }
 
-        await markAsRead(
-          conversationId
-        );
-
-        setError(null);
-      } catch (
-        caughtError: unknown
-      ) {
-        if (!silent) {
-          setMessages([]);
-
-          setError(
-            getApiErrorMessage(
-              caughtError,
-              "Unable to load messages."
-            )
-          );
+        } finally {
+          if (!silent) {
+            setLoadingMessages(
+              false
+            );
+          }
         }
-      } finally {
-        if (!silent) {
-          setLoadingMessages(false);
-        }
-      }
-    },
-    [markAsRead]
-  );
+      },
+      [
+        markAsRead,
+      ]
+    );
+
+  /*
+   * ============================================================
+   * LOAD PRESENCE
+   * ============================================================
+   */
 
   const loadUserPresence =
     useCallback(
-      async (userId: string) => {
+      async (
+        userId: string
+      ) => {
         const normalizedUserId =
-          normalizeId(userId);
+          normalizeId(
+            userId
+          );
 
-        if (!normalizedUserId) {
+        if (
+          !normalizedUserId
+        ) {
           return;
         }
 
         try {
           const presence =
             await presenceService
-              .getPresence(userId);
+              .getPresence(
+                userId
+              );
 
           setPresenceByUserId(
-            (current) => ({
+            (
+              current
+            ) => ({
               ...current,
-              [normalizedUserId]:
+
+              [
+                normalizedUserId
+              ]:
                 presence,
             })
           );
+
         } catch {
-          // Presence failure must not block chat.
+          /*
+           * Presence errors must not
+           * prevent chat from working.
+           */
         }
       },
       []
     );
 
+  /*
+   * ============================================================
+   * SELECT CONVERSATION
+   * ============================================================
+   */
+
   const selectConversation =
     useCallback(
-      (conversationId: string) => {
+      (
+        conversationId:
+          string
+      ) => {
         clearIncomingTypingState();
 
         setSelectedConversationId(
           conversationId
         );
       },
-      [clearIncomingTypingState]
+      [
+        clearIncomingTypingState,
+      ]
     );
+
+  /*
+   * ============================================================
+   * CLEAR SELECTION
+   * ============================================================
+   */
 
   const clearSelection =
     useCallback(() => {
       clearIncomingTypingState();
 
-      setSelectedConversationId(null);
-      setMessages([]);
-    }, [clearIncomingTypingState]);
+      setSelectedConversationId(
+        null
+      );
+
+      setMessages(
+        []
+      );
+    }, [
+      clearIncomingTypingState,
+    ]);
+
+  /*
+   * ============================================================
+   * UPDATE CONVERSATION PREVIEW
+   * ============================================================
+   */
 
   const updateConversationPreview =
     useCallback(
-      (message: ChatMessage) => {
+      (
+        message:
+          ChatMessage
+      ) => {
         setConversations(
-          (current) => {
+          (
+            current
+          ) => {
             const updated =
               current.map(
-                (conversation) => {
+                (
+                  conversation
+                ) => {
                   if (
                     normalizeId(
                       conversation.id
                     ) !==
                     normalizeId(
-                      message.conversationId
+                      message
+                        .conversationId
                     )
                   ) {
                     return conversation;
@@ -407,12 +682,14 @@ export default function useChat() {
                         .current
                     ) ===
                     normalizeId(
-                      message.conversationId
+                      message
+                        .conversationId
                     );
 
                   const isIncoming =
                     normalizeId(
-                      conversation.otherUser
+                      conversation
+                        .otherUser
                         .userId
                     ) ===
                     normalizeId(
@@ -420,16 +697,26 @@ export default function useChat() {
                     );
 
                   const preview =
-                    message.messageType ===
-                    "IMAGE"
-                      ? message.content?.trim() ||
-                        "📷 Image"
-                      : message.content;
+                    message
+                      .deletedForEveryone
+                      ? "This message was deleted"
+
+                      : message
+                            .messageType ===
+                          "IMAGE"
+                        ? message
+                            .content
+                            ?.trim() ||
+                          "📷 Image"
+
+                        : message
+                            .content;
 
                   return {
                     ...conversation,
 
-                    lastMessage: preview,
+                    lastMessage:
+                      preview,
 
                     lastMessageSenderId:
                       message.senderId,
@@ -446,98 +733,272 @@ export default function useChat() {
                         ? conversation
                             .unreadCount +
                           1
+
                         : isSelected
                           ? 0
+
                           : conversation
                               .unreadCount,
                   };
                 }
               );
 
-            return [...updated].sort(
-              (first, second) => {
-                const firstTime =
-                  first.lastMessageAt
-                    ? new Date(
-                        first.lastMessageAt
-                      ).getTime()
-                    : 0;
+            const sorted =
+              [
+                ...updated,
+              ].sort(
+                (
+                  first,
+                  second
+                ) => {
+                  const firstTime =
+                    first
+                      .lastMessageAt
+                      ? new Date(
+                          first.lastMessageAt
+                        ).getTime()
+                      : 0;
 
-                const secondTime =
-                  second.lastMessageAt
-                    ? new Date(
-                        second.lastMessageAt
-                      ).getTime()
-                    : 0;
+                  const secondTime =
+                    second
+                      .lastMessageAt
+                      ? new Date(
+                          second.lastMessageAt
+                        ).getTime()
+                      : 0;
 
-                return (
-                  secondTime -
-                  firstTime
-                );
-              }
-            );
+                  return (
+                    secondTime -
+                    firstTime
+                  );
+                }
+              );
+
+            conversationsRef.current =
+              sorted;
+
+            return sorted;
           }
         );
       },
       []
     );
 
+  /*
+   * ============================================================
+   * WEBSOCKET MESSAGE
+   * ============================================================
+   *
+   * The same queue carries:
+   *
+   * - newly sent messages
+   * - SENT → DELIVERED updates
+   * - future READ updates
+   * - edited messages
+   * - deleted messages
+   *
+   * We therefore merge by message ID.
+   */
+
   const handleWebSocketMessage =
     useCallback(
-      (message: ChatMessage) => {
+      (
+        message:
+          ChatMessage
+      ) => {
         const selectedId =
           selectedConversationIdRef
             .current;
 
-        if (
-          normalizeId(selectedId) ===
-          normalizeId(
-            message.conversationId
-          )
-        ) {
-          setMessages((current) =>
-            mergeMessages(current, [
-              message,
-            ])
+        const conversation =
+          conversationsRef.current
+            .find(
+              (
+                currentConversation
+              ) =>
+                normalizeId(
+                  currentConversation
+                    .id
+                ) ===
+                normalizeId(
+                  message
+                    .conversationId
+                )
+            );
+
+        /*
+         * A message sent by conversation.otherUser
+         * is an incoming message.
+         *
+         * This prevents the sender from acknowledging
+         * delivery of their own WebSocket echo.
+         */
+        const isIncomingMessage =
+          Boolean(
+            conversation &&
+            normalizeId(
+              conversation
+                .otherUser
+                .userId
+            ) ===
+              normalizeId(
+                message
+                  .senderId
+              )
           );
 
-          void markAsRead(
-            message.conversationId
+        /*
+         * ========================================================
+         * SENT → DELIVERED
+         * ========================================================
+         *
+         * Receiving the persisted message over the
+         * authenticated WebSocket proves that it reached
+         * the receiver's connected client.
+         */
+        if (
+          isIncomingMessage &&
+          String(
+            message.status
+          )
+            .trim()
+            .toUpperCase() ===
+            "SENT"
+        ) {
+          chatWebSocketService
+            .sendDelivered({
+              messageId:
+                message.id,
+            });
+        }
+
+        /*
+         * Update the currently open conversation.
+         *
+         * mergeMessages() replaces the same message ID,
+         * which supports SENT → DELIVERED, edit and delete.
+         */
+        if (
+          normalizeId(
+            selectedId
+          ) ===
+          normalizeId(
+            message
+              .conversationId
+          )
+        ) {
+          setMessages(
+            (
+              current
+            ) =>
+              mergeMessages(
+                current,
+                [
+                  message,
+                ]
+              )
+          );
+
+          /*
+           * Only incoming messages should trigger a
+           * read operation.
+           *
+           * Without this condition the sender's own
+           * WebSocket echo could unnecessarily call
+           * the read endpoint.
+           */
+        
+         if (
+  isIncomingMessage &&
+  String(message.status)
+    .trim()
+    .toUpperCase() !== "READ"
+) {
+  void markAsRead(
+    message.conversationId
+  );
+}
+        }
+
+        /*
+         * Any actual message arrival ends
+         * the remote typing state.
+         */
+        if (
+          isIncomingMessage
+        ) {
+          setTypingConversationId(
+            (
+              currentId
+            ) =>
+              normalizeId(
+                currentId
+              ) ===
+              normalizeId(
+                message
+                  .conversationId
+              )
+                ? null
+                : currentId
           );
         }
 
-        setTypingConversationId(
-          (currentId) =>
-            normalizeId(currentId) ===
-            normalizeId(
-              message.conversationId
-            )
-              ? null
-              : currentId
+        /*
+         * Edit/delete/delivery/read events are updates
+         * to an existing message and must NOT increment
+         * unread counts or reorder the conversation
+         * as though a new message was sent.
+         */
+        const normalizedStatus =
+          String(
+            message.status ??
+              ""
+          )
+            .trim()
+            .toUpperCase();
+
+        const isMessageMutation =
+          Boolean(
+            message.editedAt ||
+            message.deletedAt ||
+            message
+              .deletedForEveryone
+          );
+
+        const isReceiptUpdate =
+          normalizedStatus ===
+            "DELIVERED" ||
+          normalizedStatus ===
+            "READ";
+
+        if (
+          !isMessageMutation &&
+          !isReceiptUpdate
+        ) {
+          updateConversationPreview(
+            message
+          );
+        }
+
+        /*
+         * Backend is the durable source of truth
+         * for conversation preview/unread state.
+         */
+        void loadConversations(
+          true
         );
 
-       const isMessageMutation =
-  Boolean(
-    message.editedAt ||
-    message.deletedAt ||
-    message.deletedForEveryone
-  );
+        setSending(
+          false
+        );
 
-if (!isMessageMutation) {
-  updateConversationPreview(
-    message
-  );
-}
+        setUploadingImage(
+          false
+        );
 
-void loadConversations(
-  true
-);
-
-        void loadConversations(true);
-
-        setSending(false);
-        setUploadingImage(false);
-        setError(null);
+        setError(
+          null
+        );
       },
       [
         loadConversations,
@@ -546,12 +1007,22 @@ void loadConversations(
       ]
     );
 
+  /*
+   * ============================================================
+   * TYPING EVENT
+   * ============================================================
+   */
+
   const handleTypingEvent =
     useCallback(
-      (event: ChatTypingEvent) => {
+      (
+        event:
+          ChatTypingEvent
+      ) => {
         const eventConversationId =
           normalizeId(
-            event.conversationId
+            event
+              .conversationId
           );
 
         const selectedId =
@@ -575,22 +1046,38 @@ void loadConversations(
           eventConversationId
         );
 
-        incomingTypingTimeoutRef.current =
-          window.setTimeout(() => {
-            setTypingConversationId(
-              null
-            );
+        incomingTypingTimeoutRef
+          .current =
+          window.setTimeout(
+            () => {
+              setTypingConversationId(
+                null
+              );
 
-            incomingTypingTimeoutRef.current =
-              null;
-          }, INCOMING_TYPING_TIMEOUT);
+              incomingTypingTimeoutRef
+                .current =
+                null;
+            },
+            INCOMING_TYPING_TIMEOUT
+          );
       },
-      [clearIncomingTypingTimer]
+      [
+        clearIncomingTypingTimer,
+      ]
     );
+
+  /*
+   * ============================================================
+   * PRESENCE EVENT
+   * ============================================================
+   */
 
   const handlePresenceEvent =
     useCallback(
-      (presence: PresenceStatus) => {
+      (
+        presence:
+          PresenceStatus
+      ) => {
         const userId =
           normalizeId(
             presence.userId
@@ -601,23 +1088,37 @@ void loadConversations(
         }
 
         setPresenceByUserId(
-          (current) => ({
+          (
+            current
+          ) => ({
             ...current,
-            [userId]: presence,
+
+            [
+              userId
+            ]:
+              presence,
           })
         );
       },
       []
     );
 
+  /*
+   * ============================================================
+   * SEND TYPING STATUS
+   * ============================================================
+   */
+
   const sendTypingStatus =
     useCallback(
-      (typing: boolean) => {
+      (
+        typing:
+          boolean
+      ) => {
         const conversation =
           selectedConversation;
 
         if (
-          !typing ||
           !conversation ||
           !chatWebSocketService
             .isConnected()
@@ -625,308 +1126,465 @@ void loadConversations(
           return;
         }
 
-        chatWebSocketService.sendTyping({
-          conversationId:
-            conversation.id,
+        chatWebSocketService
+          .sendTyping({
+            conversationId:
+              conversation.id,
 
-          receiverUserId:
-            conversation.otherUser
-              .userId,
+            receiverUserId:
+              conversation
+                .otherUser
+                .userId,
 
-          typing: true,
-        });
+            typing,
+          });
       },
-      [selectedConversation]
+      [
+        selectedConversation,
+      ]
     );
 
-  const sendMessage = useCallback(
-    async (content: string) => {
-      const trimmedContent =
-        content.trim();
+  /*
+   * ============================================================
+   * SEND TEXT MESSAGE
+   * ============================================================
+   */
 
-      if (
-        !trimmedContent ||
-        !selectedConversation
-      ) {
-        return;
-      }
+  const sendMessage =
+    useCallback(
+      async (
+        content:
+          string
+      ) => {
+        const trimmedContent =
+          content.trim();
 
-      setSending(true);
-      setError(null);
-
-      const request: SendMessageRequest = {
-        receiverUserId:
-          selectedConversation
-            .otherUser.userId,
-
-        content: trimmedContent,
-        mediaUrl: null,
-        messageType: "TEXT",
-      };
-
-      try {
-        const sentThroughWebSocket =
-          chatWebSocketService
-            .sendMessage(request);
-
-        if (sentThroughWebSocket) {
+        if (
+          !trimmedContent ||
+          !selectedConversation
+        ) {
           return;
         }
 
-        const sentMessage =
-          await communicationService
-            .sendMessage(request);
-
-        setMessages((current) =>
-          mergeMessages(current, [
-            sentMessage,
-          ])
+        setSending(
+          true
         );
-
-        updateConversationPreview(
-          sentMessage
-        );
-
-        await loadConversations(true);
-
-        setSending(false);
-      } catch (
-        caughtError: unknown
-      ) {
-        setSending(false);
 
         setError(
-          getApiErrorMessage(
-            caughtError,
-            "Unable to send the message."
-          )
+          null
         );
 
-        throw caughtError;
-      }
-    },
-    [
-      selectedConversation,
-      loadConversations,
-      updateConversationPreview,
-    ]
-  );
+        const request:
+          SendMessageRequest =
+          {
+            receiverUserId:
+              selectedConversation
+                .otherUser
+                .userId,
 
-  const sendImage = useCallback(
-  async (
-    file: File,
-    caption: string
-  ) => {
-    if (!selectedConversation) {
-      return;
-    }
+            content:
+              trimmedContent,
 
-    setUploadingImage(true);
-    setError(null);
+            mediaUrl:
+              null,
 
-    try {
-      const uploadedImage =
-        await communicationService
-          .uploadChatImage(file);
+            messageType:
+              "TEXT",
+          };
 
-      const request: SendMessageRequest = {
-        receiverUserId:
-          selectedConversation
-            .otherUser.userId,
+        try {
+          const sentThroughWebSocket =
+            chatWebSocketService
+              .sendMessage(
+                request
+              );
+
+          if (
+            sentThroughWebSocket
+          ) {
+            return;
+          }
+
+          /*
+           * REST fallback when WebSocket is unavailable.
+           */
+          const sentMessage =
+            await communicationService
+              .sendMessage(
+                request
+              );
+
+          setMessages(
+            (
+              current
+            ) =>
+              mergeMessages(
+                current,
+                [
+                  sentMessage,
+                ]
+              )
+          );
+
+          updateConversationPreview(
+            sentMessage
+          );
+
+          await loadConversations(
+            true
+          );
+
+          setSending(
+            false
+          );
+
+        } catch (
+          caughtError:
+            unknown
+        ) {
+          setSending(
+            false
+          );
+
+          setError(
+            getApiErrorMessage(
+              caughtError,
+              "Unable to send the message."
+            )
+          );
+
+          throw caughtError;
+        }
+      },
+      [
+        selectedConversation,
+        loadConversations,
+        updateConversationPreview,
+      ]
+    );
+
+  /*
+   * ============================================================
+   * SEND IMAGE
+   * ============================================================
+   */
+
+  const sendImage =
+    useCallback(
+      async (
+        file:
+          File,
+
+        caption:
+          string
+      ) => {
+        if (
+          !selectedConversation
+        ) {
+          return;
+        }
+
+        setUploadingImage(
+          true
+        );
+
+        setError(
+          null
+        );
+
+        try {
+          const uploadedImage =
+            await communicationService
+              .uploadChatImage(
+                file
+              );
+
+          const request:
+            SendMessageRequest =
+            {
+              receiverUserId:
+                selectedConversation
+                  .otherUser
+                  .userId,
+
+              content:
+                caption
+                  .trim() ||
+                null,
+
+              mediaUrl:
+                uploadedImage
+                  .mediaUrl,
+
+              messageType:
+                "IMAGE",
+            };
+
+          /*
+           * Image messages use REST because
+           * the media upload is already REST-based.
+           *
+           * Backend broadcasts the persisted message
+           * to both participants.
+           */
+          const sentMessage =
+            await communicationService
+              .sendMessage(
+                request
+              );
+
+          setMessages(
+            (
+              current
+            ) =>
+              mergeMessages(
+                current,
+                [
+                  sentMessage,
+                ]
+              )
+          );
+
+          updateConversationPreview(
+            sentMessage
+          );
+
+          await loadConversations(
+            true
+          );
+
+        } catch (
+          caughtError:
+            unknown
+        ) {
+          setError(
+            getApiErrorMessage(
+              caughtError,
+              "Unable to upload and send the image."
+            )
+          );
+
+          throw caughtError;
+
+        } finally {
+          setUploadingImage(
+            false
+          );
+        }
+      },
+      [
+        selectedConversation,
+        loadConversations,
+        updateConversationPreview,
+      ]
+    );
+
+  /*
+   * ============================================================
+   * EDIT MESSAGE
+   * ============================================================
+   */
+
+  const editMessage =
+    useCallback(
+      async (
+        messageId:
+          string,
 
         content:
-          caption.trim() || null,
+          string
+      ) => {
+        const trimmedContent =
+          content.trim();
 
-        mediaUrl:
-          uploadedImage.mediaUrl,
+        if (
+          !trimmedContent
+        ) {
+          throw new Error(
+            "Message cannot be empty."
+          );
+        }
 
-        messageType: "IMAGE",
-      };
-
-      /*
-       * Image messages are persisted through REST.
-       * The backend controller broadcasts the saved
-       * database response to both users.
-       */
-      const sentMessage =
-        await communicationService
-          .sendMessage(request);
-
-      setMessages((current) =>
-        mergeMessages(current, [
-          sentMessage,
-        ])
-      );
-
-      updateConversationPreview(
-        sentMessage
-      );
-
-      await loadConversations(true);
-    } catch (caughtError: unknown) {
-      setError(
-        getApiErrorMessage(
-          caughtError,
-          "Unable to upload and send the image."
-        )
-      );
-
-      throw caughtError;
-    } finally {
-      setUploadingImage(false);
-    }
-  },
-  [
-    selectedConversation,
-    loadConversations,
-    updateConversationPreview,
-  ]
-);
-
-const editMessage =
-  useCallback(
-    async (
-      messageId: string,
-      content: string
-    ) => {
-      const trimmedContent =
-        content.trim();
-
-      if (!trimmedContent) {
-        throw new Error(
-          "Message cannot be empty."
-        );
-      }
-
-      setError(null);
-
-      try {
-        const updatedMessage =
-          await communicationService
-            .editMessage(
-              messageId,
-              trimmedContent
-            );
-
-        setMessages(
-          (current) =>
-            mergeMessages(
-              current,
-              [
-                updatedMessage,
-              ]
-            )
-        );
-
-        await loadConversations(
-          true
-        );
-
-      } catch (
-        caughtError: unknown
-      ) {
         setError(
-          getApiErrorMessage(
-            caughtError,
-            "Unable to edit the message."
-          )
+          null
         );
 
-        throw caughtError;
-      }
-    },
-    [
-      loadConversations,
-    ]
-  );
+        try {
+          const updatedMessage =
+            await communicationService
+              .editMessage(
+                messageId,
+                trimmedContent
+              );
 
+          setMessages(
+            (
+              current
+            ) =>
+              mergeMessages(
+                current,
+                [
+                  updatedMessage,
+                ]
+              )
+          );
 
-const deleteMessage =
-  useCallback(
-    async (
-      messageId: string
-    ) => {
-      setError(null);
+          await loadConversations(
+            true
+          );
 
-      try {
-        const deletedMessage =
-          await communicationService
-            .deleteMessage(
-              messageId
-            );
-
-        setMessages(
-          (current) =>
-            mergeMessages(
-              current,
-              [
-                deletedMessage,
-              ]
+        } catch (
+          caughtError:
+            unknown
+        ) {
+          setError(
+            getApiErrorMessage(
+              caughtError,
+              "Unable to edit the message."
             )
-        );
+          );
 
-        await loadConversations(
-          true
-        );
+          throw caughtError;
+        }
+      },
+      [
+        loadConversations,
+      ]
+    );
 
-      } catch (
-        caughtError: unknown
-      ) {
+  /*
+   * ============================================================
+   * DELETE MESSAGE
+   * ============================================================
+   */
+
+  const deleteMessage =
+    useCallback(
+      async (
+        messageId:
+          string
+      ) => {
         setError(
-          getApiErrorMessage(
-            caughtError,
-            "Unable to delete the message."
-          )
+          null
         );
 
-        throw caughtError;
-      }
-    },
-    [
-      loadConversations,
-    ]
-  );
+        try {
+          const deletedMessage =
+            await communicationService
+              .deleteMessage(
+                messageId
+              );
+
+          setMessages(
+            (
+              current
+            ) =>
+              mergeMessages(
+                current,
+                [
+                  deletedMessage,
+                ]
+              )
+          );
+
+          await loadConversations(
+            true
+          );
+
+        } catch (
+          caughtError:
+            unknown
+        ) {
+          setError(
+            getApiErrorMessage(
+              caughtError,
+              "Unable to delete the message."
+            )
+          );
+
+          throw caughtError;
+        }
+      },
+      [
+        loadConversations,
+      ]
+    );
+
+  /*
+   * ============================================================
+   * REFRESH
+   * ============================================================
+   */
 
   const refresh =
-    useCallback(async () => {
-      await loadConversations(true);
-
-      const conversationId =
-        selectedConversationIdRef
-          .current;
-
-      if (conversationId) {
-        await loadMessages(
-          conversationId,
+    useCallback(
+      async () => {
+        await loadConversations(
           true
         );
-      }
 
-      const otherUserId =
-        selectedConversation
-          ?.otherUser.userId;
+        const conversationId =
+          selectedConversationIdRef
+            .current;
 
-      if (otherUserId) {
-        await loadUserPresence(
+        if (
+          conversationId
+        ) {
+          await loadMessages(
+            conversationId,
+            true
+          );
+        }
+
+        const otherUserId =
+          selectedConversation
+            ?.otherUser
+            .userId;
+
+        if (
           otherUserId
-        );
-      }
-    }, [
-      loadConversations,
-      loadMessages,
-      loadUserPresence,
-      selectedConversation,
-    ]);
+        ) {
+          await loadUserPresence(
+            otherUserId
+          );
+        }
+      },
+      [
+        loadConversations,
+        loadMessages,
+        loadUserPresence,
+        selectedConversation,
+      ]
+    );
+
+  /*
+   * ============================================================
+   * INITIAL CONVERSATION LOAD
+   * ============================================================
+   */
 
   useEffect(() => {
     void loadConversations();
-  }, [loadConversations]);
+  }, [
+    loadConversations,
+  ]);
+
+  /*
+   * ============================================================
+   * LOAD SELECTED CONVERSATION
+   * ============================================================
+   */
 
   useEffect(() => {
     clearIncomingTypingState();
 
-    if (!selectedConversationId) {
-      setMessages([]);
+    if (
+      !selectedConversationId
+    ) {
+      setMessages(
+        []
+      );
+
       return;
     }
 
@@ -939,38 +1597,58 @@ const deleteMessage =
     clearIncomingTypingState,
   ]);
 
+  /*
+   * ============================================================
+   * LOAD SELECTED USER PRESENCE
+   * ============================================================
+   */
+
   useEffect(() => {
     const userId =
       selectedConversation
-        ?.otherUser.userId;
+        ?.otherUser
+        .userId;
 
     if (!userId) {
       return;
     }
 
-    void loadUserPresence(userId);
+    void loadUserPresence(
+      userId
+    );
   }, [
     selectedConversation,
     loadUserPresence,
   ]);
 
+  /*
+   * ============================================================
+   * PRESENCE REFRESH
+   * ============================================================
+   */
+
   useEffect(() => {
     const userId =
       selectedConversation
-        ?.otherUser.userId;
+        ?.otherUser
+        .userId;
 
     if (!userId) {
       return;
     }
 
-    const refreshPresence = () => {
-      void loadUserPresence(userId);
-    };
+    const refreshPresence =
+      () => {
+        void loadUserPresence(
+          userId
+        );
+      };
 
     const handleVisibilityChange =
       () => {
         if (
-          document.visibilityState ===
+          document
+            .visibilityState ===
           "visible"
         ) {
           refreshPresence();
@@ -1013,33 +1691,48 @@ const deleteMessage =
     loadUserPresence,
   ]);
 
+  /*
+   * ============================================================
+   * WEBSOCKET CONNECTION
+   * ============================================================
+   */
+
   useEffect(() => {
-    chatWebSocketService.connect({
-      onMessage:
-        handleWebSocketMessage,
+    chatWebSocketService
+      .connect({
+        onMessage:
+          handleWebSocketMessage,
 
-      onTyping:
-        handleTypingEvent,
+        onTyping:
+          handleTypingEvent,
 
-      onPresence:
-        handlePresenceEvent,
+        onPresence:
+          handlePresenceEvent,
 
-      onStatusChange:
-        setWebSocketStatus,
+        onStatusChange:
+          setWebSocketStatus,
 
-      onError: (message) => {
-        setSending(false);
-        setUploadingImage(false);
-
-        console.warn(
-          "[Chat WebSocket]",
+        onError: (
           message
-        );
-      },
-    });
+        ) => {
+          setSending(
+            false
+          );
+
+          setUploadingImage(
+            false
+          );
+
+          console.warn(
+            "[Chat WebSocket]",
+            message
+          );
+        },
+      });
 
     return () => {
-      chatWebSocketService.disconnect();
+      chatWebSocketService
+        .disconnect();
     };
   }, [
     handleWebSocketMessage,
@@ -1047,25 +1740,43 @@ const deleteMessage =
     handlePresenceEvent,
   ]);
 
+  /*
+   * ============================================================
+   * REST FALLBACK POLLING
+   * ============================================================
+   */
+
   useEffect(() => {
     if (
-      webSocketStatus === "connected"
+      webSocketStatus ===
+      "connected"
     ) {
       return;
     }
 
     const interval =
-      window.setInterval(() => {
-        void refresh();
-      }, FALLBACK_POLLING_INTERVAL);
+      window.setInterval(
+        () => {
+          void refresh();
+        },
+        FALLBACK_POLLING_INTERVAL
+      );
 
     return () => {
-      window.clearInterval(interval);
+      window.clearInterval(
+        interval
+      );
     };
   }, [
     refresh,
     webSocketStatus,
   ]);
+
+  /*
+   * ============================================================
+   * SEND TIMEOUT SAFETY
+   * ============================================================
+   */
 
   useEffect(() => {
     if (!sending) {
@@ -1073,20 +1784,43 @@ const deleteMessage =
     }
 
     const timeout =
-      window.setTimeout(() => {
-        setSending(false);
-      }, SEND_TIMEOUT);
+      window.setTimeout(
+        () => {
+          setSending(
+            false
+          );
+        },
+        SEND_TIMEOUT
+      );
 
     return () => {
-      window.clearTimeout(timeout);
+      window.clearTimeout(
+        timeout
+      );
     };
-  }, [sending]);
+  }, [
+    sending,
+  ]);
+
+  /*
+   * ============================================================
+   * CLEANUP
+   * ============================================================
+   */
 
   useEffect(() => {
     return () => {
       clearIncomingTypingTimer();
     };
-  }, [clearIncomingTypingTimer]);
+  }, [
+    clearIncomingTypingTimer,
+  ]);
+
+  /*
+   * ============================================================
+   * OTHER USER TYPING
+   * ============================================================
+   */
 
   const isOtherUserTyping =
     Boolean(
@@ -1100,17 +1834,31 @@ const deleteMessage =
         )
     );
 
+  /*
+   * ============================================================
+   * PUBLIC API
+   * ============================================================
+   */
+
   return {
     conversations,
+
     selectedConversation,
+
     selectedConversationId,
+
     selectedUserPresence,
+
     messages,
 
     loadingConversations,
+
     loadingMessages,
+
     sending,
+
     uploadingImage,
+
     error,
 
     webSocketStatus,
@@ -1122,12 +1870,19 @@ const deleteMessage =
     isOtherUserTyping,
 
     selectConversation,
+
     clearSelection,
+
     sendMessage,
+
     sendImage,
+
     sendTypingStatus,
+
     refresh,
+
     editMessage,
+
     deleteMessage,
   };
 }

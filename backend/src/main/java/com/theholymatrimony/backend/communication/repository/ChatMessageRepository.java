@@ -13,6 +13,8 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Collection;
+import java.util.List;
 
 public interface ChatMessageRepository
         extends JpaRepository<ChatMessage, UUID> {
@@ -82,4 +84,78 @@ public interface ChatMessageRepository
             @Param("readAt")
             LocalDateTime readAt
     );
+        /*
+     * ============================================================
+     * MESSAGE DELIVERY RECEIPTS
+     * ============================================================
+     */
+
+    @Modifying
+    @Query("""
+            update ChatMessage message
+               set message.status = :deliveredStatus,
+                   message.deliveredAt = :deliveredAt
+             where message.id = :messageId
+               and message.receiver.id = :receiverId
+               and message.status = :sentStatus
+               and message.deletedByReceiver = false
+            """)
+    int markMessageAsDelivered(
+            @Param("messageId")
+            UUID messageId,
+
+            @Param("receiverId")
+            UUID receiverId,
+
+            @Param("sentStatus")
+            MessageStatus sentStatus,
+
+            @Param("deliveredStatus")
+            MessageStatus deliveredStatus,
+
+            @Param("deliveredAt")
+            LocalDateTime deliveredAt
+    );
+
+
+    /*
+     * SENT and DELIVERED are both unread.
+     *
+     * READ is the only normal message state that
+     * should disappear from the unread counter.
+     */
+
+    long countByReceiverIdAndStatusIn(
+            UUID receiverId,
+            Collection<MessageStatus> statuses
+    );
+
+
+    long countByConversationIdAndReceiverIdAndStatusIn(
+            UUID conversationId,
+            UUID receiverId,
+            Collection<MessageStatus> statuses
+    );
+
+        /*
+     * ============================================================
+     * FIND UNREAD MESSAGES FOR READ RECEIPTS
+     * ============================================================
+     */
+
+    @EntityGraph(
+            attributePaths = {
+                    "conversation",
+                    "sender",
+                    "receiver"
+            }
+    )
+    List<ChatMessage>
+    findAllByConversationIdAndReceiverIdAndStatusInOrderByCreatedAtAsc(
+            UUID conversationId,
+            UUID receiverId,
+            Collection<MessageStatus> statuses
+    );
 }
+
+

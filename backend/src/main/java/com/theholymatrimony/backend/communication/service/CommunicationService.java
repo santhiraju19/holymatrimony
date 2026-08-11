@@ -544,37 +544,159 @@ public String getUserEmail(
     }
 
     /*
+ * ============================================================
+ * MARK MESSAGE AS DELIVERED
+ * ============================================================
+ */
+
+@Transactional
+public MessageResponse markMessageAsDelivered(
+        String authenticatedEmail,
+        UUID messageId
+) {
+
+    User currentUser =
+            getUserByEmail(authenticatedEmail);
+
+    ChatMessage message =
+            getMessageById(messageId);
+
+    if (!message.getReceiver()
+            .getId()
+            .equals(currentUser.getId())) {
+
+        throw new AccessDeniedException(
+                "Only the receiver can mark a message as delivered"
+        );
+    }
+
+    if (
+            message.getStatus()
+                    == MessageStatus.READ ||
+            message.getStatus()
+                    == MessageStatus.DELIVERED
+    ) {
+
+        return communicationMapper
+                .toMessageResponse(
+                        message
+                );
+    }
+
+    LocalDateTime deliveredAt =
+            LocalDateTime.now();
+
+    chatMessageRepository
+            .markMessageAsDelivered(
+                    messageId,
+                    currentUser.getId(),
+                    MessageStatus.SENT,
+                    MessageStatus.DELIVERED,
+                    deliveredAt
+            );
+
+    ChatMessage updatedMessage =
+            getMessageById(
+                    messageId
+            );
+
+    return communicationMapper
+            .toMessageResponse(
+                    updatedMessage
+            );
+}
+    /*
      * ============================================================
      * MARK CONVERSATION AS READ
      * ============================================================
      */
 
-    @Transactional
-    public int markConversationAsRead(
-            String authenticatedEmail,
-            UUID conversationId
-    ) {
+   @Transactional
+public List<MessageResponse> markConversationAsRead(
+        String authenticatedEmail,
+        UUID conversationId
+) {
 
-        User currentUser =
-                getUserByEmail(authenticatedEmail);
+    User currentUser =
+            getUserByEmail(
+                    authenticatedEmail
+            );
 
-        Conversation conversation =
-                getConversationById(conversationId);
+    Conversation conversation =
+            getConversationById(
+                    conversationId
+            );
 
-        communicationValidator
-                .validateConversationParticipant(
-                        conversation,
-                        currentUser.getId()
-                );
+    communicationValidator
+            .validateConversationParticipant(
+                    conversation,
+                    currentUser.getId()
+            );
 
-        return chatMessageRepository
-                .markConversationMessagesAsRead(
-                        conversationId,
-                        currentUser.getId(),
-                        MessageStatus.READ,
-                        LocalDateTime.now()
-                );
+    /*
+     * Both SENT and DELIVERED messages are unread.
+     *
+     * Fetch the actual entities first so we know exactly
+     * which messages changed and can broadcast READ
+     * receipts back to their sender.
+     */
+    List<ChatMessage> unreadMessages =
+            chatMessageRepository
+                    .findAllByConversationIdAndReceiverIdAndStatusInOrderByCreatedAtAsc(
+                            conversationId,
+                            currentUser.getId(),
+                            List.of(
+                                    MessageStatus.SENT,
+                                    MessageStatus.DELIVERED
+                            )
+                    );
+
+    if (unreadMessages.isEmpty()) {
+        return List.of();
     }
+
+    LocalDateTime readAt =
+            LocalDateTime.now();
+
+    for (ChatMessage message :
+            unreadMessages) {
+
+        message.setStatus(
+                MessageStatus.READ
+        );
+
+        message.setReadAt(
+                readAt
+        );
+
+        /*
+         * A READ message was necessarily delivered.
+         *
+         * This also handles the case where the user
+         * opened the conversation so quickly that the
+         * DELIVERED acknowledgement had not completed yet.
+         */
+        if (message.getDeliveredAt() == null) {
+            message.setDeliveredAt(
+                    readAt
+            );
+        }
+    }
+
+    List<ChatMessage> savedMessages =
+            chatMessageRepository
+                    .saveAll(
+                            unreadMessages
+                    );
+
+    return savedMessages
+            .stream()
+            .map(
+                    communicationMapper
+                            ::toMessageResponse
+            )
+            .toList();
+}
 
     /*
      * ============================================================
@@ -590,12 +712,15 @@ public String getUserEmail(
         User currentUser =
                 getUserByEmail(authenticatedEmail);
 
-        long unreadCount =
-                chatMessageRepository
-                        .countByReceiverIdAndStatus(
-                                currentUser.getId(),
-                                MessageStatus.SENT
-                        );
+       long unreadCount =
+        chatMessageRepository
+                .countByReceiverIdAndStatusIn(
+                        currentUser.getId(),
+                        List.of(
+                                MessageStatus.SENT,
+                                MessageStatus.DELIVERED
+                        )
+                );
 
         return UnreadMessageCountResponse.builder()
                 .unreadCount(unreadCount)
@@ -627,13 +752,16 @@ public String getUserEmail(
                         currentUser.getId()
                 );
 
-        long unreadCount =
-                chatMessageRepository
-                        .countByConversationIdAndReceiverIdAndStatus(
-                                conversationId,
-                                currentUser.getId(),
-                                MessageStatus.SENT
-                        );
+       long unreadCount =
+        chatMessageRepository
+                .countByConversationIdAndReceiverIdAndStatusIn(
+                        conversationId,
+                        currentUser.getId(),
+                        List.of(
+                                MessageStatus.SENT,
+                                MessageStatus.DELIVERED
+                        )
+                );
 
         return UnreadMessageCountResponse.builder()
                 .unreadCount(unreadCount)

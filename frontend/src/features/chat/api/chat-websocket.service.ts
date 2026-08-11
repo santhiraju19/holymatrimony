@@ -39,6 +39,10 @@ export interface SendTypingEvent {
   typing: boolean;
 }
 
+export interface DeliveryReceiptEvent {
+  messageId: string;
+}
+
 interface ConnectOptions {
   onMessage: (
     message: ChatMessage
@@ -60,6 +64,9 @@ interface ConnectOptions {
     status: WebSocketConnectionStatus
   ) => void;
 }
+
+const SEND_DELIVERED_DESTINATION =
+  "/app/chat.delivered";
 
 const MESSAGE_DESTINATION =
   "/user/queue/messages";
@@ -432,6 +439,31 @@ class ChatWebSocketService {
 
     return true;
   }
+
+  sendDelivered(
+  event: DeliveryReceiptEvent
+): boolean {
+  if (
+    !this.client?.connected
+  ) {
+    return false;
+  }
+
+  this.client.publish({
+    destination:
+      SEND_DELIVERED_DESTINATION,
+
+    headers: {
+      "content-type":
+        "application/json",
+    },
+
+    body:
+      JSON.stringify(event),
+  });
+
+  return true;
+}
 
   sendTyping(
     event: SendTypingEvent
