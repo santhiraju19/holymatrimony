@@ -133,6 +133,23 @@ public class ChatMessage {
     private LocalDateTime deliveredAt;
 
     @Column(
+        name = "edited_at"
+)
+private LocalDateTime editedAt;
+
+@Builder.Default
+@Column(
+        name = "deleted_for_everyone",
+        nullable = false
+)
+private Boolean deletedForEveryone = false;
+
+@Column(
+        name = "deleted_at"
+)
+private LocalDateTime deletedAt;
+
+    @Column(
             name = "created_at",
             nullable = false,
             updatable = false
@@ -148,6 +165,10 @@ public class ChatMessage {
 
     @PrePersist
     public void onCreate() {
+
+        if (deletedForEveryone == null) {
+    deletedForEveryone = false;
+}
 
         if (createdAt == null) {
             createdAt = LocalDateTime.now();

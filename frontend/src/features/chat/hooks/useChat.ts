@@ -516,9 +516,22 @@ export default function useChat() {
               : currentId
         );
 
-        updateConversationPreview(
-          message
-        );
+       const isMessageMutation =
+  Boolean(
+    message.editedAt ||
+    message.deletedAt ||
+    message.deletedForEveryone
+  );
+
+if (!isMessageMutation) {
+  updateConversationPreview(
+    message
+  );
+}
+
+void loadConversations(
+  true
+);
 
         void loadConversations(true);
 
@@ -770,6 +783,110 @@ export default function useChat() {
   ]
 );
 
+const editMessage =
+  useCallback(
+    async (
+      messageId: string,
+      content: string
+    ) => {
+      const trimmedContent =
+        content.trim();
+
+      if (!trimmedContent) {
+        throw new Error(
+          "Message cannot be empty."
+        );
+      }
+
+      setError(null);
+
+      try {
+        const updatedMessage =
+          await communicationService
+            .editMessage(
+              messageId,
+              trimmedContent
+            );
+
+        setMessages(
+          (current) =>
+            mergeMessages(
+              current,
+              [
+                updatedMessage,
+              ]
+            )
+        );
+
+        await loadConversations(
+          true
+        );
+
+      } catch (
+        caughtError: unknown
+      ) {
+        setError(
+          getApiErrorMessage(
+            caughtError,
+            "Unable to edit the message."
+          )
+        );
+
+        throw caughtError;
+      }
+    },
+    [
+      loadConversations,
+    ]
+  );
+
+
+const deleteMessage =
+  useCallback(
+    async (
+      messageId: string
+    ) => {
+      setError(null);
+
+      try {
+        const deletedMessage =
+          await communicationService
+            .deleteMessage(
+              messageId
+            );
+
+        setMessages(
+          (current) =>
+            mergeMessages(
+              current,
+              [
+                deletedMessage,
+              ]
+            )
+        );
+
+        await loadConversations(
+          true
+        );
+
+      } catch (
+        caughtError: unknown
+      ) {
+        setError(
+          getApiErrorMessage(
+            caughtError,
+            "Unable to delete the message."
+          )
+        );
+
+        throw caughtError;
+      }
+    },
+    [
+      loadConversations,
+    ]
+  );
+
   const refresh =
     useCallback(async () => {
       await loadConversations(true);
@@ -1010,5 +1127,7 @@ export default function useChat() {
     sendImage,
     sendTypingStatus,
     refresh,
+    editMessage,
+    deleteMessage,
   };
 }

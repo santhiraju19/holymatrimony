@@ -14,12 +14,19 @@ import MessageList from "./MessageList";
 
 interface ChatWindowProps {
   conversation: Conversation | null;
+
   presence: PresenceStatus | null;
+
   messages: ChatMessage[];
+
   loadingMessages: boolean;
+
   sending: boolean;
+
   uploadingImage: boolean;
+
   realtimeConnected: boolean;
+
   otherUserTyping: boolean;
 
   onBack: () => void;
@@ -36,6 +43,15 @@ interface ChatWindowProps {
   onTypingChange: (
     typing: boolean
   ) => void;
+
+  onEditMessage: (
+    messageId: string,
+    content: string
+  ) => Promise<void>;
+
+  onDeleteMessage: (
+    messageId: string
+  ) => Promise<void>;
 }
 
 export default function ChatWindow({
@@ -51,6 +67,8 @@ export default function ChatWindow({
   onSend,
   onSendImage,
   onTypingChange,
+  onEditMessage,
+  onDeleteMessage,
 }: ChatWindowProps) {
   if (!conversation) {
     return <EmptyChatState />;
@@ -58,26 +76,42 @@ export default function ChatWindow({
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-white">
+
       <ChatHeader
-        conversation={conversation}
-        presence={presence}
+        conversation={
+          conversation
+        }
+        presence={
+          presence
+        }
         realtimeConnected={
           realtimeConnected
         }
         otherUserTyping={
           otherUserTyping
         }
-        onBack={onBack}
+        onBack={
+          onBack
+        }
       />
 
       <MessageList
-        messages={messages}
+        messages={
+          messages
+        }
         otherUserId={
           conversation
-            .otherUser.userId
+            .otherUser
+            .userId
         }
         loading={
           loadingMessages
+        }
+        onEdit={
+          onEditMessage
+        }
+        onDelete={
+          onDeleteMessage
         }
       />
 
@@ -85,11 +119,15 @@ export default function ChatWindow({
         conversationId={
           conversation.id
         }
-        sending={sending}
+        sending={
+          sending
+        }
         uploadingImage={
           uploadingImage
         }
-        onSend={onSend}
+        onSend={
+          onSend
+        }
         onSendImage={
           onSendImage
         }
@@ -97,7 +135,7 @@ export default function ChatWindow({
           onTypingChange
         }
       />
+
     </section>
   );
 }
-

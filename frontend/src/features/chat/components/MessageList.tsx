@@ -23,14 +23,27 @@ import MessageBubble from "./MessageBubble";
 
 interface MessageListProps {
   messages: ChatMessage[];
+
   otherUserId: string;
+
   loading: boolean;
+
+  onEdit: (
+    messageId: string,
+    content: string
+  ) => Promise<void>;
+
+  onDelete: (
+    messageId: string
+  ) => Promise<void>;
 }
 
 export default function MessageList({
   messages,
   otherUserId,
   loading,
+  onEdit,
+  onDelete,
 }: MessageListProps) {
   const bottomRef =
     useRef<HTMLDivElement | null>(
@@ -103,9 +116,14 @@ export default function MessageList({
     <div className="flex-1 overflow-y-auto bg-slate-50 px-4 py-5 md:px-7">
       <div className="mx-auto max-w-4xl space-y-3">
         {messages.map(
-          (message, index) => {
+          (
+            message,
+            index
+          ) => {
             const previousMessage =
-              messages[index - 1];
+              messages[
+                index - 1
+              ];
 
             const showDate =
               shouldShowDateDivider(
@@ -114,7 +132,11 @@ export default function MessageList({
               );
 
             return (
-              <div key={message.id}>
+              <div
+                key={
+                  message.id
+                }
+              >
                 {showDate && (
                   <div className="my-5 flex justify-center">
                     <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-500 shadow-sm">
@@ -126,11 +148,19 @@ export default function MessageList({
                 )}
 
                 <MessageBubble
-                  message={message}
+                  message={
+                    message
+                  }
                   own={isOwnMessage(
                     message,
                     otherUserId
                   )}
+                  onEdit={
+                    onEdit
+                  }
+                  onDelete={
+                    onDelete
+                  }
                 />
               </div>
             );

@@ -72,6 +72,36 @@ export const communicationService = {
     return response.data.data;
   },
 
+  async editMessage(
+  messageId: string,
+  content: string
+): Promise<ChatMessage> {
+  const response =
+    await api.patch<
+      ApiResponse<ChatMessage>
+    >(
+      `/communication/messages/${messageId}`,
+      {
+        content,
+      }
+    );
+
+  return response.data.data;
+},
+
+async deleteMessage(
+  messageId: string
+): Promise<ChatMessage> {
+  const response =
+    await api.delete<
+      ApiResponse<ChatMessage>
+    >(
+      `/communication/messages/${messageId}`
+    );
+
+  return response.data.data;
+},
+
 async uploadChatImage(
   file: File
 ): Promise<ChatMediaUploadResponse> {

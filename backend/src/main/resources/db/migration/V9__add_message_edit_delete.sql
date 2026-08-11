@@ -1,0 +1,8 @@
+ALTER TABLE chat_messages
+    ADD COLUMN IF NOT EXISTS edited_at TIMESTAMP;
+
+ALTER TABLE chat_messages
+    ADD COLUMN IF NOT EXISTS deleted_for_everyone BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE chat_messages
+    ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;

@@ -68,13 +68,31 @@ export interface ChatMessage {
   conversationId: string;
   senderId: string;
   receiverId: string;
+
   content: string | null;
   mediaUrl?: string | null;
-  messageType: MessageType | string;
-  status: MessageStatus | string;
+
+  messageType:
+    | MessageType
+    | string;
+
+  status:
+    | MessageStatus
+    | string;
+
   createdAt: string;
+
+  updatedAt?: string | null;
+
   readAt?: string | null;
+
   deliveredAt?: string | null;
+
+  editedAt?: string | null;
+
+  deletedForEveryone?: boolean;
+
+  deletedAt?: string | null;
 }
 
 export interface MessagesPage

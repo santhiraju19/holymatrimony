@@ -17,30 +17,43 @@ export default function ChatLayout() {
     selectedConversationId,
     selectedUserPresence,
     messages,
+
     loadingConversations,
     loadingMessages,
+
     sending,
     uploadingImage,
+
     sendImage,
+
     error,
+
     isRealtimeConnected,
     isOtherUserTyping,
+
     selectConversation,
     clearSelection,
+
     sendMessage,
+    editMessage,
+    deleteMessage,
+
     sendTypingStatus,
+
     refresh,
-    
   } = useChat();
-  
 
   const hasSelectedConversation =
-    Boolean(selectedConversation);
+    Boolean(
+      selectedConversation
+    );
 
   return (
     <div className="relative">
+
       {error && (
         <div className="mb-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+
           <AlertCircle
             size={19}
             className="mt-0.5 shrink-0"
@@ -58,13 +71,18 @@ export default function ChatLayout() {
             aria-label="Retry"
             className="rounded p-1 hover:bg-red-100"
           >
-            <X size={16} />
+            <X
+              size={16}
+            />
           </button>
+
         </div>
       )}
 
       <div className="h-[calc(100vh-10rem)] min-h-[560px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
+
         <div className="grid h-full grid-cols-1 md:grid-cols-[340px_minmax(0,1fr)] lg:grid-cols-[380px_minmax(0,1fr)]">
+
           <div
             className={
               hasSelectedConversation
@@ -73,12 +91,18 @@ export default function ChatLayout() {
             }
           >
             <ConversationList
-              conversations={conversations}
+              conversations={
+                conversations
+              }
               selectedConversationId={
                 selectedConversationId
               }
-              loading={loadingConversations}
-              onSelect={selectConversation}
+              loading={
+                loadingConversations
+              }
+              onSelect={
+                selectConversation
+              }
               onRefresh={() => {
                 void refresh();
               }}
@@ -92,37 +116,52 @@ export default function ChatLayout() {
                 : "hidden min-h-0 md:block"
             }
           >
-     <ChatWindow
-  conversation={
-    selectedConversation
-  }
-  presence={
-    selectedUserPresence
-  }
-  messages={messages}
-  loadingMessages={
-    loadingMessages
-  }
-  sending={sending}
-  uploadingImage={
-    uploadingImage
-  }
-  realtimeConnected={
-    isRealtimeConnected
-  }
-  otherUserTyping={
-    isOtherUserTyping
-  }
-  onBack={clearSelection}
-  onSend={sendMessage}
-  onSendImage={
-    sendImage
-  }
-  onTypingChange={
-    sendTypingStatus
-  }
-/>
+            <ChatWindow
+              conversation={
+                selectedConversation
+              }
+              presence={
+                selectedUserPresence
+              }
+              messages={
+                messages
+              }
+              loadingMessages={
+                loadingMessages
+              }
+              sending={
+                sending
+              }
+              uploadingImage={
+                uploadingImage
+              }
+              realtimeConnected={
+                isRealtimeConnected
+              }
+              otherUserTyping={
+                isOtherUserTyping
+              }
+              onBack={
+                clearSelection
+              }
+              onSend={
+                sendMessage
+              }
+              onSendImage={
+                sendImage
+              }
+              onTypingChange={
+                sendTypingStatus
+              }
+              onEditMessage={
+                editMessage
+              }
+              onDeleteMessage={
+                deleteMessage
+              }
+            />
           </div>
+
         </div>
       </div>
     </div>

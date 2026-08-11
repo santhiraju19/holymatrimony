@@ -46,8 +46,16 @@ public class CommunicationMapper {
                 .deliveredAt(message.getDeliveredAt())
                 .readAt(message.getReadAt())
                 .createdAt(message.getCreatedAt())
-                .updatedAt(message.getUpdatedAt())
-                .build();
+               .updatedAt(message.getUpdatedAt())
+.editedAt(message.getEditedAt())
+.deletedForEveryone(
+        Boolean.TRUE.equals(
+                message.getDeletedForEveryone()
+        )
+)
+.deletedAt(message.getDeletedAt())
+.build();
+
     }
 
     public ConversationResponse toConversationResponse(

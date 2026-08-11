@@ -189,6 +189,205 @@ public class CommunicationService {
 
     /*
  * ============================================================
+ * EDIT MESSAGE
+ * ============================================================
+ */
+
+@Transactional
+public MessageResponse editMessage(
+        String authenticatedEmail,
+        UUID messageId,
+        String newContent
+) {
+
+    User currentUser =
+            getUserByEmail(authenticatedEmail);
+
+    ChatMessage message =
+            getMessageById(messageId);
+
+    if (!message.getSender()
+            .getId()
+            .equals(currentUser.getId())) {
+
+        throw new AccessDeniedException(
+                "You can edit only your own messages"
+        );
+    }
+
+    if (Boolean.TRUE.equals(
+            message.getDeletedForEveryone()
+    )) {
+
+        throw new IllegalStateException(
+                "Deleted messages cannot be edited"
+        );
+    }
+
+    if (message.getMessageType()
+            != MessageType.TEXT) {
+
+        throw new IllegalStateException(
+                "Only text messages can be edited"
+        );
+    }
+
+    String content =
+            normalizeText(newContent);
+
+    if (!StringUtils.hasText(content)) {
+
+        throw new IllegalArgumentException(
+                "Message content is required"
+        );
+    }
+
+    if (content.length() > 2000) {
+
+        throw new IllegalArgumentException(
+                "Message cannot exceed 2000 characters"
+        );
+    }
+
+    message.setContent(content);
+
+    message.setEditedAt(
+            LocalDateTime.now()
+    );
+
+    ChatMessage savedMessage =
+            chatMessageRepository.save(message);
+
+    refreshConversationPreviewIfLatest(
+            savedMessage
+    );
+
+    return communicationMapper
+            .toMessageResponse(savedMessage);
+}
+
+
+/*
+ * ============================================================
+ * DELETE MESSAGE FOR EVERYONE
+ * ============================================================
+ */
+
+@Transactional
+public MessageResponse deleteMessageForEveryone(
+        String authenticatedEmail,
+        UUID messageId
+) {
+
+    User currentUser =
+            getUserByEmail(authenticatedEmail);
+
+    ChatMessage message =
+            getMessageById(messageId);
+
+    if (!message.getSender()
+            .getId()
+            .equals(currentUser.getId())) {
+
+        throw new AccessDeniedException(
+                "You can delete only your own messages"
+        );
+    }
+
+    if (Boolean.TRUE.equals(
+            message.getDeletedForEveryone()
+    )) {
+
+        return communicationMapper
+                .toMessageResponse(message);
+    }
+
+    message.setDeletedForEveryone(true);
+
+    message.setDeletedAt(
+            LocalDateTime.now()
+    );
+
+    /*
+     * Remove original user content from the database.
+     * The message row itself remains so chat history,
+     * ordering and delivery/read state remain intact.
+     */
+    message.setContent(null);
+    message.setMediaUrl(null);
+
+    ChatMessage savedMessage =
+            chatMessageRepository.save(message);
+
+    refreshConversationPreviewIfLatest(
+            savedMessage
+    );
+
+    return communicationMapper
+            .toMessageResponse(savedMessage);
+}
+
+
+/*
+ * ============================================================
+ * REFRESH CONVERSATION PREVIEW AFTER EDIT / DELETE
+ * ============================================================
+ */
+
+private void refreshConversationPreviewIfLatest(
+        ChatMessage message
+) {
+
+    Conversation conversation =
+            message.getConversation();
+
+    if (conversation.getLastMessageAt() == null
+            || message.getCreatedAt() == null) {
+
+        return;
+    }
+
+    if (!conversation.getLastMessageAt()
+            .equals(message.getCreatedAt())) {
+
+        return;
+    }
+
+    if (Boolean.TRUE.equals(
+            message.getDeletedForEveryone()
+    )) {
+
+        conversation.setLastMessage(
+                "This message was deleted"
+        );
+
+    } else {
+
+        conversation.setLastMessage(
+                buildMessagePreview(message)
+        );
+    }
+
+    conversation.setLastMessageSender(
+            message.getSender()
+    );
+
+    /*
+     * Keep the original message time.
+     * Editing must not move the conversation
+     * to the top as though it were newly sent.
+     */
+    conversation.setLastMessageAt(
+            message.getCreatedAt()
+    );
+
+    conversationRepository.save(
+            conversation
+    );
+}
+
+    /*
+ * ============================================================
  * GET USER EMAIL FOR REAL-TIME DELIVERY
  * ============================================================
  */
@@ -623,6 +822,26 @@ public UUID ensureConversationExists(
      * ENTITY LOOKUPS
      * ============================================================
      */
+
+    private ChatMessage getMessageById(
+        UUID messageId
+) {
+
+    if (messageId == null) {
+
+        throw new IllegalArgumentException(
+                "Message ID is required"
+        );
+    }
+
+    return chatMessageRepository
+            .findById(messageId)
+            .orElseThrow(() ->
+                    new EntityNotFoundException(
+                            "Message was not found"
+                    )
+            );
+}
 
     private User getUserByEmail(
             String email
