@@ -9,6 +9,8 @@ import {
   usePathname,
 } from "next/navigation";
 
+import PresenceConnection from "@/features/chat/components/PresenceConnection";
+
 import ProfileProvider from "@/features/profile/context/ProfileProvider";
 
 import DashboardFooter from "./DashboardFooter";
@@ -22,22 +24,37 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
-  const pathname = usePathname();
+  const pathname =
+    usePathname();
 
   const [
     mobileSidebarOpen,
     setMobileSidebarOpen,
   ] = useState(false);
 
+  /*
+   * ============================================================
+   * Close Mobile Sidebar On Route Change
+   * ============================================================
+   */
+
   useEffect(() => {
     setMobileSidebarOpen(false);
   }, [pathname]);
+
+  /*
+   * ============================================================
+   * Escape Key Support
+   * ============================================================
+   */
 
   useEffect(() => {
     function handleKeyDown(
       event: KeyboardEvent
     ): void {
-      if (event.key === "Escape") {
+      if (
+        event.key === "Escape"
+      ) {
         setMobileSidebarOpen(false);
       }
     }
@@ -55,6 +72,12 @@ export default function DashboardLayout({
     };
   }, []);
 
+  /*
+   * ============================================================
+   * Prevent Background Scrolling
+   * ============================================================
+   */
+
   useEffect(() => {
     if (!mobileSidebarOpen) {
       document.body.style.overflow =
@@ -70,18 +93,50 @@ export default function DashboardLayout({
       document.body.style.overflow =
         "";
     };
-  }, [mobileSidebarOpen]);
+  }, [
+    mobileSidebarOpen,
+  ]);
+
+  /*
+   * ============================================================
+   * Dashboard
+   * ============================================================
+   */
 
   return (
     <ProfileProvider>
-      <div className="relative min-h-screen overflow-x-hidden bg-[#F5F7FB]">
-        <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.07),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(212,175,55,0.06),transparent_35%)]" />
+
+      {/*
+       * Keeps an authenticated WebSocket
+       * connection alive throughout the
+       * entire dashboard area.
+       *
+       * This means the user remains Online
+       * while navigating Dashboard, Search,
+       * Profile, Interests, Privacy and Chat.
+       */}
+      <PresenceConnection />
+
+      <div className="min-h-screen bg-slate-50">
+
+        {/*
+         * ======================================================
+         * Desktop Sidebar
+         * ======================================================
+         */}
 
         <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-[80] lg:block lg:w-[84px]">
           <Sidebar />
         </div>
 
+        {/*
+         * ======================================================
+         * Main Dashboard Area
+         * ======================================================
+         */}
+
         <div className="relative flex min-h-screen min-w-0 flex-col lg:pl-[84px]">
+
           <Header
             onOpenSidebar={() =>
               setMobileSidebarOpen(true)
@@ -89,13 +144,22 @@ export default function DashboardLayout({
           />
 
           <main className="min-w-0 flex-1 p-3 sm:p-5 lg:p-6 xl:p-8">
+
             <div className="mx-auto w-full max-w-[1720px]">
               {children}
             </div>
+
           </main>
 
           <DashboardFooter />
+
         </div>
+
+        {/*
+         * ======================================================
+         * Mobile Sidebar Overlay
+         * ======================================================
+         */}
 
         <div
           className={[
@@ -108,6 +172,7 @@ export default function DashboardLayout({
             !mobileSidebarOpen
           }
         >
+
           <button
             type="button"
             aria-label="Close dashboard menu"
@@ -133,15 +198,20 @@ export default function DashboardLayout({
                 : "-translate-x-full",
             ].join(" ")}
           >
+
             <Sidebar
               mobile
               onClose={() =>
                 setMobileSidebarOpen(false)
               }
             />
+
           </div>
+
         </div>
+
       </div>
+
     </ProfileProvider>
   );
 }
