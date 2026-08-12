@@ -104,19 +104,12 @@ class PresenceWebSocketService {
       );
     };
 
-   client.onWebSocketClose = (
-  event
-) => {
-  console.warn(
-    "[Presence WebSocket] CLOSED",
-    {
-      code: event.code,
-      reason: event.reason,
-      wasClean: event.wasClean,
-      url: getWebSocketUrl(),
-    }
-  );
-};
+client.onWebSocketClose =
+  () => {
+    console.debug(
+      "[Presence] WebSocket disconnected"
+    );
+  };
 
     client.onStompError = (
       frame
