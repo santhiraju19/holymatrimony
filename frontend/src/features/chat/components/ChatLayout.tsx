@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -57,6 +58,10 @@ export default function ChatLayout() {
     editMessage,
 
     deleteMessage,
+
+    reactToMessage,
+
+    removeMessageReaction,
   } = useChat();
 
   const hasSelectedConversation =
@@ -65,7 +70,7 @@ export default function ChatLayout() {
     );
 
   return (
-    <div className="relative">
+    <div>
 
       {/* ======================================================
           ERROR BANNER
@@ -215,6 +220,14 @@ export default function ChatLayout() {
 
               onDeleteMessage={
                 deleteMessage
+              }
+
+              onReactMessage={
+                reactToMessage
+              }
+
+              onRemoveReaction={
+                removeMessageReaction
               }
             />
           </div>

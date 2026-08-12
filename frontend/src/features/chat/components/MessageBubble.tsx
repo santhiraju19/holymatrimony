@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -14,6 +15,7 @@ import {
   Pencil,
   Reply,
   Save,
+  Smile,
   Trash2,
   TriangleAlert,
   X,
@@ -21,6 +23,7 @@ import {
 
 import {
   ChatMessage,
+  MessageReaction,
 } from "@/features/chat/types";
 
 import {
@@ -28,15 +31,14 @@ import {
 } from "@/features/chat/utils/chat.utils";
 
 interface MessageBubbleProps {
-  message: ChatMessage;
+  message:
+    ChatMessage;
 
-  own: boolean;
+  own:
+    boolean;
 
-  /*
-   * Optional for now so MessageList keeps compiling
-   * until we replace it in the next step.
-   */
-  otherUserId?: string;
+  otherUserId?:
+    string;
 
   onReply?: (
     message: ChatMessage
@@ -50,7 +52,25 @@ interface MessageBubbleProps {
   onDelete?: (
     messageId: string
   ) => Promise<void>;
+
+  onReact?: (
+    messageId: string,
+    reaction: string
+  ) => Promise<void>;
+
+  onRemoveReaction?: (
+    messageId: string
+  ) => Promise<void>;
 }
+
+const AVAILABLE_REACTIONS = [
+  "👍",
+  "❤️",
+  "😂",
+  "🙏",
+  "😮",
+  "😢",
+] as const;
 
 function getBackendOrigin(): string {
   const apiUrl =
@@ -147,10 +167,24 @@ export default function MessageBubble({
   onReply,
   onEdit,
   onDelete,
+  onReact,
+  onRemoveReaction,
 }: MessageBubbleProps) {
   const [
     menuOpen,
     setMenuOpen,
+  ] =
+    useState(false);
+
+  const [
+    reactionPickerOpen,
+    setReactionPickerOpen,
+  ] =
+    useState(false);
+
+  const [
+    reactionSaving,
+    setReactionSaving,
   ] =
     useState(false);
 
@@ -185,6 +219,11 @@ export default function MessageBubble({
       null
     );
 
+  const reactionRef =
+    useRef<HTMLDivElement | null>(
+      null
+    );
+
   useEffect(() => {
     setEditValue(
       message.content ?? ""
@@ -197,13 +236,29 @@ export default function MessageBubble({
     function handleClickOutside(
       event: MouseEvent
     ) {
+      const target =
+        event.target as Node;
+
       if (
         menuRef.current &&
         !menuRef.current.contains(
-          event.target as Node
+          target
         )
       ) {
-        setMenuOpen(false);
+        setMenuOpen(
+          false
+        );
+      }
+
+      if (
+        reactionRef.current &&
+        !reactionRef.current.contains(
+          target
+        )
+      ) {
+        setReactionPickerOpen(
+          false
+        );
       }
     }
 
@@ -238,11 +293,15 @@ export default function MessageBubble({
 
   const isImageMessage =
     messageType === "IMAGE" &&
-    Boolean(mediaUrl);
+    Boolean(
+      mediaUrl
+    );
 
   const canReply =
     !deleted &&
-    Boolean(onReply);
+    Boolean(
+      onReply
+    );
 
   const canEdit =
     own &&
@@ -255,6 +314,92 @@ export default function MessageBubble({
   const canDelete =
     own &&
     !deleted;
+
+  const canReact =
+    !deleted &&
+    Boolean(
+      onReact
+    );
+
+  /*
+   * ============================================================
+   * CURRENT USER ID
+   * ============================================================
+   *
+   * In a 1:1 conversation:
+   *
+   * own message:
+   * current user = sender
+   *
+   * incoming message:
+   * current user = receiver
+   */
+
+  const currentUserId =
+    own
+      ? message.senderId
+      : message.receiverId;
+
+  /*
+   * ============================================================
+   * REACTIONS
+   * ============================================================
+   */
+
+  const reactions =
+    message.reactions ??
+    [];
+
+  const ownReaction =
+    reactions.find(
+      (
+        reaction
+      ) =>
+        normalizeId(
+          reaction.userId
+        ) ===
+        normalizeId(
+          currentUserId
+        )
+    );
+
+  const groupedReactions =
+    useMemo(
+      () => {
+        const groups =
+          new Map<
+            string,
+            MessageReaction[]
+          >();
+
+        for (
+          const reaction
+          of reactions
+        ) {
+          const existing =
+            groups.get(
+              reaction.reaction
+            ) ??
+            [];
+
+          existing.push(
+            reaction
+          );
+
+          groups.set(
+            reaction.reaction,
+            existing
+          );
+        }
+
+        return Array.from(
+          groups.entries()
+        );
+      },
+      [
+        reactions,
+      ]
+    );
 
   /*
    * ============================================================
@@ -320,11 +465,72 @@ export default function MessageBubble({
       return;
     }
 
-    setMenuOpen(false);
+    setMenuOpen(
+      false
+    );
+
+    setReactionPickerOpen(
+      false
+    );
 
     onReply(
       message
     );
+  }
+
+  async function handleReaction(
+    reaction: string
+  ) {
+    if (
+      reactionSaving ||
+      deleted
+    ) {
+      return;
+    }
+
+    setReactionSaving(
+      true
+    );
+
+    try {
+      /*
+       * Tapping the user's currently selected
+       * reaction removes it.
+       */
+      if (
+        ownReaction?.reaction ===
+          reaction &&
+        onRemoveReaction
+      ) {
+        await onRemoveReaction(
+          message.id
+        );
+
+        setReactionPickerOpen(
+          false
+        );
+
+        return;
+      }
+
+      if (!onReact) {
+        return;
+      }
+
+      await onReact(
+        message.id,
+        reaction
+      );
+
+      setReactionPickerOpen(
+        false
+      );
+
+    } finally {
+      setReactionSaving(
+        false
+      );
+    }
   }
 
   async function handleSave() {
@@ -342,11 +548,16 @@ export default function MessageBubble({
       content ===
       message.content?.trim()
     ) {
-      setEditing(false);
+      setEditing(
+        false
+      );
+
       return;
     }
 
-    setSaving(true);
+    setSaving(
+      true
+    );
 
     try {
       await onEdit(
@@ -354,11 +565,18 @@ export default function MessageBubble({
         content
       );
 
-      setEditing(false);
-      setMenuOpen(false);
+      setEditing(
+        false
+      );
+
+      setMenuOpen(
+        false
+      );
 
     } finally {
-      setSaving(false);
+      setSaving(
+        false
+      );
     }
   }
 
@@ -379,25 +597,252 @@ export default function MessageBubble({
       return;
     }
 
-    setDeleting(true);
+    setDeleting(
+      true
+    );
 
     try {
       await onDelete(
         message.id
       );
 
-      setMenuOpen(false);
-      setEditing(false);
+      setMenuOpen(
+        false
+      );
+
+      setReactionPickerOpen(
+        false
+      );
+
+      setEditing(
+        false
+      );
 
     } finally {
-      setDeleting(false);
+      setDeleting(
+        false
+      );
     }
   }
+
+  /*
+   * ============================================================
+   * ACTION BUTTONS
+   * ============================================================
+   */
+
+  const actionButtons = (
+    <div className="mt-1 flex items-center gap-0.5">
+
+      {canReact && (
+        <div
+          ref={
+            reactionRef
+          }
+          className="relative"
+        >
+          <button
+            type="button"
+            aria-label="React to message"
+            title="React"
+            disabled={
+              reactionSaving
+            }
+            onClick={() => {
+              setReactionPickerOpen(
+                (
+                  current
+                ) =>
+                  !current
+              );
+
+              setMenuOpen(
+                false
+              );
+            }}
+            className="rounded-lg p-1 text-slate-400 opacity-0 transition hover:bg-slate-200 hover:text-[#0B2D5C] group-hover:opacity-100 focus:opacity-100 disabled:opacity-50"
+          >
+            <Smile
+              size={16}
+            />
+          </button>
+
+          {reactionPickerOpen && (
+            <div
+              className={[
+                "absolute bottom-8 z-40 flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1.5 shadow-xl",
+
+                own
+                  ? "right-0"
+                  : "left-0",
+              ].join(" ")}
+            >
+              {AVAILABLE_REACTIONS.map(
+                (
+                  reaction
+                ) => {
+                  const selected =
+                    ownReaction
+                      ?.reaction ===
+                    reaction;
+
+                  return (
+                    <button
+                      key={
+                        reaction
+                      }
+                      type="button"
+                      disabled={
+                        reactionSaving
+                      }
+                      title={
+                        selected
+                          ? "Remove reaction"
+                          : `React ${reaction}`
+                      }
+                      onClick={() => {
+                        void handleReaction(
+                          reaction
+                        );
+                      }}
+                      className={[
+                        "flex h-9 w-9 items-center justify-center rounded-full text-xl transition hover:scale-110 hover:bg-slate-100 disabled:opacity-50",
+
+                        selected
+                          ? "bg-blue-50 ring-2 ring-blue-200"
+                          : "",
+                      ].join(" ")}
+                    >
+                      {reaction}
+                    </button>
+                  );
+                }
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {canReply && (
+        <button
+          type="button"
+          aria-label="Reply to message"
+          title="Reply"
+          onClick={
+            handleReply
+          }
+          className="rounded-lg p-1 text-slate-400 opacity-0 transition hover:bg-slate-200 hover:text-[#0B2D5C] group-hover:opacity-100 focus:opacity-100"
+        >
+          <Reply
+            size={16}
+          />
+        </button>
+      )}
+
+      {own && (
+        <div
+          ref={
+            menuRef
+          }
+          className="relative"
+        >
+          <button
+            type="button"
+            aria-label="Message options"
+            onClick={() => {
+              setMenuOpen(
+                (
+                  current
+                ) =>
+                  !current
+              );
+
+              setReactionPickerOpen(
+                false
+              );
+            }}
+            className="rounded-lg p-1 text-slate-400 opacity-0 transition hover:bg-slate-200 hover:text-slate-700 group-hover:opacity-100 focus:opacity-100"
+          >
+            <MoreVertical
+              size={17}
+            />
+          </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 top-7 z-30 min-w-[160px] overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl">
+
+              {canReply && (
+                <button
+                  type="button"
+                  onClick={
+                    handleReply
+                  }
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  <Reply
+                    size={15}
+                  />
+
+                  Reply
+                </button>
+              )}
+
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditing(
+                      true
+                    );
+
+                    setMenuOpen(
+                      false
+                    );
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  <Pencil
+                    size={15}
+                  />
+
+                  Edit
+                </button>
+              )}
+
+              {canDelete && (
+                <button
+                  type="button"
+                  disabled={
+                    deleting
+                  }
+                  onClick={() => {
+                    void handleDelete();
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                >
+                  <Trash2
+                    size={15}
+                  />
+
+                  {deleting
+                    ? "Deleting…"
+                    : "Delete"}
+                </button>
+              )}
+
+            </div>
+          )}
+        </div>
+      )}
+
+    </div>
+  );
 
   return (
     <div
       className={[
         "group flex",
+
         own
           ? "justify-end"
           : "justify-start",
@@ -406,221 +851,111 @@ export default function MessageBubble({
       <div className="relative flex max-w-[88%] items-start gap-1 sm:max-w-[74%]">
 
         {/* ======================================================
-            ACTIONS FOR OWN MESSAGE
+            ACTIONS BEFORE OWN MESSAGE
            ====================================================== */}
 
-        {own && !editing && (
-          <div className="mt-1 flex items-center">
-
-            {canReply && (
-              <button
-                type="button"
-                aria-label="Reply to message"
-                title="Reply"
-                onClick={
-                  handleReply
-                }
-                className="rounded-lg p-1 text-slate-400 opacity-0 transition hover:bg-slate-200 hover:text-[#0B2D5C] group-hover:opacity-100 focus:opacity-100"
-              >
-                <Reply
-                  size={16}
-                />
-              </button>
-            )}
-
-            <div
-              ref={menuRef}
-              className="relative"
-            >
-              <button
-                type="button"
-                aria-label="Message options"
-                onClick={() =>
-                  setMenuOpen(
-                    (current) =>
-                      !current
-                  )
-                }
-                className="rounded-lg p-1 text-slate-400 opacity-0 transition hover:bg-slate-200 hover:text-slate-700 group-hover:opacity-100 focus:opacity-100"
-              >
-                <MoreVertical
-                  size={17}
-                />
-              </button>
-
-              {menuOpen && (
-                <div className="absolute right-0 top-7 z-30 min-w-[160px] overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl">
-
-                  {canReply && (
-                    <button
-                      type="button"
-                      onClick={
-                        handleReply
-                      }
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      <Reply
-                        size={15}
-                      />
-                      Reply
-                    </button>
-                  )}
-
-                  {canEdit && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditing(
-                          true
-                        );
-
-                        setMenuOpen(
-                          false
-                        );
-                      }}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      <Pencil
-                        size={15}
-                      />
-                      Edit
-                    </button>
-                  )}
-
-                  {canDelete && (
-                    <button
-                      type="button"
-                      disabled={
-                        deleting
-                      }
-                      onClick={() => {
-                        void handleDelete();
-                      }}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
-                    >
-                      <Trash2
-                        size={15}
-                      />
-
-                      {deleting
-                        ? "Deleting…"
-                        : "Delete"}
-                    </button>
-                  )}
-
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        {own &&
+          !editing &&
+          actionButtons}
 
         {/* ======================================================
-            MESSAGE BUBBLE
+            MESSAGE + REACTIONS
            ====================================================== */}
 
         <div
           className={[
-            "overflow-hidden rounded-2xl shadow-sm",
+            "relative",
 
-            isImageMessage
-              ? "p-1.5"
-              : "px-4 py-2.5",
-
-            own
-              ? "rounded-br-md bg-[#0B2D5C] text-white"
-              : "rounded-bl-md border border-slate-200 bg-white text-slate-800",
-
-            deleted
-              ? "italic"
+            groupedReactions.length >
+              0
+              ? "mb-4"
               : "",
           ].join(" ")}
         >
 
-          {/* ====================================================
-              QUOTED / REPLIED-TO MESSAGE
-             ==================================================== */}
+          <div
+            className={[
+              "overflow-hidden rounded-2xl shadow-sm",
 
-          {!deleted &&
-            !editing &&
-            hasReply && (
-              <div
-                className={[
-                  "mb-2 overflow-hidden rounded-xl border-l-4",
+              isImageMessage
+                ? "p-1.5"
+                : "px-4 py-2.5",
 
-                  own
-                    ? "border-blue-300 bg-white/10"
-                    : "border-[#0B2D5C] bg-slate-50",
-                ].join(" ")}
-              >
-                <div className="flex min-w-0 items-stretch">
+              own
+                ? "rounded-br-md bg-[#0B2D5C] text-white"
+                : "rounded-bl-md border border-slate-200 bg-white text-slate-800",
 
-                  <div className="min-w-0 flex-1 px-3 py-2">
+              deleted
+                ? "italic"
+                : "",
+            ].join(" ")}
+          >
 
-                    <p
-                      className={[
-                        "mb-0.5 text-[11px] font-semibold",
+            {/* ====================================================
+                QUOTED / REPLIED-TO MESSAGE
+               ==================================================== */}
 
-                        own
-                          ? "text-blue-100"
-                          : "text-[#0B2D5C]",
-                      ].join(" ")}
-                    >
-                      {replySenderLabel}
-                    </p>
+            {!deleted &&
+              !editing &&
+              hasReply && (
+                <div
+                  className={[
+                    "mb-2 overflow-hidden rounded-xl border-l-4",
 
-                    {replyDeleted ? (
+                    own
+                      ? "border-blue-300 bg-white/10"
+                      : "border-[#0B2D5C] bg-slate-50",
+                  ].join(" ")}
+                >
+                  <div className="flex min-w-0 items-stretch">
+
+                    <div className="min-w-0 flex-1 px-3 py-2">
+
                       <p
                         className={[
-                          "flex items-center gap-1.5 truncate text-xs italic",
+                          "mb-0.5 text-[11px] font-semibold",
 
                           own
-                            ? "text-blue-100/80"
-                            : "text-slate-500",
+                            ? "text-blue-100"
+                            : "text-[#0B2D5C]",
                         ].join(" ")}
                       >
-                        <Trash2
-                          size={12}
-                        />
-
-                        This message was deleted
+                        {replySenderLabel}
                       </p>
-                    ) : (
-                      <>
-                        {replyIsImage && (
-                          <p
-                            className={[
-                              "truncate text-xs",
 
-                              own
-                                ? "text-blue-100/90"
-                                : "text-slate-600",
-                            ].join(" ")}
-                          >
-                            📷 Photo
-                          </p>
-                        )}
+                      {replyDeleted ? (
+                        <p
+                          className={[
+                            "flex items-center gap-1.5 truncate text-xs italic",
 
-                        {message
-                          .replyToContent
-                          ?.trim() && (
-                          <p
-                            className={[
-                              "truncate text-xs",
+                            own
+                              ? "text-blue-100/80"
+                              : "text-slate-500",
+                          ].join(" ")}
+                        >
+                          <Trash2
+                            size={12}
+                          />
 
-                              own
-                                ? "text-blue-100/90"
-                                : "text-slate-600",
-                            ].join(" ")}
-                          >
-                            {truncateReplyText(
-                              message
-                                .replyToContent
-                            )}
-                          </p>
-                        )}
+                          This message was deleted
+                        </p>
+                      ) : (
+                        <>
+                          {replyIsImage && (
+                            <p
+                              className={[
+                                "truncate text-xs",
 
-                        {!replyIsImage &&
-                          !message
+                                own
+                                  ? "text-blue-100/90"
+                                  : "text-slate-600",
+                              ].join(" ")}
+                            >
+                              📷 Photo
+                            </p>
+                          )}
+
+                          {message
                             .replyToContent
                             ?.trim() && (
                             <p
@@ -628,278 +963,366 @@ export default function MessageBubble({
                                 "truncate text-xs",
 
                                 own
-                                  ? "text-blue-100/80"
-                                  : "text-slate-500",
+                                  ? "text-blue-100/90"
+                                  : "text-slate-600",
                               ].join(" ")}
                             >
-                              Message
+                              {truncateReplyText(
+                                message
+                                  .replyToContent
+                              )}
                             </p>
                           )}
-                      </>
-                    )}
+
+                          {!replyIsImage &&
+                            !message
+                              .replyToContent
+                              ?.trim() && (
+                              <p
+                                className={[
+                                  "truncate text-xs",
+
+                                  own
+                                    ? "text-blue-100/80"
+                                    : "text-slate-500",
+                                ].join(" ")}
+                              >
+                                Message
+                              </p>
+                            )}
+                        </>
+                      )}
+
+                    </div>
+
+                    {!replyDeleted &&
+                      replyIsImage &&
+                      replyMediaUrl && (
+                        <img
+                          src={
+                            replyMediaUrl
+                          }
+                          alt="Replied image"
+                          loading="lazy"
+                          className="h-[58px] w-[58px] shrink-0 object-cover"
+                        />
+                      )}
 
                   </div>
-
-                  {!replyDeleted &&
-                    replyIsImage &&
-                    replyMediaUrl && (
-                      <img
-                        src={
-                          replyMediaUrl
-                        }
-                        alt="Replied image"
-                        loading="lazy"
-                        className="h-[58px] w-[58px] shrink-0 object-cover"
-                      />
-                    )}
                 </div>
-              </div>
-            )}
+              )}
 
-          {/* ====================================================
-              DELETED MESSAGE
-             ==================================================== */}
+            {/* ====================================================
+                DELETED MESSAGE
+               ==================================================== */}
 
-          {deleted ? (
-            <p
-              className={[
-                "flex items-center gap-2 text-sm",
+            {deleted ? (
+              <p
+                className={[
+                  "flex items-center gap-2 text-sm",
 
-                own
-                  ? "text-blue-100"
-                  : "text-slate-500",
-              ].join(" ")}
-            >
-              <Trash2
-                size={14}
-              />
+                  own
+                    ? "text-blue-100"
+                    : "text-slate-500",
+                ].join(" ")}
+              >
+                <Trash2
+                  size={14}
+                />
 
-              This message was deleted
-            </p>
+                This message was deleted
+              </p>
 
-          ) : editing ? (
+            ) : editing ? (
 
-            /* ==================================================
-               EDIT MODE
-               ================================================== */
+              <div className="min-w-[240px]">
 
-            <div className="min-w-[240px]">
-
-              <textarea
-                value={
-                  editValue
-                }
-                maxLength={
-                  2000
-                }
-                rows={2}
-                autoFocus
-                disabled={
-                  saving
-                }
-                onChange={(
-                  event
-                ) =>
-                  setEditValue(
-                    event.target.value
-                  )
-                }
-                onKeyDown={(
-                  event
-                ) => {
-                  if (
-                    event.key ===
-                      "Enter" &&
-                    !event.shiftKey
-                  ) {
-                    event.preventDefault();
-
-                    void handleSave();
+                <textarea
+                  value={
+                    editValue
                   }
-
-                  if (
-                    event.key ===
-                    "Escape"
-                  ) {
-                    setEditValue(
-                      message.content ??
-                        ""
-                    );
-
-                    setEditing(
-                      false
-                    );
+                  maxLength={
+                    2000
                   }
-                }}
-                className="w-full resize-none rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white outline-none placeholder:text-blue-200 focus:border-white/50"
-              />
-
-              <div className="mt-2 flex justify-end gap-2">
-
-                <button
-                  type="button"
+                  rows={2}
+                  autoFocus
                   disabled={
                     saving
                   }
-                  onClick={() => {
+                  onChange={(
+                    event
+                  ) =>
                     setEditValue(
-                      message.content ??
-                        ""
-                    );
-
-                    setEditing(
-                      false
-                    );
-                  }}
-                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-blue-100 hover:bg-white/10"
-                >
-                  <X
-                    size={13}
-                  />
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  disabled={
-                    saving ||
-                    !editValue.trim()
+                      event.target.value
+                    )
                   }
-                  onClick={() => {
-                    void handleSave();
-                  }}
-                  className="flex items-center gap-1 rounded-lg bg-white px-2 py-1 text-xs font-semibold text-[#0B2D5C] disabled:opacity-50"
-                >
-                  <Save
-                    size={13}
-                  />
+                  onKeyDown={(
+                    event
+                  ) => {
+                    if (
+                      event.key ===
+                        "Enter" &&
+                      !event.shiftKey
+                    ) {
+                      event.preventDefault();
 
-                  {saving
-                    ? "Saving…"
-                    : "Save"}
-                </button>
-
-              </div>
-            </div>
-
-          ) : (
-            <>
-              {/* =================================================
-                  IMAGE
-                 ================================================= */}
-
-              {isImageMessage &&
-                mediaUrl && (
-                  <a
-                    href={
-                      mediaUrl
+                      void handleSave();
                     }
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block overflow-hidden rounded-xl"
+
+                    if (
+                      event.key ===
+                      "Escape"
+                    ) {
+                      setEditValue(
+                        message.content ??
+                          ""
+                      );
+
+                      setEditing(
+                        false
+                      );
+                    }
+                  }}
+                  className="w-full resize-none rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white outline-none placeholder:text-blue-200 focus:border-white/50"
+                />
+
+                <div className="mt-2 flex justify-end gap-2">
+
+                  <button
+                    type="button"
+                    disabled={
+                      saving
+                    }
+                    onClick={() => {
+                      setEditValue(
+                        message.content ??
+                          ""
+                      );
+
+                      setEditing(
+                        false
+                      );
+                    }}
+                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-blue-100 hover:bg-white/10"
                   >
-                    <img
-                      src={
+                    <X
+                      size={13}
+                    />
+
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={
+                      saving ||
+                      !editValue.trim()
+                    }
+                    onClick={() => {
+                      void handleSave();
+                    }}
+                    className="flex items-center gap-1 rounded-lg bg-white px-2 py-1 text-xs font-semibold text-[#0B2D5C] disabled:opacity-50"
+                  >
+                    <Save
+                      size={13}
+                    />
+
+                    {saving
+                      ? "Saving…"
+                      : "Save"}
+                  </button>
+
+                </div>
+              </div>
+
+            ) : (
+              <>
+
+                {/* =================================================
+                    IMAGE
+                   ================================================= */}
+
+                {isImageMessage &&
+                  mediaUrl && (
+                    <a
+                      href={
                         mediaUrl
                       }
-                      alt={
-                        message.content
-                          ?.trim() ||
-                        "Chat image"
-                      }
-                      loading="lazy"
-                      className="max-h-[420px] w-full min-w-[220px] object-cover transition hover:opacity-95"
-                    />
-                  </a>
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block overflow-hidden rounded-xl"
+                    >
+                      <img
+                        src={
+                          mediaUrl
+                        }
+                        alt={
+                          message.content
+                            ?.trim() ||
+                          "Chat image"
+                        }
+                        loading="lazy"
+                        className="max-h-[420px] w-full min-w-[220px] object-cover transition hover:opacity-95"
+                      />
+                    </a>
+                  )}
+
+                {/* =================================================
+                    TEXT / CAPTION
+                   ================================================= */}
+
+                {message.content
+                  ?.trim() && (
+                    <p
+                      className={[
+                        "whitespace-pre-wrap break-words text-sm leading-6",
+
+                        isImageMessage
+                          ? "px-2 pt-2"
+                          : "",
+                      ].join(" ")}
+                    >
+                      {message.content}
+                    </p>
+                  )}
+
+              </>
+            )}
+
+            {/* ====================================================
+                TIME + STATUS
+               ==================================================== */}
+
+            {!editing && (
+              <div
+                className={[
+                  "flex items-center justify-end gap-1 text-[10px]",
+
+                  isImageMessage
+                    ? "px-2 pb-1 pt-1"
+                    : "mt-1",
+
+                  own
+                    ? "text-blue-100"
+                    : "text-slate-400",
+                ].join(" ")}
+              >
+
+                {message.editedAt &&
+                  !deleted && (
+                    <span>
+                      edited
+                    </span>
+                  )}
+
+                <span>
+                  {formatMessageTime(
+                    message.createdAt
+                  )}
+                </span>
+
+                {own && (
+                  <MessageStatus
+                    status={
+                      message.status
+                    }
+                  />
                 )}
 
-              {/* =================================================
-                  TEXT / CAPTION
-                 ================================================= */}
+              </div>
+            )}
 
-              {message.content
-                ?.trim() && (
-                <p
-                  className={[
-                    "whitespace-pre-wrap break-words text-sm leading-6",
+          </div>
 
-                    isImageMessage
-                      ? "px-2 pt-2"
-                      : "",
-                  ].join(" ")}
-                >
-                  {message.content}
-                </p>
-              )}
-            </>
-          )}
+          {/* ======================================================
+              REACTION BADGES
+             ====================================================== */}
 
-          {/* ====================================================
-              TIME + STATUS
-             ==================================================== */}
+          {!deleted &&
+            groupedReactions.length >
+              0 && (
+              <div
+                className={[
+                  "absolute -bottom-4 z-10 flex flex-wrap items-center gap-1",
 
-          {!editing && (
-            <div
-              className={[
-                "flex items-center justify-end gap-1 text-[10px]",
+                  own
+                    ? "right-2 justify-end"
+                    : "left-2 justify-start",
+                ].join(" ")}
+              >
+                {groupedReactions.map(
+                  ([
+                    reaction,
+                    users,
+                  ]) => {
+                    const selectedByCurrentUser =
+                      users.some(
+                        (
+                          userReaction
+                        ) =>
+                          normalizeId(
+                            userReaction
+                              .userId
+                          ) ===
+                          normalizeId(
+                            currentUserId
+                          )
+                      );
 
-                isImageMessage
-                  ? "px-2 pb-1 pt-1"
-                  : "mt-1",
+                    return (
+                      <button
+                        key={
+                          reaction
+                        }
+                        type="button"
+                        disabled={
+                          reactionSaving
+                        }
+                        onClick={() => {
+                          void handleReaction(
+                            reaction
+                          );
+                        }}
+                        title={
+                          selectedByCurrentUser
+                            ? "Remove your reaction"
+                            : `React ${reaction}`
+                        }
+                        className={[
+                          "flex h-7 items-center gap-1 rounded-full border bg-white px-2 text-xs shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-50",
 
-                own
-                  ? "text-blue-100"
-                  : "text-slate-400",
-              ].join(" ")}
-            >
+                          selectedByCurrentUser
+                            ? "border-blue-300 bg-blue-50 text-blue-700"
+                            : "border-slate-200 text-slate-700",
+                        ].join(" ")}
+                      >
+                        <span className="text-sm">
+                          {reaction}
+                        </span>
 
-              {message.editedAt &&
-                !deleted && (
-                  <span>
-                    edited
-                  </span>
-                )}
+                        {users.length >
+                          1 && (
+                          <span className="font-semibold">
+                            {users.length}
+                          </span>
+                        )}
 
-              <span>
-                {formatMessageTime(
-                  message.createdAt
-                )}
-              </span>
-
-              {own && (
-                <MessageStatus
-                  status={
-                    message.status
+                      </button>
+                    );
                   }
-                />
-              )}
-
-            </div>
-          )}
+                )}
+              </div>
+            )}
 
         </div>
 
         {/* ======================================================
-            REPLY BUTTON FOR INCOMING MESSAGE
+            ACTIONS AFTER INCOMING MESSAGE
            ====================================================== */}
 
         {!own &&
           !editing &&
-          canReply && (
-            <button
-              type="button"
-              aria-label="Reply to message"
-              title="Reply"
-              onClick={
-                handleReply
-              }
-              className="mt-1 rounded-lg p-1 text-slate-400 opacity-0 transition hover:bg-slate-200 hover:text-[#0B2D5C] group-hover:opacity-100 focus:opacity-100"
-            >
-              <Reply
-                size={16}
-              />
-            </button>
-          )}
+          actionButtons}
 
       </div>
     </div>

@@ -8,6 +8,7 @@ import com.theholymatrimony.backend.communication.dto.MessageResponse;
 import com.theholymatrimony.backend.communication.dto.SendMessageRequest;
 import com.theholymatrimony.backend.communication.dto.UnreadMessageCountResponse;
 import com.theholymatrimony.backend.communication.service.CommunicationService;
+import com.theholymatrimony.backend.communication.dto.ReactToMessageRequest;
 
 import jakarta.validation.Valid;
 
@@ -15,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PutMapping;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
@@ -209,6 +211,132 @@ public class CommunicationController {
                 )
         );
     }
+
+    /*
+ * ============================================================
+ * REACT TO MESSAGE
+ * ============================================================
+ *
+ * Creates a reaction if the authenticated user has not
+ * reacted yet.
+ *
+ * If the user already reacted to this message, the existing
+ * reaction is changed to the new reaction.
+ *
+ * The updated MessageResponse is broadcast to both
+ * participants so every connected device receives the
+ * latest reaction list immediately.
+ */
+
+@PutMapping(
+        "/messages/{messageId}/reaction"
+)
+public ResponseEntity<
+        ApiResponse<MessageResponse>
+        >
+reactToMessage(
+        Authentication authentication,
+
+        @PathVariable
+        UUID messageId,
+
+        @Valid
+        @RequestBody
+        ReactToMessageRequest request
+) {
+
+    if (
+            request == null
+    ) {
+
+        throw new IllegalArgumentException(
+                "Reaction request is required"
+        );
+    }
+
+    String authenticatedEmail =
+            getAuthenticatedEmail(
+                    authentication
+            );
+
+    MessageResponse response =
+            communicationService
+                    .reactToMessage(
+                            authenticatedEmail,
+                            messageId,
+                            request.reaction()
+                    );
+
+    /*
+     * Reuse the normal message-update channel.
+     *
+     * The reaction list is already part of
+     * MessageResponse, so existing message merging
+     * can update the message without creating a
+     * separate reaction WebSocket payload.
+     */
+    broadcastMessageUpdate(
+            authenticatedEmail,
+            response
+    );
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    "Message reaction updated successfully",
+                    response
+            )
+    );
+}
+
+
+/*
+ * ============================================================
+ * REMOVE MESSAGE REACTION
+ * ============================================================
+ */
+
+@DeleteMapping(
+        "/messages/{messageId}/reaction"
+)
+public ResponseEntity<
+        ApiResponse<MessageResponse>
+        >
+removeMessageReaction(
+        Authentication authentication,
+
+        @PathVariable
+        UUID messageId
+) {
+
+    String authenticatedEmail =
+            getAuthenticatedEmail(
+                    authentication
+            );
+
+    MessageResponse response =
+            communicationService
+                    .removeMessageReaction(
+                            authenticatedEmail,
+                            messageId
+                    );
+
+    /*
+     * Broadcast the updated message after deletion.
+     * Its reactions collection now reflects the
+     * remaining reactions.
+     */
+    broadcastMessageUpdate(
+            authenticatedEmail,
+            response
+    );
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    "Message reaction removed successfully",
+                    response
+            )
+    );
+}
 
 
     /*

@@ -17,6 +17,8 @@ import com.theholymatrimony.backend.communication.repository.ChatMessageReposito
 import com.theholymatrimony.backend.communication.repository.ConversationRepository;
 import com.theholymatrimony.backend.communication.validator.CommunicationValidator;
 import com.theholymatrimony.backend.notification.service.NotificationFactory;
+import com.theholymatrimony.backend.communication.entity.ChatMessageReaction;
+import com.theholymatrimony.backend.communication.repository.ChatMessageReactionRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 
@@ -60,6 +62,9 @@ public class CommunicationService {
     private final CommunicationMapper communicationMapper;
 
     private final NotificationFactory notificationFactory;
+
+    private final ChatMessageReactionRepository
+        chatMessageReactionRepository;
 
 
     /*
@@ -847,6 +852,215 @@ public class CommunicationService {
                 );
     }
 
+    /*
+ * ============================================================
+ * MESSAGE REACTIONS
+ * ============================================================
+ */
+
+@Transactional
+public MessageResponse reactToMessage(
+        String authenticatedEmail,
+        UUID messageId,
+        String reaction
+) {
+
+    User currentUser =
+            getUserByEmail(
+                    authenticatedEmail
+            );
+
+    ChatMessage message =
+            getMessageById(
+                    messageId
+            );
+
+    /*
+     * User must be one of the two participants
+     * in the conversation.
+     */
+    communicationValidator
+            .validateConversationParticipant(
+                    message
+                            .getConversation(),
+                    currentUser
+                            .getId()
+            );
+
+    /*
+     * Deleted messages cannot receive reactions.
+     */
+    if (
+            Boolean.TRUE.equals(
+                    message
+                            .getDeletedForEveryone()
+            )
+    ) {
+
+        throw new IllegalStateException(
+                "Deleted messages cannot receive reactions"
+        );
+    }
+
+    String normalizedReaction =
+            normalizeReaction(
+                    reaction
+            );
+
+    /*
+     * A user may have only one reaction per message.
+     *
+     * If one already exists, update it.
+     * Otherwise create a new reaction.
+     */
+    ChatMessageReaction messageReaction =
+            chatMessageReactionRepository
+                    .findByMessageIdAndUserId(
+                            message.getId(),
+                            currentUser.getId()
+                    )
+                    .orElseGet(
+                            () ->
+                                    ChatMessageReaction
+                                            .builder()
+                                            .message(
+                                                    message
+                                            )
+                                            .user(
+                                                    currentUser
+                                            )
+                                            .build()
+                    );
+
+    messageReaction.setReaction(
+            normalizedReaction
+    );
+
+    chatMessageReactionRepository
+            .save(
+                    messageReaction
+            );
+
+    /*
+     * Flush before mapping so the response contains
+     * the newly created/updated reaction immediately.
+     */
+    chatMessageReactionRepository
+            .flush();
+
+    return communicationMapper
+            .toMessageResponse(
+                    message
+            );
+}
+
+
+/*
+ * ============================================================
+ * REMOVE MESSAGE REACTION
+ * ============================================================
+ */
+
+@Transactional
+public MessageResponse removeMessageReaction(
+        String authenticatedEmail,
+        UUID messageId
+) {
+
+    User currentUser =
+            getUserByEmail(
+                    authenticatedEmail
+            );
+
+    ChatMessage message =
+            getMessageById(
+                    messageId
+            );
+
+    communicationValidator
+            .validateConversationParticipant(
+                    message
+                            .getConversation(),
+                    currentUser
+                            .getId()
+            );
+
+    chatMessageReactionRepository
+            .findByMessageIdAndUserId(
+                    message.getId(),
+                    currentUser.getId()
+            )
+            .ifPresent(
+                    chatMessageReactionRepository
+                            ::delete
+            );
+
+    /*
+     * Make DELETE visible before the mapper queries
+     * reactions again.
+     */
+    chatMessageReactionRepository
+            .flush();
+
+    return communicationMapper
+            .toMessageResponse(
+                    message
+            );
+}
+
+
+/*
+ * ============================================================
+ * NORMALIZE MESSAGE REACTION
+ * ============================================================
+ */
+
+private String normalizeReaction(
+        String reaction
+) {
+
+    if (
+            !StringUtils.hasText(
+                    reaction
+            )
+    ) {
+
+        throw new IllegalArgumentException(
+                "Reaction is required"
+        );
+    }
+
+    String normalized =
+            reaction.trim();
+
+    /*
+     * Keep the first production reaction set intentionally
+     * small. More reactions can be added later without
+     * changing the database schema.
+     */
+    List<String> allowedReactions =
+            List.of(
+                    "👍",
+                    "❤️",
+                    "😂",
+                    "🙏",
+                    "😮",
+                    "😢"
+            );
+
+    if (
+            !allowedReactions.contains(
+                    normalized
+            )
+    ) {
+
+        throw new IllegalArgumentException(
+                "Unsupported message reaction"
+        );
+    }
+
+    return normalized;
+}
 
     /*
      * ============================================================

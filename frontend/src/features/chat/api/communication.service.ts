@@ -9,18 +9,15 @@ import {
   SendMessageRequest,
 } from "@/features/chat/types";
 
-
 interface PaginationParams {
   page?: number;
   size?: number;
 }
 
-
 interface UnreadCountData {
   unreadCount?: number;
   count?: number;
 }
-
 
 export const communicationService = {
 
@@ -55,7 +52,6 @@ export const communicationService = {
     return response.data.data;
   },
 
-
   /*
    * ============================================================
    * GET MESSAGES
@@ -87,7 +83,6 @@ export const communicationService = {
 
     return response.data.data;
   },
-
 
   /*
    * ============================================================
@@ -129,7 +124,6 @@ export const communicationService = {
     return response.data.data;
   },
 
-
   /*
    * ============================================================
    * EDIT MESSAGE
@@ -154,7 +148,6 @@ export const communicationService = {
     return response.data.data;
   },
 
-
   /*
    * ============================================================
    * DELETE MESSAGE FOR EVERYONE
@@ -175,6 +168,56 @@ export const communicationService = {
     return response.data.data;
   },
 
+  /*
+   * ============================================================
+   * REACT TO MESSAGE
+   * ============================================================
+   *
+   * Adds a reaction if the current user has not reacted.
+   *
+   * If the current user already reacted, the backend replaces
+   * that reaction with the new one.
+   *
+   * One reaction per user per message.
+   */
+
+  async reactToMessage(
+    messageId: string,
+    reaction: string
+  ): Promise<ChatMessage> {
+
+    const response =
+      await api.put<
+        ApiResponse<ChatMessage>
+      >(
+        `/communication/messages/${messageId}/reaction`,
+        {
+          reaction,
+        }
+      );
+
+    return response.data.data;
+  },
+
+  /*
+   * ============================================================
+   * REMOVE MESSAGE REACTION
+   * ============================================================
+   */
+
+  async removeMessageReaction(
+    messageId: string
+  ): Promise<ChatMessage> {
+
+    const response =
+      await api.delete<
+        ApiResponse<ChatMessage>
+      >(
+        `/communication/messages/${messageId}/reaction`
+      );
+
+    return response.data.data;
+  },
 
   /*
    * ============================================================
@@ -205,7 +248,6 @@ export const communicationService = {
     return response.data.data;
   },
 
-
   /*
    * ============================================================
    * MARK CONVERSATION AS READ
@@ -220,7 +262,6 @@ export const communicationService = {
       `/communication/conversations/${conversationId}/read`
     );
   },
-
 
   /*
    * ============================================================
@@ -257,7 +298,6 @@ export const communicationService = {
       0
     );
   },
-
 
   /*
    * ============================================================
@@ -296,6 +336,5 @@ export const communicationService = {
     );
   },
 };
-
 
 export default communicationService;

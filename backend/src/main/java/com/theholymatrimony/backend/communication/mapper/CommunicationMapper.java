@@ -3,10 +3,13 @@ package com.theholymatrimony.backend.communication.mapper;
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.communication.dto.ConversationResponse;
 import com.theholymatrimony.backend.communication.dto.ConversationUserResponse;
+import com.theholymatrimony.backend.communication.dto.MessageReactionResponse;
 import com.theholymatrimony.backend.communication.dto.MessageResponse;
 import com.theholymatrimony.backend.communication.entity.ChatMessage;
+import com.theholymatrimony.backend.communication.entity.ChatMessageReaction;
 import com.theholymatrimony.backend.communication.entity.Conversation;
 import com.theholymatrimony.backend.communication.enums.MessageStatus;
+import com.theholymatrimony.backend.communication.repository.ChatMessageReactionRepository;
 import com.theholymatrimony.backend.communication.repository.ChatMessageRepository;
 import com.theholymatrimony.backend.profile.entity.Profile;
 import com.theholymatrimony.backend.profile.repository.ProfileRepository;
@@ -25,6 +28,9 @@ public class CommunicationMapper {
 
     private final ChatMessageRepository chatMessageRepository;
 
+    private final ChatMessageReactionRepository
+            chatMessageReactionRepository;
+
     /*
      * ============================================================
      * MESSAGE RESPONSE
@@ -37,6 +43,17 @@ public class CommunicationMapper {
 
         ChatMessage replyToMessage =
                 message.getReplyToMessage();
+
+        List<MessageReactionResponse> reactions =
+                chatMessageReactionRepository
+                        .findAllByMessageIdOrderByCreatedAtAsc(
+                                message.getId()
+                        )
+                        .stream()
+                        .map(
+                                this::toMessageReactionResponse
+                        )
+                        .toList();
 
         return MessageResponse.builder()
                 .id(
@@ -92,13 +109,6 @@ public class CommunicationMapper {
                  * ==================================================
                  * REPLY SNAPSHOT
                  * ==================================================
-                 *
-                 * Only lightweight information about the original
-                 * message is returned.
-                 *
-                 * We intentionally do NOT serialize the complete
-                 * ChatMessage entity because that could recursively
-                 * serialize replies and JPA relationships.
                  */
 
                 .replyToMessageId(
@@ -137,6 +147,51 @@ public class CommunicationMapper {
                                 )
                                 : null
                 )
+
+                /*
+                 * ==================================================
+                 * REACTIONS
+                 * ==================================================
+                 */
+
+                .reactions(
+                        reactions
+                )
+                .build();
+    }
+
+    /*
+     * ============================================================
+     * MESSAGE REACTION RESPONSE
+     * ============================================================
+     */
+
+    public MessageReactionResponse
+    toMessageReactionResponse(
+            ChatMessageReaction reaction
+    ) {
+
+        return MessageReactionResponse.builder()
+                .id(
+                        reaction.getId()
+                )
+                .messageId(
+                        reaction.getMessage()
+                                .getId()
+                )
+                .userId(
+                        reaction.getUser()
+                                .getId()
+                )
+                .reaction(
+                        reaction.getReaction()
+                )
+                .createdAt(
+                        reaction.getCreatedAt()
+                )
+                .updatedAt(
+                        reaction.getUpdatedAt()
+                )
                 .build();
     }
 
@@ -163,6 +218,7 @@ public class CommunicationMapper {
          * READ is the state that removes a message from
          * the unread counter.
          */
+
         long unreadCount =
                 chatMessageRepository
                         .countByConversationIdAndReceiverIdAndStatusIn(
@@ -238,6 +294,7 @@ public class CommunicationMapper {
          * A user may exist before their matrimony
          * profile has been completed.
          */
+
         if (profile == null) {
 
             return ConversationUserResponse.builder()

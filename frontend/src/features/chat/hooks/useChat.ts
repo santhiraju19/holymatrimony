@@ -1636,6 +1636,161 @@ export default function useChat() {
       ]
     );
 
+
+  /*
+   * ============================================================
+   * REACT TO MESSAGE
+   * ============================================================
+   */
+
+  const reactToMessage =
+    useCallback(
+      async (
+        messageId:
+          string,
+
+        reaction:
+          string
+      ) => {
+        const normalizedReaction =
+          reaction.trim();
+
+        if (
+          !messageId ||
+          !normalizedReaction
+        ) {
+          return;
+        }
+
+        setError(
+          null
+        );
+
+        try {
+          const updatedMessage =
+            await communicationService
+              .reactToMessage(
+                messageId,
+                normalizedReaction
+              );
+
+          setMessages(
+            (
+              current
+            ) =>
+              mergeMessages(
+                current,
+                [
+                  updatedMessage,
+                ]
+              )
+          );
+
+          setReplyingTo(
+            (
+              currentReply
+            ) =>
+              currentReply &&
+              normalizeId(
+                currentReply.id
+              ) ===
+                normalizeId(
+                  updatedMessage.id
+                )
+                ? updatedMessage
+                : currentReply
+          );
+
+        } catch (
+          caughtError:
+            unknown
+        ) {
+          setError(
+            getApiErrorMessage(
+              caughtError,
+              "Unable to react to the message."
+            )
+          );
+
+          throw caughtError;
+        }
+      },
+      []
+    );
+
+  /*
+   * ============================================================
+   * REMOVE MESSAGE REACTION
+   * ============================================================
+   */
+
+  const removeMessageReaction =
+    useCallback(
+      async (
+        messageId:
+          string
+      ) => {
+        if (
+          !messageId
+        ) {
+          return;
+        }
+
+        setError(
+          null
+        );
+
+        try {
+          const updatedMessage =
+            await communicationService
+              .removeMessageReaction(
+                messageId
+              );
+
+          setMessages(
+            (
+              current
+            ) =>
+              mergeMessages(
+                current,
+                [
+                  updatedMessage,
+                ]
+              )
+          );
+
+          setReplyingTo(
+            (
+              currentReply
+            ) =>
+              currentReply &&
+              normalizeId(
+                currentReply.id
+              ) ===
+                normalizeId(
+                  updatedMessage.id
+                )
+                ? updatedMessage
+                : currentReply
+          );
+
+        } catch (
+          caughtError:
+            unknown
+        ) {
+          setError(
+            getApiErrorMessage(
+              caughtError,
+              "Unable to remove the message reaction."
+            )
+          );
+
+          throw caughtError;
+        }
+      },
+      []
+    );
+
   /*
    * ============================================================
    * REFRESH
@@ -2020,5 +2175,9 @@ export default function useChat() {
     editMessage,
 
     deleteMessage,
+
+    reactToMessage,
+
+    removeMessageReaction,
   };
 }

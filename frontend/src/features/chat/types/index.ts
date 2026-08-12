@@ -70,6 +70,24 @@ export type MessageStatus =
   | "SENDING"
   | "FAILED";
 
+/*
+ * ============================================================
+ * MESSAGE REACTION
+ * ============================================================
+ */
+
+export interface MessageReaction {
+  messageId: string;
+
+  userId: string;
+
+  reaction: string;
+
+  createdAt?: string | null;
+
+  updatedAt?: string | null;
+}
+
 export interface ChatMessage {
   id: string;
 
@@ -124,7 +142,17 @@ export interface ChatMessage {
     | string
     | null;
 
-  replyToDeletedForEveryone?: boolean | null;
+  replyToDeletedForEveryone?:
+    | boolean
+    | null;
+
+  /*
+   * ============================================================
+   * REACTIONS
+   * ============================================================
+   */
+
+  reactions?: MessageReaction[];
 }
 
 export interface MessagesPage

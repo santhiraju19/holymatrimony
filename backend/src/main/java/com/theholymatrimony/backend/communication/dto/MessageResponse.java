@@ -1,3 +1,4 @@
+
 package com.theholymatrimony.backend.communication.dto;
 
 import com.theholymatrimony.backend.communication.enums.MessageStatus;
@@ -8,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -46,16 +48,35 @@ public class MessageResponse {
 
     private LocalDateTime deletedAt;
 
+    /*
+     * ============================================================
+     * REPLY SNAPSHOT
+     * ============================================================
+     */
+
     private UUID replyToMessageId;
 
-private UUID replyToSenderId;
+    private UUID replyToSenderId;
 
-private String replyToContent;
+    private String replyToContent;
 
-private String replyToMediaUrl;
+    private String replyToMediaUrl;
 
-private MessageType replyToMessageType;
+    private MessageType replyToMessageType;
 
-private Boolean replyToDeletedForEveryone;
+    private Boolean replyToDeletedForEveryone;
 
+    /*
+     * ============================================================
+     * MESSAGE REACTIONS
+     * ============================================================
+     *
+     * Contains the current reactions for this message.
+     *
+     * Each user can have at most one reaction on a message.
+     */
+
+    @Builder.Default
+    private List<MessageReactionResponse> reactions =
+            List.of();
 }

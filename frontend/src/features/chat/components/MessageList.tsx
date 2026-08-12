@@ -22,11 +22,14 @@ import {
 import MessageBubble from "./MessageBubble";
 
 interface MessageListProps {
-  messages: ChatMessage[];
+  messages:
+    ChatMessage[];
 
-  otherUserId: string;
+  otherUserId:
+    string;
 
-  loading: boolean;
+  loading:
+    boolean;
 
   onReply?: (
     message: ChatMessage
@@ -40,6 +43,15 @@ interface MessageListProps {
   onDelete?: (
     messageId: string
   ) => Promise<void>;
+
+  onReact?: (
+    messageId: string,
+    reaction: string
+  ) => Promise<void>;
+
+  onRemoveReaction?: (
+    messageId: string
+  ) => Promise<void>;
 }
 
 export default function MessageList({
@@ -49,6 +61,8 @@ export default function MessageList({
   onReply,
   onEdit,
   onDelete,
+  onReact,
+  onRemoveReaction,
 }: MessageListProps) {
   const bottomRef =
     useRef<HTMLDivElement | null>(
@@ -69,11 +83,13 @@ export default function MessageList({
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center bg-slate-50 px-6 py-10">
         <div className="text-center">
+
           <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-[#0B2D5C]" />
 
           <p className="mt-3 text-sm text-slate-500">
             Loading messages…
           </p>
+
         </div>
       </div>
     );
@@ -108,6 +124,7 @@ export default function MessageList({
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50">
+
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-2 px-4 py-5 sm:px-6">
 
         {messages.map(
@@ -167,6 +184,12 @@ export default function MessageList({
                   onDelete={
                     onDelete
                   }
+                  onReact={
+                    onReact
+                  }
+                  onRemoveReaction={
+                    onRemoveReaction
+                  }
                 />
               </div>
             );
@@ -191,11 +214,13 @@ function DateDivider({
 }) {
   return (
     <div className="my-4 flex items-center justify-center">
+
       <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-500 shadow-sm">
         {formatMessageDate(
           dateValue
         )}
       </span>
+
     </div>
   );
 }

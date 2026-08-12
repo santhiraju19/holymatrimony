@@ -1,3 +1,6 @@
+
+"use client";
+
 import {
   PresenceStatus,
 } from "@/features/chat/api/presence.service";
@@ -40,7 +43,8 @@ interface ChatWindowProps {
   replyingTo:
     ChatMessage | null;
 
-  onBack: () => void;
+  onBack:
+    () => void;
 
   onSend: (
     content: string
@@ -70,6 +74,15 @@ interface ChatWindowProps {
   onDeleteMessage: (
     messageId: string
   ) => Promise<void>;
+
+  onReactMessage: (
+    messageId: string,
+    reaction: string
+  ) => Promise<void>;
+
+  onRemoveReaction: (
+    messageId: string
+  ) => Promise<void>;
 }
 
 export default function ChatWindow({
@@ -90,6 +103,8 @@ export default function ChatWindow({
   onCancelReply,
   onEditMessage,
   onDeleteMessage,
+  onReactMessage,
+  onRemoveReaction,
 }: ChatWindowProps) {
   if (!conversation) {
     return (
@@ -102,6 +117,10 @@ export default function ChatWindow({
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-white">
+
+      {/* ======================================================
+          CHAT HEADER
+         ====================================================== */}
 
       <ChatHeader
         conversation={
@@ -120,6 +139,10 @@ export default function ChatWindow({
           onBack
         }
       />
+
+      {/* ======================================================
+          MESSAGE LIST
+         ====================================================== */}
 
       <MessageList
         messages={
@@ -140,7 +163,17 @@ export default function ChatWindow({
         onDelete={
           onDeleteMessage
         }
+        onReact={
+          onReactMessage
+        }
+        onRemoveReaction={
+          onRemoveReaction
+        }
       />
+
+      {/* ======================================================
+          MESSAGE COMPOSER
+         ====================================================== */}
 
       <MessageComposer
         conversationId={
