@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.UUID;
 
 @Component
@@ -24,39 +25,126 @@ public class CommunicationMapper {
 
     private final ChatMessageRepository chatMessageRepository;
 
+    /*
+     * ============================================================
+     * MESSAGE RESPONSE
+     * ============================================================
+     */
+
     public MessageResponse toMessageResponse(
             ChatMessage message
     ) {
 
+        ChatMessage replyToMessage =
+                message.getReplyToMessage();
+
         return MessageResponse.builder()
-                .id(message.getId())
+                .id(
+                        message.getId()
+                )
                 .conversationId(
-                        message.getConversation().getId()
+                        message.getConversation()
+                                .getId()
                 )
                 .senderId(
-                        message.getSender().getId()
+                        message.getSender()
+                                .getId()
                 )
                 .receiverId(
-                        message.getReceiver().getId()
+                        message.getReceiver()
+                                .getId()
                 )
-                .content(message.getContent())
-                .mediaUrl(message.getMediaUrl())
-                .messageType(message.getMessageType())
-                .status(message.getStatus())
-                .deliveredAt(message.getDeliveredAt())
-                .readAt(message.getReadAt())
-                .createdAt(message.getCreatedAt())
-               .updatedAt(message.getUpdatedAt())
-.editedAt(message.getEditedAt())
-.deletedForEveryone(
-        Boolean.TRUE.equals(
-                message.getDeletedForEveryone()
-        )
-)
-.deletedAt(message.getDeletedAt())
-.build();
+                .content(
+                        message.getContent()
+                )
+                .mediaUrl(
+                        message.getMediaUrl()
+                )
+                .messageType(
+                        message.getMessageType()
+                )
+                .status(
+                        message.getStatus()
+                )
+                .deliveredAt(
+                        message.getDeliveredAt()
+                )
+                .readAt(
+                        message.getReadAt()
+                )
+                .createdAt(
+                        message.getCreatedAt()
+                )
+                .updatedAt(
+                        message.getUpdatedAt()
+                )
+                .editedAt(
+                        message.getEditedAt()
+                )
+                .deletedForEveryone(
+                        message.getDeletedForEveryone()
+                )
+                .deletedAt(
+                        message.getDeletedAt()
+                )
 
+                /*
+                 * ==================================================
+                 * REPLY SNAPSHOT
+                 * ==================================================
+                 *
+                 * Only lightweight information about the original
+                 * message is returned.
+                 *
+                 * We intentionally do NOT serialize the complete
+                 * ChatMessage entity because that could recursively
+                 * serialize replies and JPA relationships.
+                 */
+
+                .replyToMessageId(
+                        replyToMessage != null
+                                ? replyToMessage.getId()
+                                : null
+                )
+                .replyToSenderId(
+                        replyToMessage != null
+                                && replyToMessage.getSender() != null
+                                ? replyToMessage
+                                        .getSender()
+                                        .getId()
+                                : null
+                )
+                .replyToContent(
+                        replyToMessage != null
+                                ? replyToMessage.getContent()
+                                : null
+                )
+                .replyToMediaUrl(
+                        replyToMessage != null
+                                ? replyToMessage.getMediaUrl()
+                                : null
+                )
+                .replyToMessageType(
+                        replyToMessage != null
+                                ? replyToMessage.getMessageType()
+                                : null
+                )
+                .replyToDeletedForEveryone(
+                        replyToMessage != null
+                                ? Boolean.TRUE.equals(
+                                        replyToMessage
+                                                .getDeletedForEveryone()
+                                )
+                                : null
+                )
+                .build();
     }
+
+    /*
+     * ============================================================
+     * CONVERSATION RESPONSE
+     * ============================================================
+     */
 
     public ConversationResponse toConversationResponse(
             Conversation conversation,
@@ -69,12 +157,21 @@ public class CommunicationMapper {
                         currentUser.getId()
                 );
 
+        /*
+         * SENT and DELIVERED are both unread.
+         *
+         * READ is the state that removes a message from
+         * the unread counter.
+         */
         long unreadCount =
                 chatMessageRepository
-                        .countByConversationIdAndReceiverIdAndStatus(
+                        .countByConversationIdAndReceiverIdAndStatusIn(
                                 conversation.getId(),
                                 currentUser.getId(),
-                                MessageStatus.SENT
+                                List.of(
+                                        MessageStatus.SENT,
+                                        MessageStatus.DELIVERED
+                                )
                         );
 
         UUID lastMessageSenderId =
@@ -85,21 +182,43 @@ public class CommunicationMapper {
                                 .getId();
 
         return ConversationResponse.builder()
-                .id(conversation.getId())
-                .otherUser(
-                        toConversationUserResponse(otherUser)
+                .id(
+                        conversation.getId()
                 )
-                .lastMessage(conversation.getLastMessage())
-                .lastMessageSenderId(lastMessageSenderId)
+                .otherUser(
+                        toConversationUserResponse(
+                                otherUser
+                        )
+                )
+                .lastMessage(
+                        conversation.getLastMessage()
+                )
+                .lastMessageSenderId(
+                        lastMessageSenderId
+                )
                 .lastMessageAt(
                         conversation.getLastMessageAt()
                 )
-                .unreadCount(unreadCount)
-                .active(conversation.getActive())
-                .createdAt(conversation.getCreatedAt())
-                .updatedAt(conversation.getUpdatedAt())
+                .unreadCount(
+                        unreadCount
+                )
+                .active(
+                        conversation.getActive()
+                )
+                .createdAt(
+                        conversation.getCreatedAt()
+                )
+                .updatedAt(
+                        conversation.getUpdatedAt()
+                )
                 .build();
     }
+
+    /*
+     * ============================================================
+     * CONVERSATION USER RESPONSE
+     * ============================================================
+     */
 
     public ConversationUserResponse
     toConversationUserResponse(
@@ -108,51 +227,102 @@ public class CommunicationMapper {
 
         Profile profile =
                 profileRepository
-                        .findByUserId(user.getId())
-                        .orElse(null);
+                        .findByUserId(
+                                user.getId()
+                        )
+                        .orElse(
+                                null
+                        );
 
+        /*
+         * A user may exist before their matrimony
+         * profile has been completed.
+         */
         if (profile == null) {
+
             return ConversationUserResponse.builder()
-                    .userId(user.getId())
-                    .fullName(user.getFullName())
+                    .userId(
+                            user.getId()
+                    )
+                    .fullName(
+                            user.getFullName()
+                    )
                     .build();
         }
 
         return ConversationUserResponse.builder()
-                .userId(user.getId())
-                .profileId(profile.getId())
-                .fullName(user.getFullName())
-                .gender(profile.getGender())
-                .age(profile.getAge())
+                .userId(
+                        user.getId()
+                )
+                .profileId(
+                        profile.getId()
+                )
+                .fullName(
+                        user.getFullName()
+                )
+                .gender(
+                        profile.getGender()
+                )
+                .age(
+                        profile.getAge()
+                )
                 .denomination(
                         profile.getDenomination()
                 )
-                .profession(profile.getProfession())
-                .city(profile.getCity())
-                .state(profile.getState())
-                .country(profile.getCountry())
-                .primaryPhotoId(null)
-                .primaryPhotoUrl(null)
+                .profession(
+                        profile.getProfession()
+                )
+                .city(
+                        profile.getCity()
+                )
+                .state(
+                        profile.getState()
+                )
+                .country(
+                        profile.getCountry()
+                )
+                .primaryPhotoId(
+                        null
+                )
+                .primaryPhotoUrl(
+                        null
+                )
                 .build();
     }
+
+    /*
+     * ============================================================
+     * OTHER CONVERSATION PARTICIPANT
+     * ============================================================
+     */
 
     private User getOtherParticipant(
             Conversation conversation,
             UUID currentUserId
     ) {
 
-        if (conversation.getParticipantOne()
-                .getId()
-                .equals(currentUserId)) {
+        if (
+                conversation.getParticipantOne()
+                        .getId()
+                        .equals(
+                                currentUserId
+                        )
+        ) {
 
-            return conversation.getParticipantTwo();
+            return conversation
+                    .getParticipantTwo();
         }
 
-        if (conversation.getParticipantTwo()
-                .getId()
-                .equals(currentUserId)) {
+        if (
+                conversation.getParticipantTwo()
+                        .getId()
+                        .equals(
+                                currentUserId
+                        )
+        ) {
 
-            return conversation.getParticipantOne();
+            return conversation
+                    .getParticipantOne();
         }
 
         throw new AccessDeniedException(

@@ -76,6 +76,21 @@ public class ChatMessage {
     )
     private User receiver;
 
+    /*
+ * Optional message being replied to.
+ *
+ * This is a self-referencing relationship because
+ * both the original message and the reply are rows
+ * in chat_messages.
+ */
+@ManyToOne(
+        fetch = FetchType.LAZY
+)
+@JoinColumn(
+        name = "reply_to_message_id"
+)
+private ChatMessage replyToMessage;
+
     @Column(
             name = "content",
             length = 2000

@@ -28,12 +28,16 @@ interface MessageListProps {
 
   loading: boolean;
 
-  onEdit: (
+  onReply?: (
+    message: ChatMessage
+  ) => void;
+
+  onEdit?: (
     messageId: string,
     content: string
   ) => Promise<void>;
 
-  onDelete: (
+  onDelete?: (
     messageId: string
   ) => Promise<void>;
 }
@@ -42,6 +46,7 @@ export default function MessageList({
   messages,
   otherUserId,
   loading,
+  onReply,
   onEdit,
   onDelete,
 }: MessageListProps) {
@@ -50,85 +55,83 @@ export default function MessageList({
       null
     );
 
-  const previousMessageCountRef =
-    useRef(0);
-
-  const previousOtherUserIdRef =
-    useRef<string | null>(null);
-
   useEffect(() => {
-    const conversationChanged =
-      previousOtherUserIdRef.current !==
-      otherUserId;
-
-    const receivedNewMessage =
-      messages.length >
-      previousMessageCountRef.current;
-
-    bottomRef.current?.scrollIntoView({
-      behavior:
-        conversationChanged
-          ? "auto"
-          : receivedNewMessage
-            ? "smooth"
-            : "auto",
-
-      block: "end",
-    });
-
-    previousOtherUserIdRef.current =
-      otherUserId;
-
-    previousMessageCountRef.current =
-      messages.length;
+    bottomRef.current
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
   }, [
     messages,
-    otherUserId,
   ]);
 
   if (loading) {
-    return <MessageListSkeleton />;
+    return (
+      <div className="flex min-h-0 flex-1 items-center justify-center bg-slate-50 px-6 py-10">
+        <div className="text-center">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-[#0B2D5C]" />
+
+          <p className="mt-3 text-sm text-slate-500">
+            Loading messages…
+          </p>
+        </div>
+      </div>
+    );
   }
 
-  if (messages.length === 0) {
+  if (
+    messages.length ===
+    0
+  ) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-          <MessageCircle
-            size={30}
-          />
+      <div className="flex min-h-0 flex-1 items-center justify-center bg-slate-50 px-6 py-10">
+        <div className="max-w-sm text-center">
+
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-[#0B2D5C]">
+            <MessageCircle
+              size={27}
+            />
+          </div>
+
+          <h3 className="mt-4 font-semibold text-slate-900">
+            Start the conversation
+          </h3>
+
+          <p className="mt-1 text-sm leading-6 text-slate-500">
+            Send a message to begin chatting.
+          </p>
+
         </div>
-
-        <h3 className="mt-4 font-semibold text-slate-800">
-          Start the conversation
-        </h3>
-
-        <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
-          Send a respectful greeting
-          and begin getting to know
-          each other.
-        </p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50 px-4 py-5 md:px-7">
-      <div className="mx-auto max-w-4xl space-y-3">
+    <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-2 px-4 py-5 sm:px-6">
+
         {messages.map(
           (
             message,
             index
           ) => {
             const previousMessage =
-              messages[
-                index - 1
-              ];
+              index > 0
+                ? messages[
+                    index - 1
+                  ]
+                : undefined;
 
-            const showDate =
+            const showDateDivider =
               shouldShowDateDivider(
                 message,
                 previousMessage
+              );
+
+            const own =
+              isOwnMessage(
+                message,
+                otherUserId
               );
 
             return (
@@ -137,24 +140,27 @@ export default function MessageList({
                   message.id
                 }
               >
-                {showDate && (
-                  <div className="my-5 flex justify-center">
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-500 shadow-sm">
-                      {formatMessageDate(
-                        message.createdAt
-                      )}
-                    </span>
-                  </div>
+                {showDateDivider && (
+                  <DateDivider
+                    dateValue={
+                      message.createdAt
+                    }
+                  />
                 )}
 
                 <MessageBubble
                   message={
                     message
                   }
-                  own={isOwnMessage(
-                    message,
+                  own={
+                    own
+                  }
+                  otherUserId={
                     otherUserId
-                  )}
+                  }
+                  onReply={
+                    onReply
+                  }
                   onEdit={
                     onEdit
                   }
@@ -168,24 +174,28 @@ export default function MessageList({
         )}
 
         <div
-          ref={bottomRef}
-          aria-hidden="true"
+          ref={
+            bottomRef
+          }
         />
+
       </div>
     </div>
   );
 }
 
-function MessageListSkeleton() {
+function DateDivider({
+  dateValue,
+}: {
+  dateValue: string;
+}) {
   return (
-    <div className="flex-1 space-y-4 overflow-hidden bg-slate-50 p-6">
-      <div className="h-14 w-2/3 animate-pulse rounded-2xl bg-slate-200" />
-
-      <div className="ml-auto h-16 w-3/5 animate-pulse rounded-2xl bg-slate-300" />
-
-      <div className="h-12 w-1/2 animate-pulse rounded-2xl bg-slate-200" />
-
-      <div className="ml-auto h-20 w-2/3 animate-pulse rounded-2xl bg-slate-300" />
+    <div className="my-4 flex items-center justify-center">
+      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-500 shadow-sm">
+        {formatMessageDate(
+          dateValue
+        )}
+      </span>
     </div>
   );
 }

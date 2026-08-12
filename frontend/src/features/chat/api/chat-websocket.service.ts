@@ -12,36 +12,34 @@ import {
 } from "@/features/chat/types";
 
 import {
-  PresenceStatus,
-} from "@/features/chat/api/presence.service";
+  getToken,
+} from "@/lib/auth";
 
-import { getToken } from "@/lib/auth";
 
 export type WebSocketConnectionStatus =
+  | "disconnected"
   | "connecting"
   | "connected"
-  | "disconnected"
   | "error";
 
-export interface WebSocketErrorMessage {
-  success?: boolean;
-  message: string;
-}
 
 export interface ChatTypingEvent {
   conversationId: string;
   typing: boolean;
 }
 
-export interface SendTypingEvent {
-  conversationId: string;
-  receiverUserId: string;
-  typing: boolean;
+
+export interface ChatPresenceEvent {
+  userId: string;
+  online: boolean;
+  lastSeenAt: string | null;
 }
+
 
 export interface DeliveryReceiptEvent {
   messageId: string;
 }
+
 
 interface ConnectOptions {
   onMessage: (
@@ -53,32 +51,18 @@ interface ConnectOptions {
   ) => void;
 
   onPresence?: (
-    presence: PresenceStatus
-  ) => void;
-
-  onError?: (
-    message: string
+    event: ChatPresenceEvent
   ) => void;
 
   onStatusChange?: (
     status: WebSocketConnectionStatus
   ) => void;
+
+  onError?: (
+    message: string
+  ) => void;
 }
 
-const SEND_DELIVERED_DESTINATION =
-  "/app/chat.delivered";
-
-const MESSAGE_DESTINATION =
-  "/user/queue/messages";
-
-const TYPING_DESTINATION =
-  "/user/queue/typing";
-
-const PRESENCE_DESTINATION =
-  "/topic/presence";
-
-const ERROR_DESTINATION =
-  "/user/queue/errors";
 
 const SEND_MESSAGE_DESTINATION =
   "/app/chat.send";
@@ -86,7 +70,21 @@ const SEND_MESSAGE_DESTINATION =
 const SEND_TYPING_DESTINATION =
   "/app/chat.typing";
 
-const RECONNECT_DELAY = 5000;
+const SEND_DELIVERED_DESTINATION =
+  "/app/chat.delivered";
+
+const MESSAGE_QUEUE =
+  "/user/queue/messages";
+
+const TYPING_QUEUE =
+  "/user/queue/typing";
+
+const PRESENCE_QUEUE =
+  "/user/queue/presence";
+
+const ERROR_QUEUE =
+  "/user/queue/errors";
+
 
 function getWebSocketUrl(): string {
   const configuredUrl =
@@ -98,79 +96,114 @@ function getWebSocketUrl(): string {
     return configuredUrl;
   }
 
-  const apiUrl =
-    process.env
-      .NEXT_PUBLIC_API_URL
-      ?.trim();
+  if (
+    typeof window !==
+    "undefined"
+  ) {
+    const protocol =
+      window.location
+        .protocol ===
+      "https:"
+        ? "wss"
+        : "ws";
 
-  if (apiUrl) {
-    return apiUrl
-      .replace(/^http:/, "ws:")
-      .replace(/^https:/, "wss:")
-      .replace(
-        /\/api\/v1\/?$/,
-        "/ws"
-      );
+    return `${protocol}://${window.location.host}/ws`;
   }
 
   return "ws://localhost:8080/ws";
 }
 
-function parseMessage<T>(
-  frame: IMessage
-): T {
-  return JSON.parse(
-    frame.body
-  ) as T;
-}
 
 class ChatWebSocketService {
-  private client: Client | null =
+  private client:
+    Client | null =
     null;
 
   private messageSubscription:
-    | StompSubscription
-    | null = null;
-
-  private typingSubscription:
-    | StompSubscription
-    | null = null;
-
-  private presenceSubscription:
-    | StompSubscription
-    | null = null;
-
-  private errorSubscription:
-    | StompSubscription
-    | null = null;
-
-  private options: ConnectOptions | null =
+    StompSubscription | null =
     null;
 
+  private typingSubscription:
+    StompSubscription | null =
+    null;
+
+  private presenceSubscription:
+    StompSubscription | null =
+    null;
+
+  private errorSubscription:
+    StompSubscription | null =
+    null;
+
+  private status:
+    WebSocketConnectionStatus =
+    "disconnected";
+
+
+  /*
+   * ============================================================
+   * CONNECTION STATUS
+   * ============================================================
+   */
+
+  private setStatus(
+    status:
+      WebSocketConnectionStatus,
+
+    callback?:
+      (
+        status:
+          WebSocketConnectionStatus
+      ) => void
+  ): void {
+    this.status =
+      status;
+
+    callback?.(
+      status
+    );
+  }
+
+
+  getStatus():
+    WebSocketConnectionStatus {
+    return this.status;
+  }
+
+
+  isConnected():
+    boolean {
+    return Boolean(
+      this.client
+        ?.connected
+    );
+  }
+
+
+  /*
+   * ============================================================
+   * CONNECT
+   * ============================================================
+   */
+
   connect(
-    options: ConnectOptions
+    options:
+      ConnectOptions
   ): void {
     if (
-      typeof window ===
-      "undefined"
+      this.client
+        ?.active
     ) {
       return;
     }
 
-    this.options = options;
-
-    if (
-      this.client?.active ||
-      this.client?.connected
-    ) {
-      return;
-    }
-
-    const token = getToken();
+    const token =
+      getToken();
 
     if (!token) {
-      options.onStatusChange?.(
-        "disconnected"
+      this.setStatus(
+        "error",
+        options.onStatusChange
       );
 
       options.onError?.(
@@ -180,233 +213,317 @@ class ChatWebSocketService {
       return;
     }
 
-    options.onStatusChange?.(
-      "connecting"
+    this.setStatus(
+      "connecting",
+      options.onStatusChange
     );
 
-    const client = new Client({
-      brokerURL:
-        getWebSocketUrl(),
+    const client =
+      new Client({
+        brokerURL:
+          getWebSocketUrl(),
 
-      connectHeaders: {
-        Authorization:
-          `Bearer ${token}`,
-      },
-
-      reconnectDelay:
-        RECONNECT_DELAY,
-
-      heartbeatIncoming: 10000,
-      heartbeatOutgoing: 10000,
-
-      connectionTimeout: 10000,
-
-      debug:
-        process.env.NODE_ENV ===
-        "development"
-          ? (message: string) => {
-              console.debug(
-                "[STOMP]",
-                message
-              );
-            }
-          : () => {},
-    });
-
-    client.beforeConnect =
-      async () => {
-        const currentToken =
-          getToken();
-
-        if (!currentToken) {
-          throw new Error(
-            "Authentication token is unavailable."
-          );
-        }
-
-        client.connectHeaders = {
+        connectHeaders: {
           Authorization:
-            `Bearer ${currentToken}`,
-        };
+            `Bearer ${token}`,
+        },
 
-        this.options
-          ?.onStatusChange?.(
-            "connecting"
-          );
-      };
+        reconnectDelay:
+          3000,
 
-    client.onConnect = () => {
-      this.clearSubscriptions();
+        heartbeatIncoming:
+          10000,
 
-      this.messageSubscription =
-        client.subscribe(
-          MESSAGE_DESTINATION,
-          (frame) => {
-            try {
-              const message =
-                parseMessage<ChatMessage>(
-                  frame
-                );
+        heartbeatOutgoing:
+          10000,
 
-              this.options
-                ?.onMessage(
+        debug:
+          process.env
+            .NODE_ENV ===
+          "development"
+            ? (
+                message
+              ) => {
+                console.debug(
+                  "[Chat STOMP]",
                   message
                 );
-            } catch {
-              this.options
-                ?.onError?.(
-                  "Received an invalid chat message."
-                );
-            }
-          }
+              }
+            : undefined,
+      });
+
+    client.onConnect =
+      () => {
+        this.client =
+          client;
+
+        this.setStatus(
+          "connected",
+          options
+            .onStatusChange
         );
 
-      this.typingSubscription =
-        client.subscribe(
-          TYPING_DESTINATION,
-          (frame) => {
-            try {
-              const event =
-                parseMessage<ChatTypingEvent>(
-                  frame
-                );
-
-              this.options
-                ?.onTyping?.(
-                  event
-                );
-            } catch {
-              this.options
-                ?.onError?.(
-                  "Received an invalid typing event."
-                );
-            }
-          }
+        this.subscribeToMessages(
+          options
+            .onMessage
         );
 
-      this.presenceSubscription =
-        client.subscribe(
-          PRESENCE_DESTINATION,
-          (frame) => {
-            try {
-              const presence =
-                parseMessage<PresenceStatus>(
-                  frame
-                );
-
-              this.options
-                ?.onPresence?.(
-                  presence
-                );
-            } catch {
-              this.options
-                ?.onError?.(
-                  "Received an invalid presence event."
-                );
-            }
-          }
+        this.subscribeToTyping(
+          options
+            .onTyping
         );
 
-      this.errorSubscription =
-        client.subscribe(
-          ERROR_DESTINATION,
-          (frame) => {
-            try {
-              const error =
-                parseMessage<WebSocketErrorMessage>(
-                  frame
-                );
-
-              this.options
-                ?.onError?.(
-                  error.message ||
-                    "Unable to process the WebSocket request."
-                );
-            } catch {
-              this.options
-                ?.onError?.(
-                  frame.body ||
-                    "A WebSocket error occurred."
-                );
-            }
-          }
+        this.subscribeToPresence(
+          options
+            .onPresence
         );
 
-      this.options
-        ?.onStatusChange?.(
-          "connected"
+        this.subscribeToErrors(
+          options
+            .onError
         );
-    };
+      };
 
-    client.onStompError = (
-      frame
-    ) => {
-      const message =
-        frame.headers.message ||
-        frame.body ||
-        "The chat server rejected the WebSocket request.";
 
-      this.options
-        ?.onStatusChange?.(
-          "error"
+    client.onStompError =
+      (
+        frame
+      ) => {
+        this.setStatus(
+          "error",
+          options
+            .onStatusChange
         );
 
-      this.options
-        ?.onError?.(
-          message
+        options.onError?.(
+          frame.headers[
+            "message"
+          ] ||
+            "Chat WebSocket error."
         );
-    };
+      };
 
-    client.onWebSocketError = () => {
-      console.warn(
-        "[Chat WebSocket] Connection error. Retrying automatically."
-      );
 
-      this.options
-        ?.onStatusChange?.(
-          "error"
+    client.onWebSocketError =
+      () => {
+        this.setStatus(
+          "error",
+          options
+            .onStatusChange
         );
-    };
 
-    client.onWebSocketClose = () => {
-      this.clearSubscriptions();
-
-      this.options
-        ?.onStatusChange?.(
-          "disconnected"
+        options.onError?.(
+          "Unable to connect to chat."
         );
-    };
+      };
 
-    this.client = client;
+
+    client.onWebSocketClose =
+      () => {
+        this.setStatus(
+          "disconnected",
+          options
+            .onStatusChange
+        );
+      };
+
+
+    this.client =
+      client;
 
     client.activate();
   }
 
-  disconnect(): void {
-    this.clearSubscriptions();
 
-    const client =
-      this.client;
+  /*
+   * ============================================================
+   * SUBSCRIPTIONS
+   * ============================================================
+   */
 
-    this.client = null;
-    this.options = null;
-
-    if (client?.active) {
-      void client.deactivate();
+  private subscribeToMessages(
+    callback:
+      (
+        message:
+          ChatMessage
+      ) => void
+  ): void {
+    if (
+      !this.client
+        ?.connected
+    ) {
+      return;
     }
+
+    this.messageSubscription
+      ?.unsubscribe();
+
+    this.messageSubscription =
+      this.client.subscribe(
+        MESSAGE_QUEUE,
+        (
+          frame
+        ) => {
+          const message =
+            this.parseJson<
+              ChatMessage
+            >(
+              frame
+            );
+
+          if (
+            message
+          ) {
+            callback(
+              message
+            );
+          }
+        }
+      );
   }
 
-  isConnected(): boolean {
-    return Boolean(
-      this.client?.connected
-    );
+
+  private subscribeToTyping(
+    callback?:
+      (
+        event:
+          ChatTypingEvent
+      ) => void
+  ): void {
+    if (
+      !callback ||
+      !this.client
+        ?.connected
+    ) {
+      return;
+    }
+
+    this.typingSubscription
+      ?.unsubscribe();
+
+    this.typingSubscription =
+      this.client.subscribe(
+        TYPING_QUEUE,
+        (
+          frame
+        ) => {
+          const event =
+            this.parseJson<
+              ChatTypingEvent
+            >(
+              frame
+            );
+
+          if (
+            event
+          ) {
+            callback(
+              event
+            );
+          }
+        }
+      );
   }
+
+
+  private subscribeToPresence(
+    callback?:
+      (
+        event:
+          ChatPresenceEvent
+      ) => void
+  ): void {
+    if (
+      !callback ||
+      !this.client
+        ?.connected
+    ) {
+      return;
+    }
+
+    this.presenceSubscription
+      ?.unsubscribe();
+
+    this.presenceSubscription =
+      this.client.subscribe(
+        PRESENCE_QUEUE,
+        (
+          frame
+        ) => {
+          const event =
+            this.parseJson<
+              ChatPresenceEvent
+            >(
+              frame
+            );
+
+          if (
+            event
+          ) {
+            callback(
+              event
+            );
+          }
+        }
+      );
+  }
+
+
+  private subscribeToErrors(
+    callback?:
+      (
+        message:
+          string
+      ) => void
+  ): void {
+    if (
+      !callback ||
+      !this.client
+        ?.connected
+    ) {
+      return;
+    }
+
+    this.errorSubscription
+      ?.unsubscribe();
+
+    this.errorSubscription =
+      this.client.subscribe(
+        ERROR_QUEUE,
+        (
+          frame
+        ) => {
+          const payload =
+            this.parseJson<{
+              success?: boolean;
+              message?: string;
+            }>(
+              frame
+            );
+
+          callback(
+            payload
+              ?.message ||
+              "Chat request failed."
+          );
+        }
+      );
+  }
+
+
+  /*
+   * ============================================================
+   * SEND MESSAGE
+   * ============================================================
+   */
 
   sendMessage(
-    request: SendMessageRequest
+    request:
+      SendMessageRequest
   ): boolean {
     if (
-      !this.client?.connected
+      !this.client
+        ?.connected
     ) {
       return false;
     }
@@ -420,56 +537,106 @@ class ChatWebSocketService {
           "application/json",
       },
 
-      body: JSON.stringify({
-        receiverUserId:
-          request.receiverUserId,
+      body:
+        JSON.stringify({
+          receiverUserId:
+            request
+              .receiverUserId,
 
-        content:
-          request.content,
+          content:
+            request
+              .content ??
+            null,
 
-        mediaUrl:
-          request.mediaUrl ??
-          null,
+          mediaUrl:
+            request
+              .mediaUrl ??
+            null,
 
-        messageType:
-          request.messageType ??
-          "TEXT",
-      }),
+          messageType:
+            request
+              .messageType ??
+            "TEXT",
+
+          /*
+           * Reply-to-message support.
+           */
+          replyToMessageId:
+            request
+              .replyToMessageId ??
+            null,
+        }),
     });
 
     return true;
   }
 
+
+  /*
+   * ============================================================
+   * DELIVERED RECEIPT
+   * ============================================================
+   */
+
   sendDelivered(
-  event: DeliveryReceiptEvent
-): boolean {
-  if (
-    !this.client?.connected
-  ) {
-    return false;
-  }
-
-  this.client.publish({
-    destination:
-      SEND_DELIVERED_DESTINATION,
-
-    headers: {
-      "content-type":
-        "application/json",
-    },
-
-    body:
-      JSON.stringify(event),
-  });
-
-  return true;
-}
-
-  sendTyping(
-    event: SendTypingEvent
+    event:
+      DeliveryReceiptEvent
   ): boolean {
     if (
-      !this.client?.connected
+      !this.client
+        ?.connected
+    ) {
+      return false;
+    }
+
+    if (
+      !event.messageId
+    ) {
+      return false;
+    }
+
+    this.client.publish({
+      destination:
+        SEND_DELIVERED_DESTINATION,
+
+      headers: {
+        "content-type":
+          "application/json",
+      },
+
+      body:
+        JSON.stringify({
+          messageId:
+            event
+              .messageId,
+        }),
+    });
+
+    return true;
+  }
+
+
+  /*
+   * ============================================================
+   * TYPING
+   * ============================================================
+   */
+
+  sendTyping(
+    event: {
+      conversationId:
+        string;
+
+      receiverUserId:
+        string;
+
+      typing:
+        boolean;
+    }
+  ): boolean {
+    if (
+      !this.client
+        ?.connected
     ) {
       return false;
     }
@@ -484,13 +651,60 @@ class ChatWebSocketService {
       },
 
       body:
-        JSON.stringify(event),
+        JSON.stringify({
+          conversationId:
+            event
+              .conversationId,
+
+          receiverUserId:
+            event
+              .receiverUserId,
+
+          typing:
+            event
+              .typing,
+        }),
     });
 
     return true;
   }
 
-  private clearSubscriptions(): void {
+
+  /*
+   * ============================================================
+   * JSON PARSING
+   * ============================================================
+   */
+
+  private parseJson<T>(
+    frame:
+      IMessage
+  ): T | null {
+    try {
+      return JSON.parse(
+        frame.body
+      ) as T;
+
+    } catch (
+      error
+    ) {
+      console.error(
+        "[Chat WebSocket] Invalid JSON payload",
+        error
+      );
+
+      return null;
+    }
+  }
+
+
+  /*
+   * ============================================================
+   * DISCONNECT
+   * ============================================================
+   */
+
+  disconnect(): void {
     this.messageSubscription
       ?.unsubscribe();
 
@@ -514,8 +728,22 @@ class ChatWebSocketService {
 
     this.errorSubscription =
       null;
+
+    const client =
+      this.client;
+
+    this.client =
+      null;
+
+    if (client) {
+      void client.deactivate();
+    }
+
+    this.status =
+      "disconnected";
   }
 }
+
 
 const chatWebSocketService =
   new ChatWebSocketService();

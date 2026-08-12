@@ -9,6 +9,8 @@ import lombok.Setter;
 
 import java.util.UUID;
 
+
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -30,4 +32,6 @@ public class SendMessageRequest {
     private String mediaUrl;
 
     private MessageType messageType;
+
+    private UUID replyToMessageId;
 }

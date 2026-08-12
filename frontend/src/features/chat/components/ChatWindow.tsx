@@ -13,21 +13,32 @@ import MessageComposer from "./MessageComposer";
 import MessageList from "./MessageList";
 
 interface ChatWindowProps {
-  conversation: Conversation | null;
+  conversation:
+    Conversation | null;
 
-  presence: PresenceStatus | null;
+  presence:
+    PresenceStatus | null;
 
-  messages: ChatMessage[];
+  messages:
+    ChatMessage[];
 
-  loadingMessages: boolean;
+  loadingMessages:
+    boolean;
 
-  sending: boolean;
+  sending:
+    boolean;
 
-  uploadingImage: boolean;
+  uploadingImage:
+    boolean;
 
-  realtimeConnected: boolean;
+  realtimeConnected:
+    boolean;
 
-  otherUserTyping: boolean;
+  otherUserTyping:
+    boolean;
+
+  replyingTo:
+    ChatMessage | null;
 
   onBack: () => void;
 
@@ -43,6 +54,13 @@ interface ChatWindowProps {
   onTypingChange: (
     typing: boolean
   ) => void;
+
+  onReply: (
+    message: ChatMessage
+  ) => void;
+
+  onCancelReply:
+    () => void;
 
   onEditMessage: (
     messageId: string,
@@ -63,16 +81,24 @@ export default function ChatWindow({
   uploadingImage,
   realtimeConnected,
   otherUserTyping,
+  replyingTo,
   onBack,
   onSend,
   onSendImage,
   onTypingChange,
+  onReply,
+  onCancelReply,
   onEditMessage,
   onDeleteMessage,
 }: ChatWindowProps) {
   if (!conversation) {
-    return <EmptyChatState />;
+    return (
+      <EmptyChatState />
+    );
   }
+
+  const otherUser =
+    conversation.otherUser;
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-white">
@@ -100,12 +126,13 @@ export default function ChatWindow({
           messages
         }
         otherUserId={
-          conversation
-            .otherUser
-            .userId
+          otherUser.userId
         }
         loading={
           loadingMessages
+        }
+        onReply={
+          onReply
         }
         onEdit={
           onEditMessage
@@ -124,6 +151,18 @@ export default function ChatWindow({
         }
         uploadingImage={
           uploadingImage
+        }
+        replyingTo={
+          replyingTo
+        }
+        otherUserId={
+          otherUser.userId
+        }
+        otherUserName={
+          otherUser.fullName
+        }
+        onCancelReply={
+          onCancelReply
         }
         onSend={
           onSend

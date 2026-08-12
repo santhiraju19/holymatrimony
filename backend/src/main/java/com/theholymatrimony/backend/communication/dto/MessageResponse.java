@@ -45,4 +45,17 @@ public class MessageResponse {
     private Boolean deletedForEveryone;
 
     private LocalDateTime deletedAt;
+
+    private UUID replyToMessageId;
+
+private UUID replyToSenderId;
+
+private String replyToContent;
+
+private String replyToMediaUrl;
+
+private MessageType replyToMessageType;
+
+private Boolean replyToDeletedForEveryone;
+
 }

@@ -3,16 +3,23 @@ package com.theholymatrimony.backend.communication.websocket;
 import com.theholymatrimony.backend.communication.dto.MessageResponse;
 import com.theholymatrimony.backend.communication.dto.SendMessageRequest;
 import com.theholymatrimony.backend.communication.service.CommunicationService;
+
 import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
+
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
+
 import org.springframework.stereotype.Controller;
+
 import org.springframework.util.StringUtils;
+
 import org.springframework.validation.annotation.Validated;
 
 import java.security.Principal;
@@ -24,119 +31,159 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ChatWebSocketController {
 
-    private final CommunicationService communicationService;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final CommunicationService
+            communicationService;
+
+    private final SimpMessagingTemplate
+            messagingTemplate;
+
+
+    /*
+     * ============================================================
+     * SEND MESSAGE
+     * ============================================================
+     */
 
     @MessageMapping("/chat.send")
     public void sendMessage(
             Principal principal,
-            @Valid @Payload SendMessageRequest request
+            @Valid
+            @Payload
+            SendMessageRequest request
     ) {
+
         String senderEmail =
-                getAuthenticatedEmail(principal);
+                getAuthenticatedEmail(
+                        principal
+                );
 
         MessageResponse savedMessage =
-                communicationService.sendMessage(
-                        senderEmail,
-                        request
-                );
+                communicationService
+                        .sendMessage(
+                                senderEmail,
+                                request
+                        );
 
         String receiverEmail =
-                communicationService.getUserEmail(
-                        request.getReceiverUserId()
+                communicationService
+                        .getUserEmail(
+                                savedMessage
+                                        .getReceiverId()
+                        );
+
+        /*
+         * Send persisted message to receiver.
+         *
+         * Reply-to-message fields are already part
+         * of MessageResponse, so no special WebSocket
+         * payload is needed for replies.
+         */
+        messagingTemplate
+                .convertAndSendToUser(
+                        receiverEmail,
+                        "/queue/messages",
+                        savedMessage
                 );
 
-        messagingTemplate.convertAndSendToUser(
-                receiverEmail,
-                "/queue/messages",
-                savedMessage
-        );
-
-        messagingTemplate.convertAndSendToUser(
-                senderEmail,
-                "/queue/messages",
-                savedMessage
-        );
+        /*
+         * Echo persisted message to sender.
+         */
+        messagingTemplate
+                .convertAndSendToUser(
+                        senderEmail,
+                        "/queue/messages",
+                        savedMessage
+                );
     }
 
+
     /*
- * ============================================================
- * MESSAGE DELIVERED RECEIPT
- * ============================================================
- */
+     * ============================================================
+     * MESSAGE DELIVERED RECEIPT
+     * ============================================================
+     */
 
-@MessageMapping("/chat.delivered")
-public void markMessageAsDelivered(
-        Principal principal,
-        @Payload DeliveryReceiptRequest request
-) {
-
-    String receiverEmail =
-            getAuthenticatedEmail(
-                    principal
-            );
-
-    if (
-            request == null ||
-            request.messageId() == null
+    @MessageMapping("/chat.delivered")
+    public void markMessageAsDelivered(
+            Principal principal,
+            @Payload
+            DeliveryReceiptRequest request
     ) {
-        throw new IllegalArgumentException(
-                "Message ID is required"
+
+        String receiverEmail =
+                getAuthenticatedEmail(
+                        principal
+                );
+
+        validateDeliveryReceiptRequest(
+                request
         );
+
+        MessageResponse updatedMessage =
+                communicationService
+                        .markMessageAsDelivered(
+                                receiverEmail,
+                                request.messageId()
+                        );
+
+        String senderEmail =
+                communicationService
+                        .getUserEmail(
+                                updatedMessage
+                                        .getSenderId()
+                        );
+
+        /*
+         * Tell the original sender the message
+         * has reached the receiver.
+         */
+        messagingTemplate
+                .convertAndSendToUser(
+                        senderEmail,
+                        "/queue/messages",
+                        updatedMessage
+                );
+
+        /*
+         * Keep all receiver tabs/devices synchronized.
+         */
+        messagingTemplate
+                .convertAndSendToUser(
+                        receiverEmail,
+                        "/queue/messages",
+                        updatedMessage
+                );
     }
 
-    MessageResponse updatedMessage =
-            communicationService
-                    .markMessageAsDelivered(
-                            receiverEmail,
-                            request.messageId()
-                    );
 
     /*
-     * Tell original sender that the receiver
-     * has received the message.
+     * ============================================================
+     * TYPING EVENT
+     * ============================================================
      */
-    String senderEmail =
-            communicationService
-                    .getUserEmail(
-                            updatedMessage
-                                    .getSenderId()
-                    );
-
-    messagingTemplate
-            .convertAndSendToUser(
-                    senderEmail,
-                    "/queue/messages",
-                    updatedMessage
-            );
-
-    /*
-     * Also return it to the receiver so any
-     * additional tabs/devices stay synchronized.
-     */
-    messagingTemplate
-            .convertAndSendToUser(
-                    receiverEmail,
-                    "/queue/messages",
-                    updatedMessage
-            );
-}
-
 
     @MessageMapping("/chat.typing")
     public void handleTyping(
             Principal principal,
-            @Payload TypingEventRequest request
+            @Payload
+            TypingEventRequest request
     ) {
-        String senderEmail =
-                getAuthenticatedEmail(principal);
 
-        validateTypingRequest(request);
+        String senderEmail =
+                getAuthenticatedEmail(
+                        principal
+                );
+
+        validateTypingRequest(
+                request
+        );
 
         String receiverEmail =
-                communicationService.getUserEmail(
-                        request.receiverUserId()
-                );
+                communicationService
+                        .getUserEmail(
+                                request
+                                        .receiverUserId()
+                        );
 
         log.info(
                 "[Typing Backend] sender={}, receiver={}, conversationId={}, typing={}",
@@ -152,21 +199,31 @@ public void markMessageAsDelivered(
                         request.typing()
                 );
 
-        messagingTemplate.convertAndSendToUser(
-                receiverEmail,
-                "/queue/typing",
-                response
-        );
+        messagingTemplate
+                .convertAndSendToUser(
+                        receiverEmail,
+                        "/queue/typing",
+                        response
+                );
     }
+
+
+    /*
+     * ============================================================
+     * WEBSOCKET ERROR HANDLER
+     * ============================================================
+     */
 
     @MessageExceptionHandler
     @SendToUser(
             destinations = "/queue/errors",
             broadcast = false
     )
-    public WebSocketErrorResponse handleException(
+    public WebSocketErrorResponse
+    handleException(
             Exception exception
     ) {
+
         log.error(
                 "[Chat WebSocket] Request failed",
                 exception
@@ -185,44 +242,119 @@ public void markMessageAsDelivered(
         );
     }
 
+
+    /*
+     * ============================================================
+     * REQUEST VALIDATION
+     * ============================================================
+     */
+
+    private void validateDeliveryReceiptRequest(
+            DeliveryReceiptRequest request
+    ) {
+
+        if (
+                request == null
+        ) {
+
+            throw new IllegalArgumentException(
+                    "Delivery receipt is required"
+            );
+        }
+
+        if (
+                request.messageId()
+                        == null
+        ) {
+
+            throw new IllegalArgumentException(
+                    "Message ID is required"
+            );
+        }
+    }
+
+
     private void validateTypingRequest(
             TypingEventRequest request
     ) {
-        if (request == null) {
+
+        if (
+                request == null
+        ) {
+
             throw new IllegalArgumentException(
                     "Typing event is required"
             );
         }
 
-        if (request.conversationId() == null) {
+        if (
+                request.conversationId()
+                        == null
+        ) {
+
             throw new IllegalArgumentException(
                     "Conversation ID is required"
             );
         }
 
-        if (request.receiverUserId() == null) {
+        if (
+                request.receiverUserId()
+                        == null
+        ) {
+
             throw new IllegalArgumentException(
                     "Receiver user ID is required"
             );
         }
     }
 
+
+    /*
+     * ============================================================
+     * AUTHENTICATED USER
+     * ============================================================
+     */
+
     private String getAuthenticatedEmail(
             Principal principal
     ) {
+
         if (
-                principal == null ||
+                principal == null
+                        ||
                 !StringUtils.hasText(
                         principal.getName()
                 )
         ) {
-            throw new IllegalStateException(
+
+            throw new IllegalArgumentException(
                     "Authenticated WebSocket user is required"
             );
         }
 
-        return principal.getName().trim();
+        return principal
+                .getName()
+                .trim();
     }
+
+
+    /*
+     * ============================================================
+     * MESSAGE DELIVERY REQUEST
+     * ============================================================
+     */
+
+    public record DeliveryReceiptRequest(
+            UUID messageId
+    ) {
+    }
+
+
+    /*
+     * ============================================================
+     * TYPING REQUEST / RESPONSE
+     * ============================================================
+     */
 
     public record TypingEventRequest(
             UUID conversationId,
@@ -230,16 +362,20 @@ public void markMessageAsDelivered(
             boolean typing
     ) {
     }
-    public record DeliveryReceiptRequest(
-        UUID messageId
-) {
-}
+
 
     public record TypingEventResponse(
             UUID conversationId,
             boolean typing
     ) {
     }
+
+
+    /*
+     * ============================================================
+     * ERROR RESPONSE
+     * ============================================================
+     */
 
     public record WebSocketErrorResponse(
             boolean success,

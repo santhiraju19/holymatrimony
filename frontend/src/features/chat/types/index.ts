@@ -19,6 +19,7 @@ export interface ConversationUser {
   userId: string;
   profileId: string;
   fullName: string;
+
   gender?: string;
   age?: number;
   denomination?: string;
@@ -31,12 +32,17 @@ export interface ConversationUser {
 
 export interface Conversation {
   id: string;
+
   otherUser: ConversationUser;
+
   lastMessage: string | null;
   lastMessageSenderId: string | null;
   lastMessageAt: string | null;
+
   unreadCount: number;
+
   active: boolean;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -61,15 +67,20 @@ export type MessageStatus =
   | "DELIVERED"
   | "READ"
   | "PENDING"
+  | "SENDING"
   | "FAILED";
 
 export interface ChatMessage {
   id: string;
+
   conversationId: string;
+
   senderId: string;
+
   receiverId: string;
 
   content: string | null;
+
   mediaUrl?: string | null;
 
   messageType:
@@ -93,6 +104,27 @@ export interface ChatMessage {
   deletedForEveryone?: boolean;
 
   deletedAt?: string | null;
+
+  /*
+   * ============================================================
+   * REPLY TO MESSAGE
+   * ============================================================
+   */
+
+  replyToMessageId?: string | null;
+
+  replyToSenderId?: string | null;
+
+  replyToContent?: string | null;
+
+  replyToMediaUrl?: string | null;
+
+  replyToMessageType?:
+    | MessageType
+    | string
+    | null;
+
+  replyToDeletedForEveryone?: boolean | null;
 }
 
 export interface MessagesPage
@@ -102,21 +134,32 @@ export interface MessagesPage
 
 export interface SendMessageRequest {
   receiverUserId: string;
+
   content?: string | null;
+
   mediaUrl?: string | null;
+
   messageType?: MessageType;
+
+  replyToMessageId?: string | null;
 }
 
 export interface ChatMediaUploadResponse {
   originalFileName: string;
+
   storedFileName: string;
+
   mediaUrl: string;
+
   contentType: string;
+
   fileSize: number;
+
   messageType: "IMAGE";
 }
 
 export interface UnreadCountData {
   unreadCount: number;
+
   count?: number;
 }

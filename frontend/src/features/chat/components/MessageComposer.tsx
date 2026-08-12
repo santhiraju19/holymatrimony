@@ -12,15 +12,38 @@ import {
 import {
   ImagePlus,
   Loader2,
+  Reply,
   Send,
+  Trash2,
   X,
 } from "lucide-react";
 
+import {
+  ChatMessage,
+} from "@/features/chat/types";
+
 interface MessageComposerProps {
   conversationId: string;
+
   sending: boolean;
+
   uploadingImage: boolean;
+
   disabled?: boolean;
+
+  /*
+   * Reply support.
+   *
+   * Optional temporarily so ChatWindow keeps
+   * compiling until we wire these props next.
+   */
+  replyingTo?: ChatMessage | null;
+
+  otherUserId?: string;
+
+  otherUserName?: string;
+
+  onCancelReply?: () => void;
 
   onSend: (
     content: string
@@ -36,7 +59,9 @@ interface MessageComposerProps {
   ) => void;
 }
 
-const MAX_MESSAGE_LENGTH = 2000;
+const MAX_MESSAGE_LENGTH =
+  2000;
+
 const MAX_IMAGE_SIZE =
   10 * 1024 * 1024;
 
@@ -52,48 +77,107 @@ function getDraftKey(
   return `hm_chat_draft_${conversationId}`;
 }
 
+function normalizeId(
+  value?: string | null
+): string {
+  return String(
+    value ?? ""
+  )
+    .trim()
+    .toLowerCase();
+}
+
+function truncateReplyText(
+  value?: string | null
+): string {
+  const normalized =
+    value
+      ?.trim()
+      .replace(
+        /\s+/g,
+        " "
+      ) ?? "";
+
+  if (!normalized) {
+    return "";
+  }
+
+  if (
+    normalized.length <=
+    120
+  ) {
+    return normalized;
+  }
+
+  return (
+    normalized.slice(
+      0,
+      120
+    ) + "…"
+  );
+}
+
 export default function MessageComposer({
   conversationId,
   sending,
   uploadingImage,
   disabled = false,
+  replyingTo = null,
+  otherUserId,
+  otherUserName,
+  onCancelReply,
   onSend,
   onSendImage,
   onTypingChange,
 }: MessageComposerProps) {
-  const [content, setContent] =
+  const [
+    content,
+    setContent,
+  ] =
     useState("");
 
   const [
     selectedImage,
     setSelectedImage,
-  ] = useState<File | null>(null);
+  ] =
+    useState<File | null>(
+      null
+    );
 
   const [
     imagePreviewUrl,
     setImagePreviewUrl,
-  ] = useState<string | null>(null);
+  ] =
+    useState<
+      string | null
+    >(null);
 
   const [
     imageError,
     setImageError,
-  ] = useState<string | null>(null);
+  ] =
+    useState<
+      string | null
+    >(null);
 
   const textareaRef =
-    useRef<HTMLTextAreaElement | null>(
-      null
-    );
+    useRef<
+      HTMLTextAreaElement | null
+    >(null);
 
   const imageInputRef =
-    useRef<HTMLInputElement | null>(
-      null
-    );
+    useRef<
+      HTMLInputElement | null
+    >(null);
 
   const onTypingChangeRef =
-    useRef(onTypingChange);
+    useRef(
+      onTypingChange
+    );
 
   const busy =
-    sending || uploadingImage;
+    sending ||
+    uploadingImage;
 
   const trimmedContent =
     content.trim();
@@ -102,39 +186,116 @@ export default function MessageComposer({
     MAX_MESSAGE_LENGTH -
     content.length;
 
+  /*
+   * ============================================================
+   * REPLY DISPLAY
+   * ============================================================
+   */
+
+  const replyDeleted =
+    replyingTo
+      ?.deletedForEveryone ===
+    true;
+
+  const replyMessageType =
+    replyingTo
+      ?.messageType
+      ?.trim()
+      .toUpperCase();
+
+  const replyIsImage =
+    replyMessageType ===
+    "IMAGE";
+
+  const replyIsFromOtherUser =
+    Boolean(
+      replyingTo &&
+      otherUserId &&
+      normalizeId(
+        replyingTo.senderId
+      ) ===
+        normalizeId(
+          otherUserId
+        )
+    );
+
+  const replySenderLabel =
+    replyIsFromOtherUser
+      ? otherUserName?.trim() ||
+        "Them"
+      : "You";
+
+  /*
+   * ============================================================
+   * KEEP CALLBACK REF UPDATED
+   * ============================================================
+   */
+
   useEffect(() => {
     onTypingChangeRef.current =
       onTypingChange;
-  }, [onTypingChange]);
+  }, [
+    onTypingChange,
+  ]);
+
+  /*
+   * ============================================================
+   * LOAD DRAFT WHEN CONVERSATION CHANGES
+   * ============================================================
+   */
 
   useEffect(() => {
     const savedDraft =
-      window.localStorage.getItem(
-        getDraftKey(conversationId)
-      );
+      window.localStorage
+        .getItem(
+          getDraftKey(
+            conversationId
+          )
+        );
 
-    setContent(savedDraft ?? "");
+    setContent(
+      savedDraft ?? ""
+    );
+
     clearSelectedImage();
-  }, [conversationId]);
+  }, [
+    conversationId,
+  ]);
+
+  /*
+   * ============================================================
+   * SAVE DRAFT
+   * ============================================================
+   */
 
   useEffect(() => {
     const draftKey =
-      getDraftKey(conversationId);
+      getDraftKey(
+        conversationId
+      );
 
     if (content) {
-      window.localStorage.setItem(
-        draftKey,
-        content
-      );
+      window.localStorage
+        .setItem(
+          draftKey,
+          content
+        );
     } else {
-      window.localStorage.removeItem(
-        draftKey
-      );
+      window.localStorage
+        .removeItem(
+          draftKey
+        );
     }
   }, [
     content,
     conversationId,
   ]);
+
+  /*
+   * ============================================================
+   * AUTO-RESIZE TEXTAREA
+   * ============================================================
+   */
 
   useEffect(() => {
     const textarea =
@@ -144,32 +305,81 @@ export default function MessageComposer({
       return;
     }
 
-    textarea.style.height = "auto";
+    textarea.style.height =
+      "auto";
 
     textarea.style.height =
       `${Math.min(
         textarea.scrollHeight,
         144
       )}px`;
-  }, [content]);
+  }, [
+    content,
+  ]);
+
+  /*
+   * ============================================================
+   * FOCUS COMPOSER WHEN REPLY STARTS
+   * ============================================================
+   */
+
+  useEffect(() => {
+    if (!replyingTo) {
+      return;
+    }
+
+    requestAnimationFrame(
+      () => {
+        textareaRef.current
+          ?.focus();
+      }
+    );
+  }, [
+    replyingTo,
+  ]);
+
+  /*
+   * ============================================================
+   * CLEAN IMAGE OBJECT URL
+   * ============================================================
+   */
 
   useEffect(() => {
     return () => {
-      if (imagePreviewUrl) {
+      if (
+        imagePreviewUrl
+      ) {
         URL.revokeObjectURL(
           imagePreviewUrl
         );
       }
     };
-  }, [imagePreviewUrl]);
+  }, [
+    imagePreviewUrl,
+  ]);
+
+  /*
+   * ============================================================
+   * CLEAR IMAGE
+   * ============================================================
+   */
 
   function clearSelectedImage() {
-    setSelectedImage(null);
-    setImageError(null);
+    setSelectedImage(
+      null
+    );
+
+    setImageError(
+      null
+    );
 
     setImagePreviewUrl(
-      (currentUrl) => {
-        if (currentUrl) {
+      (
+        currentUrl
+      ) => {
+        if (
+          currentUrl
+        ) {
           URL.revokeObjectURL(
             currentUrl
           );
@@ -179,62 +389,96 @@ export default function MessageComposer({
       }
     );
 
-    if (imageInputRef.current) {
-      imageInputRef.current.value =
-        "";
+    if (
+      imageInputRef.current
+    ) {
+      imageInputRef
+        .current
+        .value = "";
     }
   }
 
+  /*
+   * ============================================================
+   * IMAGE SELECTION
+   * ============================================================
+   */
+
   function handleImageSelection(
-    event: ChangeEvent<HTMLInputElement>
+    event:
+      ChangeEvent<HTMLInputElement>
   ) {
     const file =
-      event.target.files?.[0];
+      event.target
+        .files?.[0];
 
-    setImageError(null);
+    setImageError(
+      null
+    );
 
     if (!file) {
       return;
     }
 
     if (
-      !ALLOWED_IMAGE_TYPES.includes(
-        file.type
-      )
+      !ALLOWED_IMAGE_TYPES
+        .includes(
+          file.type
+        )
     ) {
       setImageError(
         "Only JPEG, PNG and WebP images are allowed."
       );
 
-      event.target.value = "";
+      event.target.value =
+        "";
+
       return;
     }
 
-    if (file.size > MAX_IMAGE_SIZE) {
+    if (
+      file.size >
+      MAX_IMAGE_SIZE
+    ) {
       setImageError(
         "Image size must not exceed 10 MB."
       );
 
-      event.target.value = "";
+      event.target.value =
+        "";
+
       return;
     }
 
-    setSelectedImage(file);
+    setSelectedImage(
+      file
+    );
 
     setImagePreviewUrl(
-      (currentUrl) => {
-        if (currentUrl) {
+      (
+        currentUrl
+      ) => {
+        if (
+          currentUrl
+        ) {
           URL.revokeObjectURL(
             currentUrl
           );
         }
 
-        return URL.createObjectURL(
-          file
-        );
+        return URL
+          .createObjectURL(
+            file
+          );
       }
     );
   }
+
+  /*
+   * ============================================================
+   * SUBMIT
+   * ============================================================
+   */
 
   async function submitMessage() {
     if (
@@ -245,23 +489,55 @@ export default function MessageComposer({
     }
 
     try {
-      if (selectedImage) {
+      /*
+       * IMAGE + OPTIONAL CAPTION
+       *
+       * useChat.sendImage() carries the current
+       * replyToMessageId when replyingTo exists.
+       */
+      if (
+        selectedImage
+      ) {
         await onSendImage(
           selectedImage,
           trimmedContent
         );
 
         clearSelectedImage();
-        setContent("");
 
-        window.localStorage.removeItem(
-          getDraftKey(conversationId)
+        setContent(
+          ""
+        );
+
+        window.localStorage
+          .removeItem(
+            getDraftKey(
+              conversationId
+            )
+          );
+
+        /*
+         * useChat clears replyingTo after
+         * successful send. We intentionally
+         * do not clear it locally here.
+         */
+
+        requestAnimationFrame(
+          () => {
+            textareaRef.current
+              ?.focus();
+          }
         );
 
         return;
       }
 
-      if (!trimmedContent) {
+      /*
+       * NORMAL TEXT MESSAGE
+       */
+      if (
+        !trimmedContent
+      ) {
         return;
       }
 
@@ -269,45 +545,90 @@ export default function MessageComposer({
         trimmedContent
       );
 
-      setContent("");
-
-      window.localStorage.removeItem(
-        getDraftKey(conversationId)
+      setContent(
+        ""
       );
 
-      requestAnimationFrame(() => {
-        const textarea =
-          textareaRef.current;
+      window.localStorage
+        .removeItem(
+          getDraftKey(
+            conversationId
+          )
+        );
 
-        if (!textarea) {
-          return;
+      requestAnimationFrame(
+        () => {
+          const textarea =
+            textareaRef.current;
+
+          if (!textarea) {
+            return;
+          }
+
+          textarea.style.height =
+            "auto";
+
+          textarea.focus();
         }
+      );
 
-        textarea.style.height =
-          "auto";
-
-        textarea.focus();
-      });
     } catch {
-      textareaRef.current?.focus();
+      textareaRef.current
+        ?.focus();
     }
   }
 
+  /*
+   * ============================================================
+   * FORM SUBMIT
+   * ============================================================
+   */
+
   async function handleSubmit(
-    event: FormEvent<HTMLFormElement>
+    event:
+      FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
     await submitMessage();
   }
 
+  /*
+   * ============================================================
+   * KEYBOARD
+   * ============================================================
+   */
+
   function handleKeyDown(
-    event: KeyboardEvent<HTMLTextAreaElement>
+    event:
+      KeyboardEvent<HTMLTextAreaElement>
   ) {
+    /*
+     * Escape cancels the current reply.
+     */
     if (
-      event.key === "Enter" &&
+      event.key ===
+        "Escape" &&
+      replyingTo &&
+      onCancelReply
+    ) {
+      event.preventDefault();
+
+      onCancelReply();
+
+      return;
+    }
+
+    /*
+     * Enter = send
+     * Shift + Enter = newline
+     */
+    if (
+      event.key ===
+        "Enter" &&
       !event.shiftKey &&
-      !event.nativeEvent.isComposing
+      !event.nativeEvent
+        .isComposing
     ) {
       event.preventDefault();
 
@@ -315,16 +636,25 @@ export default function MessageComposer({
     }
   }
 
+  /*
+   * ============================================================
+   * CONTENT / TYPING
+   * ============================================================
+   */
+
   function handleContentChange(
     value: string
   ) {
-    setContent(value);
+    setContent(
+      value
+    );
 
-    if (value.trim()) {
-      onTypingChangeRef.current?.(
-        true
+    onTypingChangeRef
+      .current?.(
+        Boolean(
+          value.trim()
+        )
       );
-    }
   }
 
   const sendDisabled =
@@ -337,22 +667,118 @@ export default function MessageComposer({
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={
+        handleSubmit
+      }
       className="border-t border-slate-200 bg-white p-3 md:p-4"
     >
       <div className="mx-auto max-w-4xl">
+
+        {/* ======================================================
+            REPLY BAR
+           ====================================================== */}
+
+        {replyingTo && (
+          <div className="mb-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
+            <div className="flex items-stretch">
+
+              <div className="w-1 shrink-0 bg-[#0B2D5C]" />
+
+              <div className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5">
+
+                <Reply
+                  size={17}
+                  className="shrink-0 text-[#0B2D5C]"
+                />
+
+                <div className="min-w-0 flex-1">
+
+                  <p className="truncate text-xs font-semibold text-[#0B2D5C]">
+                    Replying to{" "}
+                    {replySenderLabel}
+                  </p>
+
+                  {replyDeleted ? (
+                    <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs italic text-slate-500">
+                      <Trash2
+                        size={12}
+                      />
+
+                      This message was deleted
+                    </p>
+                  ) : replyIsImage ? (
+                    <div className="mt-0.5 min-w-0">
+
+                      <p className="truncate text-xs text-slate-500">
+                        📷 Photo
+                      </p>
+
+                      {replyingTo
+                        .content
+                        ?.trim() && (
+                        <p className="truncate text-xs text-slate-600">
+                          {truncateReplyText(
+                            replyingTo
+                              .content
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="mt-0.5 truncate text-xs text-slate-600">
+                      {truncateReplyText(
+                        replyingTo
+                          .content
+                      ) ||
+                        "Message"}
+                    </p>
+                  )}
+
+                </div>
+
+                <button
+                  type="button"
+                  title="Cancel reply"
+                  aria-label="Cancel reply"
+                  disabled={
+                    busy
+                  }
+                  onClick={
+                    onCancelReply
+                  }
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-200 hover:text-slate-700 disabled:opacity-50"
+                >
+                  <X
+                    size={17}
+                  />
+                </button>
+
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================
+            IMAGE PREVIEW
+           ====================================================== */}
+
         {imagePreviewUrl && (
           <div className="mb-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
             <div className="flex items-start gap-3">
+
               <img
-                src={imagePreviewUrl}
+                src={
+                  imagePreviewUrl
+                }
                 alt="Selected image preview"
                 className="h-24 w-24 rounded-xl object-cover"
               />
 
               <div className="min-w-0 flex-1">
+
                 <p className="truncate text-sm font-semibold text-slate-800">
-                  {selectedImage?.name}
+                  {selectedImage
+                    ?.name}
                 </p>
 
                 <p className="mt-1 text-xs text-slate-500">
@@ -361,13 +787,16 @@ export default function MessageComposer({
                         selectedImage.size /
                         1024 /
                         1024
-                      ).toFixed(2)} MB`
+                      ).toFixed(
+                        2
+                      )} MB`
                     : ""}
                 </p>
 
                 <p className="mt-2 text-xs text-slate-500">
                   Add an optional caption below.
                 </p>
+
               </div>
 
               <button
@@ -375,15 +804,24 @@ export default function MessageComposer({
                 onClick={
                   clearSelectedImage
                 }
-                disabled={busy}
+                disabled={
+                  busy
+                }
                 aria-label="Remove selected image"
                 className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-200 hover:text-slate-800 disabled:opacity-50"
               >
-                <X size={18} />
+                <X
+                  size={18}
+                />
               </button>
+
             </div>
           </div>
         )}
+
+        {/* ======================================================
+            IMAGE ERROR
+           ====================================================== */}
 
         {imageError && (
           <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
@@ -392,7 +830,9 @@ export default function MessageComposer({
         )}
 
         <input
-          ref={imageInputRef}
+          ref={
+            imageInputRef
+          }
           type="file"
           accept="image/jpeg,image/png,image/webp"
           onChange={
@@ -401,37 +841,53 @@ export default function MessageComposer({
           className="hidden"
         />
 
+        {/* ======================================================
+            INPUT ROW
+           ====================================================== */}
+
         <div className="flex items-end gap-3">
+
           <button
             type="button"
             onClick={() =>
-              imageInputRef.current
+              imageInputRef
+                .current
                 ?.click()
             }
             disabled={
-              disabled || busy
+              disabled ||
+              busy
             }
             title="Send image"
             aria-label="Select image"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <ImagePlus size={19} />
+            <ImagePlus
+              size={19}
+            />
           </button>
 
           <textarea
-            ref={textareaRef}
+            ref={
+              textareaRef
+            }
             rows={1}
             maxLength={
               MAX_MESSAGE_LENGTH
             }
-            value={content}
+            value={
+              content
+            }
             disabled={
-              disabled || busy
+              disabled ||
+              busy
             }
             onKeyDown={
               handleKeyDown
             }
-            onChange={(event) =>
+            onChange={(
+              event
+            ) =>
               handleContentChange(
                 event.target.value
               )
@@ -439,21 +895,27 @@ export default function MessageComposer({
             placeholder={
               selectedImage
                 ? "Add a caption..."
-                : disabled
-                  ? "Messaging is unavailable"
-                  : "Type a message..."
+                : replyingTo
+                  ? "Type your reply..."
+                  : disabled
+                    ? "Messaging is unavailable"
+                    : "Type a message..."
             }
             aria-label={
               selectedImage
                 ? "Image caption"
-                : "Message"
+                : replyingTo
+                  ? "Reply message"
+                  : "Message"
             }
             className="max-h-36 min-h-11 flex-1 resize-none overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-5 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
           />
 
           <button
             type="submit"
-            disabled={sendDisabled}
+            disabled={
+              sendDisabled
+            }
             aria-label={
               uploadingImage
                 ? "Uploading image"
@@ -461,7 +923,9 @@ export default function MessageComposer({
                   ? "Sending message"
                   : selectedImage
                     ? "Send image"
-                    : "Send message"
+                    : replyingTo
+                      ? "Send reply"
+                      : "Send message"
             }
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0B2D5C] text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#123C73] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -471,20 +935,33 @@ export default function MessageComposer({
                 className="animate-spin"
               />
             ) : (
-              <Send size={19} />
+              <Send
+                size={19}
+              />
             )}
           </button>
+
         </div>
 
+        {/* ======================================================
+            FOOTER
+           ====================================================== */}
+
         <div className="mt-2 flex items-center justify-between gap-4 px-1 text-[10px] text-slate-400">
+
           <p>
             JPEG, PNG or WebP · Maximum 10 MB
+            {replyingTo
+              ? " · Esc cancels reply"
+              : ""}
           </p>
 
-          {content.length > 1600 && (
+          {content.length >
+            1600 && (
             <p
               className={
-                remainingCharacters <= 100
+                remainingCharacters <=
+                100
                   ? "font-semibold text-amber-600"
                   : ""
               }
@@ -492,7 +969,9 @@ export default function MessageComposer({
               {remainingCharacters} left
             </p>
           )}
+
         </div>
+
       </div>
     </form>
   );

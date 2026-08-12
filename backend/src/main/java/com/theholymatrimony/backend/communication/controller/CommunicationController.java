@@ -1,14 +1,12 @@
 package com.theholymatrimony.backend.communication.controller;
 
 import com.theholymatrimony.backend.common.response.ApiResponse;
-
 import com.theholymatrimony.backend.communication.dto.ConversationPageResponse;
 import com.theholymatrimony.backend.communication.dto.EditMessageRequest;
 import com.theholymatrimony.backend.communication.dto.MessagePageResponse;
 import com.theholymatrimony.backend.communication.dto.MessageResponse;
 import com.theholymatrimony.backend.communication.dto.SendMessageRequest;
 import com.theholymatrimony.backend.communication.dto.UnreadMessageCountResponse;
-
 import com.theholymatrimony.backend.communication.service.CommunicationService;
 
 import jakarta.validation.Valid;
@@ -32,24 +30,27 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/communication")
 @RequiredArgsConstructor
 public class CommunicationController {
 
-    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final int DEFAULT_PAGE_SIZE =
+            20;
 
-    private static final int MAX_PAGE_SIZE = 100;
+    private static final int MAX_PAGE_SIZE =
+            100;
 
     private final CommunicationService
             communicationService;
 
     private final SimpMessagingTemplate
             messagingTemplate;
+
 
     /*
      * ============================================================
@@ -58,7 +59,9 @@ public class CommunicationController {
      */
 
     @PostMapping("/messages")
-    public ResponseEntity<ApiResponse<MessageResponse>>
+    public ResponseEntity<
+            ApiResponse<MessageResponse>
+            >
     sendMessage(
             Authentication authentication,
 
@@ -79,33 +82,17 @@ public class CommunicationController {
                                 request
                         );
 
-        String receiverEmail =
-                communicationService
-                        .getUserEmail(
-                                response.getReceiverId()
-                        );
-
         /*
-         * Receiver gets the persisted message immediately.
-         */
-        messagingTemplate
-                .convertAndSendToUser(
-                        receiverEmail,
-                        "/queue/messages",
-                        response
-                );
-
-        /*
-         * Sender also receives the persisted response.
+         * REST sending is used by image messages and
+         * as a fallback when STOMP is unavailable.
          *
-         * This keeps multiple browser tabs/devices synchronized.
+         * Broadcast the persisted response to both users
+         * exactly like ChatWebSocketController does.
          */
-        messagingTemplate
-                .convertAndSendToUser(
-                        senderEmail,
-                        "/queue/messages",
-                        response
-                );
+        broadcastMessageUpdate(
+                senderEmail,
+                response
+        );
 
         return ResponseEntity
                 .status(
@@ -119,6 +106,7 @@ public class CommunicationController {
                 );
     }
 
+
     /*
      * ============================================================
      * EDIT MESSAGE
@@ -128,7 +116,9 @@ public class CommunicationController {
     @PatchMapping(
             "/messages/{messageId}"
     )
-    public ResponseEntity<ApiResponse<MessageResponse>>
+    public ResponseEntity<
+            ApiResponse<MessageResponse>
+            >
     editMessage(
             Authentication authentication,
 
@@ -139,6 +129,15 @@ public class CommunicationController {
             @RequestBody
             EditMessageRequest request
     ) {
+
+        if (
+                request == null
+        ) {
+
+            throw new IllegalArgumentException(
+                    "Edit message request is required"
+            );
+        }
 
         String senderEmail =
                 getAuthenticatedEmail(
@@ -160,11 +159,12 @@ public class CommunicationController {
 
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        "Message edited successfully",
+                        "Message updated successfully",
                         response
                 )
         );
     }
+
 
     /*
      * ============================================================
@@ -175,8 +175,10 @@ public class CommunicationController {
     @DeleteMapping(
             "/messages/{messageId}"
     )
-    public ResponseEntity<ApiResponse<MessageResponse>>
-    deleteMessageForEveryone(
+    public ResponseEntity<
+            ApiResponse<MessageResponse>
+            >
+    deleteMessage(
             Authentication authentication,
 
             @PathVariable
@@ -208,19 +210,16 @@ public class CommunicationController {
         );
     }
 
+
     /*
      * ============================================================
      * GET CONVERSATIONS
      * ============================================================
      */
 
-    @GetMapping(
-            "/conversations"
-    )
+    @GetMapping("/conversations")
     public ResponseEntity<
-            ApiResponse<
-                    ConversationPageResponse
-            >
+            ApiResponse<ConversationPageResponse>
             >
     getConversations(
             Authentication authentication,
@@ -257,6 +256,7 @@ public class CommunicationController {
         );
     }
 
+
     /*
      * ============================================================
      * GET MESSAGES
@@ -267,9 +267,7 @@ public class CommunicationController {
             "/messages/{conversationId}"
     )
     public ResponseEntity<
-            ApiResponse<
-                    MessagePageResponse
-            >
+            ApiResponse<MessagePageResponse>
             >
     getMessages(
             Authentication authentication,
@@ -310,83 +308,92 @@ public class CommunicationController {
         );
     }
 
+
     /*
      * ============================================================
      * MARK CONVERSATION AS READ
      * ============================================================
      */
 
-@PostMapping(
-        "/conversations/{conversationId}/read"
-)
-public ResponseEntity<
-        ApiResponse<
-                Map<String, Integer>
-        >
-        >
-markConversationAsRead(
-        Authentication authentication,
+    @PostMapping(
+            "/conversations/{conversationId}/read"
+    )
+    public ResponseEntity<
+            ApiResponse<
+                    Map<String, Integer>
+                    >
+            >
+    markConversationAsRead(
+            Authentication authentication,
 
-        @PathVariable
-        UUID conversationId
-) {
+            @PathVariable
+            UUID conversationId
+    ) {
 
-    String readerEmail =
-            getAuthenticatedEmail(
-                    authentication
-            );
+        String readerEmail =
+                getAuthenticatedEmail(
+                        authentication
+                );
 
-    List<MessageResponse> readMessages =
-            communicationService
-                    .markConversationAsRead(
-                            readerEmail,
-                            conversationId
-                    );
-
-    /*
-     * Push every changed message back to its original
-     * sender. The sender's existing /queue/messages
-     * subscription will merge the same message ID and
-     * immediately render the blue double-check.
-     *
-     * Also send it to the reader so additional tabs
-     * and devices remain synchronized.
-     */
-    for (MessageResponse message :
-            readMessages) {
-
-        String senderEmail =
+        /*
+         * Service returns the exact messages that changed
+         * from SENT/DELIVERED to READ.
+         */
+        List<MessageResponse> readMessages =
                 communicationService
-                        .getUserEmail(
-                                message.getSenderId()
+                        .markConversationAsRead(
+                                readerEmail,
+                                conversationId
                         );
 
-        messagingTemplate
-                .convertAndSendToUser(
-                        senderEmail,
-                        "/queue/messages",
-                        message
-                );
+        /*
+         * Push each READ version back to the original
+         * sender so their double check becomes blue
+         * without a page refresh.
+         *
+         * Also return it to the reader so their other
+         * tabs/devices stay synchronized.
+         */
+        for (
+                MessageResponse message
+                :
+                readMessages
+        ) {
 
-        messagingTemplate
-                .convertAndSendToUser(
-                        readerEmail,
-                        "/queue/messages",
-                        message
-                );
+            String senderEmail =
+                    communicationService
+                            .getUserEmail(
+                                    message
+                                            .getSenderId()
+                            );
+
+            messagingTemplate
+                    .convertAndSendToUser(
+                            senderEmail,
+                            "/queue/messages",
+                            message
+                    );
+
+            messagingTemplate
+                    .convertAndSendToUser(
+                            readerEmail,
+                            "/queue/messages",
+                            message
+                    );
+        }
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Messages marked as read",
+
+                        Map.of(
+                                "updatedMessages",
+                                readMessages.size()
+                        )
+                )
+        );
     }
 
-    return ResponseEntity.ok(
-            ApiResponse.success(
-                    "Messages marked as read",
-
-                    Map.of(
-                            "updatedMessages",
-                            readMessages.size()
-                    )
-            )
-    );
-}
 
     /*
      * ============================================================
@@ -400,7 +407,7 @@ markConversationAsRead(
     public ResponseEntity<
             ApiResponse<
                     UnreadMessageCountResponse
-            >
+                    >
             >
     getUnreadCount(
             Authentication authentication
@@ -421,6 +428,7 @@ markConversationAsRead(
         );
     }
 
+
     /*
      * ============================================================
      * CONVERSATION UNREAD COUNT
@@ -433,7 +441,7 @@ markConversationAsRead(
     public ResponseEntity<
             ApiResponse<
                     UnreadMessageCountResponse
-            >
+                    >
             >
     getConversationUnreadCount(
             Authentication authentication,
@@ -458,16 +466,22 @@ markConversationAsRead(
         );
     }
 
+
     /*
      * ============================================================
      * BROADCAST MESSAGE UPDATE
      * ============================================================
      *
-     * Used by edit and delete.
+     * Used by:
      *
-     * The receiver sees the change immediately.
-     * The sender also receives it so additional
-     * tabs/devices stay synchronized.
+     * - REST send
+     * - edit
+     * - delete
+     *
+     * Reply metadata is already embedded inside
+     * MessageResponse and therefore automatically
+     * travels through this existing realtime channel.
+     * ============================================================
      */
 
     private void broadcastMessageUpdate(
@@ -475,10 +489,18 @@ markConversationAsRead(
             MessageResponse response
     ) {
 
+        if (
+                response == null
+        ) {
+
+            return;
+        }
+
         String receiverEmail =
                 communicationService
                         .getUserEmail(
-                                response.getReceiverId()
+                                response
+                                        .getReceiverId()
                         );
 
         messagingTemplate
@@ -496,6 +518,7 @@ markConversationAsRead(
                 );
     }
 
+
     /*
      * ============================================================
      * AUTHENTICATED EMAIL
@@ -507,13 +530,12 @@ markConversationAsRead(
     ) {
 
         if (
-                authentication == null ||
-                !authentication
-                        .isAuthenticated() ||
-                authentication
-                        .getName() == null ||
-                authentication
-                        .getName()
+                authentication == null
+                        ||
+                authentication.getName()
+                        == null
+                        ||
+                authentication.getName()
                         .isBlank()
         ) {
 
@@ -527,6 +549,7 @@ markConversationAsRead(
                 .trim();
     }
 
+
     /*
      * ============================================================
      * PAGINATION
@@ -537,21 +560,25 @@ markConversationAsRead(
             int page
     ) {
 
-        if (page < 0) {
+        if (
+                page < 0
+        ) {
 
-            throw new IllegalArgumentException(
-                    "Page number cannot be negative"
-            );
+            return 0;
         }
 
         return page;
     }
 
+
     private int validateSize(
             int size
     ) {
 
-        if (size <= 0) {
+        if (
+                size <= 0
+        ) {
+
             return DEFAULT_PAGE_SIZE;
         }
 

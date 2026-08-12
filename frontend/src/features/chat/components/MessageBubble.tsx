@@ -12,6 +12,7 @@ import {
   Clock3,
   MoreVertical,
   Pencil,
+  Reply,
   Save,
   Trash2,
   TriangleAlert,
@@ -28,7 +29,18 @@ import {
 
 interface MessageBubbleProps {
   message: ChatMessage;
+
   own: boolean;
+
+  /*
+   * Optional for now so MessageList keeps compiling
+   * until we replace it in the next step.
+   */
+  otherUserId?: string;
+
+  onReply?: (
+    message: ChatMessage
+  ) => void;
 
   onEdit?: (
     messageId: string,
@@ -88,9 +100,51 @@ function resolveMediaUrl(
   );
 }
 
+function normalizeId(
+  value?: string | null
+): string {
+  return String(
+    value ?? ""
+  )
+    .trim()
+    .toLowerCase();
+}
+
+function truncateReplyText(
+  value?: string | null
+): string {
+  const normalized =
+    value
+      ?.trim()
+      .replace(
+        /\s+/g,
+        " "
+      ) ?? "";
+
+  if (!normalized) {
+    return "";
+  }
+
+  if (
+    normalized.length <=
+    100
+  ) {
+    return normalized;
+  }
+
+  return (
+    normalized.slice(
+      0,
+      100
+    ) + "…"
+  );
+}
+
 export default function MessageBubble({
   message,
   own,
+  otherUserId,
+  onReply,
   onEdit,
   onDelete,
 }: MessageBubbleProps) {
@@ -186,6 +240,10 @@ export default function MessageBubble({
     messageType === "IMAGE" &&
     Boolean(mediaUrl);
 
+  const canReply =
+    !deleted &&
+    Boolean(onReply);
+
   const canEdit =
     own &&
     !deleted &&
@@ -197,6 +255,77 @@ export default function MessageBubble({
   const canDelete =
     own &&
     !deleted;
+
+  /*
+   * ============================================================
+   * REPLY PREVIEW
+   * ============================================================
+   */
+
+  const hasReply =
+    Boolean(
+      message.replyToMessageId
+    );
+
+  const replyDeleted =
+    message
+      .replyToDeletedForEveryone ===
+    true;
+
+  const replyMessageType =
+    message
+      .replyToMessageType
+      ?.trim()
+      .toUpperCase();
+
+  const replyMediaUrl =
+    replyDeleted
+      ? null
+      : resolveMediaUrl(
+          message
+            .replyToMediaUrl
+        );
+
+  const replyIsImage =
+    replyMessageType ===
+      "IMAGE" &&
+    Boolean(
+      replyMediaUrl
+    );
+
+  const replySenderIsOtherUser =
+    Boolean(
+      otherUserId &&
+      normalizeId(
+        message
+          .replyToSenderId
+      ) ===
+        normalizeId(
+          otherUserId
+        )
+    );
+
+  const replySenderLabel =
+    otherUserId
+      ? replySenderIsOtherUser
+        ? "Them"
+        : "You"
+      : "Reply";
+
+  function handleReply() {
+    if (
+      !onReply ||
+      deleted
+    ) {
+      return;
+    }
+
+    setMenuOpen(false);
+
+    onReply(
+      message
+    );
+  }
 
   async function handleSave() {
     const content =
@@ -274,73 +403,120 @@ export default function MessageBubble({
           : "justify-start",
       ].join(" ")}
     >
-      <div className="relative flex max-w-[85%] items-start gap-1 sm:max-w-[72%]">
+      <div className="relative flex max-w-[88%] items-start gap-1 sm:max-w-[74%]">
+
+        {/* ======================================================
+            ACTIONS FOR OWN MESSAGE
+           ====================================================== */}
 
         {own && !editing && (
-          <div
-            ref={menuRef}
-            className="relative mt-1"
-          >
-            <button
-              type="button"
-              aria-label="Message options"
-              onClick={() =>
-                setMenuOpen(
-                  (current) =>
-                    !current
-                )
-              }
-              className="rounded-lg p-1 text-slate-400 opacity-0 transition hover:bg-slate-200 hover:text-slate-700 group-hover:opacity-100"
-            >
-              <MoreVertical
-                size={17}
-              />
-            </button>
+          <div className="mt-1 flex items-center">
 
-            {menuOpen && (
-              <div className="absolute right-0 top-7 z-30 min-w-[150px] overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl">
-
-                {canEdit && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditing(true);
-                      setMenuOpen(false);
-                    }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    <Pencil
-                      size={15}
-                    />
-                    Edit
-                  </button>
-                )}
-
-                {canDelete && (
-                  <button
-                    type="button"
-                    disabled={
-                      deleting
-                    }
-                    onClick={() => {
-                      void handleDelete();
-                    }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
-                  >
-                    <Trash2
-                      size={15}
-                    />
-
-                    {deleting
-                      ? "Deleting…"
-                      : "Delete"}
-                  </button>
-                )}
-
-              </div>
+            {canReply && (
+              <button
+                type="button"
+                aria-label="Reply to message"
+                title="Reply"
+                onClick={
+                  handleReply
+                }
+                className="rounded-lg p-1 text-slate-400 opacity-0 transition hover:bg-slate-200 hover:text-[#0B2D5C] group-hover:opacity-100 focus:opacity-100"
+              >
+                <Reply
+                  size={16}
+                />
+              </button>
             )}
+
+            <div
+              ref={menuRef}
+              className="relative"
+            >
+              <button
+                type="button"
+                aria-label="Message options"
+                onClick={() =>
+                  setMenuOpen(
+                    (current) =>
+                      !current
+                  )
+                }
+                className="rounded-lg p-1 text-slate-400 opacity-0 transition hover:bg-slate-200 hover:text-slate-700 group-hover:opacity-100 focus:opacity-100"
+              >
+                <MoreVertical
+                  size={17}
+                />
+              </button>
+
+              {menuOpen && (
+                <div className="absolute right-0 top-7 z-30 min-w-[160px] overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl">
+
+                  {canReply && (
+                    <button
+                      type="button"
+                      onClick={
+                        handleReply
+                      }
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      <Reply
+                        size={15}
+                      />
+                      Reply
+                    </button>
+                  )}
+
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditing(
+                          true
+                        );
+
+                        setMenuOpen(
+                          false
+                        );
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      <Pencil
+                        size={15}
+                      />
+                      Edit
+                    </button>
+                  )}
+
+                  {canDelete && (
+                    <button
+                      type="button"
+                      disabled={
+                        deleting
+                      }
+                      onClick={() => {
+                        void handleDelete();
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      <Trash2
+                        size={15}
+                      />
+
+                      {deleting
+                        ? "Deleting…"
+                        : "Delete"}
+                    </button>
+                  )}
+
+                </div>
+              )}
+            </div>
           </div>
         )}
+
+        {/* ======================================================
+            MESSAGE BUBBLE
+           ====================================================== */}
 
         <div
           className={[
@@ -360,6 +536,130 @@ export default function MessageBubble({
           ].join(" ")}
         >
 
+          {/* ====================================================
+              QUOTED / REPLIED-TO MESSAGE
+             ==================================================== */}
+
+          {!deleted &&
+            !editing &&
+            hasReply && (
+              <div
+                className={[
+                  "mb-2 overflow-hidden rounded-xl border-l-4",
+
+                  own
+                    ? "border-blue-300 bg-white/10"
+                    : "border-[#0B2D5C] bg-slate-50",
+                ].join(" ")}
+              >
+                <div className="flex min-w-0 items-stretch">
+
+                  <div className="min-w-0 flex-1 px-3 py-2">
+
+                    <p
+                      className={[
+                        "mb-0.5 text-[11px] font-semibold",
+
+                        own
+                          ? "text-blue-100"
+                          : "text-[#0B2D5C]",
+                      ].join(" ")}
+                    >
+                      {replySenderLabel}
+                    </p>
+
+                    {replyDeleted ? (
+                      <p
+                        className={[
+                          "flex items-center gap-1.5 truncate text-xs italic",
+
+                          own
+                            ? "text-blue-100/80"
+                            : "text-slate-500",
+                        ].join(" ")}
+                      >
+                        <Trash2
+                          size={12}
+                        />
+
+                        This message was deleted
+                      </p>
+                    ) : (
+                      <>
+                        {replyIsImage && (
+                          <p
+                            className={[
+                              "truncate text-xs",
+
+                              own
+                                ? "text-blue-100/90"
+                                : "text-slate-600",
+                            ].join(" ")}
+                          >
+                            📷 Photo
+                          </p>
+                        )}
+
+                        {message
+                          .replyToContent
+                          ?.trim() && (
+                          <p
+                            className={[
+                              "truncate text-xs",
+
+                              own
+                                ? "text-blue-100/90"
+                                : "text-slate-600",
+                            ].join(" ")}
+                          >
+                            {truncateReplyText(
+                              message
+                                .replyToContent
+                            )}
+                          </p>
+                        )}
+
+                        {!replyIsImage &&
+                          !message
+                            .replyToContent
+                            ?.trim() && (
+                            <p
+                              className={[
+                                "truncate text-xs",
+
+                                own
+                                  ? "text-blue-100/80"
+                                  : "text-slate-500",
+                              ].join(" ")}
+                            >
+                              Message
+                            </p>
+                          )}
+                      </>
+                    )}
+
+                  </div>
+
+                  {!replyDeleted &&
+                    replyIsImage &&
+                    replyMediaUrl && (
+                      <img
+                        src={
+                          replyMediaUrl
+                        }
+                        alt="Replied image"
+                        loading="lazy"
+                        className="h-[58px] w-[58px] shrink-0 object-cover"
+                      />
+                    )}
+                </div>
+              </div>
+            )}
+
+          {/* ====================================================
+              DELETED MESSAGE
+             ==================================================== */}
+
           {deleted ? (
             <p
               className={[
@@ -376,21 +676,37 @@ export default function MessageBubble({
 
               This message was deleted
             </p>
+
           ) : editing ? (
+
+            /* ==================================================
+               EDIT MODE
+               ================================================== */
+
             <div className="min-w-[240px]">
 
               <textarea
-                value={editValue}
-                maxLength={2000}
+                value={
+                  editValue
+                }
+                maxLength={
+                  2000
+                }
                 rows={2}
                 autoFocus
-                disabled={saving}
-                onChange={(event) =>
+                disabled={
+                  saving
+                }
+                onChange={(
+                  event
+                ) =>
                   setEditValue(
                     event.target.value
                   )
                 }
-                onKeyDown={(event) => {
+                onKeyDown={(
+                  event
+                ) => {
                   if (
                     event.key ===
                       "Enter" &&
@@ -410,7 +726,9 @@ export default function MessageBubble({
                         ""
                     );
 
-                    setEditing(false);
+                    setEditing(
+                      false
+                    );
                   }
                 }}
                 className="w-full resize-none rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white outline-none placeholder:text-blue-200 focus:border-white/50"
@@ -420,18 +738,24 @@ export default function MessageBubble({
 
                 <button
                   type="button"
-                  disabled={saving}
+                  disabled={
+                    saving
+                  }
                   onClick={() => {
                     setEditValue(
                       message.content ??
                         ""
                     );
 
-                    setEditing(false);
+                    setEditing(
+                      false
+                    );
                   }}
                   className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-blue-100 hover:bg-white/10"
                 >
-                  <X size={13} />
+                  <X
+                    size={13}
+                  />
                   Cancel
                 </button>
 
@@ -446,7 +770,9 @@ export default function MessageBubble({
                   }}
                   className="flex items-center gap-1 rounded-lg bg-white px-2 py-1 text-xs font-semibold text-[#0B2D5C] disabled:opacity-50"
                 >
-                  <Save size={13} />
+                  <Save
+                    size={13}
+                  />
 
                   {saving
                     ? "Saving…"
@@ -455,18 +781,27 @@ export default function MessageBubble({
 
               </div>
             </div>
+
           ) : (
             <>
+              {/* =================================================
+                  IMAGE
+                 ================================================= */}
+
               {isImageMessage &&
                 mediaUrl && (
                   <a
-                    href={mediaUrl}
+                    href={
+                      mediaUrl
+                    }
                     target="_blank"
                     rel="noreferrer"
                     className="block overflow-hidden rounded-xl"
                   >
                     <img
-                      src={mediaUrl}
+                      src={
+                        mediaUrl
+                      }
                       alt={
                         message.content
                           ?.trim() ||
@@ -477,6 +812,10 @@ export default function MessageBubble({
                     />
                   </a>
                 )}
+
+              {/* =================================================
+                  TEXT / CAPTION
+                 ================================================= */}
 
               {message.content
                 ?.trim() && (
@@ -494,6 +833,10 @@ export default function MessageBubble({
               )}
             </>
           )}
+
+          {/* ====================================================
+              TIME + STATUS
+             ==================================================== */}
 
           {!editing && (
             <div
@@ -535,6 +878,29 @@ export default function MessageBubble({
           )}
 
         </div>
+
+        {/* ======================================================
+            REPLY BUTTON FOR INCOMING MESSAGE
+           ====================================================== */}
+
+        {!own &&
+          !editing &&
+          canReply && (
+            <button
+              type="button"
+              aria-label="Reply to message"
+              title="Reply"
+              onClick={
+                handleReply
+              }
+              className="mt-1 rounded-lg p-1 text-slate-400 opacity-0 transition hover:bg-slate-200 hover:text-[#0B2D5C] group-hover:opacity-100 focus:opacity-100"
+            >
+              <Reply
+                size={16}
+              />
+            </button>
+          )}
+
       </div>
     </div>
   );

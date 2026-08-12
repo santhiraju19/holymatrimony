@@ -91,6 +91,14 @@ export default function useChat() {
     >([]);
 
   const [
+    replyingTo,
+    setReplyingTo,
+  ] =
+    useState<
+      ChatMessage | null
+    >(null);
+
+  const [
     loadingConversations,
     setLoadingConversations,
   ] =
@@ -601,6 +609,38 @@ export default function useChat() {
 
   /*
    * ============================================================
+   * REPLY TO MESSAGE
+   * ============================================================
+   */
+
+  const startReply =
+    useCallback(
+      (
+        message:
+          ChatMessage
+      ) => {
+        if (
+          message.deletedForEveryone
+        ) {
+          return;
+        }
+
+        setReplyingTo(
+          message
+        );
+      },
+      []
+    );
+
+  const cancelReply =
+    useCallback(() => {
+      setReplyingTo(
+        null
+      );
+    }, []);
+
+  /*
+   * ============================================================
    * SELECT CONVERSATION
    * ============================================================
    */
@@ -612,6 +652,10 @@ export default function useChat() {
           string
       ) => {
         clearIncomingTypingState();
+
+        setReplyingTo(
+          null
+        );
 
         setSelectedConversationId(
           conversationId
@@ -631,6 +675,10 @@ export default function useChat() {
   const clearSelection =
     useCallback(() => {
       clearIncomingTypingState();
+
+      setReplyingTo(
+        null
+      );
 
       setSelectedConversationId(
         null
@@ -920,6 +968,32 @@ export default function useChat() {
 }
         }
 
+        setReplyingTo(
+          (
+            currentReply
+          ) => {
+            if (
+              !currentReply ||
+              normalizeId(
+                currentReply.id
+              ) !==
+                normalizeId(
+                  message.id
+                )
+            ) {
+              return currentReply;
+            }
+
+            if (
+              message.deletedForEveryone
+            ) {
+              return null;
+            }
+
+            return message;
+          }
+        );
+
         /*
          * Any actual message arrival ends
          * the remote typing state.
@@ -1190,6 +1264,10 @@ export default function useChat() {
 
             messageType:
               "TEXT",
+
+            replyToMessageId:
+              replyingTo?.id ??
+              null,
           };
 
         try {
@@ -1202,6 +1280,10 @@ export default function useChat() {
           if (
             sentThroughWebSocket
           ) {
+            setReplyingTo(
+              null
+            );
+
             return;
           }
 
@@ -1228,6 +1310,10 @@ export default function useChat() {
 
           updateConversationPreview(
             sentMessage
+          );
+
+          setReplyingTo(
+            null
           );
 
           await loadConversations(
@@ -1258,6 +1344,7 @@ export default function useChat() {
       },
       [
         selectedConversation,
+        replyingTo,
         loadConversations,
         updateConversationPreview,
       ]
@@ -1318,6 +1405,10 @@ export default function useChat() {
 
               messageType:
                 "IMAGE",
+
+              replyToMessageId:
+                replyingTo?.id ??
+                null,
             };
 
           /*
@@ -1349,6 +1440,10 @@ export default function useChat() {
             sentMessage
           );
 
+          setReplyingTo(
+            null
+          );
+
           await loadConversations(
             true
           );
@@ -1374,6 +1469,7 @@ export default function useChat() {
       },
       [
         selectedConversation,
+        replyingTo,
         loadConversations,
         updateConversationPreview,
       ]
@@ -1427,6 +1523,21 @@ export default function useChat() {
                   updatedMessage,
                 ]
               )
+          );
+
+          setReplyingTo(
+            (
+              currentReply
+            ) =>
+              currentReply &&
+              normalizeId(
+                currentReply.id
+              ) ===
+                normalizeId(
+                  updatedMessage.id
+                )
+                ? updatedMessage
+                : currentReply
           );
 
           await loadConversations(
@@ -1485,6 +1596,21 @@ export default function useChat() {
                   deletedMessage,
                 ]
               )
+          );
+
+          setReplyingTo(
+            (
+              currentReply
+            ) =>
+              currentReply &&
+              normalizeId(
+                currentReply.id
+              ) ===
+                normalizeId(
+                  deletedMessage.id
+                )
+                ? null
+                : currentReply
           );
 
           await loadConversations(
@@ -1577,6 +1703,10 @@ export default function useChat() {
 
   useEffect(() => {
     clearIncomingTypingState();
+
+    setReplyingTo(
+      null
+    );
 
     if (
       !selectedConversationId
@@ -1851,6 +1981,8 @@ export default function useChat() {
 
     messages,
 
+    replyingTo,
+
     loadingConversations,
 
     loadingMessages,
@@ -1878,6 +2010,10 @@ export default function useChat() {
     sendImage,
 
     sendTypingStatus,
+
+    startReply,
+
+    cancelReply,
 
     refresh,
 
