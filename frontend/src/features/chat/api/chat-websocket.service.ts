@@ -318,14 +318,23 @@ class ChatWebSocketService {
       };
 
 
-    client.onWebSocketClose =
-      () => {
-        this.setStatus(
-          "disconnected",
-          options
-            .onStatusChange
-        );
-      };
+ client.onWebSocketClose =
+  (event) => {
+    console.warn(
+      "[Chat WebSocket] CLOSED",
+      {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean,
+        url: getWebSocketUrl(),
+      }
+    );
+
+    this.setStatus(
+      "disconnected",
+      options.onStatusChange
+    );
+  };
 
 
     this.client =
