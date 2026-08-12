@@ -237,19 +237,16 @@ class ChatWebSocketService {
         heartbeatOutgoing:
           10000,
 
-        debug:
-          process.env
-            .NODE_ENV ===
-          "development"
-            ? (
-                message
-              ) => {
-                console.debug(
-                  "[Chat STOMP]",
-                  message
-                );
-              }
-            : undefined,
+      debug:
+  process.env.NODE_ENV ===
+  "development"
+    ? (message: string) => {
+        console.debug(
+          "[Chat STOMP]",
+          message
+        );
+      }
+    : () => {},
       });
 
     client.onConnect =
