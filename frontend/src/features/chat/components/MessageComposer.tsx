@@ -31,12 +31,6 @@ interface MessageComposerProps {
 
   disabled?: boolean;
 
-  /*
-   * Reply support.
-   *
-   * Optional temporarily so ChatWindow keeps
-   * compiling until we wire these props next.
-   */
   replyingTo?: ChatMessage | null;
 
   otherUserId?: string;
@@ -64,6 +58,9 @@ const MAX_MESSAGE_LENGTH =
 
 const MAX_IMAGE_SIZE =
   10 * 1024 * 1024;
+
+const TYPING_IDLE_DELAY =
+  1500;
 
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
@@ -170,10 +167,34 @@ export default function MessageComposer({
       HTMLInputElement | null
     >(null);
 
+  /*
+   * Keep the latest typing callback without
+   * forcing typing timers to restart whenever
+   * the parent renders.
+   */
   const onTypingChangeRef =
     useRef(
       onTypingChange
     );
+
+  /*
+   * Typing debounce state.
+   *
+   * typingActiveRef prevents us from sending
+   * typing=true on every keystroke.
+   *
+   * typingTimeoutRef determines when the user
+   * has stopped typing.
+   */
+  const typingActiveRef =
+    useRef(false);
+
+  const typingTimeoutRef =
+    useRef<
+      ReturnType<
+        typeof setTimeout
+      > | null
+    >(null);
 
   const busy =
     sending ||
@@ -236,6 +257,117 @@ export default function MessageComposer({
       onTypingChange;
   }, [
     onTypingChange,
+  ]);
+
+  /*
+   * ============================================================
+   * TYPING HELPERS
+   * ============================================================
+   */
+
+  function clearTypingTimer() {
+    if (
+      typingTimeoutRef.current
+    ) {
+      clearTimeout(
+        typingTimeoutRef.current
+      );
+
+      typingTimeoutRef.current =
+        null;
+    }
+  }
+
+  function stopTyping() {
+    clearTypingTimer();
+
+    if (
+      !typingActiveRef.current
+    ) {
+      return;
+    }
+
+    typingActiveRef.current =
+      false;
+
+    onTypingChangeRef
+      .current?.(
+        false
+      );
+  }
+
+  function startTyping() {
+    if (
+      !typingActiveRef.current
+    ) {
+      typingActiveRef.current =
+        true;
+
+      onTypingChangeRef
+        .current?.(
+          true
+        );
+    }
+
+    clearTypingTimer();
+
+    typingTimeoutRef.current =
+      setTimeout(
+        () => {
+          typingTimeoutRef.current =
+            null;
+
+          if (
+            !typingActiveRef.current
+          ) {
+            return;
+          }
+
+          typingActiveRef.current =
+            false;
+
+          onTypingChangeRef
+            .current?.(
+              false
+            );
+        },
+        TYPING_IDLE_DELAY
+      );
+  }
+
+  /*
+   * ============================================================
+   * STOP TYPING ON CONVERSATION CHANGE / UNMOUNT
+   * ============================================================
+   */
+
+  useEffect(() => {
+    return () => {
+      if (
+        typingTimeoutRef.current
+      ) {
+        clearTimeout(
+          typingTimeoutRef.current
+        );
+
+        typingTimeoutRef.current =
+          null;
+      }
+
+      if (
+        typingActiveRef.current
+      ) {
+        typingActiveRef.current =
+          false;
+
+        onTypingChangeRef
+          .current?.(
+            false
+          );
+      }
+    };
+  }, [
+    conversationId,
   ]);
 
   /*
@@ -488,13 +620,33 @@ export default function MessageComposer({
       return;
     }
 
+    /*
+     * Don't stop typing unless there is
+     * actually something that can be sent.
+     */
+    if (
+      !selectedImage &&
+      !trimmedContent
+    ) {
+      return;
+    }
+
+    /*
+     * Sending a message immediately ends
+     * the typing state.
+     */
+    stopTyping();
+
     try {
       /*
+       * ========================================================
        * IMAGE + OPTIONAL CAPTION
+       * ========================================================
        *
        * useChat.sendImage() carries the current
        * replyToMessageId when replyingTo exists.
        */
+
       if (
         selectedImage
       ) {
@@ -533,8 +685,11 @@ export default function MessageComposer({
       }
 
       /*
+       * ========================================================
        * NORMAL TEXT MESSAGE
+       * ========================================================
        */
+
       if (
         !trimmedContent
       ) {
@@ -649,12 +804,29 @@ export default function MessageComposer({
       value
     );
 
-    onTypingChangeRef
-      .current?.(
-        Boolean(
-          value.trim()
-        )
+    const hasContent =
+      Boolean(
+        value.trim()
       );
+
+    /*
+     * If the composer becomes empty,
+     * stop typing immediately.
+     */
+    if (!hasContent) {
+      stopTyping();
+
+      return;
+    }
+
+    /*
+     * First keystroke sends typing=true.
+     *
+     * Continued typing only resets the
+     * inactivity timer instead of sending
+     * repeated typing=true events.
+     */
+    startTyping();
   }
 
   const sendDisabled =
@@ -961,7 +1133,7 @@ export default function MessageComposer({
             <p
               className={
                 remainingCharacters <=
-                100
+                  100
                   ? "font-semibold text-amber-600"
                   : ""
               }
