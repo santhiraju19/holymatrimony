@@ -1,5 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
+import type {
+  EmojiClickData,
+} from "emoji-picker-react";
+
 import {
   ChangeEvent,
   FormEvent,
@@ -14,6 +20,7 @@ import {
   Loader2,
   Reply,
   Send,
+  Smile,
   Trash2,
   X,
 } from "lucide-react";
@@ -21,6 +28,13 @@ import {
 import {
   ChatMessage,
 } from "@/features/chat/types";
+
+const EmojiPicker = dynamic(
+  () => import("emoji-picker-react"),
+  {
+    ssr: false,
+  }
+);
 
 interface MessageComposerProps {
   conversationId: string;
@@ -157,6 +171,12 @@ export default function MessageComposer({
       string | null
     >(null);
 
+  const [
+    emojiPickerOpen,
+    setEmojiPickerOpen,
+  ] =
+    useState(false);
+
   const textareaRef =
     useRef<
       HTMLTextAreaElement | null
@@ -165,6 +185,16 @@ export default function MessageComposer({
   const imageInputRef =
     useRef<
       HTMLInputElement | null
+    >(null);
+
+  const emojiPickerRef =
+    useRef<
+      HTMLDivElement | null
+    >(null);
+
+  const emojiButtonRef =
+    useRef<
+      HTMLButtonElement | null
     >(null);
 
   /*
@@ -389,6 +419,10 @@ export default function MessageComposer({
       savedDraft ?? ""
     );
 
+    setEmojiPickerOpen(
+      false
+    );
+
     clearSelectedImage();
   }, [
     conversationId,
@@ -468,6 +502,60 @@ export default function MessageComposer({
     );
   }, [
     replyingTo,
+  ]);
+
+  /*
+   * ============================================================
+   * CLOSE EMOJI PICKER ON OUTSIDE CLICK
+   * ============================================================
+   */
+
+  useEffect(() => {
+    if (!emojiPickerOpen) {
+      return;
+    }
+
+    function handleOutsideClick(
+      event: MouseEvent
+    ) {
+      const target =
+        event.target as Node;
+
+      const clickedPicker =
+        emojiPickerRef.current
+          ?.contains(
+            target
+          );
+
+      const clickedButton =
+        emojiButtonRef.current
+          ?.contains(
+            target
+          );
+
+      if (
+        !clickedPicker &&
+        !clickedButton
+      ) {
+        setEmojiPickerOpen(
+          false
+        );
+      }
+    }
+
+    document.addEventListener(
+      "mousedown",
+      handleOutsideClick
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideClick
+      );
+    };
+  }, [
+    emojiPickerOpen,
   ]);
 
   /*
@@ -608,6 +696,89 @@ export default function MessageComposer({
 
   /*
    * ============================================================
+   * EMOJI INSERTION
+   * ============================================================
+   *
+   * Inserts the selected emoji at the current cursor position
+   * or replaces the current text selection.
+   */
+
+  function handleEmojiClick(
+    emojiData:
+      EmojiClickData
+  ) {
+    if (
+      disabled ||
+      busy
+    ) {
+      return;
+    }
+
+    const emoji =
+      emojiData.emoji;
+
+    const textarea =
+      textareaRef.current;
+
+    const start =
+      textarea
+        ?.selectionStart ??
+      content.length;
+
+    const end =
+      textarea
+        ?.selectionEnd ??
+      start;
+
+    const nextContent =
+      content.slice(
+        0,
+        start
+      ) +
+      emoji +
+      content.slice(
+        end
+      );
+
+    if (
+      nextContent.length >
+      MAX_MESSAGE_LENGTH
+    ) {
+      return;
+    }
+
+    setContent(
+      nextContent
+    );
+
+    startTyping();
+
+    const nextCaretPosition =
+      start +
+      emoji.length;
+
+    requestAnimationFrame(
+      () => {
+        const currentTextarea =
+          textareaRef.current;
+
+        if (!currentTextarea) {
+          return;
+        }
+
+        currentTextarea.focus();
+
+        currentTextarea
+          .setSelectionRange(
+            nextCaretPosition,
+            nextCaretPosition
+          );
+      }
+    );
+  }
+
+  /*
+   * ============================================================
    * SUBMIT
    * ============================================================
    */
@@ -636,6 +807,10 @@ export default function MessageComposer({
      * the typing state.
      */
     stopTyping();
+
+    setEmojiPickerOpen(
+      false
+    );
 
     try {
       /*
@@ -758,6 +933,23 @@ export default function MessageComposer({
     event:
       KeyboardEvent<HTMLTextAreaElement>
   ) {
+    /*
+     * Escape closes the emoji picker first.
+     */
+    if (
+      event.key ===
+        "Escape" &&
+      emojiPickerOpen
+    ) {
+      event.preventDefault();
+
+      setEmojiPickerOpen(
+        false
+      );
+
+      return;
+    }
+
     /*
      * Escape cancels the current reply.
      */
@@ -1017,7 +1209,7 @@ export default function MessageComposer({
             INPUT ROW
            ====================================================== */}
 
-        <div className="flex items-end gap-3">
+        <div className="relative flex items-end gap-2 sm:gap-3">
 
           <button
             type="button"
@@ -1038,6 +1230,76 @@ export default function MessageComposer({
               size={19}
             />
           </button>
+
+          {/* ====================================================
+              EMOJI PICKER
+             ==================================================== */}
+
+          <div className="relative shrink-0">
+
+            <button
+              ref={
+                emojiButtonRef
+              }
+              type="button"
+              disabled={
+                disabled ||
+                busy
+              }
+              title="Add emoji"
+              aria-label="Open emoji picker"
+              aria-expanded={
+                emojiPickerOpen
+              }
+              onClick={() => {
+                setEmojiPickerOpen(
+                  (
+                    current
+                  ) =>
+                    !current
+                );
+              }}
+              className={[
+                "flex h-11 w-11 items-center justify-center rounded-full border bg-white transition disabled:cursor-not-allowed disabled:opacity-50",
+
+                emojiPickerOpen
+                  ? "border-blue-400 bg-blue-50 text-blue-700"
+                  : "border-slate-200 text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700",
+              ].join(" ")}
+            >
+              <Smile
+                size={20}
+              />
+            </button>
+
+            {emojiPickerOpen && (
+              <div
+                ref={
+                  emojiPickerRef
+                }
+                className="absolute bottom-14 left-0 z-50 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl shadow-2xl"
+              >
+                <EmojiPicker
+                  onEmojiClick={
+                    handleEmojiClick
+                  }
+                  width={
+                    340
+                  }
+                  height={
+                    420
+                  }
+                  lazyLoadEmojis
+                  searchPlaceHolder="Search emojis"
+                  previewConfig={{
+                    showPreview:
+                      false,
+                  }}
+                />
+              </div>
+            )}
+
+          </div>
 
           <textarea
             ref={
