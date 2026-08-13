@@ -17,6 +17,7 @@ import com.theholymatrimony.backend.communication.repository.ChatMessageReposito
 import com.theholymatrimony.backend.communication.repository.ConversationRepository;
 import com.theholymatrimony.backend.communication.validator.CommunicationValidator;
 import com.theholymatrimony.backend.notification.service.NotificationFactory;
+import com.theholymatrimony.backend.safety.service.SafetyService;
 import com.theholymatrimony.backend.communication.entity.ChatMessageReaction;
 import com.theholymatrimony.backend.communication.repository.ChatMessageReactionRepository;
 
@@ -66,6 +67,8 @@ public class CommunicationService {
     private final ChatMessageReactionRepository
         chatMessageReactionRepository;
 
+    private final SafetyService safetyService;
+
 
     /*
      * ============================================================
@@ -98,6 +101,22 @@ public class CommunicationService {
 
         communicationValidator
                 .validateDifferentUsers(
+                        sender.getId(),
+                        receiver.getId()
+                );
+
+        /*
+         * ============================================================
+         * SAFETY / BLOCK CHECK
+         * ============================================================
+         *
+         * Messaging is unavailable when either participant has
+         * blocked the other. This shared service protects both
+         * REST and WebSocket message sends.
+         */
+
+        safetyService
+                .validateMessagingAllowed(
                         sender.getId(),
                         receiver.getId()
                 );

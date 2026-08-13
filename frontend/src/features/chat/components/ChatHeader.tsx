@@ -1,3 +1,6 @@
+
+"use client";
+
 import Link from "next/link";
 
 import {
@@ -14,9 +17,14 @@ import {
 } from "@/features/chat/types";
 
 import {
+  BlockStatusResponse,
+} from "@/features/safety/api/safety.service";
+
+import {
   parseBackendDate,
 } from "@/features/chat/utils/chat.utils";
 
+import ChatSafetyMenu from "./ChatSafetyMenu";
 import UserAvatar from "./UserAvatar";
 
 interface ChatHeaderProps {
@@ -24,6 +32,14 @@ interface ChatHeaderProps {
   presence: PresenceStatus | null;
   realtimeConnected: boolean;
   otherUserTyping: boolean;
+
+  blockStatus:
+    BlockStatusResponse | null;
+
+  onBlockStatusChange: (
+    status: BlockStatusResponse
+  ) => void;
+
   onBack: () => void;
 }
 
@@ -164,6 +180,8 @@ export default function ChatHeader({
   presence,
   realtimeConnected,
   otherUserTyping,
+  blockStatus,
+  onBlockStatusChange,
   onBack,
 }: ChatHeaderProps) {
   const user =
@@ -180,7 +198,15 @@ export default function ChatHeader({
   let statusClass =
     "text-slate-500";
 
-  if (otherUserTyping) {
+  if (
+    blockStatus?.messagingBlocked
+  ) {
+    statusText =
+      "Messaging unavailable";
+
+    statusClass =
+      "font-medium text-amber-700";
+  } else if (otherUserTyping) {
     statusText =
       "Typing…";
 
@@ -201,7 +227,6 @@ export default function ChatHeader({
 
   return (
     <header className="flex min-h-20 items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 md:px-6">
-
       <button
         type="button"
         onClick={onBack}
@@ -238,7 +263,6 @@ export default function ChatHeader({
       </div>
 
       <div className="min-w-0 flex-1">
-
         <h2 className="truncate font-bold text-slate-900">
           {user.fullName}
 
@@ -252,7 +276,6 @@ export default function ChatHeader({
         >
           {statusText}
         </p>
-
       </div>
 
       <Link
@@ -265,6 +288,23 @@ export default function ChatHeader({
         />
       </Link>
 
+      <ChatSafetyMenu
+        userId={
+          user.userId
+        }
+        userName={
+          user.fullName
+        }
+        conversationId={
+          conversation.id
+        }
+        blockStatus={
+          blockStatus
+        }
+        onBlockStatusChange={
+          onBlockStatusChange
+        }
+      />
     </header>
   );
 }

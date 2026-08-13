@@ -1,5 +1,15 @@
-
 "use client";
+
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  AlertTriangle,
+  Ban,
+  Loader2,
+} from "lucide-react";
 
 import {
   PresenceStatus,
@@ -9,6 +19,10 @@ import {
   ChatMessage,
   Conversation,
 } from "@/features/chat/types";
+
+import safetyService, {
+  BlockStatusResponse,
+} from "@/features/safety/api/safety.service";
 
 import ChatHeader from "./ChatHeader";
 import EmptyChatState from "./EmptyChatState";
@@ -106,6 +120,96 @@ export default function ChatWindow({
   onReactMessage,
   onRemoveReaction,
 }: ChatWindowProps) {
+  const [
+    blockStatus,
+    setBlockStatus,
+  ] =
+    useState<
+      BlockStatusResponse | null
+    >(null);
+
+  const [
+    loadingBlockStatus,
+    setLoadingBlockStatus,
+  ] =
+    useState(false);
+
+  const [
+    safetyError,
+    setSafetyError,
+  ] =
+    useState<string | null>(
+      null
+    );
+
+  const conversationId =
+    conversation?.id ?? null;
+
+  const otherUserId =
+    conversation?.otherUser
+      .userId ?? null;
+
+  useEffect(() => {
+    let cancelled =
+      false;
+
+    async function loadBlockStatus() {
+      if (!otherUserId) {
+        setBlockStatus(null);
+        setSafetyError(null);
+        setLoadingBlockStatus(
+          false
+        );
+
+        return;
+      }
+
+      setLoadingBlockStatus(true);
+      setSafetyError(null);
+      setBlockStatus(null);
+
+      try {
+        const status =
+          await safetyService
+            .getBlockStatus(
+              otherUserId
+            );
+
+        if (!cancelled) {
+          setBlockStatus(
+            status
+          );
+        }
+      } catch (error) {
+        console.error(
+          "[Chat Safety] Unable to load block status:",
+          error
+        );
+
+        if (!cancelled) {
+          setSafetyError(
+            "Unable to verify messaging availability."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingBlockStatus(
+            false
+          );
+        }
+      }
+    }
+
+    void loadBlockStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    conversationId,
+    otherUserId,
+  ]);
+
   if (!conversation) {
     return (
       <EmptyChatState />
@@ -115,13 +219,24 @@ export default function ChatWindow({
   const otherUser =
     conversation.otherUser;
 
+  const messagingBlocked =
+    blockStatus
+      ?.messagingBlocked ===
+    true;
+
+  /*
+   * Fail closed while safety status is loading or unavailable.
+   *
+   * The backend still remains authoritative, but disabling the
+   * composer prevents confusing failed sends in the UI.
+   */
+  const composerDisabled =
+    loadingBlockStatus ||
+    messagingBlocked ||
+    Boolean(safetyError);
+
   return (
     <section className="flex h-full min-h-0 flex-col bg-white">
-
-      {/* ======================================================
-          CHAT HEADER
-         ====================================================== */}
-
       <ChatHeader
         conversation={
           conversation
@@ -135,14 +250,16 @@ export default function ChatWindow({
         otherUserTyping={
           otherUserTyping
         }
+        blockStatus={
+          blockStatus
+        }
+        onBlockStatusChange={
+          setBlockStatus
+        }
         onBack={
           onBack
         }
       />
-
-      {/* ======================================================
-          MESSAGE LIST
-         ====================================================== */}
 
       <MessageList
         messages={
@@ -171,9 +288,38 @@ export default function ChatWindow({
         }
       />
 
-      {/* ======================================================
-          MESSAGE COMPOSER
-         ====================================================== */}
+      {loadingBlockStatus && (
+        <div className="flex items-center justify-center gap-2 border-t border-slate-100 bg-slate-50 px-4 py-2 text-xs font-medium text-slate-500">
+          <Loader2
+            size={14}
+            className="animate-spin"
+          />
+
+          Checking messaging availability…
+        </div>
+      )}
+
+      {!loadingBlockStatus &&
+        messagingBlocked && (
+          <div className="flex items-center justify-center gap-2 border-t border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+            <Ban
+              size={17}
+            />
+
+            Messaging is currently unavailable.
+          </div>
+        )}
+
+      {!loadingBlockStatus &&
+        safetyError && (
+          <div className="flex items-center justify-center gap-2 border-t border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            <AlertTriangle
+              size={17}
+            />
+
+            {safetyError}
+          </div>
+        )}
 
       <MessageComposer
         conversationId={
@@ -184,6 +330,9 @@ export default function ChatWindow({
         }
         uploadingImage={
           uploadingImage
+        }
+        disabled={
+          composerDisabled
         }
         replyingTo={
           replyingTo
@@ -207,7 +356,6 @@ export default function ChatWindow({
           onTypingChange
         }
       />
-
     </section>
   );
 }
