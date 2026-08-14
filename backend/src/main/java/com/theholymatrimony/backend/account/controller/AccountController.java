@@ -5,6 +5,7 @@ import com.theholymatrimony.backend.account.dto.AccountResponse;
 import com.theholymatrimony.backend.account.dto.ChangePasswordRequest;
 import com.theholymatrimony.backend.account.dto.UpdateAccountRequest;
 import com.theholymatrimony.backend.account.service.AccountService;
+import com.theholymatrimony.backend.account.dto.DeactivateAccountRequest;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+
 
 @RestController
 @RequestMapping("/api/v1/account")
@@ -37,6 +40,26 @@ public class AccountController {
                 )
         );
     }
+
+    @PostMapping("/deactivate")
+public ResponseEntity<AccountActionResponse>
+deactivateAccount(
+        Authentication authentication,
+
+        @Valid
+        @RequestBody
+        DeactivateAccountRequest request,
+
+        HttpServletRequest httpRequest
+) {
+    return ResponseEntity.ok(
+            accountService.deactivateAccount(
+                    authentication.getName(),
+                    request,
+                    getClientIp(httpRequest)
+            )
+    );
+}
 
     @PutMapping
     public ResponseEntity<AccountResponse> updateAccount(

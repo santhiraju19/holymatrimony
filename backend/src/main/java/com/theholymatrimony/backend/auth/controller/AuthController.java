@@ -17,6 +17,9 @@ import com.theholymatrimony.backend.auth.passwordreset.dto.VerifyPasswordResetOt
 import com.theholymatrimony.backend.auth.passwordreset.dto.VerifyPasswordResetOtpResponse;
 import com.theholymatrimony.backend.auth.service.AuthService;
 import com.theholymatrimony.backend.auth.service.RefreshTokenCookieService;
+import com.theholymatrimony.backend.account.dto.AccountActionResponse;
+import com.theholymatrimony.backend.account.dto.ReactivateAccountRequest;
+import com.theholymatrimony.backend.account.service.AccountService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,6 +46,8 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+
+    private final AccountService accountService;
 
     private final RefreshTokenCookieService
             refreshTokenCookieService;
@@ -153,6 +158,20 @@ public class AuthController {
                         )
         );
     }
+
+    @PostMapping("/reactivate-account")
+public ResponseEntity<AccountActionResponse>
+reactivateAccount(
+        @Valid
+        @RequestBody
+        ReactivateAccountRequest request
+) {
+    return ResponseEntity.ok(
+            accountService.reactivateAccount(
+                    request
+            )
+    );
+}
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(

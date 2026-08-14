@@ -7,6 +7,9 @@ import com.theholymatrimony.backend.account.dto.UpdateAccountRequest;
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.auth.repository.UserRepository;
 import com.theholymatrimony.backend.auth.service.RefreshTokenService;
+import com.theholymatrimony.backend.account.dto.DeactivateAccountRequest;
+import com.theholymatrimony.backend.auth.enums.UserStatus;
+import com.theholymatrimony.backend.account.dto.ReactivateAccountRequest;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,6 +37,128 @@ public class AccountService {
 
         return toResponse(user);
     }
+
+    @Transactional
+public AccountActionResponse reactivateAccount(
+        ReactivateAccountRequest request
+) {
+    String normalizedEmail =
+            request.email()
+                    .trim()
+                    .toLowerCase(Locale.ROOT);
+
+    User user =
+            userRepository
+                    .findByEmail(normalizedEmail)
+                    .orElseThrow(
+                            () -> new IllegalArgumentException(
+                                    "Invalid email address or password."
+                            )
+                    );
+
+    if (
+            !passwordEncoder.matches(
+                    request.password(),
+                    user.getPassword()
+            )
+    ) {
+        throw new IllegalArgumentException(
+                "Invalid email address or password."
+        );
+    }
+
+    if (user.getStatus() == UserStatus.SUSPENDED) {
+        throw new IllegalStateException(
+                "Your account has been suspended. Please contact support."
+        );
+    }
+
+    if (user.getStatus() == UserStatus.BLOCKED) {
+        throw new IllegalStateException(
+                "Your account has been blocked. Please contact support."
+        );
+    }
+
+    if (user.getStatus() == UserStatus.ACTIVE) {
+        return new AccountActionResponse(
+                "Your account is already active. Please sign in."
+        );
+    }
+
+    if (user.getStatus() != UserStatus.DEACTIVATED) {
+        throw new IllegalStateException(
+                "This account cannot be reactivated."
+        );
+    }
+
+    user.changeStatus(
+            UserStatus.ACTIVE,
+            "Reactivated by user",
+            user.getId()
+    );
+
+    userRepository.save(user);
+
+    return new AccountActionResponse(
+            "Your account has been reactivated successfully. You can now sign in."
+    );
+}
+
+@Transactional
+public AccountActionResponse deactivateAccount(
+        String email,
+        DeactivateAccountRequest request,
+        String clientIp
+) {
+    User user = findUser(email);
+
+    if (
+            !passwordEncoder.matches(
+                    request.password(),
+                    user.getPassword()
+            )
+    ) {
+        throw new IllegalArgumentException(
+                "Password is incorrect."
+        );
+    }
+
+    if (user.getStatus() == UserStatus.DEACTIVATED) {
+        throw new IllegalStateException(
+                "Your account is already deactivated."
+        );
+    }
+
+    if (user.getStatus() != UserStatus.ACTIVE) {
+        throw new IllegalStateException(
+                "Only an active account can be deactivated."
+        );
+    }
+
+    String reason =
+            request.reason() == null ||
+            request.reason().isBlank()
+                    ? "Deactivated by user"
+                    : request.reason().trim();
+
+    user.changeStatus(
+            UserStatus.DEACTIVATED,
+            reason,
+            user.getId()
+    );
+
+    userRepository.save(user);
+
+    refreshTokenService.revokeAllUserTokens(
+            user,
+            clientIp,
+            "Account deactivated by user"
+    );
+
+    return new AccountActionResponse(
+            "Your account has been deactivated successfully."
+    );
+}
 
     @Transactional
     public AccountResponse updateAccount(

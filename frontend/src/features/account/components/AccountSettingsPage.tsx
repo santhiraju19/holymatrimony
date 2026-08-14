@@ -6,6 +6,8 @@ import {
   useState,
 } from "react";
 
+import Link from "next/link";
+
 import { useRouter } from "next/navigation";
 
 import {
@@ -20,6 +22,7 @@ import {
   Phone,
   Save,
   ShieldCheck,
+  Trash2,
   UserRound,
 } from "lucide-react";
 
@@ -84,20 +87,50 @@ export default function AccountSettingsPage() {
     setLoggingOutAll,
   ] = useState(false);
 
-  const [accountError, setAccountError] =
-    useState<string | null>(null);
+  const [
+    deactivationPassword,
+    setDeactivationPassword,
+  ] = useState("");
 
-  const [accountSuccess, setAccountSuccess] =
-    useState<string | null>(null);
+  const [
+    deactivationReason,
+    setDeactivationReason,
+  ] = useState("");
 
-  const [passwordError, setPasswordError] =
-    useState<string | null>(null);
+  const [
+    deactivating,
+    setDeactivating,
+  ] = useState(false);
 
-  const [passwordSuccess, setPasswordSuccess] =
-    useState<string | null>(null);
+  const [
+    accountError,
+    setAccountError,
+  ] = useState<string | null>(null);
 
-  const [securityError, setSecurityError] =
-    useState<string | null>(null);
+  const [
+    accountSuccess,
+    setAccountSuccess,
+  ] = useState<string | null>(null);
+
+  const [
+    passwordError,
+    setPasswordError,
+  ] = useState<string | null>(null);
+
+  const [
+    passwordSuccess,
+    setPasswordSuccess,
+  ] = useState<string | null>(null);
+
+  const [
+    securityError,
+    setSecurityError,
+  ] = useState<string | null>(null);
+
+  const [
+    deactivationError,
+    setDeactivationError,
+  ] = useState<string | null>(null);
 
   async function loadAccount(): Promise<void> {
     setLoading(true);
@@ -156,11 +189,6 @@ export default function AccountSettingsPage() {
         mobile: updated.mobile ?? "",
       });
 
-      /*
-       * Keep the globally stored authentication
-       * user synchronized so navigation/header
-       * components can use the updated name.
-       */
       updateUser({
         ...(user ?? {
           email: updated.email,
@@ -208,7 +236,9 @@ export default function AccountSettingsPage() {
       return;
     }
 
-    if (passwordForm.newPassword.length < 8) {
+    if (
+      passwordForm.newPassword.length < 8
+    ) {
       setPasswordError(
         "New password must contain at least 8 characters."
       );
@@ -233,13 +263,6 @@ export default function AccountSettingsPage() {
           "Password changed successfully."
       );
 
-      /*
-       * The backend revokes every refresh token
-       * after a password change.
-       *
-       * Remove the current access token locally
-       * as well and require a clean sign-in.
-       */
       window.setTimeout(() => {
         logout();
 
@@ -266,9 +289,10 @@ export default function AccountSettingsPage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      "Log out from all devices? You will need to sign in again on this device too."
-    );
+    const confirmed =
+      window.confirm(
+        "Log out from all devices? You will need to sign in again on this device too."
+      );
 
     if (!confirmed) {
       return;
@@ -280,11 +304,6 @@ export default function AccountSettingsPage() {
     try {
       await accountService.logoutAll();
 
-      /*
-       * Refresh sessions are now revoked on
-       * the backend. Remove this browser's
-       * access token as well.
-       */
       logout();
 
       router.replace(
@@ -301,6 +320,61 @@ export default function AccountSettingsPage() {
       );
 
       setLoggingOutAll(false);
+    }
+  }
+
+  async function handleDeactivateAccount(): Promise<void> {
+    if (deactivating) {
+      return;
+    }
+
+    setDeactivationError(null);
+
+    if (
+      !deactivationPassword.trim()
+    ) {
+      setDeactivationError(
+        "Enter your password to confirm account deactivation."
+      );
+
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        "Deactivate your Holy Matrimony account? You will be signed out immediately."
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeactivating(true);
+
+    try {
+      await accountService.deactivateAccount({
+        password:
+          deactivationPassword,
+        reason:
+          deactivationReason.trim(),
+      });
+
+      logout();
+
+      router.replace(
+        "/login?accountDeactivated=true"
+      );
+
+      router.refresh();
+    } catch (error) {
+      setDeactivationError(
+        getApiErrorMessage(
+          error,
+          "Unable to deactivate your account."
+        )
+      );
+
+      setDeactivating(false);
     }
   }
 
@@ -362,6 +436,7 @@ export default function AccountSettingsPage() {
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-[#F2D675]">
               <ShieldCheck size={15} />
+
               Account & Security
             </div>
 
@@ -396,7 +471,9 @@ export default function AccountSettingsPage() {
         className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-7"
       >
         <SectionHeader
-          icon={<UserRound size={20} />}
+          icon={
+            <UserRound size={20} />
+          }
           title="Personal account details"
           description="Update the basic information associated with your Holy Matrimony account."
         />
@@ -404,7 +481,9 @@ export default function AccountSettingsPage() {
         <div className="mt-7 grid gap-5 md:grid-cols-2">
           <Field
             label="Full name"
-            icon={<UserRound size={18} />}
+            icon={
+              <UserRound size={18} />
+            }
           >
             <input
               type="text"
@@ -426,7 +505,9 @@ export default function AccountSettingsPage() {
 
           <Field
             label="Mobile number"
-            icon={<Phone size={18} />}
+            icon={
+              <Phone size={18} />
+            }
           >
             <input
               type="tel"
@@ -460,7 +541,9 @@ export default function AccountSettingsPage() {
 
               {account.emailVerified && (
                 <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
-                  <CheckCircle2 size={13} />
+                  <CheckCircle2
+                    size={13}
+                  />
                   Verified
                 </span>
               )}
@@ -515,7 +598,9 @@ export default function AccountSettingsPage() {
         className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-7"
       >
         <SectionHeader
-          icon={<KeyRound size={20} />}
+          icon={
+            <KeyRound size={20} />
+          }
           title="Change password"
           description="Use your current password to securely create a new password."
         />
@@ -614,7 +699,9 @@ export default function AccountSettingsPage() {
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-7">
         <SectionHeader
           icon={
-            <MonitorSmartphone size={20} />
+            <MonitorSmartphone
+              size={20}
+            />
           }
           title="Login security"
           description="Protect your account if you signed in on another computer, phone or shared device."
@@ -623,7 +710,9 @@ export default function AccountSettingsPage() {
         <div className="mt-6 flex flex-col gap-5 rounded-2xl border border-slate-200 bg-slate-50 p-5 md:flex-row md:items-center md:justify-between">
           <div className="flex items-start gap-4">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-[#0B2D5C] shadow-sm">
-              <LockKeyhole size={20} />
+              <LockKeyhole
+                size={20}
+              />
             </div>
 
             <div>
@@ -669,6 +758,125 @@ export default function AccountSettingsPage() {
             message={securityError}
           />
         )}
+      </section>
+
+      <section className="rounded-3xl border border-red-200 bg-white p-5 shadow-sm md:p-7">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+            <Trash2 size={20} />
+          </div>
+
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">
+              Danger zone
+            </h2>
+
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Temporarily deactivate your Holy
+              Matrimony account. Your account data is
+              retained and you can reactivate it later.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50/50 p-5">
+          <h3 className="font-bold text-red-900">
+            Deactivate account
+          </h3>
+
+          <p className="mt-1 text-sm leading-6 text-red-700">
+            You will immediately lose access and all
+            active login sessions will be revoked.
+          </p>
+
+          <div className="mt-5 grid gap-4">
+            <div>
+              <label className="mb-2 block text-sm font-bold text-slate-700">
+                Password confirmation
+              </label>
+
+              <input
+                type="password"
+                value={
+                  deactivationPassword
+                }
+                onChange={(event) =>
+                  setDeactivationPassword(
+                    event.target.value
+                  )
+                }
+                autoComplete="current-password"
+                placeholder="Enter your password"
+                className="h-12 w-full rounded-xl border border-red-200 bg-white px-4 text-sm outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-100"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-bold text-slate-700">
+                Reason
+                <span className="ml-1 font-normal text-slate-400">
+                  (optional)
+                </span>
+              </label>
+
+              <textarea
+                value={
+                  deactivationReason
+                }
+                onChange={(event) =>
+                  setDeactivationReason(
+                    event.target.value
+                  )
+                }
+                maxLength={500}
+                rows={3}
+                placeholder="Tell us why you're leaving..."
+                className="w-full resize-none rounded-xl border border-red-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-100"
+              />
+            </div>
+          </div>
+
+          {deactivationError && (
+            <StatusMessage
+              type="error"
+              message={
+                deactivationError
+              }
+            />
+          )}
+
+          <button
+            type="button"
+            disabled={deactivating}
+            onClick={() => {
+              void handleDeactivateAccount();
+            }}
+            className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {deactivating ? (
+              <Loader2
+                size={18}
+                className="animate-spin"
+              />
+            ) : (
+              <Trash2 size={18} />
+            )}
+
+            {deactivating
+              ? "Deactivating..."
+              : "Deactivate my account"}
+          </button>
+        </div>
+
+        <div className="mt-4 text-sm text-slate-500">
+          Already deactivated?{" "}
+          <Link
+            href="/reactivate-account"
+            className="font-bold text-blue-700 hover:underline"
+          >
+            Reactivate your account
+          </Link>
+        </div>
       </section>
     </div>
   );
@@ -735,7 +943,9 @@ function PasswordField({
 }: {
   label: string;
   value: string;
-  onChange: (value: string) => void;
+  onChange: (
+    value: string
+  ) => void;
 }) {
   return (
     <div>
@@ -754,10 +964,13 @@ function PasswordField({
           required
           value={value}
           onChange={(event) =>
-            onChange(event.target.value)
+            onChange(
+              event.target.value
+            )
           }
           autoComplete={
-            label === "Current password"
+            label ===
+            "Current password"
               ? "current-password"
               : "new-password"
           }
