@@ -29,6 +29,7 @@ import {
   Search,
   Send,
   ShieldCheck,
+  Settings,
   Sparkles,
   UserRound,
   X,
@@ -119,11 +120,17 @@ const menuItems: MenuItem[] = [
     badge: "Premium",
   },
   {
-    name: "Privacy Settings",
-    description: "Control your visibility",
-    href: "/privacy",
-    icon: LockKeyhole,
-  },
+  name: "Privacy Settings",
+  description: "Control your visibility",
+  href: "/privacy",
+  icon: LockKeyhole,
+},
+{
+  name: "Account Settings",
+  description: "Account and security",
+  href: "/settings",
+  icon: Settings,
+},
 ];
 
 function getInitial(

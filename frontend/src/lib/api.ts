@@ -26,7 +26,8 @@ function isAuthenticationRequest(
     requestUrl.includes("/auth/reset-password") ||
     requestUrl.includes("/auth/verify-email-otp") ||
     requestUrl.includes("/auth/resend-email-otp") ||
-    requestUrl.includes("/auth/email-verification-status")
+    requestUrl.includes("/auth/email-verification-status") ||
+requestUrl.includes("/auth/reactivate-account")
   );
 }
 
