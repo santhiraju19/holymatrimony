@@ -22,9 +22,10 @@ import Select from "@/components/ui/select";
 import { useProfile } from "@/features/profile/context/useProfile";
 
 import {
-  getCitiesForState,
-  INDIA_STATES,
-} from "@/features/profile/data/indiaLocations";
+  COUNTRIES,
+  getCitiesForCountryState,
+  getStatesForCountry,
+} from "@/features/profile/data/worldLocations";
 
 import type {
   AboutInfo,
@@ -189,9 +190,34 @@ export default function BasicInfoForm({
    * Current profile location is separate
    * from the member's Family Location.
    */
+  const states =
+    locationInfo.country
+      ? getStatesForCountry(
+          locationInfo.country
+        )
+      : [];
+
   const cities =
-    getCitiesForState(
-      locationInfo.state
+    locationInfo.country &&
+    locationInfo.state
+      ? getCitiesForCountryState(
+          locationInfo.country,
+          locationInfo.state
+        )
+      : [];
+
+  const selectedCountryExists =
+    COUNTRIES.some(
+      (country) =>
+        country.value ===
+        locationInfo.country
+    );
+
+  const selectedStateExists =
+    states.some(
+      (state) =>
+        state.value ===
+        locationInfo.state
     );
 
   const selectedCityExists =
@@ -395,9 +421,9 @@ export default function BasicInfoForm({
     <Card className="overflow-hidden p-0">
       {/* Header */}
 
-      <div className="border-b border-slate-200 bg-gradient-to-r from-blue-50 via-white to-amber-50 px-4 py-6 sm:px-7 sm:py-8 lg:px-10">
+      <div className="border-b border-slate-200 bg-gradient-to-r from-blue-50 via-white to-amber-50 px-4 py-4 sm:px-5 sm:py-5 lg:px-6">
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#0B2D5C] text-white shadow-lg sm:h-14 sm:w-14">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0B2D5C] text-white shadow-lg ">
             <User
               size={25}
             />
@@ -408,11 +434,11 @@ export default function BasicInfoForm({
               Step 1 of 7
             </p>
 
-            <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#0B2D5C] sm:text-3xl">
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-[#0B2D5C] sm:text-2xl">
               Basic Information
             </h2>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">
               Introduce yourself,
               share your current
               location and tell
@@ -423,8 +449,8 @@ export default function BasicInfoForm({
         </div>
       </div>
 
-      <div className="p-4 sm:p-7 lg:p-10">
-        <div className="mb-7 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-blue-800">
+      <div className="p-4 sm:p-5 lg:p-6">
+        <div className="mb-5 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-blue-800">
           All profile information
           marked with a red{" "}
           <span className="font-bold text-red-500">
@@ -457,7 +483,7 @@ export default function BasicInfoForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-x-6 gap-y-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-2">
           <FormField
             label="Full Name"
             required
@@ -742,7 +768,7 @@ export default function BasicInfoForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-x-6 gap-y-6 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-3">
           <FormField
             label="Country"
             required
@@ -770,9 +796,35 @@ export default function BasicInfoForm({
                 Select country
               </option>
 
-              <option value="India">
-                India
-              </option>
+              {locationInfo.country &&
+                !selectedCountryExists && (
+                  <option
+                    value={
+                      locationInfo.country
+                    }
+                  >
+                    {
+                      locationInfo.country
+                    }
+                  </option>
+                )}
+
+              {COUNTRIES.map(
+                (country) => (
+                  <option
+                    key={
+                      country.isoCode
+                    }
+                    value={
+                      country.value
+                    }
+                  >
+                    {
+                      country.label
+                    }
+                  </option>
+                )
+              )}
             </Select>
           </FormField>
 
@@ -793,8 +845,7 @@ export default function BasicInfoForm({
                 errors.state
               }
               disabled={
-                locationInfo.country !==
-                "India"
+                !locationInfo.country
               }
               onChange={(event) =>
                 updateLocation(
@@ -807,11 +858,24 @@ export default function BasicInfoForm({
                 Select state
               </option>
 
-              {INDIA_STATES.map(
+              {locationInfo.state &&
+                !selectedStateExists && (
+                  <option
+                    value={
+                      locationInfo.state
+                    }
+                  >
+                    {
+                      locationInfo.state
+                    }
+                  </option>
+                )}
+
+              {states.map(
                 (state) => (
                   <option
                     key={
-                      state.isoCode
+                      `${locationInfo.country}-${state.isoCode}`
                     }
                     value={
                       state.value

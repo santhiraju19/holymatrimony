@@ -13,7 +13,7 @@ export default function DashboardFooter() {
 
   return (
     <footer className="mt-6 border-t border-slate-200/80 bg-white/70 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-[1720px] flex-col gap-4 px-4 py-6 text-xs text-slate-500 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+      <div className="mx-auto flex max-w-[1360px] flex-col gap-4 px-4 py-6 text-xs text-slate-500 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#0B2D5C] text-[#F2D675]">
             <Heart

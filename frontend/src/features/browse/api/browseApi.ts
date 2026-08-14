@@ -72,6 +72,7 @@ export async function searchBrowseProfiles(
       denomination: params.denomination,
       maritalStatus: params.maritalStatus,
 
+      country: params.country,
       state: params.state,
       city: params.city,
 

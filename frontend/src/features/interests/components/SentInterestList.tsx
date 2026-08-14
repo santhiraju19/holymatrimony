@@ -202,30 +202,30 @@ export default function SentInterestList() {
   }
 
   return (
-    <main className="space-y-6 pb-10">
-      <section className="rounded-3xl bg-gradient-to-r from-[#0B2D5C] to-indigo-700 p-6 text-white shadow-lg sm:p-8">
-        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+    <main className="space-y-4 pb-8">
+      <section className="rounded-2xl bg-gradient-to-r from-[#0B2D5C] to-indigo-700 px-5 py-5 text-white shadow-md sm:px-6 sm:py-5">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <div className="flex items-center gap-3">
-              <Send size={30} />
+              <Send size={24} />
 
-              <h1 className="text-3xl font-bold">
+              <h1 className="text-xl font-black sm:text-2xl">
                 Sent Interests
               </h1>
             </div>
 
-            <p className="mt-3 text-blue-100">
+            <p className="mt-1.5 text-sm text-blue-100">
               Track the interests you have
               sent to other members.
             </p>
           </div>
 
-          <div className="rounded-2xl bg-white/15 px-5 py-3 backdrop-blur">
+          <div className="rounded-xl bg-white/15 px-4 py-2.5 backdrop-blur">
             <p className="text-sm text-blue-100">
               Total sent
             </p>
 
-            <p className="text-2xl font-bold">
+            <p className="text-xl font-black">
               {totalElements}
             </p>
           </div>
@@ -277,7 +277,7 @@ export default function SentInterestList() {
       </section>
 
       {error ? (
-        <section className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
+        <section className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
           <h2 className="text-xl font-bold text-red-700">
             Unable to load interests
           </h2>
@@ -297,7 +297,7 @@ export default function SentInterestList() {
           </button>
         </section>
       ) : loading ? (
-        <section className="flex min-h-[280px] items-center justify-center rounded-2xl border border-slate-200 bg-white">
+        <section className="flex min-h-[190px] items-center justify-center rounded-2xl border border-slate-200 bg-white">
           <div className="text-center">
             <Loader2
               size={34}
@@ -310,7 +310,7 @@ export default function SentInterestList() {
           </div>
         </section>
       ) : interests.length === 0 ? (
-        <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
+        <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
           <Send
             size={48}
             className="mx-auto text-slate-300"
@@ -326,7 +326,7 @@ export default function SentInterestList() {
           </p>
         </section>
       ) : (
-        <section className="space-y-5">
+        <section className="space-y-3">
           {interests.map((interest) => (
             <SentInterestCard
               key={interest.id}

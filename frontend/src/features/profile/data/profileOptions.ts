@@ -534,3 +534,54 @@ export function formatLocation(
     .filter(Boolean)
     .join(", ");
 }
+/*
+ * Shared education options.
+ *
+ * Use this list in:
+ * - Education & Career
+ * - Partner Preferences
+ * - Browse / Search
+ *
+ * This prevents the different areas of the application
+ * from drifting apart.
+ */
+export const EDUCATION_OPTIONS = [
+  "No Formal Education",
+  "SSC",
+  "Intermediate",
+  "ITI",
+  "Diploma",
+  "Bachelor's Degree",
+  "B.Tech / B.E.",
+  "B.Sc",
+  "B.Com",
+  "B.A.",
+  "BBA",
+  "BCA",
+  "MBBS",
+  "BDS",
+  "B.Pharm",
+  "B.Ed",
+  "LLB",
+  "Master's Degree",
+  "M.Tech / M.E.",
+  "M.Sc",
+  "M.Com",
+  "M.A.",
+  "MBA",
+  "MCA",
+  "MD / MS",
+  "MDS",
+  "M.Pharm",
+  "M.Ed",
+  "LLM",
+  "Doctorate",
+  "Professional Qualification",
+  "Other",
+  "Rather not say",
+] as const;
+
+export const PREFERRED_EDUCATION_OPTIONS = [
+  "Any",
+  ...EDUCATION_OPTIONS,
+] as const;

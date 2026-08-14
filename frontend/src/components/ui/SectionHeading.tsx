@@ -1,4 +1,4 @@
-interface Props {
+interface SectionHeadingProps {
   title: string;
   subtitle?: string;
 }
@@ -6,15 +6,15 @@ interface Props {
 export default function SectionHeading({
   title,
   subtitle,
-}: Props) {
+}: SectionHeadingProps) {
   return (
-    <div className="mb-14 text-center">
-      <h2 className="text-4xl font-bold text-[#0B2D5C]">
+    <div className="mx-auto text-center">
+      <h2 className="text-2xl font-bold tracking-tight text-[#0B2D5C] sm:text-3xl lg:text-4xl">
         {title}
       </h2>
 
       {subtitle && (
-        <p className="mx-auto mt-4 max-w-2xl text-gray-500">
+        <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-gray-500 sm:mt-4 sm:text-base">
           {subtitle}
         </p>
       )}

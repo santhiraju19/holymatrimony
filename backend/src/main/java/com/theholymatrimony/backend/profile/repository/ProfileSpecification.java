@@ -2,8 +2,10 @@ package com.theholymatrimony.backend.profile.repository;
 
 import com.theholymatrimony.backend.profile.dto.SearchProfileRequest;
 import com.theholymatrimony.backend.profile.entity.Profile;
+
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
+
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
@@ -26,7 +28,7 @@ public final class ProfileSpecification {
                     new ArrayList<>();
 
             /*
-             * Only public, completed profiles may appear.
+             * Only completed/public profiles may appear.
              */
             predicates.add(
                     criteriaBuilder.isTrue(
@@ -35,7 +37,7 @@ public final class ProfileSpecification {
             );
 
             /*
-             * Exclude the currently authenticated user's profile.
+             * Exclude the authenticated user's own profile.
              */
             predicates.add(
                     criteriaBuilder.notEqual(
@@ -45,7 +47,9 @@ public final class ProfileSpecification {
                             ),
                             authenticatedEmail
                                     .trim()
-                                    .toLowerCase(Locale.ROOT)
+                                    .toLowerCase(
+                                            Locale.ROOT
+                                    )
                     )
             );
 
@@ -57,24 +61,38 @@ public final class ProfileSpecification {
                 );
             }
 
-            if (request.getAgeFrom() != null) {
+            /*
+             * Age
+             */
+            if (
+                    request.getAgeFrom()
+                            != null
+            ) {
                 predicates.add(
-                        criteriaBuilder.greaterThanOrEqualTo(
-                                root.get("age"),
-                                request.getAgeFrom()
-                        )
+                        criteriaBuilder
+                                .greaterThanOrEqualTo(
+                                        root.get("age"),
+                                        request.getAgeFrom()
+                                )
                 );
             }
 
-            if (request.getAgeTo() != null) {
+            if (
+                    request.getAgeTo()
+                            != null
+            ) {
                 predicates.add(
-                        criteriaBuilder.lessThanOrEqualTo(
-                                root.get("age"),
-                                request.getAgeTo()
-                        )
+                        criteriaBuilder
+                                .lessThanOrEqualTo(
+                                        root.get("age"),
+                                        request.getAgeTo()
+                                )
                 );
             }
 
+            /*
+             * Basic information
+             */
             addCaseInsensitiveEquals(
                     predicates,
                     criteriaBuilder,
@@ -85,15 +103,28 @@ public final class ProfileSpecification {
             addCaseInsensitiveEquals(
                     predicates,
                     criteriaBuilder,
+                    root.get("maritalStatus"),
+                    request.getMaritalStatus()
+            );
+
+            /*
+             * Church information
+             */
+            addCaseInsensitiveEquals(
+                    predicates,
+                    criteriaBuilder,
                     root.get("denomination"),
                     request.getDenomination()
             );
 
+            /*
+             * Current location
+             */
             addCaseInsensitiveEquals(
                     predicates,
                     criteriaBuilder,
-                    root.get("maritalStatus"),
-                    request.getMaritalStatus()
+                    root.get("country"),
+                    request.getCountry()
             );
 
             addCaseInsensitiveEquals(
@@ -110,6 +141,9 @@ public final class ProfileSpecification {
                     request.getCity()
             );
 
+            /*
+             * Education & career
+             */
             addCaseInsensitiveEquals(
                     predicates,
                     criteriaBuilder,
@@ -117,6 +151,10 @@ public final class ProfileSpecification {
                     request.getHighestEducation()
             );
 
+            /*
+             * Profession remains contains-based so that
+             * older profile values still remain searchable.
+             */
             addCaseInsensitiveContains(
                     predicates,
                     criteriaBuilder,
@@ -124,7 +162,13 @@ public final class ProfileSpecification {
                     request.getProfession()
             );
 
-            if (request.getBaptized() != null) {
+            /*
+             * Baptism status
+             */
+            if (
+                    request.getBaptized()
+                            != null
+            ) {
                 predicates.add(
                         criteriaBuilder.equal(
                                 root.get("baptized"),
@@ -155,9 +199,13 @@ public final class ProfileSpecification {
 
         predicates.add(
                 criteriaBuilder.equal(
-                        criteriaBuilder.lower(field),
+                        criteriaBuilder.lower(
+                                field
+                        ),
                         value.trim()
-                                .toLowerCase(Locale.ROOT)
+                                .toLowerCase(
+                                        Locale.ROOT
+                                )
                 )
         );
     }
@@ -177,12 +225,16 @@ public final class ProfileSpecification {
         String pattern =
                 "%"
                         + value.trim()
-                        .toLowerCase(Locale.ROOT)
+                        .toLowerCase(
+                                Locale.ROOT
+                        )
                         + "%";
 
         predicates.add(
                 criteriaBuilder.like(
-                        criteriaBuilder.lower(field),
+                        criteriaBuilder.lower(
+                                field
+                        ),
                         pattern
                 )
         );

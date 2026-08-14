@@ -18,7 +18,7 @@ export default function PhotoCard({
   onPreview,
 }: PhotoCardProps) {
   return (
-    <div className="group overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+    <div className="group overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
       <div className="relative aspect-[4/5] overflow-hidden bg-slate-100">
         <img
           src={preview}

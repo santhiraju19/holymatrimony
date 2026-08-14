@@ -27,7 +27,7 @@ export default function ProfileCompletionCard({
   return (
     <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.07)]">
       <div className="relative overflow-hidden bg-gradient-to-br from-[#071B36] via-[#0B2D5C] to-[#174A87] p-5 text-white">
-        <div className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-blue-400/20 blur-2xl" />
+        <div className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-blue-400/20 blur-2xl" />
 
         <div className="relative">
           <div className="flex items-start justify-between gap-4">
@@ -38,7 +38,7 @@ export default function ProfileCompletionCard({
                 Completion
               </div>
 
-              <p className="mt-4 text-4xl font-black">
+              <p className="mt-4 text-3xl font-black">
                 {safePercentage}%
               </p>
 
@@ -67,7 +67,7 @@ export default function ProfileCompletionCard({
 
       <div className="p-5">
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3">
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
             <CheckCircle2
               size={19}
               className="text-emerald-600"
@@ -82,7 +82,7 @@ export default function ProfileCompletionCard({
             </p>
           </div>
 
-          <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3">
+          <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
             <CircleDashed
               size={19}
               className="text-amber-600"
@@ -131,7 +131,7 @@ export default function ProfileCompletionCard({
                 ))}
             </div>
           ) : (
-            <div className="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-3 text-sm font-semibold text-emerald-700">
+            <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-3 text-sm font-semibold text-emerald-700">
               Your required profile
               sections are complete.
             </div>

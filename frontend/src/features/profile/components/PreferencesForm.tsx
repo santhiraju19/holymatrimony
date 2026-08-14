@@ -22,6 +22,7 @@ import { useProfile } from "@/features/profile/context/useProfile";
 import { useProfileUpdater } from "@/features/profile/hooks/useProfileUpdater";
 
 import {
+  PREFERRED_EDUCATION_OPTIONS,
   PREFERRED_DENOMINATIONS,
 } from "@/features/profile/data/profileOptions";
 
@@ -107,9 +108,9 @@ export default function PreferencesForm({
 
   return (
     <Card className="overflow-hidden p-0">
-      <div className="border-b border-slate-200 bg-gradient-to-r from-pink-50 via-white to-purple-50 px-4 py-6 sm:px-7 sm:py-8 lg:px-10">
+      <div className="border-b border-slate-200 bg-gradient-to-r from-pink-50 via-white to-purple-50 px-4 py-4 sm:px-5 sm:py-5 lg:px-6">
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#0B2D5C] text-white shadow-lg sm:h-14 sm:w-14">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0B2D5C] text-white shadow-lg ">
             <Heart size={27} />
           </div>
 
@@ -118,11 +119,11 @@ export default function PreferencesForm({
               Step 5 of 7
             </p>
 
-            <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#0B2D5C] sm:text-3xl">
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-[#0B2D5C] sm:text-2xl">
               Partner Preferences
             </h2>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">
               Tell us what matters most
               to you in a prospective life
               partner.
@@ -131,8 +132,8 @@ export default function PreferencesForm({
         </div>
       </div>
 
-      <div className="p-4 sm:p-7 lg:p-10">
-        <div className="mb-7 rounded-2xl border border-purple-100 bg-purple-50/70 px-4 py-3 text-sm text-purple-800">
+      <div className="p-4 sm:p-5 lg:p-6">
+        <div className="mb-5 rounded-xl border border-purple-100 bg-purple-50/70 px-4 py-3 text-sm text-purple-800">
           <div className="flex items-start gap-2">
             <Sparkles
               size={17}
@@ -151,7 +152,7 @@ export default function PreferencesForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-x-6 gap-y-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-2">
           <FormField
             label="Preferred Age From"
             required
@@ -316,51 +317,28 @@ export default function PreferencesForm({
                   Select education
                 </option>
 
-                <option value="Any">
-                  Any
-                </option>
-
-                <option value="No Formal Education">
-                  No Formal Education
-                </option>
-
-                <option value="SSC">
-                  SSC
-                </option>
-
-                <option value="Intermediate">
-                  Intermediate
-                </option>
-
-                <option value="ITI">
-                  ITI
-                </option>
-
-                <option value="Diploma">
-                  Diploma
-                </option>
-
-                <option value="Bachelor's Degree">
-                  Bachelor&apos;s Degree
-                </option>
-
-                <option value="Master's Degree">
-                  Master&apos;s Degree
-                </option>
-
-                <option value="Doctorate">
-                  Doctorate
-                </option>
-
-                <option value="Other">
-                  Other
-                </option>
+                {PREFERRED_EDUCATION_OPTIONS.map(
+                  (education) => (
+                    <option
+                      key={
+                        education
+                      }
+                      value={
+                        education
+                      }
+                    >
+                      {
+                        education
+                      }
+                    </option>
+                  )
+                )}
               </Select>
             </div>
           </FormField>
         </div>
 
-        <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4">
           <p className="text-sm leading-6 text-amber-900">
             These preferences help improve
             recommendations, but users can

@@ -57,6 +57,10 @@ interface ChatWindowProps {
   replyingTo:
     ChatMessage | null;
 
+      onDeleteConversation: (
+    conversationId: string
+  ) => Promise<void>;
+
   onBack:
     () => void;
 
@@ -118,6 +122,7 @@ export default function ChatWindow({
   onEditMessage,
   onDeleteMessage,
   onReactMessage,
+    onDeleteConversation,
   onRemoveReaction,
 }: ChatWindowProps) {
   const [
@@ -250,12 +255,18 @@ export default function ChatWindow({
         otherUserTyping={
           otherUserTyping
         }
+
+        
         blockStatus={
           blockStatus
         }
         onBlockStatusChange={
           setBlockStatus
         }
+
+        onDeleteConversation={
+  onDeleteConversation
+}
         onBack={
           onBack
         }

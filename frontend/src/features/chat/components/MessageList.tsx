@@ -81,7 +81,7 @@ export default function MessageList({
 
   if (loading) {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center bg-slate-50 px-6 py-10">
+      <div className="flex min-h-0 flex-1 items-center justify-center bg-slate-50 px-4 py-6">
         <div className="text-center">
 
           <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-[#0B2D5C]" />
@@ -100,12 +100,12 @@ export default function MessageList({
     0
   ) {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center bg-slate-50 px-6 py-10">
+      <div className="flex min-h-0 flex-1 items-center justify-center bg-slate-50 px-4 py-6">
         <div className="max-w-sm text-center">
 
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-[#0B2D5C]">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-[#0B2D5C]">
             <MessageCircle
-              size={27}
+              size={23}
             />
           </div>
 
@@ -125,7 +125,7 @@ export default function MessageList({
   return (
     <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50">
 
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-2 px-4 py-5 sm:px-6">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-1.5 px-3 py-3 sm:px-4 sm:py-4 lg:px-5">
 
         {messages.map(
           (
@@ -213,7 +213,7 @@ function DateDivider({
   dateValue: string;
 }) {
   return (
-    <div className="my-4 flex items-center justify-center">
+    <div className="my-3 flex items-center justify-center">
 
       <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-500 shadow-sm">
         {formatMessageDate(

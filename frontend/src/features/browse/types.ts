@@ -60,6 +60,7 @@ export interface BrowseSearchFilters {
   denomination: string;
   maritalStatus: string;
 
+  country: string;
   state: string;
   city: string;
 
@@ -78,6 +79,7 @@ export interface BrowseSearchParams
   denomination?: string;
   maritalStatus?: string;
 
+  country?: string;
   state?: string;
   city?: string;
 
@@ -95,6 +97,7 @@ export const EMPTY_BROWSE_SEARCH_FILTERS: BrowseSearchFilters = {
   denomination: "",
   maritalStatus: "",
 
+  country: "",
   state: "",
   city: "",
 
@@ -108,7 +111,8 @@ export function hasActiveBrowseFilters(
   filters: BrowseSearchFilters
 ): boolean {
   return Object.values(filters).some(
-    (value) => value.trim().length > 0
+    (value) =>
+      value.trim().length > 0
   );
 }
 
@@ -121,61 +125,92 @@ export function buildBrowseSearchParams(
     size: pagination.size ?? 12,
   };
 
-  const ageFrom = Number(filters.ageFrom);
-  const ageTo = Number(filters.ageTo);
+  const ageFrom =
+    Number(filters.ageFrom);
+
+  const ageTo =
+    Number(filters.ageTo);
 
   if (
     filters.ageFrom.trim() &&
     Number.isInteger(ageFrom)
   ) {
-    params.ageFrom = ageFrom;
+    params.ageFrom =
+      ageFrom;
   }
 
   if (
     filters.ageTo.trim() &&
     Number.isInteger(ageTo)
   ) {
-    params.ageTo = ageTo;
+    params.ageTo =
+      ageTo;
   }
 
   if (filters.gender.trim()) {
-    params.gender = filters.gender.trim();
+    params.gender =
+      filters.gender.trim();
   }
 
-  if (filters.denomination.trim()) {
+  if (
+    filters.denomination.trim()
+  ) {
     params.denomination =
       filters.denomination.trim();
   }
 
-  if (filters.maritalStatus.trim()) {
+  if (
+    filters.maritalStatus.trim()
+  ) {
     params.maritalStatus =
       filters.maritalStatus.trim();
   }
 
+  if (
+    filters.country.trim()
+  ) {
+    params.country =
+      filters.country.trim();
+  }
+
   if (filters.state.trim()) {
-    params.state = filters.state.trim();
+    params.state =
+      filters.state.trim();
   }
 
   if (filters.city.trim()) {
-    params.city = filters.city.trim();
+    params.city =
+      filters.city.trim();
   }
 
-  if (filters.highestEducation.trim()) {
+  if (
+    filters.highestEducation.trim()
+  ) {
     params.highestEducation =
       filters.highestEducation.trim();
   }
 
-  if (filters.profession.trim()) {
+  if (
+    filters.profession.trim()
+  ) {
     params.profession =
       filters.profession.trim();
   }
 
-  if (filters.baptized === "true") {
-    params.baptized = true;
+  if (
+    filters.baptized ===
+    "true"
+  ) {
+    params.baptized =
+      true;
   }
 
-  if (filters.baptized === "false") {
-    params.baptized = false;
+  if (
+    filters.baptized ===
+    "false"
+  ) {
+    params.baptized =
+      false;
   }
 
   return params;

@@ -488,16 +488,16 @@ export default function PhotoUpload({
     processingPhotoId !== null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-5">
       {/* =====================================================
           Header
           ===================================================== */}
 
       <Card className="overflow-hidden p-0">
-        <div className="border-b border-slate-200 bg-gradient-to-r from-violet-50 via-white to-blue-50 px-4 py-6 sm:px-7 sm:py-8 lg:px-10">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#0B2D5C] text-white shadow-lg sm:h-14 sm:w-14">
-              <Camera size={27} />
+        <div className="border-b border-slate-200 bg-gradient-to-r from-violet-50 via-white to-blue-50 px-4 py-4 sm:px-5 sm:py-5 lg:px-6">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0B2D5C] text-white shadow-lg ">
+              <Camera size={21} />
             </div>
 
             <div className="min-w-0">
@@ -511,11 +511,11 @@ export default function PhotoUpload({
                 </span>
               </div>
 
-              <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#0B2D5C] sm:text-3xl">
+              <h2 className="mt-1 text-xl font-bold tracking-tight text-[#0B2D5C] sm:text-2xl">
                 Profile Photos
               </h2>
 
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+              <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">
                 Photos are optional and do not
                 affect your profile completion
                 or eligibility for profile
@@ -526,13 +526,13 @@ export default function PhotoUpload({
           </div>
         </div>
 
-        <div className="p-4 sm:p-7 lg:p-10">
+        <div className="p-4 sm:p-5 lg:p-6">
           {/* =================================================
               Main recommendation
               ================================================= */}
 
-          <div className="mb-7 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-blue-50 p-5 sm:p-6">
-            <div className="flex items-start gap-4">
+          <div className="mb-5 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-blue-50 p-4 sm:p-5">
+            <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
                 <TrendingUp size={22} />
               </div>
@@ -561,8 +561,8 @@ export default function PhotoUpload({
               Information cards
               ================================================= */}
 
-          <div className="mb-7 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
+          <div className="mb-5 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4">
               <ImagePlus
                 size={22}
                 className="text-blue-700"
@@ -580,7 +580,7 @@ export default function PhotoUpload({
               </p>
             </div>
 
-            <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-4">
+            <div className="rounded-xl border border-amber-100 bg-amber-50/70 p-4">
               <Crown
                 size={22}
                 className="text-amber-700"
@@ -597,7 +597,7 @@ export default function PhotoUpload({
               </p>
             </div>
 
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-4">
               <ShieldCheck
                 size={22}
                 className="text-emerald-700"
@@ -628,7 +628,7 @@ export default function PhotoUpload({
 
           {photos.length === 0 &&
             !loading && (
-              <div className="mt-6 rounded-2xl border border-violet-100 bg-violet-50/70 px-4 py-4">
+              <div className="mt-4 rounded-xl border border-violet-100 bg-violet-50/70 px-4 py-4">
                 <div className="flex items-start gap-3">
                   <Sparkles
                     size={20}
@@ -661,7 +661,7 @@ export default function PhotoUpload({
           {loading && (
             <div
               role="status"
-              className="mt-6 flex items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700"
+              className="mt-6 flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700"
             >
               <Loader2
                 size={18}
@@ -675,7 +675,7 @@ export default function PhotoUpload({
           {uploading && (
             <div
               role="status"
-              className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-4"
+              className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-4"
             >
               <div className="flex items-center justify-between gap-4 text-sm font-medium text-blue-700">
                 <span className="flex items-center gap-2">
@@ -706,7 +706,7 @@ export default function PhotoUpload({
           {processingPhotoId && (
             <div
               role="status"
-              className="mt-6 flex items-center gap-3 rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3 text-sm font-medium text-violet-700"
+              className="mt-6 flex items-center gap-3 rounded-xl border border-violet-100 bg-violet-50 px-4 py-3 text-sm font-medium text-violet-700"
             >
               <Loader2
                 size={18}
@@ -720,7 +720,7 @@ export default function PhotoUpload({
           {error && (
             <div
               role="alert"
-              className="mt-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700"
+              className="mt-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700"
             >
               <AlertCircle
                 size={20}
@@ -738,7 +738,7 @@ export default function PhotoUpload({
           {!loading &&
             photos.length <
               MAX_PHOTOS && (
-              <div className="mt-8">
+              <div className="mt-5">
                 <DropZone
                   onFilesSelected={(
                     files
@@ -753,7 +753,7 @@ export default function PhotoUpload({
 
           {photos.length >=
             MAX_PHOTOS && (
-            <div className="mt-6 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+            <div className="mt-6 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
               <CheckCircle2
                 size={19}
                 className="shrink-0"
@@ -771,11 +771,11 @@ export default function PhotoUpload({
           Photo grid / guidelines
           ===================================================== */}
 
-      <div className="grid gap-6 xl:grid-cols-3">
-        <div className="xl:col-span-2">
+      <div className="grid gap-4 lg:grid-cols-3 xl:gap-5">
+        <div className="lg:col-span-2">
           {loading ? (
-            <Card className="p-6">
-              <div className="flex min-h-64 flex-col items-center justify-center text-center">
+            <Card className="p-4 sm:p-5">
+              <div className="flex min-h-48 sm:min-h-52 flex-col items-center justify-center text-center">
                 <Loader2
                   size={32}
                   className="animate-spin text-[#0B2D5C]"
@@ -787,10 +787,10 @@ export default function PhotoUpload({
               </div>
             </Card>
           ) : photos.length > 0 ? (
-            <Card className="p-4 sm:p-6">
-              <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <Card className="p-4 sm:p-5">
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-[#0B2D5C]">
+                  <h3 className="text-base font-bold text-[#0B2D5C] sm:text-lg">
                     Your Photos
                   </h3>
 
@@ -822,14 +822,14 @@ export default function PhotoUpload({
               />
             </Card>
           ) : (
-            <Card className="p-6">
-              <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-6 text-center">
+            <Card className="p-4 sm:p-5">
+              <div className="flex min-h-48 sm:min-h-52 flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 px-6 text-center">
                 <Camera
                   size={42}
                   className="text-slate-300"
                 />
 
-                <h3 className="mt-4 text-lg font-bold text-slate-700">
+                <h3 className="mt-3 text-base font-bold text-slate-700 sm:text-lg">
                   No photos uploaded
                 </h3>
 
@@ -853,8 +853,8 @@ export default function PhotoUpload({
           Final reminder
           ===================================================== */}
 
-      <Card className="border-blue-100 bg-gradient-to-r from-blue-50 via-white to-amber-50 p-5 sm:p-6">
-        <div className="flex items-start gap-4">
+      <Card className="border-blue-100 bg-gradient-to-r from-blue-50 via-white to-amber-50 p-4 sm:p-5">
+        <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0B2D5C] text-white">
             <ShieldCheck size={21} />
           </div>
@@ -882,7 +882,7 @@ export default function PhotoUpload({
           Navigation
           ===================================================== */}
 
-      <Card className="p-4 sm:p-6">
+      <Card className="p-4 sm:p-5">
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Button
             type="button"

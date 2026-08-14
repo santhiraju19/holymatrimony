@@ -1,12 +1,7 @@
 "use client";
 
-import {
-  ReactNode,
-} from "react";
-
-import {
-  usePathname,
-} from "next/navigation";
+import { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 
 import AdminGuard from "@/features/admin/auth/AdminGuard";
 import AdminHeader from "@/features/admin/layout/AdminHeader";
@@ -19,12 +14,10 @@ interface AdminLayoutShellProps {
 export default function AdminLayoutShell({
   children,
 }: AdminLayoutShellProps) {
-  const pathname =
-    usePathname();
+  const pathname = usePathname();
 
   const isLoginPage =
-    pathname ===
-    "/admin/login";
+    pathname === "/admin/login";
 
   if (isLoginPage) {
     return (
@@ -36,15 +29,17 @@ export default function AdminLayoutShell({
 
   return (
     <AdminGuard>
-      <div className="min-h-screen bg-slate-50">
-        <div className="flex min-h-screen">
+      <div className="min-h-screen overflow-x-hidden bg-slate-50">
+        <div className="flex min-h-screen min-w-0">
           <AdminSidebar />
 
           <div className="min-w-0 flex-1">
             <AdminHeader />
 
-            <main className="p-5 sm:p-6 lg:p-8">
-              {children}
+            <main className="min-w-0 p-3 sm:p-4 lg:p-5 xl:p-6">
+              <div className="mx-auto w-full max-w-[1360px]">
+                {children}
+              </div>
             </main>
           </div>
         </div>

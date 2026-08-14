@@ -107,18 +107,18 @@ export default function DropZone({
       }
       onDrop={handleDrop}
       className={[
-        "group flex min-h-64 w-full cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed px-5 py-10 text-center outline-none transition-all duration-300",
+        "group flex min-h-48 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-6 text-center outline-none transition-all duration-300 sm:min-h-52 sm:px-5 sm:py-7",
         "focus:ring-4 focus:ring-blue-100",
         dragging
           ? "scale-[1.01] border-[#0B2D5C] bg-blue-50 shadow-lg"
           : "border-slate-300 bg-gradient-to-br from-slate-50 to-white hover:border-[#0B2D5C] hover:bg-blue-50/50 hover:shadow-lg",
       ].join(" ")}
     >
-      <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[#0B2D5C] text-white shadow-lg transition-transform duration-300 group-hover:-translate-y-1">
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0B2D5C] text-white shadow-md transition-transform duration-300 group-hover:-translate-y-1">
         <UploadCloud size={31} />
       </div>
 
-      <h3 className="mt-5 text-xl font-bold text-[#0B2D5C] sm:text-2xl">
+      <h3 className="mt-4 text-lg font-bold text-[#0B2D5C] sm:text-xl">
         Drag and drop photos
       </h3>
 
@@ -127,7 +127,7 @@ export default function DropZone({
         to browse from your device.
       </p>
 
-      <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[#0B2D5C] shadow-md ring-1 ring-slate-200 transition group-hover:shadow-lg">
+      <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#0B2D5C] shadow-sm ring-1 ring-slate-200 transition group-hover:shadow-md">
         <ImagePlus size={18} />
 
         Choose Photos

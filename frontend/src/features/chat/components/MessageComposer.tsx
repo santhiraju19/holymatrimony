@@ -1034,7 +1034,7 @@ export default function MessageComposer({
       onSubmit={
         handleSubmit
       }
-      className="border-t border-slate-200 bg-white p-3 md:p-4"
+      className="border-t border-slate-200 bg-white px-2.5 py-2.5 sm:px-3 md:p-4"
     >
       <div className="mx-auto max-w-4xl">
 
@@ -1043,12 +1043,12 @@ export default function MessageComposer({
            ====================================================== */}
 
         {replyingTo && (
-          <div className="mb-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
+          <div className="mb-2.5 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm sm:rounded-2xl">
             <div className="flex items-stretch">
 
               <div className="w-1 shrink-0 bg-[#0B2D5C]" />
 
-              <div className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5">
+              <div className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 sm:gap-3 sm:px-3 sm:py-2.5">
 
                 <Reply
                   size={17}
@@ -1127,15 +1127,15 @@ export default function MessageComposer({
            ====================================================== */}
 
         {imagePreviewUrl && (
-          <div className="mb-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-            <div className="flex items-start gap-3">
+          <div className="mb-2.5 rounded-xl border border-slate-200 bg-slate-50 p-2.5 sm:rounded-2xl sm:p-3">
+            <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
 
               <img
                 src={
                   imagePreviewUrl
                 }
                 alt="Selected image preview"
-                className="h-24 w-24 rounded-xl object-cover"
+                className="h-16 w-16 shrink-0 rounded-lg object-cover sm:h-20 sm:w-20 sm:rounded-xl"
               />
 
               <div className="min-w-0 flex-1">
@@ -1209,7 +1209,7 @@ export default function MessageComposer({
             INPUT ROW
            ====================================================== */}
 
-        <div className="relative flex items-end gap-2 sm:gap-3">
+        <div className="relative flex min-w-0 items-end gap-1.5 sm:gap-2 md:gap-3">
 
           <button
             type="button"
@@ -1224,7 +1224,7 @@ export default function MessageComposer({
             }
             title="Send image"
             aria-label="Select image"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:w-11"
           >
             <ImagePlus
               size={19}
@@ -1260,7 +1260,7 @@ export default function MessageComposer({
                 );
               }}
               className={[
-                "flex h-11 w-11 items-center justify-center rounded-full border bg-white transition disabled:cursor-not-allowed disabled:opacity-50",
+                "flex h-10 w-10 items-center justify-center rounded-full border bg-white transition disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:w-11",
 
                 emojiPickerOpen
                   ? "border-blue-400 bg-blue-50 text-blue-700"
@@ -1277,18 +1277,14 @@ export default function MessageComposer({
                 ref={
                   emojiPickerRef
                 }
-                className="absolute bottom-14 left-0 z-50 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl shadow-2xl"
+                className="absolute bottom-12 -left-12 z-50 max-w-[calc(100vw-1rem)] overflow-hidden rounded-xl shadow-2xl sm:bottom-14 sm:left-0 sm:rounded-2xl"
               >
                 <EmojiPicker
                   onEmojiClick={
                     handleEmojiClick
                   }
-                  width={
-                    340
-                  }
-                  height={
-                    420
-                  }
+                  width={300}
+                  height={360}
                   lazyLoadEmojis
                   searchPlaceHolder="Search emojis"
                   previewConfig={{
@@ -1342,7 +1338,7 @@ export default function MessageComposer({
                   ? "Reply message"
                   : "Message"
             }
-            className="max-h-36 min-h-11 flex-1 resize-none overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-5 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className="max-h-32 min-h-10 min-w-0 flex-1 resize-none overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm leading-5 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 sm:max-h-36 sm:min-h-11 sm:rounded-2xl sm:px-4 sm:py-3"
           />
 
           <button
@@ -1361,7 +1357,7 @@ export default function MessageComposer({
                       ? "Send reply"
                       : "Send message"
             }
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0B2D5C] text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#123C73] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0B2D5C] text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#123C73] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:w-11"
           >
             {busy ? (
               <Loader2
@@ -1381,7 +1377,7 @@ export default function MessageComposer({
             FOOTER
            ====================================================== */}
 
-        <div className="mt-2 flex items-center justify-between gap-4 px-1 text-[10px] text-slate-400">
+        <div className="mt-1.5 hidden items-center justify-between gap-4 px-1 text-[10px] text-slate-400 sm:flex">
 
           <p>
             JPEG, PNG or WebP · Maximum 10 MB

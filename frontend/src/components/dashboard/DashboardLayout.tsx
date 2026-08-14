@@ -143,9 +143,9 @@ export default function DashboardLayout({
             }
           />
 
-          <main className="min-w-0 flex-1 p-3 sm:p-5 lg:p-6 xl:p-8">
+          <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-5 xl:p-6">
 
-            <div className="mx-auto w-full max-w-[1720px]">
+            <div className="mx-auto w-full max-w-[1360px]">
               {children}
             </div>
 

@@ -36,6 +36,10 @@ interface ChatHeaderProps {
   blockStatus:
     BlockStatusResponse | null;
 
+      onDeleteConversation: (
+    conversationId: string
+  ) => Promise<void>;
+
   onBlockStatusChange: (
     status: BlockStatusResponse
   ) => void;
@@ -182,6 +186,7 @@ export default function ChatHeader({
   otherUserTyping,
   blockStatus,
   onBlockStatusChange,
+  onDeleteConversation,
   onBack,
 }: ChatHeaderProps) {
   const user =
@@ -226,12 +231,12 @@ export default function ChatHeader({
   }
 
   return (
-    <header className="flex min-h-20 items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 md:px-6">
+    <header className="flex min-h-[64px] items-center gap-2.5 border-b border-slate-200 bg-white px-3 py-2.5 sm:px-4 md:px-5">
       <button
         type="button"
         onClick={onBack}
         aria-label="Back to conversations"
-        className="rounded-xl p-2 text-slate-600 transition hover:bg-slate-100 md:hidden"
+        className="shrink-0 rounded-lg p-2 text-slate-600 transition hover:bg-slate-100 md:hidden"
       >
         <ArrowLeft size={21} />
       </button>
@@ -281,14 +286,14 @@ export default function ChatHeader({
       <Link
         href={`/profile/${user.profileId}`}
         title="View profile"
-        className="rounded-xl border border-slate-200 p-2.5 text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+        className="shrink-0 rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
       >
         <ExternalLink
           size={18}
         />
       </Link>
 
-      <ChatSafetyMenu
+           <ChatSafetyMenu
         userId={
           user.userId
         }
@@ -303,6 +308,9 @@ export default function ChatHeader({
         }
         onBlockStatusChange={
           onBlockStatusChange
+        }
+        onDeleteConversation={
+          onDeleteConversation
         }
       />
     </header>

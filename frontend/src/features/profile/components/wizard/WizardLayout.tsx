@@ -10,12 +10,12 @@ export default function WizardLayout({
   children,
 }: WizardLayoutProps) {
   return (
-    <div className="rounded-2xl bg-white p-8 shadow">
-      <h2 className="text-2xl font-bold text-[#0B2D5C]">
+    <div className="rounded-xl bg-white p-4 shadow sm:p-5 lg:p-6">
+      <h2 className="text-xl font-bold text-[#0B2D5C] sm:text-2xl">
         {title}
       </h2>
 
-      <div className="mt-8">
+      <div className="mt-5 sm:mt-6">
         {children}
       </div>
     </div>

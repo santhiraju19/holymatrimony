@@ -632,7 +632,7 @@ export default function MessageBubble({
    */
 
   const actionButtons = (
-    <div className="mt-1 flex items-center gap-0.5">
+    <div className="mt-0.5 flex shrink-0 items-center gap-0 sm:mt-1 sm:gap-0.5">
 
       {canReact && (
         <div
@@ -660,7 +660,7 @@ export default function MessageBubble({
                 false
               );
             }}
-            className="rounded-lg p-1 text-slate-400 opacity-0 transition hover:bg-slate-200 hover:text-[#0B2D5C] group-hover:opacity-100 focus:opacity-100 disabled:opacity-50"
+            className="rounded-lg p-1 text-slate-400 opacity-60 transition hover:bg-slate-200 hover:text-[#0B2D5C] sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 disabled:opacity-50"
           >
             <Smile
               size={16}
@@ -670,7 +670,7 @@ export default function MessageBubble({
           {reactionPickerOpen && (
             <div
               className={[
-                "absolute bottom-8 z-40 flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1.5 shadow-xl",
+                "absolute bottom-8 z-40 flex items-center gap-0.5 rounded-full border border-slate-200 bg-white p-1 shadow-xl sm:gap-1 sm:p-1.5",
 
                 own
                   ? "right-0"
@@ -706,7 +706,7 @@ export default function MessageBubble({
                         );
                       }}
                       className={[
-                        "flex h-9 w-9 items-center justify-center rounded-full text-xl transition hover:scale-110 hover:bg-slate-100 disabled:opacity-50",
+                        "flex h-8 w-8 items-center justify-center rounded-full text-lg transition hover:scale-110 hover:bg-slate-100 disabled:opacity-50 sm:h-9 sm:w-9 sm:text-xl",
 
                         selected
                           ? "bg-blue-50 ring-2 ring-blue-200"
@@ -761,7 +761,7 @@ export default function MessageBubble({
                 false
               );
             }}
-            className="rounded-lg p-1 text-slate-400 opacity-0 transition hover:bg-slate-200 hover:text-slate-700 group-hover:opacity-100 focus:opacity-100"
+            className="rounded-lg p-1 text-slate-400 opacity-60 transition hover:bg-slate-200 hover:text-slate-700 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
           >
             <MoreVertical
               size={17}
@@ -848,7 +848,7 @@ export default function MessageBubble({
           : "justify-start",
       ].join(" ")}
     >
-      <div className="relative flex max-w-[88%] items-start gap-1 sm:max-w-[74%]">
+      <div className="relative flex min-w-0 max-w-[92%] items-start gap-1 sm:max-w-[78%] lg:max-w-[72%]">
 
         {/* ======================================================
             ACTIONS BEFORE OWN MESSAGE
@@ -875,11 +875,11 @@ export default function MessageBubble({
 
           <div
             className={[
-              "overflow-hidden rounded-2xl shadow-sm",
+              "min-w-0 overflow-hidden rounded-2xl shadow-sm",
 
               isImageMessage
-                ? "p-1.5"
-                : "px-4 py-2.5",
+                ? "p-1 sm:p-1.5"
+                : "px-3 py-2 sm:px-4 sm:py-2.5",
 
               own
                 ? "rounded-br-md bg-[#0B2D5C] text-white"
@@ -1004,7 +1004,7 @@ export default function MessageBubble({
                           }
                           alt="Replied image"
                           loading="lazy"
-                          className="h-[58px] w-[58px] shrink-0 object-cover"
+                          className="h-12 w-12 shrink-0 object-cover sm:h-[58px] sm:w-[58px]"
                         />
                       )}
 
@@ -1035,7 +1035,7 @@ export default function MessageBubble({
 
             ) : editing ? (
 
-              <div className="min-w-[240px]">
+              <div className="min-w-0 w-[min(240px,72vw)] sm:w-[240px]">
 
                 <textarea
                   value={
@@ -1162,7 +1162,7 @@ export default function MessageBubble({
                           "Chat image"
                         }
                         loading="lazy"
-                        className="max-h-[420px] w-full min-w-[220px] object-cover transition hover:opacity-95"
+                        className="max-h-[380px] w-full min-w-0 object-cover transition hover:opacity-95"
                       />
                     </a>
                   )}
@@ -1175,7 +1175,7 @@ export default function MessageBubble({
                   ?.trim() && (
                     <p
                       className={[
-                        "whitespace-pre-wrap break-words text-sm leading-6",
+                        "whitespace-pre-wrap break-words text-sm leading-5 sm:leading-6",
 
                         isImageMessage
                           ? "px-2 pt-2"

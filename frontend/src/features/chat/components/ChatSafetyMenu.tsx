@@ -1,4 +1,5 @@
-    "use client";
+
+"use client";
 
 import {
   FormEvent,
@@ -15,6 +16,7 @@ import {
   Loader2,
   MoreVertical,
   ShieldAlert,
+  Trash2,
   Undo2,
   X,
 } from "lucide-react";
@@ -28,11 +30,17 @@ interface ChatSafetyMenuProps {
   userId: string;
   userName: string;
   conversationId: string;
-  blockStatus: BlockStatusResponse | null;
+
+  blockStatus:
+    BlockStatusResponse | null;
 
   onBlockStatusChange: (
     status: BlockStatusResponse
   ) => void;
+
+  onDeleteConversation: (
+    conversationId: string
+  ) => Promise<void>;
 }
 
 const REPORT_REASONS: Array<{
@@ -71,14 +79,17 @@ export default function ChatSafetyMenu({
   conversationId,
   blockStatus,
   onBlockStatusChange,
+  onDeleteConversation,
 }: ChatSafetyMenuProps) {
   const containerRef =
     useRef<HTMLDivElement | null>(
       null
     );
 
-  const [menuOpen, setMenuOpen] =
-    useState(false);
+  const [
+    menuOpen,
+    setMenuOpen,
+  ] = useState(false);
 
   const [
     blockDialogOpen,
@@ -90,26 +101,36 @@ export default function ChatSafetyMenu({
     setReportDialogOpen,
   ] = useState(false);
 
-  const [working, setWorking] =
-    useState(false);
+  const [
+    deleteDialogOpen,
+    setDeleteDialogOpen,
+  ] = useState(false);
 
-  const [error, setError] =
-    useState<string | null>(
-      null
-    );
+  const [
+    working,
+    setWorking,
+  ] = useState(false);
 
-  const [success, setSuccess] =
-    useState<string | null>(
-      null
-    );
+  const [
+    error,
+    setError,
+  ] = useState<string | null>(
+    null
+  );
+
+  const [
+    success,
+    setSuccess,
+  ] = useState<string | null>(
+    null
+  );
 
   const [
     reportReason,
     setReportReason,
-  ] =
-    useState<ReportReason>(
-      "INAPPROPRIATE_MESSAGES"
-    );
+  ] = useState<ReportReason>(
+    "INAPPROPRIATE_MESSAGES"
+  );
 
   const [
     reportDetails,
@@ -119,6 +140,12 @@ export default function ChatSafetyMenu({
   const blockedByMe =
     blockStatus?.blockedByMe ===
     true;
+
+  /*
+   * ============================================================
+   * CLOSE MENU WHEN CLICKING OUTSIDE
+   * ============================================================
+   */
 
   useEffect(() => {
     function handleOutsideClick(
@@ -147,13 +174,33 @@ export default function ChatSafetyMenu({
     };
   }, []);
 
+  /*
+   * ============================================================
+   * RESET WHEN CONVERSATION CHANGES
+   * ============================================================
+   */
+
   useEffect(() => {
     setMenuOpen(false);
-    setBlockDialogOpen(false);
-    setReportDialogOpen(false);
+
+    setBlockDialogOpen(
+      false
+    );
+
+    setReportDialogOpen(
+      false
+    );
+
+    setDeleteDialogOpen(
+      false
+    );
+
     setError(null);
+
     setSuccess(null);
+
     setReportDetails("");
+
     setReportReason(
       "INAPPROPRIATE_MESSAGES"
     );
@@ -161,6 +208,12 @@ export default function ChatSafetyMenu({
     userId,
     conversationId,
   ]);
+
+  /*
+   * ============================================================
+   * BLOCK / UNBLOCK
+   * ============================================================
+   */
 
   async function handleBlockAction() {
     if (working) {
@@ -175,9 +228,13 @@ export default function ChatSafetyMenu({
       const nextStatus =
         blockedByMe
           ? await safetyService
-              .unblockUser(userId)
+              .unblockUser(
+                userId
+              )
           : await safetyService
-              .blockUser(userId);
+              .blockUser(
+                userId
+              );
 
       onBlockStatusChange(
         nextStatus
@@ -207,6 +264,55 @@ export default function ChatSafetyMenu({
       setWorking(false);
     }
   }
+
+  /*
+   * ============================================================
+   * DELETE CHAT
+   * ============================================================
+   *
+   * Deletes the conversation only for the
+   * currently authenticated user.
+   *
+   * Backend keeps the shared conversation
+   * and message history for the other user.
+   */
+
+  async function handleDeleteConversation() {
+    if (working) {
+      return;
+    }
+
+    setWorking(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await onDeleteConversation(
+        conversationId
+      );
+
+      setDeleteDialogOpen(
+        false
+      );
+    } catch (caughtError) {
+      console.error(
+        "[Chat Safety] Delete conversation failed:",
+        caughtError
+      );
+
+      setError(
+        "Unable to delete this chat. Please try again."
+      );
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  /*
+   * ============================================================
+   * REPORT USER
+   * ============================================================
+   */
 
   async function handleReport(
     event:
@@ -267,6 +373,10 @@ export default function ChatSafetyMenu({
 
   return (
     <>
+      {/* =======================================================
+          THREE-DOT MENU
+          ======================================================= */}
+
       <div
         ref={containerRef}
         className="relative"
@@ -284,7 +394,7 @@ export default function ChatSafetyMenu({
             setError(null);
             setSuccess(null);
           }}
-          className="rounded-xl border border-slate-200 p-2.5 text-slate-600 transition hover:bg-slate-100"
+          className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-100 sm:rounded-xl sm:p-2.5"
         >
           <MoreVertical
             size={18}
@@ -292,31 +402,43 @@ export default function ChatSafetyMenu({
         </button>
 
         {menuOpen && (
-          <div className="absolute right-0 top-full z-40 mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl">
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                setReportDialogOpen(
-                  true
-                );
-              }}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
-            >
-              <Flag size={17} />
-              Report user
-            </button>
+          <div className="absolute right-0 top-full z-40 mt-2 w-52 max-w-[calc(100vw-1rem)] rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl sm:w-56 sm:rounded-2xl">
+
+            {/* Report */}
 
             <button
               type="button"
               onClick={() => {
                 setMenuOpen(false);
+
+                setError(null);
+
+                setReportDialogOpen(
+                  true
+                );
+              }}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            >
+              <Flag size={17} />
+
+              Report user
+            </button>
+
+            {/* Block / Unblock */}
+
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+
+                setError(null);
+
                 setBlockDialogOpen(
                   true
                 );
               }}
               className={[
-                "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium",
+                "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
 
                 blockedByMe
                   ? "text-blue-700 hover:bg-blue-50"
@@ -333,34 +455,72 @@ export default function ChatSafetyMenu({
                 ? "Unblock user"
                 : "Block user"}
             </button>
+
+            {/* Divider */}
+
+            <div className="my-1 border-t border-slate-100" />
+
+            {/* Delete chat */}
+
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+
+                setError(null);
+                setSuccess(null);
+
+                setDeleteDialogOpen(
+                  true
+                );
+              }}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50"
+            >
+              <Trash2 size={17} />
+
+              Delete chat
+            </button>
           </div>
         )}
       </div>
 
+      {/* =======================================================
+          SUCCESS TOAST
+          ======================================================= */}
+
       {success && (
-        <div className="fixed bottom-5 right-5 z-[70] flex max-w-sm items-center gap-2 rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm font-medium text-emerald-700 shadow-xl">
+        <div className="fixed bottom-3 left-3 right-3 z-[70] flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2.5 text-sm font-medium text-emerald-700 shadow-xl sm:bottom-5 sm:left-auto sm:right-5 sm:max-w-sm sm:rounded-2xl sm:px-4 sm:py-3">
           <CheckCircle2
             size={18}
+            className="shrink-0"
           />
 
-          {success}
+          <span className="min-w-0 flex-1">
+            {success}
+          </span>
 
           <button
             type="button"
+            aria-label="Close notification"
             onClick={() =>
               setSuccess(null)
             }
+            className="shrink-0 rounded-lg p-1 transition hover:bg-emerald-50"
           >
             <X size={15} />
           </button>
         </div>
       )}
 
+      {/* =======================================================
+          BLOCK / UNBLOCK DIALOG
+          ======================================================= */}
+
       {blockDialogOpen && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/50 p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
-            <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50 text-red-700">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-slate-950/50 p-3 sm:p-4">
+          <div className="my-auto w-full max-w-md rounded-2xl bg-white p-4 shadow-2xl sm:rounded-3xl sm:p-6">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-700 sm:h-11 sm:w-11 sm:rounded-2xl">
                 {blockedByMe ? (
                   <Undo2 size={21} />
                 ) : (
@@ -370,7 +530,7 @@ export default function ChatSafetyMenu({
                 )}
               </div>
 
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <h3 className="text-lg font-bold text-slate-900">
                   {blockedByMe
                     ? `Unblock ${userName}?`
@@ -386,24 +546,30 @@ export default function ChatSafetyMenu({
             </div>
 
             {error && (
-              <div className="mt-4 flex gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+              <div className="mt-4 flex items-start gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
                 <AlertTriangle
                   size={17}
+                  className="mt-0.5 shrink-0"
                 />
-                {error}
+
+                <span>
+                  {error}
+                </span>
               </div>
             )}
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:mt-6 sm:flex-row sm:justify-end sm:gap-3">
               <button
                 type="button"
                 disabled={working}
-                onClick={() =>
+                onClick={() => {
                   setBlockDialogOpen(
                     false
-                  )
-                }
-                className="rounded-xl border px-4 py-2.5 text-sm font-semibold"
+                  );
+
+                  setError(null);
+                }}
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
                 Cancel
               </button>
@@ -411,10 +577,10 @@ export default function ChatSafetyMenu({
               <button
                 type="button"
                 disabled={working}
-                onClick={() =>
-                  void handleBlockAction()
-                }
-                className="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                onClick={() => {
+                  void handleBlockAction();
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
                 {working && (
                   <Loader2
@@ -432,29 +598,136 @@ export default function ChatSafetyMenu({
         </div>
       )}
 
+      {/* =======================================================
+          DELETE CHAT DIALOG
+          ======================================================= */}
+
+      {deleteDialogOpen && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-slate-950/50 p-3 sm:p-4">
+          <div className="my-auto w-full max-w-md rounded-2xl bg-white p-4 shadow-2xl sm:rounded-3xl sm:p-6">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-700 sm:h-11 sm:w-11 sm:rounded-2xl">
+                <Trash2
+                  size={21}
+                />
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg font-bold text-slate-900">
+                  Delete chat with{" "}
+                  {userName}?
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  This chat will be removed
+                  from your conversation list.
+                  The other member will still
+                  keep their copy of the
+                  conversation.
+                </p>
+
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  If a new message is exchanged
+                  later, the conversation may
+                  appear again.
+                </p>
+              </div>
+            </div>
+
+            {error && (
+              <div className="mt-4 flex items-start gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+                <AlertTriangle
+                  size={17}
+                  className="mt-0.5 shrink-0"
+                />
+
+                <span>
+                  {error}
+                </span>
+              </div>
+            )}
+
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:mt-6 sm:flex-row sm:justify-end sm:gap-3">
+              <button
+                type="button"
+                disabled={working}
+                onClick={() => {
+                  setDeleteDialogOpen(
+                    false
+                  );
+
+                  setError(null);
+                }}
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                disabled={working}
+                onClick={() => {
+                  void handleDeleteConversation();
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              >
+                {working ? (
+                  <>
+                    <Loader2
+                      size={16}
+                      className="animate-spin"
+                    />
+
+                    Deleting…
+                  </>
+                ) : (
+                  <>
+                    <Trash2
+                      size={16}
+                    />
+
+                    Delete chat
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =======================================================
+          REPORT DIALOG
+          ======================================================= */}
+
       {reportDialogOpen && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/50 p-4">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-slate-950/50 p-3 sm:p-4">
           <form
             onSubmit={
               handleReport
             }
-            className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl"
+            className="my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:max-h-[calc(100vh-2rem)] sm:rounded-3xl sm:p-6"
           >
             <h3 className="text-lg font-bold text-slate-900">
               Report {userName}
             </h3>
 
-            <div className="mt-5 space-y-2">
+            <p className="mt-1.5 text-sm text-slate-500">
+              Select the reason that best
+              describes the issue.
+            </p>
+
+            <div className="mt-4 space-y-1.5 sm:mt-5 sm:space-y-2">
               {REPORT_REASONS.map(
                 (option) => (
                   <label
                     key={
                       option.value
                     }
-                    className="flex cursor-pointer gap-3 rounded-xl border border-slate-200 px-3 py-3 text-sm"
+                    className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm transition hover:bg-slate-50 sm:py-3"
                   >
                     <input
                       type="radio"
+                      name="reportReason"
                       checked={
                         reportReason ===
                         option.value
@@ -466,41 +739,56 @@ export default function ChatSafetyMenu({
                       }
                     />
 
-                    {option.label}
+                    <span>
+                      {option.label}
+                    </span>
                   </label>
                 )
               )}
             </div>
 
             <textarea
-              value={reportDetails}
+              value={
+                reportDetails
+              }
               maxLength={1000}
               rows={4}
-              onChange={(event) =>
+              onChange={(
+                event
+              ) =>
                 setReportDetails(
                   event.target.value
                 )
               }
               placeholder="Additional details (optional)"
-              className="mt-5 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+              className="mt-4 w-full resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:mt-5 sm:rounded-2xl sm:px-4 sm:py-3"
             />
 
             {error && (
-              <p className="mt-3 text-sm text-red-600">
-                {error}
-              </p>
+              <div className="mt-3 flex items-start gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+                <AlertTriangle
+                  size={17}
+                  className="mt-0.5 shrink-0"
+                />
+
+                <span>
+                  {error}
+                </span>
+              </div>
             )}
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:mt-6 sm:flex-row sm:justify-end sm:gap-3">
               <button
                 type="button"
                 disabled={working}
-                onClick={() =>
+                onClick={() => {
                   setReportDialogOpen(
                     false
-                  )
-                }
-                className="rounded-xl border px-4 py-2.5 text-sm font-semibold"
+                  );
+
+                  setError(null);
+                }}
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
                 Cancel
               </button>
@@ -508,7 +796,7 @@ export default function ChatSafetyMenu({
               <button
                 type="submit"
                 disabled={working}
-                className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
                 {working && (
                   <Loader2

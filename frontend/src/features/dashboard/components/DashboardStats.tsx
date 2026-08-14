@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -121,24 +122,23 @@ export default function DashboardStats({
 
   return (
     <section>
-      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-4 flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-[#B38B19]">
+          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#B38B19] sm:text-xs">
             Your activity
           </p>
 
-          <h2 className="mt-1 text-2xl font-black text-[#0B2D5C]">
+          <h2 className="mt-1 text-xl font-black text-[#0B2D5C]">
             Dashboard overview
           </h2>
         </div>
 
-        <p className="text-sm text-slate-500">
-          Based on your current notification
-          activity.
+        <p className="text-xs text-slate-500 sm:text-sm">
+          Based on your current notification activity.
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
           const tone =
@@ -149,43 +149,43 @@ export default function DashboardStats({
               key={stat.id}
               href={stat.href}
               className={[
-                "group relative overflow-hidden rounded-[24px] border p-5 shadow-[0_12px_35px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(15,23,42,0.11)]",
+                "group relative overflow-hidden rounded-[18px] border p-4 shadow-[0_8px_25px_rgba(15,23,42,0.05)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_35px_rgba(15,23,42,0.09)]",
                 tone.card,
               ].join(" ")}
             >
-              <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/60 blur-2xl" />
+              <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/60 blur-2xl" />
 
               <div className="relative">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-3">
                   <div
                     className={[
-                      "flex h-12 w-12 items-center justify-center rounded-2xl",
+                      "flex h-10 w-10 items-center justify-center rounded-xl",
                       tone.icon,
                     ].join(" ")}
                   >
-                    <Icon size={21} />
+                    <Icon size={18} />
                   </div>
 
                   <ArrowUpRight
-                    size={18}
+                    size={16}
                     className="text-slate-300 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#0B2D5C]"
                   />
                 </div>
 
                 <p
                   className={[
-                    "mt-5 text-3xl font-black",
+                    "mt-3 text-2xl font-black",
                     tone.value,
                   ].join(" ")}
                 >
                   {stat.value}
                 </p>
 
-                <h3 className="mt-1 font-black text-[#0B2D5C]">
+                <h3 className="mt-0.5 text-sm font-black text-[#0B2D5C]">
                   {stat.label}
                 </h3>
 
-                <p className="mt-2 text-xs leading-5 text-slate-500">
+                <p className="mt-1.5 text-xs leading-5 text-slate-500">
                   {stat.description}
                 </p>
               </div>

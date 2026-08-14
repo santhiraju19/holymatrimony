@@ -1,10 +1,15 @@
 package com.theholymatrimony.backend.communication.repository;
 
 import com.theholymatrimony.backend.communication.entity.Conversation;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -42,6 +47,12 @@ public interface ConversationRepository
             UUID conversationId
     );
 
+    /*
+     * Return only conversations that are visible
+     * to the current user.
+     *
+     * Each participant owns their own deletion marker.
+     */
     @EntityGraph(
             attributePaths = {
                     "participantOne",
@@ -49,10 +60,24 @@ public interface ConversationRepository
                     "lastMessageSender"
             }
     )
+    @Query("""
+            SELECT c
+            FROM Conversation c
+            WHERE
+                (
+                    c.participantOne.id = :userId
+                    AND c.participantOneDeletedAt IS NULL
+                )
+                OR
+                (
+                    c.participantTwo.id = :userId
+                    AND c.participantTwoDeletedAt IS NULL
+                )
+            """)
     Page<Conversation>
-    findAllByParticipantOneIdOrParticipantTwoId(
-            UUID participantOneId,
-            UUID participantTwoId,
+    findVisibleConversationsForUser(
+            @Param("userId")
+            UUID userId,
             Pageable pageable
     );
 }

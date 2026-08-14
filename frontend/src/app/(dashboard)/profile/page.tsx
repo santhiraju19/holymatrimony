@@ -160,6 +160,7 @@ export default function ProfilePage() {
     step,
     next,
     back,
+    goTo,
   } =
     useProfileWizard();
 
@@ -393,6 +394,55 @@ export default function ProfilePage() {
         }
       );
     };
+
+  /*
+   * =========================================================
+   * Direct Profile Journey navigation
+   * =========================================================
+   *
+   * ProfileStepper exposes human-friendly 1-based
+   * step numbers while useProfileWizard uses 0-based
+   * indexes internally.
+   *
+   * Selecting a journey step only changes the visible
+   * wizard page. It does not save, complete or modify
+   * profile information.
+   */
+  const handleStepClick = (
+    stepNumber: number
+  ): void => {
+    const targetIndex =
+      stepNumber - 1;
+
+    if (
+      targetIndex < 0 ||
+      targetIndex >=
+        TOTAL_STEPS
+    ) {
+      return;
+    }
+
+    setSuccessMessage(
+      null
+    );
+
+    setVerificationError(
+      null
+    );
+
+    goTo(
+      targetIndex
+    );
+
+    window.requestAnimationFrame(
+      () => {
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      }
+    );
+  };
 
   /*
    * =========================================================
@@ -748,16 +798,16 @@ export default function ProfilePage() {
    */
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-4 pb-8 sm:space-y-5 sm:pb-10">
       {/* Hero */}
 
-      <section className="relative overflow-hidden rounded-[30px] border border-blue-100 bg-gradient-to-br from-[#071B36] via-[#0B2D5C] to-[#174A87] px-5 py-7 text-white shadow-[0_24px_70px_rgba(11,45,92,0.22)] sm:px-8 sm:py-9 lg:px-10">
+      <section className="relative overflow-hidden rounded-[24px] border border-blue-100 bg-gradient-to-br from-[#071B36] via-[#0B2D5C] to-[#174A87] px-4 py-5 text-white shadow-[0_18px_50px_rgba(11,45,92,0.18)] sm:px-6 sm:py-6 lg:px-7 lg:py-6">
         <div className="pointer-events-none absolute -right-16 -top-20 h-72 w-72 rounded-full bg-blue-400/20 blur-3xl" />
 
         <div className="pointer-events-none absolute -bottom-28 left-1/3 h-72 w-72 rounded-full bg-[#D4AF37]/15 blur-3xl" />
 
-        <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-          <div className="max-w-3xl">
+        <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center">
+          <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-[#F2D675]/30 bg-[#D4AF37]/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-[#F2D675]">
               <Sparkles
                 size={14}
@@ -767,20 +817,20 @@ export default function ProfilePage() {
               profile
             </div>
 
-            <div className="mt-5 flex items-start gap-4">
-              <div className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/10 backdrop-blur sm:flex">
+            <div className="mt-4 flex items-start gap-3">
+              <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 backdrop-blur sm:flex">
                 <UserRound
-                  size={27}
+                  size={22}
                 />
               </div>
 
               <div>
-                <h1 className="text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
+                <h1 className="text-2xl font-black tracking-tight sm:text-3xl lg:text-[32px]">
                   Complete Your
                   Profile
                 </h1>
 
-                <p className="mt-4 max-w-2xl text-sm leading-7 text-blue-100 sm:text-base">
+                <p className="mt-2.5 max-w-2xl text-sm leading-6 text-blue-100">
                   Share the
                   information that
                   helps compatible
@@ -795,15 +845,15 @@ export default function ProfilePage() {
 
           {/* Local profile-quality completion */}
 
-          <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-xl sm:min-w-64">
-            <div className="flex items-center justify-between gap-5">
+          <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur-xl">
+            <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-200">
                   Profile
                   completion
                 </p>
 
-                <p className="mt-2 text-4xl font-black text-white">
+                <p className="mt-1 text-2xl font-black text-white sm:text-3xl">
                   {
                     completion.percentage
                   }
@@ -811,8 +861,8 @@ export default function ProfilePage() {
                 </p>
               </div>
 
-              <div className="relative flex h-20 w-20 items-center justify-center rounded-full border-[7px] border-white/15 bg-white/10">
-                <span className="text-lg font-black text-[#F2D675]">
+              <div className="relative flex h-14 w-14 items-center justify-center rounded-full border-[5px] border-white/15 bg-white/10 sm:h-16 sm:w-16">
+                <span className="text-sm font-black text-[#F2D675] sm:text-base">
                   {
                     completion.percentage
                   }
@@ -821,7 +871,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-white/10">
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-[#D4AF37] via-[#F2D675] to-[#FFF2B2] transition-all duration-500"
                 style={{
@@ -830,7 +880,7 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="mt-4 flex items-center justify-between text-xs">
+            <div className="mt-3 flex items-center justify-between gap-3 text-[11px] sm:text-xs">
               <span className="text-blue-100">
                 Step{" "}
                 {
@@ -949,11 +999,11 @@ export default function ProfilePage() {
 
       {/* Main layout */}
 
-      <div className="grid items-start gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[250px_minmax(0,1fr)] xl:grid-cols-[270px_minmax(0,1fr)] xl:gap-5">
         {/* Sidebar */}
 
-        <aside className="min-w-0 xl:sticky xl:top-[106px]">
-          <div className="space-y-5">
+        <aside className="min-w-0 lg:sticky lg:top-[92px]">
+          <div className="space-y-4">
             {/*
              * Normal profile quality card.
              *
@@ -1008,12 +1058,15 @@ export default function ProfilePage() {
               currentStep={
                 currentStep
               }
+              onStepClick={
+                handleStepClick
+              }
             />
 
-            <div className="hidden rounded-[26px] border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-blue-50 p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)] xl:block">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md">
+            <div className="hidden rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-blue-50 p-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)] xl:block">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
                 <ShieldCheck
-                  size={21}
+                  size={18}
                 />
               </div>
 

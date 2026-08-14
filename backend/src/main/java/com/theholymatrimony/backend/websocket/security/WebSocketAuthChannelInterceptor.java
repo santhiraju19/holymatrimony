@@ -1,17 +1,23 @@
 package com.theholymatrimony.backend.websocket.security;
 
+import com.theholymatrimony.backend.security.ActiveAccountValidator;
+
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+
 import org.springframework.stereotype.Component;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Objects;
 
@@ -21,10 +27,16 @@ public class WebSocketAuthChannelInterceptor
 
     private final JwtDecoder jwtDecoder;
 
+    private final ActiveAccountValidator
+            activeAccountValidator;
+
     public WebSocketAuthChannelInterceptor(
-            JwtDecoder jwtDecoder
+            JwtDecoder jwtDecoder,
+            ActiveAccountValidator activeAccountValidator
     ) {
         this.jwtDecoder = jwtDecoder;
+        this.activeAccountValidator =
+                activeAccountValidator;
     }
 
     @Override
@@ -32,16 +44,7 @@ public class WebSocketAuthChannelInterceptor
             Message<?> message,
             MessageChannel channel
     ) {
-        /*
-         * Important:
-         * Get the accessor already associated
-         * with this STOMP message.
-         *
-         * Do not use StompHeaderAccessor.wrap()
-         * here because that creates another
-         * accessor and the Principal may not
-         * remain attached to the session.
-         */
+
         StompHeaderAccessor accessor =
                 MessageHeaderAccessor.getAccessor(
                         message,
@@ -55,14 +58,58 @@ public class WebSocketAuthChannelInterceptor
         StompCommand command =
                 accessor.getCommand();
 
-        /*
-         * Authenticate only CONNECT.
-         * Spring carries this Principal into
-         * future SEND and SUBSCRIBE frames.
-         */
-        if (!StompCommand.CONNECT.equals(command)) {
+        if (command == null) {
             return message;
         }
+
+        /*
+         * CONNECT
+         *
+         * Decode the JWT and establish the
+         * authenticated WebSocket Principal.
+         */
+        if (StompCommand.CONNECT.equals(command)) {
+
+            authenticateConnect(accessor);
+
+            return message;
+        }
+
+        /*
+         * SEND and SUBSCRIBE
+         *
+         * Re-check the account against the database.
+         *
+         * This prevents an already-connected member
+         * from continuing to send messages or create
+         * subscriptions after an administrator has
+         * suspended or blocked the account.
+         */
+        if (
+                StompCommand.SEND.equals(command) ||
+                StompCommand.SUBSCRIBE.equals(command)
+        ) {
+
+            Principal principal =
+                    accessor.getUser();
+
+            if (principal == null) {
+                throw new IllegalArgumentException(
+                        "WebSocket user is not authenticated"
+                );
+            }
+
+            activeAccountValidator.requireActiveUser(
+                    principal.getName()
+            );
+        }
+
+        return message;
+    }
+
+    private void authenticateConnect(
+            StompHeaderAccessor accessor
+    ) {
 
         String authorization =
                 accessor.getFirstNativeHeader(
@@ -78,9 +125,10 @@ public class WebSocketAuthChannelInterceptor
             );
         }
 
-        String token = authorization
-                .substring(7)
-                .trim();
+        String token =
+                authorization
+                        .substring(7)
+                        .trim();
 
         if (token.isBlank()) {
             throw new IllegalArgumentException(
@@ -88,7 +136,8 @@ public class WebSocketAuthChannelInterceptor
             );
         }
 
-        Jwt jwt = jwtDecoder.decode(token);
+        Jwt jwt =
+                jwtDecoder.decode(token);
 
         String tokenType =
                 jwt.getClaimAsString("type");
@@ -99,16 +148,16 @@ public class WebSocketAuthChannelInterceptor
             );
         }
 
-        String email = jwt.getSubject();
+        String email =
+                jwt.getSubject();
 
-        if (
-                email == null ||
-                email.isBlank()
-        ) {
-            throw new IllegalArgumentException(
-                    "JWT subject is missing"
-            );
-        }
+        /*
+         * Validate the current database status,
+         * not merely the JWT.
+         */
+        activeAccountValidator.requireActiveUser(
+                email
+        );
 
         List<String> authorityNames =
                 jwt.getClaimAsStringList(
@@ -122,9 +171,11 @@ public class WebSocketAuthChannelInterceptor
         List<SimpleGrantedAuthority> authorities =
                 authorityNames.stream()
                         .filter(Objects::nonNull)
+                        .map(String::trim)
                         .filter(value ->
                                 !value.isBlank()
                         )
+                        .distinct()
                         .map(
                                 SimpleGrantedAuthority::new
                         )
@@ -138,7 +189,5 @@ public class WebSocketAuthChannelInterceptor
                 );
 
         accessor.setUser(authentication);
-
-        return message;
     }
 }

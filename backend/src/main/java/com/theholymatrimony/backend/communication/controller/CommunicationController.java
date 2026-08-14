@@ -337,7 +337,39 @@ removeMessageReaction(
             )
     );
 }
+/*
+ * ============================================================
+ * DELETE CONVERSATION FOR CURRENT USER
+ * ============================================================
+ */
+@DeleteMapping(
+        "/conversations/{conversationId}"
+)
+public ResponseEntity<
+        ApiResponse<Void>
+        >
+deleteConversation(
+        Authentication authentication,
 
+        @PathVariable
+        UUID conversationId
+) {
+
+    communicationService
+            .deleteConversationForUser(
+                    getAuthenticatedEmail(
+                            authentication
+                    ),
+                    conversationId
+            );
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    "Conversation deleted successfully",
+                    null
+            )
+    );
+}
 
     /*
      * ============================================================

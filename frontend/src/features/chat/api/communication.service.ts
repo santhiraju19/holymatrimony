@@ -265,6 +265,20 @@ export const communicationService = {
 
   /*
    * ============================================================
+   * DELETE CONVERSATION FOR CURRENT USER
+   * ============================================================
+   */
+
+  async deleteConversation(
+    conversationId: string
+  ): Promise<void> {
+    await api.delete(
+      `/communication/conversations/${conversationId}`
+    );
+  },
+
+  /*
+   * ============================================================
    * TOTAL UNREAD COUNT
    * ============================================================
    */

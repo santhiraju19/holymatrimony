@@ -63,7 +63,7 @@ function SummaryItem({
     String(value).trim() !== "";
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
+    <div className="rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5">
       <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
         {label}
       </p>
@@ -91,9 +91,9 @@ function ReviewSection({
 }: ReviewSectionProps) {
   return (
     <Card className="overflow-hidden p-0">
-      <div className="flex flex-col gap-4 border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-blue-50 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div className="flex flex-col gap-3 border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-blue-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#0B2D5C] text-white shadow-md">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0B2D5C] text-white shadow-md">
             {icon}
           </div>
 
@@ -128,7 +128,7 @@ function ReviewSection({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 sm:p-6">
+      <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 sm:p-5">
         {children}
       </div>
     </Card>
@@ -397,17 +397,17 @@ export default function Review({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-5">
       {/* =====================================================
           Review completion summary
           ===================================================== */}
 
       <Card className="overflow-hidden p-0">
-        <div className="border-b border-slate-200 bg-gradient-to-r from-emerald-50 via-white to-amber-50 px-4 py-6 sm:px-7 sm:py-8 lg:px-10">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#0B2D5C] text-white shadow-lg sm:h-14 sm:w-14">
+        <div className="border-b border-slate-200 bg-gradient-to-r from-emerald-50 via-white to-amber-50 px-4 py-4 sm:px-5 sm:py-5 lg:px-6">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0B2D5C] text-white shadow-md">
               <ShieldCheck
-                size={27}
+                size={21}
               />
             </div>
 
@@ -416,12 +416,12 @@ export default function Review({
                 Step 7 of 7
               </p>
 
-              <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#0B2D5C] sm:text-3xl">
+              <h2 className="mt-1 text-xl font-bold tracking-tight text-[#0B2D5C] sm:text-2xl">
                 Review Your
                 Profile
               </h2>
 
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+              <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">
                 Review all of your
                 information before
                 saving your Holy
@@ -431,7 +431,7 @@ export default function Review({
           </div>
         </div>
 
-        <div className="p-4 sm:p-7 lg:p-10">
+        <div className="p-4 sm:p-5 lg:p-6">
           <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
             <div>
               <div className="flex items-end justify-between gap-4">
@@ -441,7 +441,7 @@ export default function Review({
                     information
                   </p>
 
-                  <p className="mt-1 text-2xl font-bold text-[#0B2D5C] sm:text-3xl">
+                  <p className="mt-1 text-xl font-bold text-[#0B2D5C] sm:text-2xl">
                     {
                       completionPercentage
                     }
@@ -508,7 +508,7 @@ export default function Review({
 
             <div
               className={[
-                "flex h-24 w-24 items-center justify-center rounded-full border-8 text-xl font-bold shadow-inner",
+                "flex h-20 w-20 items-center justify-center rounded-full border-[6px] text-lg font-bold shadow-inner",
                 profileInformationComplete
                   ? "border-emerald-100 bg-emerald-50 text-emerald-700"
                   : "border-amber-100 bg-amber-50 text-amber-700",
@@ -827,9 +827,9 @@ export default function Review({
           ===================================================== */}
 
       <Card className="overflow-hidden p-0">
-        <div className="flex flex-col gap-4 border-b border-slate-200 bg-gradient-to-r from-violet-50 via-white to-blue-50 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="flex flex-col gap-3 border-b border-slate-200 bg-gradient-to-r from-violet-50 via-white to-blue-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#0B2D5C] text-white shadow-md">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0B2D5C] text-white shadow-md">
               <Camera
                 size={22}
               />
@@ -884,10 +884,10 @@ export default function Review({
           </div>
         </div>
 
-        <div className="p-4 sm:p-6">
+        <div className="p-4 sm:p-5">
           {/* Recommendation */}
 
-          <div className="mb-5 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 to-amber-50 px-4 py-4">
+          <div className="mb-4 rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50 to-amber-50 px-4 py-4">
             <div className="flex items-start gap-3">
               <Sparkles
                 size={20}
@@ -918,8 +918,8 @@ export default function Review({
           </div>
 
           {primaryPhoto ? (
-            <div className="grid gap-5 sm:grid-cols-[120px_1fr] sm:items-center">
-              <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-slate-100 shadow-md">
+            <div className="grid gap-4 sm:grid-cols-[105px_1fr] sm:items-center">
+              <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-slate-100 shadow-md">
                 <img
                   src={
                     primaryPhoto.preview
@@ -955,7 +955,7 @@ export default function Review({
               </div>
             </div>
           ) : (
-            <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-center">
+            <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center">
               <Camera
                 size={38}
                 className="mx-auto text-slate-300"
@@ -989,17 +989,17 @@ export default function Review({
 
       <Card
         className={[
-          "overflow-hidden p-5 sm:p-7",
+          "overflow-hidden p-4 sm:p-5",
           profileInformationComplete
             ? "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-amber-50"
             : "border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50",
         ].join(" ")}
       >
-        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-start gap-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-3">
             <div
               className={[
-                "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg",
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-md",
                 profileInformationComplete
                   ? "bg-emerald-600"
                   : "bg-amber-500",
@@ -1019,7 +1019,7 @@ export default function Review({
             </div>
 
             <div>
-              <h3 className="text-xl font-bold text-[#0B2D5C]">
+              <h3 className="text-lg font-bold text-[#0B2D5C]">
                 {profileInformationComplete
                   ? "Your profile information is complete"
                   : "Your profile still needs information"}
@@ -1058,7 +1058,7 @@ export default function Review({
           Navigation
           ===================================================== */}
 
-      <Card className="p-4 sm:p-6">
+      <Card className="p-4 sm:p-5">
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Button
             type="button"

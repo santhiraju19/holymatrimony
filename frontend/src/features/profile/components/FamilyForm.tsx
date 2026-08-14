@@ -200,9 +200,9 @@ export default function FamilyForm({
 
   return (
     <Card className="overflow-hidden p-0">
-      <div className="border-b border-slate-200 bg-gradient-to-r from-rose-50 via-white to-amber-50 px-4 py-6 sm:px-7 sm:py-8 lg:px-10">
+      <div className="border-b border-slate-200 bg-gradient-to-r from-rose-50 via-white to-amber-50 px-4 py-4 sm:px-5 sm:py-5 lg:px-6">
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#0B2D5C] text-white shadow-lg sm:h-14 sm:w-14">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0B2D5C] text-white shadow-lg ">
             <UsersRound size={27} />
           </div>
 
@@ -211,11 +211,11 @@ export default function FamilyForm({
               Step 4 of 7
             </p>
 
-            <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#0B2D5C] sm:text-3xl">
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-[#0B2D5C] sm:text-2xl">
               Family Details
             </h2>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">
               Share a few details about
               your family background and
               home location.
@@ -224,8 +224,8 @@ export default function FamilyForm({
         </div>
       </div>
 
-      <div className="p-4 sm:p-7 lg:p-10">
-        <div className="mb-7 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-blue-800">
+      <div className="p-4 sm:p-5 lg:p-6">
+        <div className="mb-5 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-blue-800">
           Fields marked with a red
           <span className="mx-1 font-bold text-red-500">
             *
@@ -233,7 +233,7 @@ export default function FamilyForm({
           are required before continuing.
         </div>
 
-        <div className="grid grid-cols-1 gap-x-6 gap-y-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-2">
           <FormField
             label="Father's Name"
             required

@@ -82,6 +82,22 @@ public class Conversation {
     )
     private LocalDateTime lastMessageAt;
 
+    /*
+     * Per-user chat deletion.
+     *
+     * Deleting a conversation does NOT physically delete
+     * the shared conversation or its messages.
+     */
+    @Column(
+            name = "participant_one_deleted_at"
+    )
+    private LocalDateTime participantOneDeletedAt;
+
+    @Column(
+            name = "participant_two_deleted_at"
+    )
+    private LocalDateTime participantTwoDeletedAt;
+
     @Builder.Default
     @Column(
             name = "active",
@@ -107,7 +123,8 @@ public class Conversation {
     public void onCreate() {
 
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt =
+                    LocalDateTime.now();
         }
 
         if (active == null) {
@@ -117,6 +134,7 @@ public class Conversation {
 
     @PreUpdate
     public void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt =
+                LocalDateTime.now();
     }
 }

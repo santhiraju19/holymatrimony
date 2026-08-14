@@ -33,14 +33,6 @@ export default function InterestButton({
   event.preventDefault();
   event.stopPropagation();
 
-  console.log(
-    "Express Interest clicked",
-    receiverProfileId,
-    memberName
-  );
-
-  alert("Express Interest button clicked");
-
   void sendInterest(
     receiverProfileId,
     memberName,

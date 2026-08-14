@@ -42,9 +42,10 @@ public class PaymentCleanupScheduler {
      * Spring uses the server timezone unless
      * another timezone is explicitly configured.
      */
-    @Scheduled(
-            cron = "0 15 3 * * *"
-    )
+  @Scheduled(
+        cron = "${payments.cleanup.cron:0 15 3 * * *}",
+        zone = "${payments.cleanup.zone:Asia/Kolkata}"
+)
     @Transactional
     public void cancelStalePendingPayments() {
 

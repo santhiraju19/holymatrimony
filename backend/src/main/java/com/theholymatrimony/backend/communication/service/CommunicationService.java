@@ -518,13 +518,12 @@ public class CommunicationService {
                         )
                 );
 
-        Page<Conversation> conversationPage =
-                conversationRepository
-                        .findAllByParticipantOneIdOrParticipantTwoId(
-                                currentUser.getId(),
-                                currentUser.getId(),
-                                pageable
-                        );
+      Page<Conversation> conversationPage =
+        conversationRepository
+                .findVisibleConversationsForUser(
+                        currentUser.getId(),
+                        pageable
+                );
 
         List<ConversationResponse> responses =
                 conversationPage
@@ -1569,7 +1568,20 @@ private String normalizeReaction(
             Conversation conversation,
             ChatMessage message
     ) {
+/*
+ * A newly exchanged message makes the conversation
+ * visible again to both participants.
+ *
+ * This does not restore physically deleted data because
+ * nothing was physically deleted in the first place.
+ */
+conversation.setParticipantOneDeletedAt(
+        null
+);
 
+conversation.setParticipantTwoDeletedAt(
+        null
+);
         conversation.setLastMessage(
                 buildMessagePreview(
                         message
@@ -1731,6 +1743,68 @@ private String normalizeReaction(
         };
     }
 
+    /*
+ * ============================================================
+ * DELETE CONVERSATION FOR CURRENT USER
+ * ============================================================
+ *
+ * This is a soft per-user deletion.
+ *
+ * The shared conversation and messages remain intact.
+ * The other participant is not affected.
+ */
+@Transactional
+public void deleteConversationForUser(
+        String authenticatedEmail,
+        UUID conversationId
+) {
+
+    User currentUser =
+            getUserByEmail(
+                    authenticatedEmail
+            );
+
+    Conversation conversation =
+            getConversationById(
+                    conversationId
+            );
+
+    communicationValidator
+            .validateConversationParticipant(
+                    conversation,
+                    currentUser.getId()
+            );
+
+    LocalDateTime deletedAt =
+            LocalDateTime.now();
+
+    if (
+            conversation
+                    .getParticipantOne()
+                    .getId()
+                    .equals(
+                            currentUser.getId()
+                    )
+    ) {
+
+        conversation
+                .setParticipantOneDeletedAt(
+                        deletedAt
+                );
+
+    } else {
+
+        conversation
+                .setParticipantTwoDeletedAt(
+                        deletedAt
+                );
+    }
+
+    conversationRepository
+            .save(
+                    conversation
+            );
+}
 
     /*
      * ============================================================

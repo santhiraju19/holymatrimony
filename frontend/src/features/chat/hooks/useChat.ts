@@ -1639,6 +1639,117 @@ export default function useChat() {
 
   /*
    * ============================================================
+   * DELETE CONVERSATION
+   * ============================================================
+   */
+
+  const deleteConversation =
+    useCallback(
+      async (
+        conversationId:
+          string
+      ) => {
+        if (!conversationId) {
+          return;
+        }
+
+        setError(
+          null
+        );
+
+        try {
+          await communicationService
+            .deleteConversation(
+              conversationId
+            );
+
+          /*
+           * Remove it immediately from
+           * visible local state.
+           */
+          const remainingConversations =
+            conversationsRef.current
+              .filter(
+                (
+                  conversation
+                ) =>
+                  normalizeId(
+                    conversation.id
+                  ) !==
+                  normalizeId(
+                    conversationId
+                  )
+              );
+
+          conversationsRef.current =
+            remainingConversations;
+
+          setConversations(
+            remainingConversations
+          );
+
+          /*
+           * If the deleted conversation
+           * is currently open, clear it.
+           */
+          if (
+            normalizeId(
+              selectedConversationIdRef
+                .current
+            ) ===
+            normalizeId(
+              conversationId
+            )
+          ) {
+            selectedConversationIdRef.current =
+              null;
+
+            setSelectedConversationId(
+              null
+            );
+
+            setMessages(
+              []
+            );
+
+            setReplyingTo(
+              null
+            );
+
+            clearIncomingTypingState();
+          }
+
+          /*
+           * Reload from backend so the
+           * server remains authoritative.
+           */
+          await loadConversations(
+            true
+          );
+
+        } catch (
+          caughtError:
+            unknown
+        ) {
+          setError(
+            getApiErrorMessage(
+              caughtError,
+              "Unable to delete this chat."
+            )
+          );
+
+          throw caughtError;
+        }
+      },
+      [
+        clearIncomingTypingState,
+        loadConversations,
+      ]
+    );
+
+
+  /*
+   * ============================================================
    * REACT TO MESSAGE
    * ============================================================
    */
@@ -2174,10 +2285,14 @@ export default function useChat() {
 
     editMessage,
 
+    deleteConversation,
+
     deleteMessage,
 
     reactToMessage,
 
     removeMessageReaction,
+
+    
   };
 }

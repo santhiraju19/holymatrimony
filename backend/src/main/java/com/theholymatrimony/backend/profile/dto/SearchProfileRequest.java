@@ -1,3 +1,5 @@
+
+
 package com.theholymatrimony.backend.profile.dto;
 
 import lombok.Getter;
@@ -16,6 +18,8 @@ public class SearchProfileRequest {
     private String denomination;
 
     private String maritalStatus;
+
+    private String country;
 
     private String state;
 

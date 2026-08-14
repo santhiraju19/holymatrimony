@@ -1,6 +1,8 @@
+
 "use client";
 
 import Link from "next/link";
+
 import {
   Check,
   Church,
@@ -87,9 +89,9 @@ export default function InterestCard({
       : null;
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="grid sm:grid-cols-[190px_minmax(0,1fr)]">
-        <div className="relative min-h-[230px] bg-gradient-to-br from-blue-50 to-indigo-100">
+    <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:border-blue-200 hover:shadow-md">
+      <div className="grid sm:grid-cols-[150px_minmax(0,1fr)] lg:grid-cols-[165px_minmax(0,1fr)]">
+        <div className="relative aspect-[5/4] overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 sm:aspect-auto sm:min-h-[190px]">
           {photoUrl ? (
             <img
               src={photoUrl}
@@ -97,9 +99,9 @@ export default function InterestCard({
               className="absolute inset-0 h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full min-h-[230px] items-center justify-center">
+            <div className="flex h-full min-h-[180px] items-center justify-center sm:min-h-[190px]">
               <UserRound
-                size={70}
+                size={48}
                 strokeWidth={1.3}
                 className="text-blue-300"
               />
@@ -107,15 +109,15 @@ export default function InterestCard({
           )}
         </div>
 
-        <div className="flex flex-col justify-between p-5 sm:p-6">
+        <div className="flex min-w-0 flex-col justify-between p-4">
           <div>
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-bold text-[#0B2D5C]">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h2 className="truncate text-lg font-black text-[#0B2D5C]">
                   {displayName}
                 </h2>
 
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
                   {[
                     sender?.age
                       ? `${sender.age} years`
@@ -133,9 +135,9 @@ export default function InterestCard({
               />
             </div>
 
-            <div className="mt-5 grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
+            <div className="mt-3 grid gap-x-5 gap-y-2.5 text-xs text-slate-600 sm:grid-cols-2 sm:text-sm">
               <Detail
-                icon={<Church size={17} />}
+                icon={<Church size={15} />}
                 value={
                   sender?.denomination ||
                   "Denomination not specified"
@@ -143,7 +145,7 @@ export default function InterestCard({
               />
 
               <Detail
-                icon={<MapPin size={17} />}
+                icon={<MapPin size={15} />}
                 value={
                   location ||
                   "Location not specified"
@@ -151,7 +153,7 @@ export default function InterestCard({
               />
 
               <Detail
-                icon={<UserRound size={17} />}
+                icon={<UserRound size={15} />}
                 value={
                   sender?.profession ||
                   "Profession not specified"
@@ -159,7 +161,7 @@ export default function InterestCard({
               />
 
               <Detail
-                icon={<Clock3 size={17} />}
+                icon={<Clock3 size={15} />}
                 value={formatDate(
                   interest.createdAt
                 )}
@@ -167,23 +169,23 @@ export default function InterestCard({
             </div>
 
             {interest.message && (
-              <div className="mt-5 rounded-xl bg-slate-50 p-4">
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              <div className="mt-3 rounded-xl bg-slate-50 px-3.5 py-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500">
                   Message
                 </p>
 
-                <p className="mt-2 leading-6 text-slate-700">
+                <p className="mt-1.5 line-clamp-2 text-sm leading-5 text-slate-700">
                   {interest.message}
                 </p>
               </div>
             )}
           </div>
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             {profileHref && (
               <Link
                 href={profileHref}
-                className="inline-flex flex-1 items-center justify-center rounded-xl border border-slate-300 px-4 py-3 font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
               >
                 View Profile
               </Link>
@@ -197,9 +199,9 @@ export default function InterestCard({
                   onClick={() =>
                     onDecline(interest.id)
                   }
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <X size={18} />
+                  <X size={16} />
                   Decline
                 </button>
 
@@ -209,9 +211,10 @@ export default function InterestCard({
                   onClick={() =>
                     onAccept(interest.id)
                   }
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <Check size={18} />
+                  <Check size={16} />
+
                   {updating
                     ? "Updating..."
                     : "Accept"}
@@ -233,12 +236,15 @@ function Detail({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 items-center gap-2">
       <span className="shrink-0 text-blue-600">
         {icon}
       </span>
 
-      <span className="truncate">
+      <span
+        title={value}
+        className="truncate"
+      >
         {value}
       </span>
     </div>
@@ -259,7 +265,7 @@ function StatusBadge({
 
   return (
     <span
-      className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${styles}`}
+      className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${styles}`}
     >
       {formatStatus(status)}
     </span>
