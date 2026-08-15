@@ -6,6 +6,7 @@ import com.theholymatrimony.backend.account.dto.ChangePasswordRequest;
 import com.theholymatrimony.backend.account.dto.UpdateAccountRequest;
 import com.theholymatrimony.backend.account.service.AccountService;
 import com.theholymatrimony.backend.account.dto.DeactivateAccountRequest;
+import com.theholymatrimony.backend.account.dto.DeleteAccountRequest;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -110,6 +111,26 @@ deactivateAccount(
                 )
         );
     }
+
+    @PostMapping("/delete")
+public ResponseEntity<AccountActionResponse>
+deleteAccount(
+        Authentication authentication,
+
+        @Valid
+        @RequestBody
+        DeleteAccountRequest request,
+
+        HttpServletRequest httpRequest
+) {
+    return ResponseEntity.ok(
+            accountService.deleteAccount(
+                    authentication.getName(),
+                    request,
+                    getClientIp(httpRequest)
+            )
+    );
+}
 
     private String getClientIp(
             HttpServletRequest request

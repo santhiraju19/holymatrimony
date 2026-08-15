@@ -1,81 +1,122 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   FormEvent,
   useEffect,
   useState,
 } from "react";
 
-import Link from "next/link";
-
-import { useRouter } from "next/navigation";
-
 import {
   AlertCircle,
   CheckCircle2,
   KeyRound,
   Loader2,
-  LockKeyhole,
   LogOut,
   Mail,
-  MonitorSmartphone,
-  Phone,
   Save,
+  ShieldAlert,
   ShieldCheck,
+  Smartphone,
   Trash2,
   UserRound,
 } from "lucide-react";
 
 import accountService from "@/features/account/api/account.service";
+import authService from "@/features/auth/services/auth.service";
 
-import {
+import type {
   Account,
-  ChangePasswordRequest,
 } from "@/features/account/types";
 
-import { useAuthContext } from "@/features/auth/context/AuthContext";
-
-import { getApiErrorMessage } from "@/lib/api";
-
-interface AccountForm {
-  fullName: string;
-  mobile: string;
-}
-
-const EMPTY_PASSWORD_FORM: ChangePasswordRequest = {
-  currentPassword: "",
-  newPassword: "",
-  confirmPassword: "",
-};
+import {
+  getApiErrorMessage,
+} from "@/lib/api";
 
 export default function AccountSettingsPage() {
   const router = useRouter();
 
-  const {
-    user,
-    updateUser,
-    logout,
-  } = useAuthContext();
+  /*
+   * ============================================================
+   * ACCOUNT
+   * ============================================================
+   */
 
-  const [account, setAccount] =
-    useState<Account | null>(null);
+  const [
+    account,
+    setAccount,
+  ] = useState<Account | null>(
+    null
+  );
 
-  const [form, setForm] =
-    useState<AccountForm>({
-      fullName: "",
-      mobile: "",
-    });
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
 
-  const [passwordForm, setPasswordForm] =
-    useState<ChangePasswordRequest>(
-      EMPTY_PASSWORD_FORM
-    );
+  const [
+    accountError,
+    setAccountError,
+  ] = useState<string | null>(
+    null
+  );
 
-  const [loading, setLoading] =
-    useState(true);
+  /*
+   * ============================================================
+   * PROFILE / ACCOUNT DETAILS
+   * ============================================================
+   */
 
-  const [saving, setSaving] =
-    useState(false);
+  const [
+    fullName,
+    setFullName,
+  ] = useState("");
+
+  const [
+    mobile,
+    setMobile,
+  ] = useState("");
+
+  const [
+    savingAccount,
+    setSavingAccount,
+  ] = useState(false);
+
+  const [
+    accountSuccess,
+    setAccountSuccess,
+  ] = useState<string | null>(
+    null
+  );
+
+  const [
+    updateError,
+    setUpdateError,
+  ] = useState<string | null>(
+    null
+  );
+
+  /*
+   * ============================================================
+   * PASSWORD
+   * ============================================================
+   */
+
+  const [
+    currentPassword,
+    setCurrentPassword,
+  ] = useState("");
+
+  const [
+    newPassword,
+    setNewPassword,
+  ] = useState("");
+
+  const [
+    confirmPassword,
+    setConfirmPassword,
+  ] = useState("");
 
   const [
     changingPassword,
@@ -83,9 +124,42 @@ export default function AccountSettingsPage() {
   ] = useState(false);
 
   const [
+    passwordSuccess,
+    setPasswordSuccess,
+  ] = useState<string | null>(
+    null
+  );
+
+  const [
+    passwordError,
+    setPasswordError,
+  ] = useState<string | null>(
+    null
+  );
+
+  /*
+   * ============================================================
+   * LOGOUT ALL DEVICES
+   * ============================================================
+   */
+
+  const [
     loggingOutAll,
     setLoggingOutAll,
   ] = useState(false);
+
+  const [
+    securityError,
+    setSecurityError,
+  ] = useState<string | null>(
+    null
+  );
+
+  /*
+   * ============================================================
+   * DEACTIVATION
+   * ============================================================
+   */
 
   const [
     deactivationPassword,
@@ -103,117 +177,167 @@ export default function AccountSettingsPage() {
   ] = useState(false);
 
   const [
-    accountError,
-    setAccountError,
-  ] = useState<string | null>(null);
-
-  const [
-    accountSuccess,
-    setAccountSuccess,
-  ] = useState<string | null>(null);
-
-  const [
-    passwordError,
-    setPasswordError,
-  ] = useState<string | null>(null);
-
-  const [
-    passwordSuccess,
-    setPasswordSuccess,
-  ] = useState<string | null>(null);
-
-  const [
-    securityError,
-    setSecurityError,
-  ] = useState<string | null>(null);
-
-  const [
     deactivationError,
     setDeactivationError,
-  ] = useState<string | null>(null);
+  ] = useState<string | null>(
+    null
+  );
 
-  async function loadAccount(): Promise<void> {
-    setLoading(true);
-    setAccountError(null);
+  /*
+   * ============================================================
+   * PERMANENT DELETE
+   * ============================================================
+   */
 
-    try {
-      const data =
-        await accountService.getAccount();
+  const [
+    deletePassword,
+    setDeletePassword,
+  ] = useState("");
 
-      setAccount(data);
+  const [
+    deleteConfirmation,
+    setDeleteConfirmation,
+  ] = useState("");
 
-      setForm({
-        fullName: data.fullName ?? "",
-        mobile: data.mobile ?? "",
-      });
-    } catch (error) {
-      setAccountError(
-        getApiErrorMessage(
-          error,
-          "Unable to load your account."
-        )
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [
+    deletingAccount,
+    setDeletingAccount,
+  ] = useState(false);
+
+  const [
+    deleteError,
+    setDeleteError,
+  ] = useState<string | null>(
+    null
+  );
+
+  /*
+   * ============================================================
+   * LOAD ACCOUNT
+   * ============================================================
+   */
 
   useEffect(() => {
+    let mounted = true;
+
+    async function loadAccount() {
+      setLoading(true);
+      setAccountError(null);
+
+      try {
+        const response =
+          await accountService.getAccount();
+
+        if (!mounted) {
+          return;
+        }
+
+        setAccount(response);
+
+        setFullName(
+          response.fullName ?? ""
+        );
+
+        setMobile(
+          response.mobile ?? ""
+        );
+      } catch (error) {
+        if (!mounted) {
+          return;
+        }
+
+        setAccountError(
+          getApiErrorMessage(
+            error,
+            "Unable to load your account settings."
+          )
+        );
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    }
+
     void loadAccount();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  async function handleAccountSubmit(
+  /*
+   * ============================================================
+   * UPDATE ACCOUNT
+   * ============================================================
+   */
+
+  async function handleAccountUpdate(
     event: FormEvent<HTMLFormElement>
   ): Promise<void> {
     event.preventDefault();
 
-    if (saving) {
+    if (savingAccount) {
       return;
     }
 
-    setSaving(true);
-    setAccountError(null);
     setAccountSuccess(null);
+    setUpdateError(null);
+
+    const normalizedName =
+      fullName.trim();
+
+    if (!normalizedName) {
+      setUpdateError(
+        "Full name is required."
+      );
+
+      return;
+    }
+
+    setSavingAccount(true);
 
     try {
       const updated =
         await accountService.updateAccount({
-          fullName: form.fullName.trim(),
-          mobile: form.mobile.trim(),
+          fullName:
+            normalizedName,
+
+          mobile: mobile.trim(),
         });
 
       setAccount(updated);
 
-      setForm({
-        fullName: updated.fullName ?? "",
-        mobile: updated.mobile ?? "",
-      });
+      setFullName(
+        updated.fullName ?? ""
+      );
 
-      updateUser({
-        ...(user ?? {
-          email: updated.email,
-        }),
-        id: updated.id,
-        fullName: updated.fullName,
-        email: updated.email,
-      });
+      setMobile(
+        updated.mobile ?? ""
+      );
 
       setAccountSuccess(
         "Account details updated successfully."
       );
     } catch (error) {
-      setAccountError(
+      setUpdateError(
         getApiErrorMessage(
           error,
           "Unable to update your account."
         )
       );
     } finally {
-      setSaving(false);
+      setSavingAccount(false);
     }
   }
 
-  async function handlePasswordSubmit(
+  /*
+   * ============================================================
+   * CHANGE PASSWORD
+   * ============================================================
+   */
+
+  async function handlePasswordChange(
     event: FormEvent<HTMLFormElement>
   ): Promise<void> {
     event.preventDefault();
@@ -222,25 +346,27 @@ export default function AccountSettingsPage() {
       return;
     }
 
-    setPasswordError(null);
     setPasswordSuccess(null);
+    setPasswordError(null);
 
     if (
-      passwordForm.newPassword !==
-      passwordForm.confirmPassword
+      !currentPassword ||
+      !newPassword ||
+      !confirmPassword
     ) {
       setPasswordError(
-        "New password and confirmation do not match."
+        "Complete all password fields."
       );
 
       return;
     }
 
     if (
-      passwordForm.newPassword.length < 8
+      newPassword !==
+      confirmPassword
     ) {
       setPasswordError(
-        "New password must contain at least 8 characters."
+        "New password and confirmation do not match."
       );
 
       return;
@@ -250,28 +376,33 @@ export default function AccountSettingsPage() {
 
     try {
       const response =
-        await accountService.changePassword(
-          passwordForm
-        );
+        await accountService.changePassword({
+          currentPassword,
+          newPassword,
+          confirmPassword,
+        });
 
-      setPasswordForm(
-        EMPTY_PASSWORD_FORM
-      );
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
 
       setPasswordSuccess(
-        response.message ||
-          "Password changed successfully."
+        response.message
       );
 
-      window.setTimeout(() => {
-        logout();
+      /*
+       * Backend revokes all refresh tokens after
+       * a password change.
+       */
+      await authService
+        .logout()
+        .catch(() => undefined);
 
-        router.replace(
-          "/login?passwordChanged=true"
-        );
+      router.replace(
+        "/login?passwordChanged=true"
+      );
 
-        router.refresh();
-      }, 1200);
+      router.refresh();
     } catch (error) {
       setPasswordError(
         getApiErrorMessage(
@@ -279,10 +410,16 @@ export default function AccountSettingsPage() {
           "Unable to change your password."
         )
       );
-    } finally {
+
       setChangingPassword(false);
     }
   }
+
+  /*
+   * ============================================================
+   * LOGOUT ALL
+   * ============================================================
+   */
 
   async function handleLogoutAll(): Promise<void> {
     if (loggingOutAll) {
@@ -291,7 +428,7 @@ export default function AccountSettingsPage() {
 
     const confirmed =
       window.confirm(
-        "Log out from all devices? You will need to sign in again on this device too."
+        "Log out all devices currently signed in to your Holy Matrimony account?"
       );
 
     if (!confirmed) {
@@ -304,7 +441,9 @@ export default function AccountSettingsPage() {
     try {
       await accountService.logoutAll();
 
-      logout();
+      await authService
+        .logout()
+        .catch(() => undefined);
 
       router.replace(
         "/login?loggedOutAll=true"
@@ -323,6 +462,12 @@ export default function AccountSettingsPage() {
     }
   }
 
+  /*
+   * ============================================================
+   * DEACTIVATE
+   * ============================================================
+   */
+
   async function handleDeactivateAccount(): Promise<void> {
     if (deactivating) {
       return;
@@ -334,7 +479,7 @@ export default function AccountSettingsPage() {
       !deactivationPassword.trim()
     ) {
       setDeactivationError(
-        "Enter your password to confirm account deactivation."
+        "Enter your password to deactivate your account."
       );
 
       return;
@@ -342,7 +487,7 @@ export default function AccountSettingsPage() {
 
     const confirmed =
       window.confirm(
-        "Deactivate your Holy Matrimony account? You will be signed out immediately."
+        "Deactivate your Holy Matrimony account? You will be signed out immediately, but you can reactivate it later."
       );
 
     if (!confirmed) {
@@ -355,11 +500,13 @@ export default function AccountSettingsPage() {
       await accountService.deactivateAccount({
         password:
           deactivationPassword,
-        reason:
-          deactivationReason.trim(),
+
+        reason: deactivationReason.trim(),
       });
 
-      logout();
+      await authService
+        .logout()
+        .catch(() => undefined);
 
       router.replace(
         "/login?accountDeactivated=true"
@@ -378,16 +525,97 @@ export default function AccountSettingsPage() {
     }
   }
 
+  /*
+   * ============================================================
+   * PERMANENT DELETE
+   * ============================================================
+   */
+
+  async function handleDeleteAccount(): Promise<void> {
+    if (deletingAccount) {
+      return;
+    }
+
+    setDeleteError(null);
+
+    if (
+      !deletePassword.trim()
+    ) {
+      setDeleteError(
+        "Enter your password to permanently delete your account."
+      );
+
+      return;
+    }
+
+    if (
+      deleteConfirmation.trim() !==
+      "DELETE"
+    ) {
+      setDeleteError(
+        'Type "DELETE" exactly to confirm permanent account deletion.'
+      );
+
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        "This permanently deletes your Holy Matrimony account and cannot be undone. Continue?"
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingAccount(true);
+
+    try {
+      await accountService.deleteAccount({
+        password:
+          deletePassword,
+
+        confirmation:
+          deleteConfirmation.trim(),
+      });
+
+      await authService
+        .logout()
+        .catch(() => undefined);
+
+      router.replace(
+        "/login?accountDeleted=true"
+      );
+
+      router.refresh();
+    } catch (error) {
+      setDeleteError(
+        getApiErrorMessage(
+          error,
+          "Unable to permanently delete your account."
+        )
+      );
+
+      setDeletingAccount(false);
+    }
+  }
+
+  /*
+   * ============================================================
+   * LOADING / ERROR
+   * ============================================================
+   */
+
   if (loading) {
     return (
-      <div className="flex min-h-[520px] items-center justify-center rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex min-h-[500px] items-center justify-center">
         <div className="text-center">
           <Loader2
-            size={32}
-            className="mx-auto animate-spin text-blue-600"
+            size={30}
+            className="mx-auto animate-spin text-[#0B2D5C]"
           />
 
-          <p className="mt-4 text-sm font-medium text-slate-500">
+          <p className="mt-3 text-sm font-medium text-slate-500">
             Loading account settings...
           </p>
         </div>
@@ -395,189 +623,196 @@ export default function AccountSettingsPage() {
     );
   }
 
-  if (!account) {
+  if (
+    accountError &&
+    !account
+  ) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-6">
-        <div className="flex items-start gap-3">
-          <AlertCircle
-            size={22}
-            className="mt-0.5 shrink-0 text-red-600"
-          />
-
-          <div>
-            <h2 className="font-bold text-red-900">
-              Unable to load account
-            </h2>
-
-            <p className="mt-1 text-sm text-red-700">
-              {accountError ??
-                "Your account information could not be loaded."}
-            </p>
-
-            <button
-              type="button"
-              onClick={() => {
-                void loadAccount();
-              }}
-              className="mt-4 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
-            >
-              Try again
-            </button>
-          </div>
-        </div>
+      <div className="mx-auto max-w-xl py-12">
+        <StatusMessage
+          type="error"
+          message={
+            accountError
+          }
+        />
       </div>
     );
   }
 
+  /*
+   * ============================================================
+   * PAGE
+   * ============================================================
+   */
+
   return (
     <div className="space-y-6 pb-10">
-      <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#071B36] via-[#0B2D5C] to-[#174B87] p-6 text-white shadow-xl md:p-8">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-[#F2D675]">
-              <ShieldCheck size={15} />
+      {/* ======================================================
+          HEADER
+         ====================================================== */}
 
-              Account & Security
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-blue-50/50 to-amber-50/50 shadow-sm">
+        <div className="p-6 sm:p-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#0B2D5C] text-[#F2D675] shadow-lg">
+              <ShieldCheck size={30} />
             </div>
 
-            <h1 className="text-2xl font-black tracking-tight md:text-3xl">
-              Account Settings
-            </h1>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#B2871B]">
+                Account & Security
+              </p>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-blue-100">
-              Manage your account information,
-              password and active sessions securely.
-            </p>
-          </div>
+              <h1 className="mt-2 text-2xl font-black tracking-tight text-[#0B2D5C] sm:text-3xl">
+                Account Settings
+              </h1>
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.08] px-5 py-4 backdrop-blur">
-            <p className="text-xs font-semibold uppercase tracking-wider text-blue-200">
-              Account status
-            </p>
-
-            <div className="mt-2 flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-
-              <span className="font-bold">
-                {account.status}
-              </span>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                Manage your account information,
+                password, active sessions and account
+                lifecycle.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      <form
-        onSubmit={handleAccountSubmit}
-        className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-7"
-      >
+      {/* ======================================================
+          ACCOUNT DETAILS
+         ====================================================== */}
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
         <SectionHeader
           icon={
-            <UserRound size={20} />
+            <UserRound size={21} />
           }
-          title="Personal account details"
-          description="Update the basic information associated with your Holy Matrimony account."
+          title="Account details"
+          description="Keep your basic account information current."
         />
 
-        <div className="mt-7 grid gap-5 md:grid-cols-2">
-          <Field
-            label="Full name"
-            icon={
-              <UserRound size={18} />
-            }
-          >
-            <input
-              type="text"
-              required
-              minLength={2}
-              maxLength={120}
-              value={form.fullName}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  fullName:
-                    event.target.value,
-                }))
-              }
-              className="w-full bg-transparent text-sm font-medium text-slate-900 outline-none"
-              placeholder="Your full name"
-            />
-          </Field>
+        <form
+          onSubmit={
+            handleAccountUpdate
+          }
+          className="mt-6 space-y-5"
+        >
+          <div className="grid gap-5 md:grid-cols-2">
+            <Field>
+              <FieldLabel>
+                Full name
+              </FieldLabel>
 
-          <Field
-            label="Mobile number"
-            icon={
-              <Phone size={18} />
-            }
-          >
-            <input
-              type="tel"
-              value={form.mobile}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  mobile:
-                    event.target.value,
-                }))
-              }
-              className="w-full bg-transparent text-sm font-medium text-slate-900 outline-none"
-              placeholder="+91XXXXXXXXXX"
-            />
-          </Field>
-
-          <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-bold text-slate-700">
-              Email address
-            </label>
-
-            <div className="flex min-h-14 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4">
-              <Mail
-                size={18}
-                className="shrink-0 text-slate-400"
-              />
-
-              <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-600">
-                {account.email}
-              </span>
-
-              {account.emailVerified && (
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
-                  <CheckCircle2
-                    size={13}
+              <InputShell
+                icon={
+                  <UserRound
+                    size={18}
                   />
-                  Verified
-                </span>
-              )}
-            </div>
+                }
+              >
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(
+                    event
+                  ) =>
+                    setFullName(
+                      event.target
+                        .value
+                    )
+                  }
+                  maxLength={120}
+                  autoComplete="name"
+                  className="w-full bg-transparent text-sm outline-none"
+                />
+              </InputShell>
+            </Field>
 
-            <p className="mt-2 text-xs leading-5 text-slate-500">
-              Email changes require a separate
-              verification process and are currently
-              protected from direct editing.
-            </p>
+            <Field>
+              <FieldLabel>
+                Mobile number
+              </FieldLabel>
+
+              <InputShell
+                icon={
+                  <Smartphone
+                    size={18}
+                  />
+                }
+              >
+                <input
+                  type="tel"
+                  value={mobile}
+                  onChange={(
+                    event
+                  ) =>
+                    setMobile(
+                      event.target
+                        .value
+                    )
+                  }
+                  maxLength={20}
+                  autoComplete="tel"
+                  placeholder="Mobile number"
+                  className="w-full bg-transparent text-sm outline-none"
+                />
+              </InputShell>
+            </Field>
           </div>
-        </div>
 
-        {accountError && (
-          <StatusMessage
-            type="error"
-            message={accountError}
-          />
-        )}
+          <Field>
+            <FieldLabel>
+              Email address
+            </FieldLabel>
 
-        {accountSuccess && (
-          <StatusMessage
-            type="success"
-            message={accountSuccess}
-          />
-        )}
+            <InputShell
+              icon={
+                <Mail size={18} />
+              }
+              muted
+            >
+              <input
+                type="email"
+                value={
+                  account?.email ??
+                  ""
+                }
+                disabled
+                className="w-full bg-transparent text-sm text-slate-500 outline-none"
+              />
+            </InputShell>
 
-        <div className="mt-6 flex justify-end">
+            <p className="mt-2 text-xs text-slate-400">
+              Your login email cannot currently be
+              changed from this page.
+            </p>
+          </Field>
+
+          {accountSuccess && (
+            <StatusMessage
+              type="success"
+              message={
+                accountSuccess
+              }
+            />
+          )}
+
+          {updateError && (
+            <StatusMessage
+              type="error"
+              message={
+                updateError
+              }
+            />
+          )}
+
           <button
             type="submit"
-            disabled={saving}
-            className="inline-flex min-w-40 items-center justify-center gap-2 rounded-2xl bg-[#0B2D5C] px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-[#123C73] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={
+              savingAccount
+            }
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0B2D5C] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#143D70] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {saving ? (
+            {savingAccount ? (
               <Loader2
                 size={18}
                 className="animate-spin"
@@ -586,38 +821,39 @@ export default function AccountSettingsPage() {
               <Save size={18} />
             )}
 
-            {saving
+            {savingAccount
               ? "Saving..."
               : "Save changes"}
           </button>
-        </div>
-      </form>
+        </form>
+      </section>
 
-      <form
-        onSubmit={handlePasswordSubmit}
-        className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-7"
-      >
+      {/* ======================================================
+          PASSWORD
+         ====================================================== */}
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
         <SectionHeader
           icon={
-            <KeyRound size={20} />
+            <KeyRound size={21} />
           }
-          title="Change password"
-          description="Use your current password to securely create a new password."
+          title="Password"
+          description="Use a strong password that you do not use on other websites."
         />
 
-        <div className="mt-7 grid gap-5">
+        <form
+          onSubmit={
+            handlePasswordChange
+          }
+          className="mt-6 space-y-5"
+        >
           <PasswordField
             label="Current password"
             value={
-              passwordForm.currentPassword
+              currentPassword
             }
-            onChange={(value) =>
-              setPasswordForm(
-                (current) => ({
-                  ...current,
-                  currentPassword: value,
-                })
-              )
+            onChange={
+              setCurrentPassword
             }
           />
 
@@ -625,60 +861,48 @@ export default function AccountSettingsPage() {
             <PasswordField
               label="New password"
               value={
-                passwordForm.newPassword
+                newPassword
               }
-              onChange={(value) =>
-                setPasswordForm(
-                  (current) => ({
-                    ...current,
-                    newPassword: value,
-                  })
-                )
+              onChange={
+                setNewPassword
               }
             />
 
             <PasswordField
               label="Confirm new password"
               value={
-                passwordForm.confirmPassword
+                confirmPassword
               }
-              onChange={(value) =>
-                setPasswordForm(
-                  (current) => ({
-                    ...current,
-                    confirmPassword: value,
-                  })
-                )
+              onChange={
+                setConfirmPassword
               }
             />
           </div>
-        </div>
 
-        <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm leading-6 text-blue-800">
-          Changing your password will securely
-          revoke existing login sessions. You will
-          be asked to sign in again.
-        </div>
+          {passwordSuccess && (
+            <StatusMessage
+              type="success"
+              message={
+                passwordSuccess
+              }
+            />
+          )}
 
-        {passwordError && (
-          <StatusMessage
-            type="error"
-            message={passwordError}
-          />
-        )}
+          {passwordError && (
+            <StatusMessage
+              type="error"
+              message={
+                passwordError
+              }
+            />
+          )}
 
-        {passwordSuccess && (
-          <StatusMessage
-            type="success"
-            message={passwordSuccess}
-          />
-        )}
-
-        <div className="mt-6 flex justify-end">
           <button
             type="submit"
-            disabled={changingPassword}
-            className="inline-flex min-w-44 items-center justify-center gap-2 rounded-2xl bg-[#0B2D5C] px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-[#123C73] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={
+              changingPassword
+            }
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0B2D5C] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#143D70] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {changingPassword ? (
               <Loader2
@@ -686,123 +910,148 @@ export default function AccountSettingsPage() {
                 className="animate-spin"
               />
             ) : (
-              <KeyRound size={18} />
+              <KeyRound
+                size={18}
+              />
             )}
 
             {changingPassword
-              ? "Updating..."
+              ? "Changing password..."
               : "Change password"}
           </button>
-        </div>
-      </form>
+        </form>
+      </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-7">
+      {/* ======================================================
+          ACTIVE SESSIONS
+         ====================================================== */}
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
         <SectionHeader
           icon={
-            <MonitorSmartphone
-              size={20}
+            <ShieldCheck
+              size={21}
             />
           }
           title="Login security"
-          description="Protect your account if you signed in on another computer, phone or shared device."
+          description="Sign out every browser or device currently using your account."
         />
 
-        <div className="mt-6 flex flex-col gap-5 rounded-2xl border border-slate-200 bg-slate-50 p-5 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-[#0B2D5C] shadow-sm">
-              <LockKeyhole
+        <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-bold text-[#0B2D5C]">
+                Log out all devices
+              </p>
+
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                All existing login sessions will
+                require authentication again.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              disabled={
+                loggingOutAll
+              }
+              onClick={() => {
+                void handleLogoutAll();
+              }}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-white px-5 py-3 text-sm font-bold text-[#0B2D5C] shadow-sm transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loggingOutAll ? (
+                <Loader2
+                  size={18}
+                  className="animate-spin"
+                />
+              ) : (
+                <LogOut size={18} />
+              )}
+
+              {loggingOutAll
+                ? "Logging out..."
+                : "Log out all"}
+            </button>
+          </div>
+        </div>
+
+        {securityError && (
+          <div className="mt-4">
+            <StatusMessage
+              type="error"
+              message={
+                securityError
+              }
+            />
+          </div>
+        )}
+      </section>
+
+      {/* ======================================================
+          DANGER ZONE
+         ====================================================== */}
+
+      <section className="rounded-3xl border border-red-200 bg-white p-5 shadow-sm sm:p-7">
+        <SectionHeader
+          danger
+          icon={
+            <ShieldAlert
+              size={21}
+            />
+          }
+          title="Danger zone"
+          description="These actions affect access to your Holy Matrimony account."
+        />
+
+        {/* ====================================================
+            DEACTIVATE
+           ==================================================== */}
+
+        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50/70 p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
+              <ShieldAlert
                 size={20}
               />
             </div>
 
             <div>
-              <h3 className="font-bold text-slate-900">
-                Log out from all devices
+              <h3 className="font-bold text-red-950">
+                Deactivate account
               </h3>
 
-              <p className="mt-1 max-w-xl text-sm leading-6 text-slate-500">
-                Revokes all active refresh sessions,
-                including this browser. Use this if
-                you believe another device may still
-                have access to your account.
+              <p className="mt-1 text-sm leading-6 text-red-700">
+                Temporarily disable your account.
+                You can reactivate it later using
+                your email address and password.
               </p>
             </div>
           </div>
 
-          <button
-            type="button"
-            disabled={loggingOutAll}
-            onClick={() => {
-              void handleLogoutAll();
-            }}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-5 py-3 text-sm font-bold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {loggingOutAll ? (
-              <Loader2
-                size={18}
-                className="animate-spin"
-              />
-            ) : (
-              <LogOut size={18} />
-            )}
-
-            {loggingOutAll
-              ? "Logging out..."
-              : "Log out all"}
-          </button>
-        </div>
-
-        {securityError && (
-          <StatusMessage
-            type="error"
-            message={securityError}
-          />
-        )}
-      </section>
-
-      <section className="rounded-3xl border border-red-200 bg-white p-5 shadow-sm md:p-7">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
-            <Trash2 size={20} />
-          </div>
-
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">
-              Danger zone
-            </h2>
-
-            <p className="mt-1 text-sm leading-6 text-slate-500">
-              Temporarily deactivate your Holy
-              Matrimony account. Your account data is
-              retained and you can reactivate it later.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50/50 p-5">
-          <h3 className="font-bold text-red-900">
-            Deactivate account
-          </h3>
-
-          <p className="mt-1 text-sm leading-6 text-red-700">
-            You will immediately lose access and all
-            active login sessions will be revoked.
+          <p className="mt-4 text-sm leading-6 text-red-700">
+            You will immediately lose access and
+            all active login sessions will be
+            revoked.
           </p>
 
           <div className="mt-5 grid gap-4">
             <div>
-              <label className="mb-2 block text-sm font-bold text-slate-700">
+              <FieldLabel>
                 Password confirmation
-              </label>
+              </FieldLabel>
 
               <input
                 type="password"
                 value={
                   deactivationPassword
                 }
-                onChange={(event) =>
+                onChange={(
+                  event
+                ) =>
                   setDeactivationPassword(
-                    event.target.value
+                    event.target
+                      .value
                   )
                 }
                 autoComplete="current-password"
@@ -812,20 +1061,23 @@ export default function AccountSettingsPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-bold text-slate-700">
-                Reason
-                <span className="ml-1 font-normal text-slate-400">
+              <FieldLabel>
+                Reason{" "}
+                <span className="font-normal text-slate-400">
                   (optional)
                 </span>
-              </label>
+              </FieldLabel>
 
               <textarea
                 value={
                   deactivationReason
                 }
-                onChange={(event) =>
+                onChange={(
+                  event
+                ) =>
                   setDeactivationReason(
-                    event.target.value
+                    event.target
+                      .value
                   )
                 }
                 maxLength={500}
@@ -837,17 +1089,21 @@ export default function AccountSettingsPage() {
           </div>
 
           {deactivationError && (
-            <StatusMessage
-              type="error"
-              message={
-                deactivationError
-              }
-            />
+            <div className="mt-4">
+              <StatusMessage
+                type="error"
+                message={
+                  deactivationError
+                }
+              />
+            </div>
           )}
 
           <button
             type="button"
-            disabled={deactivating}
+            disabled={
+              deactivating
+            }
             onClick={() => {
               void handleDeactivateAccount();
             }}
@@ -859,46 +1115,218 @@ export default function AccountSettingsPage() {
                 className="animate-spin"
               />
             ) : (
-              <Trash2 size={18} />
+              <ShieldAlert
+                size={18}
+              />
             )}
 
             {deactivating
               ? "Deactivating..."
               : "Deactivate my account"}
           </button>
+
+          <div className="mt-4 text-sm text-slate-500">
+            Already deactivated?{" "}
+            <Link
+              href="/reactivate-account"
+              className="font-bold text-blue-700 hover:underline"
+            >
+              Reactivate your account
+            </Link>
+          </div>
         </div>
 
-        <div className="mt-4 text-sm text-slate-500">
-          Already deactivated?{" "}
-          <Link
-            href="/reactivate-account"
-            className="font-bold text-blue-700 hover:underline"
+        {/* ====================================================
+            PERMANENT DELETE
+           ==================================================== */}
+
+        <div className="mt-6 rounded-2xl border-2 border-red-300 bg-red-50 p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-200 text-red-800">
+              <Trash2 size={20} />
+            </div>
+
+            <div>
+              <h3 className="font-black text-red-950">
+                Permanently delete account
+              </h3>
+
+              <p className="mt-1 text-sm leading-6 text-red-800">
+                This permanently removes your
+                personal profile information and
+                profile photos. This action cannot
+                be undone.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-xl border border-red-200 bg-white p-4">
+            <p className="text-sm font-black text-red-900">
+              Before continuing:
+            </p>
+
+            <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-6 text-red-700">
+              <li>
+                Your profile will no longer be
+                accessible.
+              </li>
+
+              <li>
+                Profile photos will be permanently
+                removed.
+              </li>
+
+              <li>
+                Personal profile information will
+                be erased.
+              </li>
+
+              <li>
+                All active sessions will be
+                revoked.
+              </li>
+
+              <li>
+                This account cannot be
+                reactivated.
+              </li>
+            </ul>
+          </div>
+
+          <div className="mt-5 grid gap-4">
+            <div>
+              <FieldLabel>
+                Password
+              </FieldLabel>
+
+              <input
+                type="password"
+                value={
+                  deletePassword
+                }
+                onChange={(
+                  event
+                ) =>
+                  setDeletePassword(
+                    event.target
+                      .value
+                  )
+                }
+                autoComplete="current-password"
+                placeholder="Enter your password"
+                className="h-12 w-full rounded-xl border border-red-300 bg-white px-4 text-sm outline-none transition focus:border-red-600 focus:ring-4 focus:ring-red-100"
+              />
+            </div>
+
+            <div>
+              <FieldLabel>
+                Type DELETE to confirm
+              </FieldLabel>
+
+              <input
+                type="text"
+                value={
+                  deleteConfirmation
+                }
+                onChange={(
+                  event
+                ) =>
+                  setDeleteConfirmation(
+                    event.target
+                      .value
+                  )
+                }
+                autoComplete="off"
+                placeholder="DELETE"
+                className="h-12 w-full rounded-xl border border-red-300 bg-white px-4 font-mono text-sm font-bold tracking-wider outline-none transition focus:border-red-600 focus:ring-4 focus:ring-red-100"
+              />
+            </div>
+          </div>
+
+          {deleteError && (
+            <div className="mt-4">
+              <StatusMessage
+                type="error"
+                message={
+                  deleteError
+                }
+              />
+            </div>
+          )}
+
+          <button
+            type="button"
+            disabled={
+              deletingAccount ||
+              deleteConfirmation !==
+                "DELETE" ||
+              !deletePassword
+            }
+            onClick={() => {
+              void handleDeleteAccount();
+            }}
+            className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-red-800 px-5 py-3 text-sm font-black text-white transition hover:bg-red-900 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Reactivate your account
-          </Link>
+            {deletingAccount ? (
+              <Loader2
+                size={18}
+                className="animate-spin"
+              />
+            ) : (
+              <Trash2 size={18} />
+            )}
+
+            {deletingAccount
+              ? "Deleting account..."
+              : "Permanently delete account"}
+          </button>
         </div>
       </section>
     </div>
   );
 }
 
+/*
+ * ============================================================
+ * SECTION HEADER
+ * ============================================================
+ */
+
 function SectionHeader({
   icon,
   title,
   description,
+  danger = false,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
+  danger?: boolean;
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+      <div
+        className={[
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+
+          danger
+            ? "bg-red-100 text-red-700"
+            : "bg-blue-50 text-[#0B2D5C]",
+        ].join(" ")}
+      >
         {icon}
       </div>
 
       <div>
-        <h2 className="text-lg font-bold text-slate-900">
+        <h2
+          className={[
+            "text-lg font-black",
+
+            danger
+              ? "text-red-950"
+              : "text-[#0B2D5C]",
+          ].join(" ")}
+        >
           {title}
         </h2>
 
@@ -910,31 +1338,78 @@ function SectionHeader({
   );
 }
 
+/*
+ * ============================================================
+ * FIELD
+ * ============================================================
+ */
+
 function Field({
-  label,
-  icon,
   children,
 }: {
-  label: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
+  children:
+    React.ReactNode;
 }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-bold text-slate-700">
-        {label}
-      </label>
-
-      <div className="flex min-h-14 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-blue-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-100">
-        <span className="shrink-0 text-slate-400">
-          {icon}
-        </span>
-
-        {children}
-      </div>
+      {children}
     </div>
   );
 }
+
+function FieldLabel({
+  children,
+}: {
+  children:
+    React.ReactNode;
+}) {
+  return (
+    <label className="mb-2 block text-sm font-bold text-slate-700">
+      {children}
+    </label>
+  );
+}
+
+/*
+ * ============================================================
+ * INPUT SHELL
+ * ============================================================
+ */
+
+function InputShell({
+  icon,
+  children,
+  muted = false,
+}: {
+  icon: React.ReactNode;
+  children:
+    React.ReactNode;
+  muted?: boolean;
+}) {
+  return (
+    <div
+      className={[
+        "flex h-12 items-center gap-3 rounded-xl border px-4 transition",
+
+        muted
+          ? "border-slate-200 bg-slate-100"
+          : "border-slate-200 bg-white focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100",
+      ].join(" ")}
+    >
+      <span className="shrink-0 text-slate-400">
+        {icon}
+      </span>
+
+      {children}
+    </div>
+  );
+}
+
+/*
+ * ============================================================
+ * PASSWORD FIELD
+ * ============================================================
+ */
 
 function PasswordField({
   label,
@@ -943,49 +1418,51 @@ function PasswordField({
 }: {
   label: string;
   value: string;
-  onChange: (
-    value: string
-  ) => void;
+  onChange:
+    (value: string) => void;
 }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-bold text-slate-700">
+      <FieldLabel>
         {label}
-      </label>
+      </FieldLabel>
 
-      <div className="flex min-h-14 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-blue-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-100">
-        <LockKeyhole
-          size={18}
-          className="shrink-0 text-slate-400"
-        />
-
+      <InputShell
+        icon={
+          <KeyRound size={18} />
+        }
+      >
         <input
           type="password"
-          required
           value={value}
-          onChange={(event) =>
+          onChange={(
+            event
+          ) =>
             onChange(
               event.target.value
             )
           }
-          autoComplete={
-            label ===
-            "Current password"
-              ? "current-password"
-              : "new-password"
-          }
-          className="w-full bg-transparent text-sm font-medium text-slate-900 outline-none"
+          autoComplete="current-password"
+          className="w-full bg-transparent text-sm outline-none"
         />
-      </div>
+      </InputShell>
     </div>
   );
 }
+
+/*
+ * ============================================================
+ * STATUS MESSAGE
+ * ============================================================
+ */
 
 function StatusMessage({
   type,
   message,
 }: {
-  type: "success" | "error";
+  type:
+    | "success"
+    | "error";
   message: string;
 }) {
   const success =
@@ -994,7 +1471,8 @@ function StatusMessage({
   return (
     <div
       className={[
-        "mt-5 flex items-start gap-3 rounded-2xl border p-4 text-sm font-medium",
+        "flex items-start gap-3 rounded-xl border p-4 text-sm font-medium",
+
         success
           ? "border-emerald-200 bg-emerald-50 text-emerald-700"
           : "border-red-200 bg-red-50 text-red-700",

@@ -110,80 +110,98 @@ public class PresenceService {
      * ============================================================
      */
 
-    @Transactional
-    public synchronized void userDisconnected(
-            String sessionId
+  @Transactional
+public synchronized void userDisconnected(
+        String sessionId
+) {
+
+    if (
+            !StringUtils.hasText(
+                    sessionId
+            )
     ) {
-
-        if (
-                !StringUtils.hasText(
-                        sessionId
-                )
-        ) {
-            return;
-        }
-
-        UUID userId =
-                sessionUsers.remove(
-                        sessionId
-                );
-
-        if (userId == null) {
-            return;
-        }
-
-        Set<String> sessions =
-                activeSessions.get(
-                        userId
-                );
-
-        if (sessions == null) {
-            return;
-        }
-
-        sessions.remove(
-                sessionId
-        );
-
-        /*
-         * User may still be connected through
-         * another tab or another device.
-         */
-        if (!sessions.isEmpty()) {
-            return;
-        }
-
-        activeSessions.remove(
-                userId
-        );
-
-        LocalDateTime now =
-                LocalDateTime.now();
-
-        lastSeenTimes.put(
-                userId,
-                now
-        );
-
-        /*
-         * Persist Last Seen so it survives
-         * application/server restarts.
-         */
-        userRepository
-                .findById(
-                        userId
-                )
-                .ifPresent(user -> {
-
-                    user.setLastSeenAt(
-                            now
-                    );
-
-                    userRepository.save(
-                            user
-                    );
-                });
+        return;
     }
+
+    UUID userId =
+            sessionUsers.remove(
+                    sessionId
+            );
+
+    if (userId == null) {
+        return;
+    }
+
+    Set<String> sessions =
+            activeSessions.get(
+                    userId
+            );
+
+    if (sessions == null) {
+        return;
+    }
+
+    sessions.remove(
+            sessionId
+    );
+
+    /*
+     * User may still be connected through
+     * another tab or another device.
+     */
+    if (!sessions.isEmpty()) {
+        return;
+    }
+
+    activeSessions.remove(
+            userId
+    );
+
+    /*
+     * Only ACTIVE accounts should receive
+     * a new Last Seen timestamp.
+     *
+     * Deleted, deactivated, suspended and
+     * blocked accounts must not have their
+     * activity timestamp recreated during
+     * WebSocket disconnect.
+     */
+    userRepository
+            .findById(
+                    userId
+            )
+            .ifPresent(user -> {
+
+                if (
+                        !Boolean.TRUE.equals(
+                                user.getEnabled()
+                        ) ||
+                        !user.isAccountActive()
+                ) {
+                    lastSeenTimes.remove(
+                            userId
+                    );
+
+                    return;
+                }
+
+                LocalDateTime now =
+                        LocalDateTime.now();
+
+                lastSeenTimes.put(
+                        userId,
+                        now
+                );
+
+                user.setLastSeenAt(
+                        now
+                );
+
+                userRepository.save(
+                        user
+                );
+            });
+}
 
     /*
      * ============================================================

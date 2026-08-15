@@ -3,8 +3,9 @@ import api from "@/lib/api";
 import {
   Account,
   AccountActionResponse,
-  DeactivateAccountRequest,
   ChangePasswordRequest,
+  DeactivateAccountRequest,
+  DeleteAccountRequest,
   ReactivateAccountRequest,
   UpdateAccountRequest,
 } from "@/features/account/types";
@@ -17,12 +18,26 @@ export const accountService = {
     return response.data;
   },
 
+  
+
   async reactivateAccount(
   request: ReactivateAccountRequest
 ): Promise<AccountActionResponse> {
   const response =
     await api.post<AccountActionResponse>(
       "/auth/reactivate-account",
+      request
+    );
+
+  return response.data;
+},
+
+deleteAccount: async (
+  request: DeleteAccountRequest
+): Promise<AccountActionResponse> => {
+  const response =
+    await api.post<AccountActionResponse>(
+      "/account/delete",
       request
     );
 
