@@ -192,6 +192,25 @@ public class PhotoService {
 
         return getMyPhotos(email);
     }
+public void deleteAllPhotosForUser(String email) {
+
+    List<ProfilePhoto> photos =
+            photoRepository
+                    .findAllByUserEmailOrderByDisplayOrderAsc(
+                            email
+                    );
+
+    for (ProfilePhoto photo : photos) {
+
+        String storedFileName =
+                photo.getStoredFileName();
+
+        photoRepository.delete(photo);
+        photoRepository.flush();
+
+        storageService.delete(storedFileName);
+    }
+}
 
     private void validatePhotoOrder(
             List<UUID> photoIds,

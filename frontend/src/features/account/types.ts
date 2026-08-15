@@ -16,6 +16,11 @@ export interface UpdateAccountRequest {
   mobile: string;
 }
 
+export interface DeleteAccountRequest {
+  password: string;
+  confirmation: string;
+}
+
 export interface ReactivateAccountRequest {
   email: string;
   password: string;

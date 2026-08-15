@@ -70,10 +70,13 @@ public class ActiveAccountValidator {
                     "This account has been blocked.";
 
             case DEACTIVATED ->
-                    "This account has been deactivated.";
+        "This account has been deactivated.";
 
-            case ACTIVE ->
-                    "This account is currently unavailable.";
+case DELETED ->
+        "This account has been permanently deleted.";
+
+case ACTIVE ->
+        "This account is currently unavailable.";
         };
     }
 }
