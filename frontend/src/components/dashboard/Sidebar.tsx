@@ -7,14 +7,10 @@ import {
 
 import Link from "next/link";
 
-
-
 import {
   usePathname,
   useRouter,
 } from "next/navigation";
-
-
 
 import {
   Bookmark,
@@ -34,8 +30,6 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-
-
 
 import authService, {
   AuthUser,
@@ -76,42 +70,48 @@ const menuItems: MenuItem[] = [
     icon: UserRound,
   },
   {
+    name: "Trust & Verification",
+    description: "Build profile trust",
+    href: "/verification",
+    icon: ShieldCheck,
+  },
+  {
     name: "Search",
     description: "Discover suitable matches",
     href: "/search",
     icon: Search,
   },
   {
-  name: "Interests",
-  description: "Sent and received interests",
-  icon: Heart,
-  children: [
-    {
-      name: "Received Interests",
-      description: "Review member interests",
-      href: "/received-interests",
-      icon: Heart,
-    },
-    {
-      name: "Sent Interests",
-      description: "Track interests you sent",
-      href: "/sent-interests",
-      icon: Send,
-    },
-  ],
-},
-{
-  name: "My Shortlists",
-  description: "Saved member profiles",
-  href: "/shortlists",
-  icon: Bookmark,
-},
-{
-  name: "Chat",
-  description: "Private conversations",
-  href: "/chat",
-  icon: MessageCircle,
-},
+    name: "Interests",
+    description: "Sent and received interests",
+    icon: Heart,
+    children: [
+      {
+        name: "Received Interests",
+        description: "Review member interests",
+        href: "/received-interests",
+        icon: Heart,
+      },
+      {
+        name: "Sent Interests",
+        description: "Track interests you sent",
+        href: "/sent-interests",
+        icon: Send,
+      },
+    ],
+  },
+  {
+    name: "My Shortlists",
+    description: "Saved member profiles",
+    href: "/shortlists",
+    icon: Bookmark,
+  },
+  {
+    name: "Chat",
+    description: "Private conversations",
+    href: "/chat",
+    icon: MessageCircle,
+  },
   {
     name: "Membership",
     description: "Manage your subscription",
@@ -120,17 +120,17 @@ const menuItems: MenuItem[] = [
     badge: "Premium",
   },
   {
-  name: "Privacy Settings",
-  description: "Control your visibility",
-  href: "/privacy",
-  icon: LockKeyhole,
-},
-{
-  name: "Account Settings",
-  description: "Account and security",
-  href: "/settings",
-  icon: Settings,
-},
+    name: "Privacy Settings",
+    description: "Control your visibility",
+    href: "/privacy",
+    icon: LockKeyhole,
+  },
+  {
+    name: "Account Settings",
+    description: "Account and security",
+    href: "/settings",
+    icon: Settings,
+  },
 ];
 
 function getInitial(

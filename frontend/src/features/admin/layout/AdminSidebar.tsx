@@ -20,6 +20,11 @@ const navigation = [
     icon: "♡",
   },
   {
+    label: "Trust & Verification",
+    href: "/admin/verifications",
+    icon: "✓",
+  },
+  {
     label: "Memberships",
     href: "/admin/memberships",
     icon: "♛",
