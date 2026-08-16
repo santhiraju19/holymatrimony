@@ -9,6 +9,12 @@ export type VerificationStatus =
   | "APPROVED"
   | "REJECTED";
 
+export type IdentityDocumentType =
+  | "AADHAAR"
+  | "PASSPORT"
+  | "DRIVING_LICENCE"
+  | "VOTER_ID";
+
 export interface AdminMemberVerification {
   id: string;
   userId: string;
@@ -29,6 +35,13 @@ export interface AdminMemberVerification {
 
   createdAt?: string | null;
   updatedAt?: string | null;
+
+  hasIdentityDocument: boolean;
+
+  identityDocumentType?: IdentityDocumentType | null;
+  identityDocumentFileName?: string | null;
+  identityDocumentContentType?: string | null;
+  identityDocumentFileSize?: number | null;
 }
 
 export interface AdminMemberVerificationPage {

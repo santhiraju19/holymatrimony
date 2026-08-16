@@ -1,5 +1,6 @@
 package com.theholymatrimony.backend.admin.dto;
 
+import com.theholymatrimony.backend.verification.document.IdentityDocumentType;
 import com.theholymatrimony.backend.verification.enums.VerificationStatus;
 import com.theholymatrimony.backend.verification.enums.VerificationType;
 
@@ -38,4 +39,14 @@ public class AdminMemberVerificationResponse {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    private boolean hasIdentityDocument;
+
+    private IdentityDocumentType identityDocumentType;
+
+    private String identityDocumentFileName;
+
+    private String identityDocumentContentType;
+
+    private Long identityDocumentFileSize;
 }

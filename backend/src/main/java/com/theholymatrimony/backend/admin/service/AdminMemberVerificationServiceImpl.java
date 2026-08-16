@@ -5,6 +5,8 @@ import com.theholymatrimony.backend.admin.dto.AdminMemberVerificationResponse;
 import com.theholymatrimony.backend.admin.dto.UpdateMemberVerificationRequest;
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.auth.repository.UserRepository;
+import com.theholymatrimony.backend.verification.document.IdentityVerificationDocument;
+import com.theholymatrimony.backend.verification.document.IdentityVerificationDocumentRepository;
 import com.theholymatrimony.backend.verification.entity.MemberVerification;
 import com.theholymatrimony.backend.verification.enums.VerificationStatus;
 import com.theholymatrimony.backend.verification.enums.VerificationType;
@@ -41,6 +43,9 @@ public class AdminMemberVerificationServiceImpl
 
     private final UserRepository
             userRepository;
+
+    private final IdentityVerificationDocumentRepository
+            identityVerificationDocumentRepository;
 
     @Override
     public AdminMemberVerificationPageResponse getVerifications(
@@ -99,7 +104,9 @@ public class AdminMemberVerificationServiceImpl
 
         return AdminMemberVerificationPageResponse
                 .builder()
-                .content(content)
+                .content(
+                        content
+                )
                 .page(
                         result.getNumber()
                 )
@@ -149,6 +156,7 @@ public class AdminMemberVerificationServiceImpl
                 verification.getVerificationType() ==
                         VerificationType.MOBILE
         ) {
+
             throw new IllegalStateException(
                     "Mobile verification cannot be reviewed manually."
             );
@@ -158,6 +166,7 @@ public class AdminMemberVerificationServiceImpl
                 verification.getVerificationStatus() !=
                         VerificationStatus.PENDING
         ) {
+
             throw new IllegalStateException(
                     "Only pending verification requests can be reviewed."
             );
@@ -173,6 +182,7 @@ public class AdminMemberVerificationServiceImpl
                 requestedStatus !=
                         VerificationStatus.REJECTED
         ) {
+
             throw new IllegalArgumentException(
                     "Verification status must be APPROVED or REJECTED."
             );
@@ -189,8 +199,32 @@ public class AdminMemberVerificationServiceImpl
                                 .isBlank()
                 )
         ) {
+
             throw new IllegalArgumentException(
                     "A rejection reason is required."
+            );
+        }
+
+        /*
+         * Identity verification cannot be approved
+         * unless a securely uploaded document exists.
+         */
+        if (
+                verification.getVerificationType() ==
+                        VerificationType.IDENTITY
+                        &&
+                requestedStatus ==
+                        VerificationStatus.APPROVED
+                        &&
+                identityVerificationDocumentRepository
+                        .findByVerificationId(
+                                verification.getId()
+                        )
+                        .isEmpty()
+        ) {
+
+            throw new IllegalStateException(
+                    "Identity verification cannot be approved without an identity document."
             );
         }
 
@@ -260,6 +294,7 @@ public class AdminMemberVerificationServiceImpl
                 authentication.getName()
                         .isBlank()
         ) {
+
             throw new IllegalStateException(
                     "Authenticated administrator is required."
             );
@@ -287,48 +322,93 @@ public class AdminMemberVerificationServiceImpl
         User user =
                 verification.getUser();
 
-        return AdminMemberVerificationResponse
-                .builder()
-                .id(
-                        verification.getId()
-                )
-                .userId(
-                        user.getId()
-                )
-                .fullName(
-                        user.getFullName()
-                )
-                .email(
-                        user.getEmail()
-                )
-                .verificationType(
-                        verification.getVerificationType()
-                )
-                .verificationStatus(
-                        verification.getVerificationStatus()
-                )
-                .memberNote(
-                        verification.getMemberNote()
-                )
-                .submittedAt(
-                        verification.getSubmittedAt()
-                )
-                .reviewedAt(
-                        verification.getReviewedAt()
-                )
-                .reviewedBy(
-                        verification.getReviewedBy()
-                )
-                .reviewReason(
-                        verification.getReviewReason()
-                )
-                .createdAt(
-                        verification.getCreatedAt()
-                )
-                .updatedAt(
-                        verification.getUpdatedAt()
-                )
-                .build();
+        IdentityVerificationDocument
+                identityDocument =
+                null;
+
+        if (
+                verification.getVerificationType() ==
+                        VerificationType.IDENTITY
+        ) {
+
+            identityDocument =
+                    identityVerificationDocumentRepository
+                            .findByVerificationId(
+                                    verification.getId()
+                            )
+                            .orElse(null);
+        }
+
+        AdminMemberVerificationResponse
+                .AdminMemberVerificationResponseBuilder
+                builder =
+                AdminMemberVerificationResponse
+                        .builder()
+                        .id(
+                                verification.getId()
+                        )
+                        .userId(
+                                user.getId()
+                        )
+                        .fullName(
+                                user.getFullName()
+                        )
+                        .email(
+                                user.getEmail()
+                        )
+                        .verificationType(
+                                verification.getVerificationType()
+                        )
+                        .verificationStatus(
+                                verification.getVerificationStatus()
+                        )
+                        .memberNote(
+                                verification.getMemberNote()
+                        )
+                        .submittedAt(
+                                verification.getSubmittedAt()
+                        )
+                        .reviewedAt(
+                                verification.getReviewedAt()
+                        )
+                        .reviewedBy(
+                                verification.getReviewedBy()
+                        )
+                        .reviewReason(
+                                verification.getReviewReason()
+                        )
+                        .createdAt(
+                                verification.getCreatedAt()
+                        )
+                        .updatedAt(
+                                verification.getUpdatedAt()
+                        )
+                        .hasIdentityDocument(
+                                identityDocument != null
+                        );
+
+        if (identityDocument != null) {
+
+            builder
+                    .identityDocumentType(
+                            identityDocument
+                                    .getDocumentType()
+                    )
+                    .identityDocumentFileName(
+                            identityDocument
+                                    .getOriginalFileName()
+                    )
+                    .identityDocumentContentType(
+                            identityDocument
+                                    .getContentType()
+                    )
+                    .identityDocumentFileSize(
+                            identityDocument
+                                    .getFileSize()
+                    );
+        }
+
+        return builder.build();
     }
 
     private int normalizePageSize(
@@ -354,6 +434,7 @@ public class AdminMemberVerificationServiceImpl
                         ||
                 search.isBlank()
         ) {
+
             return null;
         }
 
