@@ -141,10 +141,10 @@ public class SecurityConfig {
                          * Only the health endpoint is public.
                          * Other Actuator endpoints remain protected.
                          */
-                        .requestMatchers(
-                                "/api/v1/actuator/health"
-                        )
-                        .permitAll()
+                      .requestMatchers(
+        "/actuator/health"
+)
+.permitAll()
 
                         /*
                          * =====================================================

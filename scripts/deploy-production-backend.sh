@@ -177,15 +177,14 @@ echo "OK: backend service active"
 echo
 echo "===== APPLICATION CHECK ====="
 
-# Actuator currently requires authentication in production,
-# so 200 or 401 both prove that Spring/Tomcat is responding.
+# Public Actuator health endpoint used for deployment readiness.
 HTTP_CODE="$(
     curl \
         -s \
         -o /dev/null \
         -w '%{http_code}' \
         --max-time 15 \
-        http://127.0.0.1:8080/api/v1/actuator/health \
+        http://127.0.0.1:8080/actuator/health \
         || true
 )"
 
