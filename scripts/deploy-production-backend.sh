@@ -213,7 +213,7 @@ echo "===== IDENTITY STORAGE ====="
 if [[ -f /etc/holymatrimony/backend.env ]]; then
 
     IDENTITY_DIR="$(
-        grep '^IDENTITY_DOCUMENTS_DIRECTORY=' \
+        sudo grep '^IDENTITY_DOCUMENTS_DIRECTORY=' \
             /etc/holymatrimony/backend.env \
             | tail -1 \
             | cut -d= -f2-
