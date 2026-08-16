@@ -22,13 +22,25 @@ export interface TrustVerificationResponse {
   userId: string;
   emailVerified: boolean;
   emailVerifiedAt?: string | null;
+
   profileVerificationStatus:
     | "NOT_SUBMITTED"
     | "PENDING"
     | "APPROVED"
     | "REJECTED";
+
   trustScore: number;
   completedChecks: number;
   totalChecks: number;
   verifications: VerificationItem[];
+}
+
+export interface MobileOtpResponse {
+  mobile: string;
+  verified: boolean;
+  message: string;
+}
+
+export interface VerifyMobileOtpRequest {
+  otp: string;
 }
