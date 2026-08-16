@@ -132,6 +132,22 @@ public class SecurityConfig {
 
                         /*
                          * =====================================================
+                         * Public Health Check
+                         * =====================================================
+                         *
+                         * Used by deployment automation and infrastructure
+                         * monitoring to confirm that the backend is alive.
+                         *
+                         * Only the health endpoint is public.
+                         * Other Actuator endpoints remain protected.
+                         */
+                        .requestMatchers(
+                                "/api/v1/actuator/health"
+                        )
+                        .permitAll()
+
+                        /*
+                         * =====================================================
                          * Admin API
                          * =====================================================
                          */
@@ -243,6 +259,7 @@ public class SecurityConfig {
                 secret == null ||
                 secret.isBlank()
         ) {
+
             throw new IllegalStateException(
                     "JWT secret must be configured."
             );

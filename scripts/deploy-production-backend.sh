@@ -189,18 +189,12 @@ HTTP_CODE="$(
         || true
 )"
 
-case "$HTTP_CODE" in
-    200)
-        echo "OK: actuator health returned 200"
-        ;;
-    401)
-        echo "OK: backend responding; actuator health is protected (401)"
-        ;;
-    *)
-        echo "ERROR: unexpected backend response: HTTP ${HTTP_CODE}"
-        false
-        ;;
-esac
+if [[ "$HTTP_CODE" != "200" ]]; then
+    echo "ERROR: backend health check failed: HTTP ${HTTP_CODE}"
+    false
+fi
+
+echo "OK: actuator health returned 200"
 
 echo
 echo "===== FLYWAY ====="
