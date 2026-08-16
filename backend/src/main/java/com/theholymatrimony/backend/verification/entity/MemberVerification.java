@@ -167,7 +167,10 @@ public class MemberVerification {
     public void approve(
             UUID adminId,
             String reason
+
     ) {
+
+        
 
         verificationStatus =
                 VerificationStatus.APPROVED;
@@ -206,6 +209,22 @@ public class MemberVerification {
                 VerificationStatus.APPROVED;
     }
 
+    public void approveAutomatically(
+        String reason
+) {
+
+    verificationStatus =
+            VerificationStatus.APPROVED;
+
+    reviewedAt =
+            LocalDateTime.now();
+
+    reviewedBy =
+            null;
+
+    reviewReason =
+            normalize(reason);
+}
     public boolean isPending() {
 
         return verificationStatus ==
