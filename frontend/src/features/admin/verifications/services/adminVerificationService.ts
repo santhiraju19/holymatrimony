@@ -140,3 +140,26 @@ export async function updateAdminVerification(
     );
   }
 }
+
+export async function getAdminIdentityDocument(
+  verificationId: string
+): Promise<Blob> {
+  try {
+    const response =
+      await api.get(
+        `/admin/verifications/${verificationId}/document`,
+        {
+          responseType: "blob",
+        }
+      );
+
+    return response.data as Blob;
+  } catch (error) {
+    throw new Error(
+      getApiErrorMessage(
+        error,
+        "Unable to load identity document."
+      )
+    );
+  }
+}

@@ -1,41 +1,28 @@
 "use client";
 
-import Link from "next/link";
-
+import { useCallback, useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import {
-  AlertCircle,
   ArrowLeft,
   CheckCircle2,
-  Church,
-  Fingerprint,
+  Eye,
+  FileText,
   Loader2,
   ShieldCheck,
-  UserRound,
   XCircle,
 } from "lucide-react";
 
 import {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
-
-import {
-  useParams,
-} from "next/navigation";
-
-import {
+  getAdminIdentityDocument,
   getAdminVerification,
   updateAdminVerification,
 } from "@/features/admin/verifications/services/adminVerificationService";
 
 import type {
   AdminMemberVerification,
+  VerificationStatus,
+  VerificationType,
 } from "@/features/admin/verifications/types/adminVerification";
-
-type Decision =
-  | "APPROVED"
-  | "REJECTED";
 
 function formatDate(
   value?: string | null
@@ -44,85 +31,219 @@ function formatDate(
     return "—";
   }
 
-  const date = new Date(value);
+  const date =
+    new Date(value);
 
   if (
     Number.isNaN(
       date.getTime()
     )
   ) {
-    return "—";
+    return value;
   }
 
   return date.toLocaleString();
 }
 
-export default function AdminVerificationDetailPage() {
-  const params = useParams();
+function formatFileSize(
+  value?: number | null
+): string {
+  if (
+    value === null ||
+    value === undefined ||
+    value <= 0
+  ) {
+    return "—";
+  }
 
-  const rawId = params?.id;
+  if (value < 1024) {
+    return `${value} B`;
+  }
+
+  const kb =
+    value / 1024;
+
+  if (kb < 1024) {
+    return `${kb.toFixed(1)} KB`;
+  }
+
+  const mb =
+    kb / 1024;
+
+  return `${mb.toFixed(1)} MB`;
+}
+
+function formatVerificationType(
+  type: VerificationType
+): string {
+  switch (type) {
+    case "MOBILE":
+      return "Mobile";
+
+    case "CHURCH":
+      return "Church";
+
+    case "IDENTITY":
+      return "Identity";
+
+    default:
+      return type;
+  }
+}
+
+function formatDocumentType(
+  value?: string | null
+): string {
+  if (!value) {
+    return "—";
+  }
+
+  switch (value) {
+    case "AADHAAR":
+      return "Aadhaar";
+
+    case "PASSPORT":
+      return "Passport";
+
+    case "DRIVING_LICENCE":
+      return "Driving Licence";
+
+    case "VOTER_ID":
+      return "Voter ID";
+
+    default:
+      return value
+        .replaceAll("_", " ")
+        .toLowerCase()
+        .replace(
+          /\b\w/g,
+          (character) =>
+            character.toUpperCase()
+        );
+  }
+}
+
+function getStatusClasses(
+  status: VerificationStatus
+): string {
+  switch (status) {
+    case "APPROVED":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+
+    case "REJECTED":
+      return "border-red-200 bg-red-50 text-red-700";
+
+    case "PENDING":
+      return "border-amber-200 bg-amber-50 text-amber-700";
+
+    case "NOT_SUBMITTED":
+    default:
+      return "border-slate-200 bg-slate-100 text-slate-600";
+  }
+}
+
+function DetailCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+
+      <p className="mt-2 break-words text-sm font-semibold text-slate-900">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+export default function AdminVerificationDetailPage() {
+  const params =
+    useParams<{
+      id: string;
+    }>();
+
+  const router =
+    useRouter();
 
   const verificationId =
-    Array.isArray(rawId)
-      ? rawId[0]
-      : rawId;
+    params?.id;
 
   const [
     verification,
     setVerification,
-  ] = useState<AdminMemberVerification | null>(
-    null
-  );
+  ] =
+    useState<AdminMemberVerification | null>(
+      null
+    );
 
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
 
   const [
     error,
     setError,
-  ] = useState<string | null>(
-    null
-  );
+  ] =
+    useState<string | null>(
+      null
+    );
 
   const [
-    decision,
-    setDecision,
-  ] = useState<Decision | null>(
-    null
-  );
+    actionError,
+    setActionError,
+  ] =
+    useState<string | null>(
+      null
+    );
+
+  const [
+    actionLoading,
+    setActionLoading,
+  ] =
+    useState<
+      "APPROVED" |
+      "REJECTED" |
+      null
+    >(null);
 
   const [
     reason,
     setReason,
-  ] = useState("");
+  ] =
+    useState("");
 
   const [
-    updating,
-    setUpdating,
-  ] = useState(false);
+    documentLoading,
+    setDocumentLoading,
+  ] =
+    useState(false);
 
   const [
-    decisionError,
-    setDecisionError,
-  ] = useState<string | null>(
-    null
-  );
+    documentError,
+    setDocumentError,
+  ] =
+    useState<string | null>(
+      null
+    );
 
-  const load =
+  const loadVerification =
     useCallback(
       async () => {
-        if (
-          !verificationId ||
-          typeof verificationId !==
-            "string"
-        ) {
+        if (!verificationId) {
           setError(
-            "Invalid verification ID."
+            "Verification ID is missing."
           );
 
           setLoading(false);
+
           return;
         }
 
@@ -130,13 +251,13 @@ export default function AdminVerificationDetailPage() {
         setError(null);
 
         try {
-          const result =
+          const data =
             await getAdminVerification(
               verificationId
             );
 
           setVerification(
-            result
+            data
           );
         } catch (
           loadError
@@ -153,41 +274,56 @@ export default function AdminVerificationDetailPage() {
       [verificationId]
     );
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(
+    () => {
+      void loadVerification();
+    },
+    [loadVerification]
+  );
 
-  async function handleDecision(): Promise<void> {
+  async function handleReview(
+    status:
+      | "APPROVED"
+      | "REJECTED"
+  ): Promise<void> {
     if (
       !verification ||
-      !decision ||
-      updating
+      actionLoading
     ) {
       return;
     }
 
+    const normalizedReason =
+      reason.trim();
+
     if (
-      decision === "REJECTED" &&
-      !reason.trim()
+      status ===
+        "REJECTED" &&
+      !normalizedReason
     ) {
-      setDecisionError(
-        "A rejection reason is required."
+      setActionError(
+        "Please enter a reason before rejecting this verification."
       );
 
       return;
     }
 
-    setUpdating(true);
-    setDecisionError(null);
+    setActionLoading(
+      status
+    );
+
+    setActionError(
+      null
+    );
 
     try {
       const updated =
         await updateAdminVerification(
           verification.id,
           {
-            status: decision,
+            status,
             reason:
-              reason.trim() ||
+              normalizedReason ||
               null,
           }
         );
@@ -196,33 +332,99 @@ export default function AdminVerificationDetailPage() {
         updated
       );
 
-      setDecision(null);
       setReason("");
     } catch (
-      updateError
+      reviewError
     ) {
-      setDecisionError(
-        updateError instanceof Error
-          ? updateError.message
+      setActionError(
+        reviewError instanceof Error
+          ? reviewError.message
           : "Unable to update verification request."
       );
     } finally {
-      setUpdating(false);
+      setActionLoading(
+        null
+      );
+    }
+  }
+
+  async function handleViewIdentityDocument(): Promise<void> {
+    if (
+      !verification ||
+      documentLoading
+    ) {
+      return;
+    }
+
+    setDocumentLoading(
+      true
+    );
+
+    setDocumentError(
+      null
+    );
+
+    try {
+      const blob =
+        await getAdminIdentityDocument(
+          verification.id
+        );
+
+      const url =
+        URL.createObjectURL(
+          blob
+        );
+
+      const newWindow =
+        window.open(
+          url,
+          "_blank",
+          "noopener,noreferrer"
+        );
+
+      if (!newWindow) {
+        URL.revokeObjectURL(
+          url
+        );
+
+        throw new Error(
+          "The browser blocked the document preview window."
+        );
+      }
+
+      window.setTimeout(
+        () => {
+          URL.revokeObjectURL(
+            url
+          );
+        },
+        60_000
+      );
+    } catch (
+      viewError
+    ) {
+      setDocumentError(
+        viewError instanceof Error
+          ? viewError.message
+          : "Unable to open identity document."
+      );
+    } finally {
+      setDocumentLoading(
+        false
+      );
     }
   }
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center">
+      <div className="flex min-h-[420px] items-center justify-center">
+        <div className="flex items-center gap-3 text-sm font-semibold text-slate-600">
           <Loader2
-            size={34}
-            className="mx-auto animate-spin text-[#0B2D5C]"
+            size={20}
+            className="animate-spin"
           />
 
-          <p className="mt-4 text-sm font-semibold text-slate-500">
-            Loading verification request...
-          </p>
+          Loading verification...
         </div>
       </div>
     );
@@ -233,358 +435,412 @@ export default function AdminVerificationDetailPage() {
     !verification
   ) {
     return (
-      <div className="space-y-5">
-        <Link
-          href="/admin/verifications"
-          className="inline-flex items-center gap-2 text-sm font-bold text-[#0B2D5C]"
+      <div className="space-y-6">
+        <button
+          type="button"
+          onClick={() =>
+            router.push(
+              "/admin/verifications"
+            )
+          }
+          className="inline-flex items-center gap-2 text-sm font-bold text-[#0B2D5C] transition hover:text-[#D4AF37]"
         >
-          <ArrowLeft size={17} />
+          <ArrowLeft
+            size={17}
+          />
 
           Back to Verifications
-        </Link>
+        </button>
 
-        <div className="rounded-3xl border border-red-200 bg-red-50 px-6 py-8">
-          <div className="flex items-start gap-3">
-            <AlertCircle
-              size={22}
-              className="mt-0.5 text-red-600"
-            />
-
-            <div>
-              <h2 className="font-black text-red-900">
-                Verification request could not be loaded
-              </h2>
-
-              <p className="mt-2 text-sm text-red-700">
-                {error ||
-                  "Unable to load this verification request."}
-              </p>
-            </div>
-          </div>
+        <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-sm font-semibold text-red-700">
+          {error ||
+            "Verification request was not found."}
         </div>
       </div>
     );
   }
 
-  const pending =
+  const isPending =
     verification.verificationStatus ===
     "PENDING";
 
-  const typeIcon =
+  const isIdentity =
     verification.verificationType ===
-    "CHURCH"
-      ? (
-        <Church size={26} />
-      )
-      : (
-        <Fingerprint size={26} />
-      );
+    "IDENTITY";
 
   return (
-    <div className="space-y-6 pb-10">
-      <Link
-        href="/admin/verifications"
-        className="inline-flex items-center gap-2 text-sm font-bold text-[#0B2D5C] transition hover:underline"
+    <div className="space-y-6">
+      <button
+        type="button"
+        onClick={() =>
+          router.push(
+            "/admin/verifications"
+          )
+        }
+        className="inline-flex items-center gap-2 text-sm font-bold text-[#0B2D5C] transition hover:text-[#D4AF37]"
       >
-        <ArrowLeft size={17} />
+        <ArrowLeft
+          size={17}
+        />
 
         Back to Verifications
-      </Link>
+      </button>
 
-      <section className="overflow-hidden rounded-3xl border border-blue-100 bg-gradient-to-br from-[#071B36] via-[#0B2D5C] to-[#174A87] px-6 py-7 text-white shadow-lg">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/10">
-              {typeIcon}
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 bg-gradient-to-r from-[#0B2D5C] to-[#123f75] px-6 py-7 text-white sm:px-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10">
+                <ShieldCheck
+                  size={24}
+                />
+              </div>
+
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-100">
+                  Member Verification
+                </p>
+
+                <h1 className="mt-1 text-2xl font-black">
+                  {formatVerificationType(
+                    verification.verificationType
+                  )}{" "}
+                  Verification
+                </h1>
+
+                <p className="mt-2 text-sm text-blue-100">
+                  Review the member submission and update its verification status.
+                </p>
+              </div>
             </div>
 
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.15em] text-[#F2D675]">
-                {verification.verificationType}
-              </p>
-
-              <h1 className="mt-1 text-3xl font-black">
-                {verification.fullName}
-              </h1>
-
-              <p className="mt-2 text-sm text-blue-100">
-                {verification.email}
-              </p>
-
-              <p className="mt-2 text-xs text-blue-200">
-                Submitted{" "}
-                {formatDate(
-                  verification.submittedAt
-                )}
-              </p>
-            </div>
+            <span
+              className={`inline-flex w-fit items-center rounded-full border px-4 py-2 text-xs font-black ${getStatusClasses(
+                verification.verificationStatus
+              )}`}
+            >
+              {verification.verificationStatus.replaceAll(
+                "_",
+                " "
+              )}
+            </span>
           </div>
-
-          {pending && (
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setDecisionError(null);
-                  setDecision("REJECTED");
-                  setReason("");
-                }}
-                className="inline-flex items-center gap-2 rounded-xl border border-red-300 bg-white px-5 py-3 text-sm font-bold text-red-700 transition hover:bg-red-50"
-              >
-                <XCircle size={18} />
-
-                Reject
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setDecisionError(null);
-                  setDecision("APPROVED");
-                  setReason("");
-                }}
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
-              >
-                <CheckCircle2 size={18} />
-
-                Approve
-              </button>
-            </div>
-          )}
         </div>
-      </section>
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <DetailCard
-          label="Verification Type"
-          value={
-            verification.verificationType
-          }
-        />
+        <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3 sm:p-8">
+          <DetailCard
+            label="Member"
+            value={
+              verification.fullName ||
+              "—"
+            }
+          />
 
-        <DetailCard
-          label="Status"
-          value={
-            verification.verificationStatus
-          }
-        />
+          <DetailCard
+            label="Email"
+            value={
+              verification.email ||
+              "—"
+            }
+          />
 
-        <DetailCard
-          label="Submitted"
-          value={
-            formatDate(
+          <DetailCard
+            label="Verification Type"
+            value={formatVerificationType(
+              verification.verificationType
+            )}
+          />
+
+          <DetailCard
+            label="Submitted"
+            value={formatDate(
               verification.submittedAt
-            )
-          }
-        />
+            )}
+          />
 
-        <DetailCard
-          label="Reviewed"
-          value={
-            formatDate(
-              verification.reviewedAt
-            )
-          }
-        />
+          <DetailCard
+            label="Created"
+            value={formatDate(
+              verification.createdAt
+            )}
+          />
+
+          <DetailCard
+            label="Last Updated"
+            value={formatDate(
+              verification.updatedAt
+            )}
+          />
+        </div>
       </section>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex items-center gap-3">
-          <UserRound
-            size={21}
-            className="text-[#0B2D5C]"
-          />
+        <h2 className="text-lg font-black text-[#0B2D5C]">
+          Member Note
+        </h2>
 
-          <h2 className="text-lg font-black text-[#0B2D5C]">
-            Member Note
-          </h2>
-        </div>
-
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
-          {verification.memberNote?.trim() ||
-            "No note was provided."}
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700">
+          {verification.memberNote ||
+            "No note was provided by the member."}
         </div>
       </section>
 
-      {verification.reviewReason && (
+      {isIdentity && (
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <ShieldCheck
-              size={21}
-              className="text-[#0B2D5C]"
-            />
-
-            <h2 className="text-lg font-black text-[#0B2D5C]">
-              Review Note
-            </h2>
-          </div>
-
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
-            {
-              verification.reviewReason
-            }
-          </div>
-        </section>
-      )}
-
-      {verification.verificationStatus ===
-        "APPROVED" && (
-        <section className="flex items-start gap-3 rounded-3xl border border-emerald-200 bg-emerald-50 p-5">
-          <CheckCircle2
-            size={22}
-            className="mt-0.5 shrink-0 text-emerald-600"
-          />
-
-          <div>
-            <h3 className="font-black text-emerald-900">
-              Verification Approved
-            </h3>
-
-            <p className="mt-1 text-sm text-emerald-700">
-              Reviewed{" "}
-              {formatDate(
-                verification.reviewedAt
-              )}
-            </p>
-          </div>
-        </section>
-      )}
-
-      {verification.verificationStatus ===
-        "REJECTED" && (
-        <section className="flex items-start gap-3 rounded-3xl border border-red-200 bg-red-50 p-5">
-          <XCircle
-            size={22}
-            className="mt-0.5 shrink-0 text-red-600"
-          />
-
-          <div>
-            <h3 className="font-black text-red-900">
-              Verification Rejected
-            </h3>
-
-            <p className="mt-1 text-sm text-red-700">
-              The member can update their information
-              and resubmit this verification.
-            </p>
-          </div>
-        </section>
-      )}
-
-      {decision && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
-            <h2 className="text-xl font-black text-[#0B2D5C]">
-              {decision ===
-              "APPROVED"
-                ? "Approve Verification"
-                : "Reject Verification"}
-            </h2>
-
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              {decision ===
-              "APPROVED"
-                ? "Confirm that this verification request has been reviewed and approved."
-                : "Explain why this verification request was rejected so the member knows what to correct."}
-            </p>
-
-            <textarea
-              value={reason}
-              onChange={(event) =>
-                setReason(
-                  event.target.value
-                )
-              }
-              maxLength={1000}
-              rows={4}
-              placeholder={
-                decision ===
-                "REJECTED"
-                  ? "Rejection reason"
-                  : "Optional review note"
-              }
-              className="mt-5 w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-            />
-
-            {decisionError && (
-              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
-                {decisionError}
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#0B2D5C]">
+                <FileText
+                  size={21}
+                />
               </div>
-            )}
 
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                disabled={updating}
-                onClick={() => {
-                  setDecision(null);
-                  setReason("");
-                  setDecisionError(null);
-                }}
-                className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-              >
-                Cancel
-              </button>
+              <div>
+                <h2 className="text-lg font-black text-[#0B2D5C]">
+                  Identity Document
+                </h2>
 
+                <p className="mt-1 text-sm text-slate-500">
+                  Private document submitted by the member for identity verification.
+                </p>
+              </div>
+            </div>
+
+            {verification.hasIdentityDocument && (
               <button
                 type="button"
                 disabled={
-                  updating ||
-                  (
-                    decision ===
-                      "REJECTED" &&
-                    !reason.trim()
-                  )
+                  documentLoading
                 }
                 onClick={() => {
-                  void handleDecision();
+                  void handleViewIdentityDocument();
                 }}
-                className={[
-                  "inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-50",
-                  decision ===
-                  "APPROVED"
-                    ? "bg-emerald-600 hover:bg-emerald-700"
-                    : "bg-red-600 hover:bg-red-700",
-                ].join(" ")}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0B2D5C] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#123f75] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {updating && (
+                {documentLoading ? (
                   <Loader2
                     size={17}
                     className="animate-spin"
                   />
+                ) : (
+                  <Eye
+                    size={17}
+                  />
                 )}
 
-                {updating
-                  ? "Saving..."
-                  : decision ===
-                    "APPROVED"
-                    ? "Approve"
-                    : "Reject"}
+                {documentLoading
+                  ? "Opening..."
+                  : "View Document"}
               </button>
-            </div>
+            )}
           </div>
-        </div>
+
+          {verification.hasIdentityDocument ? (
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <DetailCard
+                label="Document Type"
+                value={formatDocumentType(
+                  verification.identityDocumentType
+                )}
+              />
+
+              <DetailCard
+                label="File Name"
+                value={
+                  verification.identityDocumentFileName ||
+                  "—"
+                }
+              />
+
+              <DetailCard
+                label="Content Type"
+                value={
+                  verification.identityDocumentContentType ||
+                  "—"
+                }
+              />
+
+              <DetailCard
+                label="File Size"
+                value={formatFileSize(
+                  verification.identityDocumentFileSize
+                )}
+              />
+            </div>
+          ) : (
+            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+              No identity document is attached to this verification request.
+            </div>
+          )}
+
+          {documentError && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
+              {documentError}
+            </div>
+          )}
+        </section>
       )}
-    </div>
-  );
-}
 
-function DetailCard({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-black uppercase tracking-wide text-slate-400">
-        {label}
-      </p>
+      {verification.reviewedAt && (
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-black text-[#0B2D5C]">
+            Review Result
+          </h2>
 
-      <p className="mt-2 text-sm font-bold text-slate-800">
-        {value}
-      </p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <DetailCard
+              label="Reviewed At"
+              value={formatDate(
+                verification.reviewedAt
+              )}
+            />
+
+            <DetailCard
+              label="Reviewed By"
+              value={
+                verification.reviewedBy ||
+                "—"
+              }
+            />
+          </div>
+
+          {verification.reviewReason && (
+            <div className="mt-4">
+              <DetailCard
+                label="Review Reason / Note"
+                value={
+                  verification.reviewReason
+                }
+              />
+            </div>
+          )}
+        </section>
+      )}
+
+      {isPending && (
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div>
+            <h2 className="text-lg font-black text-[#0B2D5C]">
+              Review Verification
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Approve the request or provide a reason and reject it.
+            </p>
+          </div>
+
+          {isIdentity &&
+            !verification.hasIdentityDocument && (
+              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+                This identity request has no document attached. The backend will prevent approval until a document exists.
+              </div>
+            )}
+
+          <div className="mt-5">
+            <label
+              htmlFor="review-reason"
+              className="text-sm font-bold text-slate-700"
+            >
+              Review note / rejection reason
+            </label>
+
+            <textarea
+              id="review-reason"
+              rows={4}
+              value={reason}
+              onChange={(
+                event
+              ) =>
+                setReason(
+                  event.target.value
+                )
+              }
+              placeholder="Add an optional approval note, or enter the required reason when rejecting..."
+              className="mt-2 w-full resize-none rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0B2D5C] focus:ring-4 focus:ring-blue-100"
+            />
+          </div>
+
+          {actionError && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
+              {actionError}
+            </div>
+          )}
+
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              disabled={
+                actionLoading !==
+                  null ||
+                (
+                  isIdentity &&
+                  !verification.hasIdentityDocument
+                )
+              }
+              onClick={() => {
+                void handleReview(
+                  "APPROVED"
+                );
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {actionLoading ===
+              "APPROVED" ? (
+                <Loader2
+                  size={17}
+                  className="animate-spin"
+                />
+              ) : (
+                <CheckCircle2
+                  size={17}
+                />
+              )}
+
+              {actionLoading ===
+              "APPROVED"
+                ? "Approving..."
+                : "Approve"}
+            </button>
+
+            <button
+              type="button"
+              disabled={
+                actionLoading !==
+                null
+              }
+              onClick={() => {
+                void handleReview(
+                  "REJECTED"
+                );
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {actionLoading ===
+              "REJECTED" ? (
+                <Loader2
+                  size={17}
+                  className="animate-spin"
+                />
+              ) : (
+                <XCircle
+                  size={17}
+                />
+              )}
+
+              {actionLoading ===
+              "REJECTED"
+                ? "Rejecting..."
+                : "Reject"}
+            </button>
+          </div>
+        </section>
+      )}
+
+      {!isPending && (
+        <section className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-600">
+          This verification request has already been reviewed and can no longer be changed.
+        </section>
+      )}
     </div>
   );
 }

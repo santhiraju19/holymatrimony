@@ -32,12 +32,20 @@ public class MemberVerificationService {
 
     private static final int TOTAL_CHECKS = 4;
 
-    private final UserRepository userRepository;
+    private final UserRepository
+            userRepository;
 
-    private final ProfileRepository profileRepository;
+    private final ProfileRepository
+            profileRepository;
 
     private final MemberVerificationRepository
             memberVerificationRepository;
+
+    /*
+     * ============================================================
+     * VERIFICATION CENTER
+     * ============================================================
+     */
 
     @Transactional(readOnly = true)
     public TrustVerificationResponse getVerificationCenter(
@@ -45,12 +53,18 @@ public class MemberVerificationService {
     ) {
 
         User user =
-                findUser(email);
+                findUser(
+                        email
+                );
 
         Profile profile =
                 profileRepository
-                        .findByUser(user)
-                        .orElse(null);
+                        .findByUser(
+                                user
+                        )
+                        .orElse(
+                                null
+                        );
 
         List<MemberVerification> records =
                 memberVerificationRepository
@@ -58,13 +72,20 @@ public class MemberVerificationService {
                                 user.getId()
                         );
 
-        Map<VerificationType, MemberVerification>
+        Map<
+                VerificationType,
+                MemberVerification
+                >
                 verificationMap =
                 new EnumMap<>(
                         VerificationType.class
                 );
 
-        for (MemberVerification record : records) {
+        for (
+                MemberVerification record :
+                records
+        ) {
+
             verificationMap.put(
                     record.getVerificationType(),
                     record
@@ -74,11 +95,15 @@ public class MemberVerificationService {
         List<VerificationItemResponse> items =
                 new ArrayList<>();
 
-        for (VerificationType type :
-                VerificationType.values()) {
+        for (
+                VerificationType type :
+                VerificationType.values()
+        ) {
 
             MemberVerification record =
-                    verificationMap.get(type);
+                    verificationMap.get(
+                            type
+                    );
 
             items.add(
                     mapItem(
@@ -89,7 +114,8 @@ public class MemberVerificationService {
         }
 
         boolean emailVerified =
-                user.isEmailVerificationComplete();
+                user
+                        .isEmailVerificationComplete();
 
         ProfileVerificationStatus
                 profileVerificationStatus =
@@ -104,12 +130,16 @@ public class MemberVerificationService {
             completedChecks++;
         }
 
-        for (MemberVerification record : records) {
+        for (
+                MemberVerification record :
+                records
+        ) {
 
             if (
                     record.getVerificationStatus() ==
                             VerificationStatus.APPROVED
             ) {
+
                 completedChecks++;
             }
         }
@@ -120,9 +150,10 @@ public class MemberVerificationService {
                         Math.round(
                                 (
                                         completedChecks *
-                                        100.0f
+                                                100.0f
                                 )
-                                / TOTAL_CHECKS
+                                        /
+                                        TOTAL_CHECKS
                         )
                 );
 
@@ -138,6 +169,22 @@ public class MemberVerificationService {
         );
     }
 
+    /*
+     * ============================================================
+     * MANUAL VERIFICATION SUBMISSION
+     * ============================================================
+     *
+     * Only verification methods that use the generic manual
+     * workflow should pass through this method.
+     *
+     * MOBILE uses OTP verification.
+     *
+     * IDENTITY uses secure document upload.
+     *
+     * CHURCH currently uses this manual submission flow.
+     * ============================================================
+     */
+
     @Transactional
     public TrustVerificationResponse submitVerification(
             String email,
@@ -146,31 +193,59 @@ public class MemberVerificationService {
     ) {
 
         User user =
-                findUser(email);
+                findUser(
+                        email
+                );
 
         if (type == null) {
+
             throw new IllegalArgumentException(
                     "Verification type is required."
             );
         }
 
         /*
-         * Mobile verification will eventually use
-         * OTP verification rather than manual admin
-         * approval.
-         *
-         * Until that workflow is implemented, do not
-         * allow manual MOBILE submissions.
+         * Mobile verification is completed using
+         * the OTP workflow.
          */
-        if (type == VerificationType.MOBILE) {
+        if (
+                type ==
+                        VerificationType.MOBILE
+        ) {
+
             throw new IllegalStateException(
-                    "Mobile verification will be available through OTP verification."
+                    "Mobile verification is available through OTP verification."
             );
         }
 
+        /*
+         * Identity verification must include a
+         * securely uploaded identity document.
+         *
+         * The secure document workflow itself
+         * moves the IDENTITY verification record
+         * into PENDING state.
+         */
         if (
-                type == VerificationType.CHURCH
+                type ==
+                        VerificationType.IDENTITY
         ) {
+
+            throw new IllegalStateException(
+                    "Identity verification must be submitted with a secure identity document."
+            );
+        }
+
+        /*
+         * Church verification requires the
+         * church-related profile information
+         * to be completed first.
+         */
+        if (
+                type ==
+                        VerificationType.CHURCH
+        ) {
+
             validateChurchVerification(
                     user
             );
@@ -186,8 +261,12 @@ public class MemberVerificationService {
                                 () ->
                                         MemberVerification
                                                 .builder()
-                                                .user(user)
-                                                .verificationType(type)
+                                                .user(
+                                                        user
+                                                )
+                                                .verificationType(
+                                                        type
+                                                )
                                                 .verificationStatus(
                                                         VerificationStatus.NOT_SUBMITTED
                                                 )
@@ -195,12 +274,14 @@ public class MemberVerificationService {
                         );
 
         VerificationStatus currentStatus =
-                verification.getVerificationStatus();
+                verification
+                        .getVerificationStatus();
 
         if (
                 currentStatus ==
                         VerificationStatus.PENDING
         ) {
+
             throw new IllegalStateException(
                     "This verification request is already under review."
             );
@@ -210,6 +291,7 @@ public class MemberVerificationService {
                 currentStatus ==
                         VerificationStatus.APPROVED
         ) {
+
             throw new IllegalStateException(
                     "This verification has already been approved."
             );
@@ -230,13 +312,21 @@ public class MemberVerificationService {
         );
     }
 
+    /*
+     * ============================================================
+     * CHURCH VERIFICATION VALIDATION
+     * ============================================================
+     */
+
     private void validateChurchVerification(
             User user
     ) {
 
         Profile profile =
                 profileRepository
-                        .findByUser(user)
+                        .findByUser(
+                                user
+                        )
                         .orElseThrow(
                                 () ->
                                         new IllegalStateException(
@@ -255,11 +345,18 @@ public class MemberVerificationService {
                         profile.getChurchAddress()
                 )
         ) {
+
             throw new IllegalStateException(
                     "Complete your church name, denomination and church location before requesting church verification."
             );
         }
     }
+
+    /*
+     * ============================================================
+     * MAP VERIFICATION ITEM
+     * ============================================================
+     */
 
     private VerificationItemResponse mapItem(
             VerificationType type,
@@ -267,6 +364,7 @@ public class MemberVerificationService {
     ) {
 
         if (verification == null) {
+
             return new VerificationItemResponse(
                     type,
                     VerificationStatus.NOT_SUBMITTED,
@@ -287,6 +385,12 @@ public class MemberVerificationService {
         );
     }
 
+    /*
+     * ============================================================
+     * USER LOOKUP
+     * ============================================================
+     */
+
     private User findUser(
             String email
     ) {
@@ -295,13 +399,15 @@ public class MemberVerificationService {
                 email == null ||
                 email.isBlank()
         ) {
+
             throw new EntityNotFoundException(
                     "Authenticated user was not found."
             );
         }
 
         String normalizedEmail =
-                email.trim()
+                email
+                        .trim()
                         .toLowerCase(
                                 Locale.ROOT
                         );
@@ -317,6 +423,12 @@ public class MemberVerificationService {
                                 )
                 );
     }
+
+    /*
+     * ============================================================
+     * STRING UTILITY
+     * ============================================================
+     */
 
     private boolean isBlank(
             String value
