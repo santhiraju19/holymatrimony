@@ -38,6 +38,12 @@ public class BrowseProfileResponse {
     private Integer completionPercentage;
     private Boolean profileCompleted;
 
+    // ===== Trust Verification =====
+    private Boolean mobileVerified;
+    private Boolean churchVerified;
+    private Boolean identityVerified;
+    private Boolean verifiedProfile;
+
     private UUID primaryPhotoId;
     private String primaryPhotoUrl;
 }
