@@ -13,6 +13,20 @@ export default function PresenceConnection() {
     token,
   } = useAuthContext();
 
+  /*
+   * Depend only on whether a token exists,
+   * not on the token value itself.
+   *
+   * Access-token refreshes should NOT tear down
+   * and recreate the WebSocket connection.
+   *
+   * presenceWebSocketService.beforeConnect()
+   * already reads the latest token whenever a
+   * STOMP reconnect occurs.
+   */
+  const hasToken =
+    Boolean(token);
+
   useEffect(() => {
     if (loading) {
       return;
@@ -20,25 +34,22 @@ export default function PresenceConnection() {
 
     if (
       !isAuthenticated ||
-      !token
+      !hasToken
     ) {
-      presenceWebSocketService
-        .disconnect();
+      presenceWebSocketService.disconnect();
 
       return;
     }
 
-    presenceWebSocketService
-      .connect();
+    presenceWebSocketService.connect();
 
     return () => {
-      presenceWebSocketService
-        .disconnect();
+      presenceWebSocketService.disconnect();
     };
   }, [
     loading,
     isAuthenticated,
-    token,
+    hasToken,
   ]);
 
   return null;

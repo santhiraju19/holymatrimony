@@ -36,17 +36,25 @@ function formatDate(
     return "";
   }
 
-  const date = new Date(value);
+  const date =
+    new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return value;
   }
 
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).format(date);
+  return new Intl.DateTimeFormat(
+    "en-IN",
+    {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }
+  ).format(date);
 }
 
 export default function ProfileDetailsContent({
@@ -85,7 +93,8 @@ export default function ProfileDetailsContent({
             },
             {
               label: "Marital status",
-              value: profile.maritalStatus,
+              value:
+                profile.maritalStatus,
             },
           ]}
         />
@@ -96,11 +105,13 @@ export default function ProfileDetailsContent({
           items={[
             {
               label: "Denomination",
-              value: profile.denomination,
+              value:
+                profile.denomination,
             },
             {
               label: "Church name",
-              value: profile.churchName,
+              value:
+                profile.churchName,
             },
             {
               label: "Baptized",
@@ -116,21 +127,25 @@ export default function ProfileDetailsContent({
           description="Academic and professional information"
           items={[
             {
-              label: "Highest education",
+              label:
+                "Highest education",
               value:
                 profile.highestEducation,
             },
             {
               label: "Profession",
-              value: profile.profession,
+              value:
+                profile.profession,
             },
             {
               label: "Company",
-              value: profile.company,
+              value:
+                profile.company,
             },
             {
               label: "Annual income",
-              value: profile.annualIncome,
+              value:
+                profile.annualIncome,
             },
           ]}
         />
@@ -166,13 +181,31 @@ function TrustVerificationSection({
   profile,
 }: TrustVerificationSectionProps) {
   const mobileVerified =
-    Boolean(profile.mobileVerified);
+    Boolean(
+      profile.mobileVerified
+    );
 
   const churchVerified =
-    Boolean(profile.churchVerified);
+    Boolean(
+      profile.churchVerified
+    );
+
+  const aadhaarVerified =
+    Boolean(
+      profile.aadhaarVerified
+    );
+
+  const idVerified =
+    Boolean(
+      profile.idVerified
+    );
 
   const identityVerified =
-    Boolean(profile.identityVerified);
+    aadhaarVerified ||
+    idVerified ||
+    Boolean(
+      profile.identityVerified
+    );
 
   const verifiedCount = [
     mobileVerified,
@@ -181,12 +214,39 @@ function TrustVerificationSection({
   ].filter(Boolean).length;
 
   const fullyVerified =
-    Boolean(profile.verifiedProfile) ||
+    Boolean(
+      profile.verifiedProfile
+    ) ||
     verifiedCount === 3;
+
+  /*
+   * Public identity wording.
+   *
+   * Aadhaar gets its own trust label.
+   * Passport / Driving Licence / Voter ID
+   * use the generic ID Verified label.
+   */
+  const identityLabel =
+    aadhaarVerified
+      ? "Aadhaar"
+      : idVerified
+        ? "ID"
+        : "Identity";
+
+  const identityDescription =
+    aadhaarVerified
+      ? "Aadhaar document approved"
+      : idVerified
+        ? "Government ID approved"
+        : "Identity document approved";
 
   return (
     <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-100 bg-gradient-to-r from-blue-50 via-white to-emerald-50 px-5 py-5 sm:px-6">
+      {/* =====================================================
+          Trust Header
+          ===================================================== */}
+
+      <div className="border-b border-slate-100 bg-gradient-to-r from-blue-50 via-white to-amber-50 px-5 py-5 sm:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#0B2D5C] text-white shadow-sm">
@@ -201,8 +261,7 @@ function TrustVerificationSection({
               </h2>
 
               <p className="mt-1 text-sm leading-6 text-slate-500">
-                Verification checks completed
-                through Holy Matrimony.
+                Verification checks completed through Holy Matrimony.
               </p>
             </div>
           </div>
@@ -212,6 +271,7 @@ function TrustVerificationSection({
               <BadgeCheck
                 size={17}
               />
+
               Verified Profile
             </div>
           )}
@@ -219,6 +279,10 @@ function TrustVerificationSection({
       </div>
 
       <div className="p-5 sm:p-6">
+        {/* ===================================================
+            Individual Verification Checks
+            =================================================== */}
+
         <div className="grid gap-3 md:grid-cols-3">
           <VerificationStatus
             icon={
@@ -227,7 +291,38 @@ function TrustVerificationSection({
               />
             }
             label="Mobile"
-            verified={mobileVerified}
+            verified={
+              mobileVerified
+            }
+            description="Mobile number verified"
+          />
+
+          <VerificationStatus
+            icon={
+              aadhaarVerified ? (
+                <ShieldCheck
+                  size={20}
+                />
+              ) : (
+                <Fingerprint
+                  size={20}
+                />
+              )
+            }
+            label={
+              identityLabel
+            }
+            verified={
+              identityVerified
+            }
+            description={
+              identityDescription
+            }
+            variant={
+              aadhaarVerified
+                ? "aadhaar"
+                : "default"
+            }
           />
 
           <VerificationStatus
@@ -237,19 +332,17 @@ function TrustVerificationSection({
               />
             }
             label="Church"
-            verified={churchVerified}
-          />
-
-          <VerificationStatus
-            icon={
-              <Fingerprint
-                size={20}
-              />
+            verified={
+              churchVerified
             }
-            label="Identity"
-            verified={identityVerified}
+            description="Church information approved"
+            variant="church"
           />
         </div>
+
+        {/* ===================================================
+            Verification Summary
+            =================================================== */}
 
         <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4 sm:px-5">
           {fullyVerified ? (
@@ -265,10 +358,13 @@ function TrustVerificationSection({
                 </p>
 
                 <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
-                  This member has completed
-                  mobile, church and identity
-                  verification through Holy
-                  Matrimony.
+                  This member has completed mobile,{" "}
+                  {aadhaarVerified
+                    ? "Aadhaar"
+                    : idVerified
+                      ? "ID"
+                      : "identity"}{" "}
+                  and church verification through Holy Matrimony.
                 </p>
               </div>
             </div>
@@ -292,10 +388,11 @@ function TrustVerificationSection({
 
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-blue-600 to-emerald-500 transition-all duration-300"
+                  className="h-full rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-500 transition-all duration-300"
                   style={{
                     width: `${
-                      (verifiedCount / 3) *
+                      (verifiedCount /
+                        3) *
                       100
                     }%`,
                   }}
@@ -305,44 +402,103 @@ function TrustVerificationSection({
           )}
         </div>
 
+        {/* ===================================================
+            Trust Disclaimer
+            =================================================== */}
+
         <p className="mt-4 text-xs leading-5 text-slate-400">
-          Verification badges indicate checks
-          completed through Holy Matrimony.
-          Members should still communicate
-          carefully and make independent
-          decisions before proceeding.
+          Verification badges indicate checks completed through
+          Holy Matrimony. Members should still communicate carefully
+          and make independent decisions before proceeding.
         </p>
       </div>
     </section>
   );
 }
 
+type VerificationStatusVariant =
+  | "default"
+  | "aadhaar"
+  | "church";
+
 interface VerificationStatusProps {
   icon: React.ReactNode;
   label: string;
   verified: boolean;
+  description?: string;
+  variant?: VerificationStatusVariant;
 }
 
 function VerificationStatus({
   icon,
   label,
   verified,
+  description,
+  variant = "default",
 }: VerificationStatusProps) {
+  const verifiedCardStyles: Record<
+    VerificationStatusVariant,
+    string
+  > = {
+    default:
+      "border-emerald-200 bg-emerald-50/70",
+
+    aadhaar:
+      "border-amber-200 bg-gradient-to-br from-amber-50 via-yellow-50 to-white",
+
+    church:
+      "border-indigo-200 bg-gradient-to-br from-indigo-50 via-blue-50 to-white",
+  };
+
+  const verifiedIconStyles: Record<
+    VerificationStatusVariant,
+    string
+  > = {
+    default:
+      "bg-emerald-100 text-emerald-700",
+
+    aadhaar:
+      "bg-gradient-to-br from-amber-400 to-yellow-500 text-slate-950",
+
+    church:
+      "bg-[#0B2D5C] text-white",
+  };
+
+  const verifiedTextStyles: Record<
+    VerificationStatusVariant,
+    string
+  > = {
+    default:
+      "text-emerald-700",
+
+    aadhaar:
+      "text-amber-800",
+
+    church:
+      "text-indigo-700",
+  };
+
   return (
     <div
-      className={
+      className={[
+        "rounded-2xl border p-4 transition",
         verified
-          ? "rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4"
-          : "rounded-2xl border border-slate-200 bg-slate-50 p-4"
-      }
+          ? verifiedCardStyles[
+              variant
+            ]
+          : "border-slate-200 bg-slate-50",
+      ].join(" ")}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3">
         <div
-          className={
+          className={[
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm",
             verified
-              ? "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700"
-              : "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-200 text-slate-500"
-          }
+              ? verifiedIconStyles[
+                  variant
+                ]
+              : "bg-slate-200 text-slate-500",
+          ].join(" ")}
         >
           {icon}
         </div>
@@ -353,11 +509,14 @@ function VerificationStatus({
           </p>
 
           <div
-            className={
+            className={[
+              "mt-1 flex items-center gap-1.5 text-xs font-bold",
               verified
-                ? "mt-1 flex items-center gap-1.5 text-xs font-bold text-emerald-700"
-                : "mt-1 flex items-center gap-1.5 text-xs font-bold text-slate-500"
-            }
+                ? verifiedTextStyles[
+                    variant
+                  ]
+                : "text-slate-500",
+            ].join(" ")}
           >
             {verified && (
               <CheckCircle2
@@ -369,6 +528,12 @@ function VerificationStatus({
               ? "Verified"
               : "Not verified"}
           </div>
+
+          {description && (
+            <p className="mt-1.5 text-[11px] leading-4 text-slate-500">
+              {description}
+            </p>
+          )}
         </div>
       </div>
     </div>

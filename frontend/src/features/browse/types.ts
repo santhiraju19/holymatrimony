@@ -27,9 +27,44 @@ export interface BrowseProfile {
   completionPercentage: number | null;
   profileCompleted: boolean;
 
+  // =====================================================
+  // Trust Verification
+  // =====================================================
+
   mobileVerified: boolean;
+
+  /*
+   * Approved church verification.
+   */
   churchVerified: boolean;
+
+  /*
+   * Any approved identity document.
+   *
+   * Kept for compatibility with the existing
+   * verification/profile UI.
+   */
   identityVerified: boolean;
+
+  /*
+   * True only when the approved identity
+   * document is Aadhaar.
+   */
+  aadhaarVerified: boolean;
+
+  /*
+   * True when an approved non-Aadhaar identity
+   * document was used:
+   *
+   * - Passport
+   * - Driving Licence
+   * - Voter ID
+   */
+  idVerified: boolean;
+
+  /*
+   * Existing compatibility flag.
+   */
   verifiedProfile: boolean;
 
   primaryPhotoId: string | null;
@@ -73,6 +108,15 @@ export interface BrowseSearchFilters {
   profession: string;
 
   baptized: string;
+
+  /*
+   * Verification filters are string-based because
+   * the existing Browse filter form uses the same
+   * onChange(name, value: string) contract.
+   */
+  aadhaarVerified: string;
+  idVerified: string;
+  churchVerified: string;
 }
 
 export interface BrowseSearchParams
@@ -92,6 +136,10 @@ export interface BrowseSearchParams
   profession?: string;
 
   baptized?: boolean;
+
+  aadhaarVerified?: boolean;
+  idVerified?: boolean;
+  churchVerified?: boolean;
 }
 
 export const EMPTY_BROWSE_SEARCH_FILTERS: BrowseSearchFilters = {
@@ -110,6 +158,10 @@ export const EMPTY_BROWSE_SEARCH_FILTERS: BrowseSearchFilters = {
   profession: "",
 
   baptized: "",
+
+  aadhaarVerified: "",
+  idVerified: "",
+  churchVerified: "",
 };
 
 export function hasActiveBrowseFilters(
@@ -152,7 +204,9 @@ export function buildBrowseSearchParams(
       ageTo;
   }
 
-  if (filters.gender.trim()) {
+  if (
+    filters.gender.trim()
+  ) {
     params.gender =
       filters.gender.trim();
   }
@@ -178,12 +232,16 @@ export function buildBrowseSearchParams(
       filters.country.trim();
   }
 
-  if (filters.state.trim()) {
+  if (
+    filters.state.trim()
+  ) {
     params.state =
       filters.state.trim();
   }
 
-  if (filters.city.trim()) {
+  if (
+    filters.city.trim()
+  ) {
     params.city =
       filters.city.trim();
   }
@@ -216,6 +274,34 @@ export function buildBrowseSearchParams(
   ) {
     params.baptized =
       false;
+  }
+
+  // =====================================================
+  // Verification Filters
+  // =====================================================
+
+  if (
+    filters.aadhaarVerified ===
+    "true"
+  ) {
+    params.aadhaarVerified =
+      true;
+  }
+
+  if (
+    filters.idVerified ===
+    "true"
+  ) {
+    params.idVerified =
+      true;
+  }
+
+  if (
+    filters.churchVerified ===
+    "true"
+  ) {
+    params.churchVerified =
+      true;
   }
 
   return params;

@@ -1,5 +1,3 @@
-
-
 package com.theholymatrimony.backend.profile.dto;
 
 import lombok.Getter;
@@ -10,7 +8,6 @@ import lombok.Setter;
 public class SearchProfileRequest {
 
     private Integer ageFrom;
-
     private Integer ageTo;
 
     private String gender;
@@ -20,9 +17,7 @@ public class SearchProfileRequest {
     private String maritalStatus;
 
     private String country;
-
     private String state;
-
     private String city;
 
     private String highestEducation;
@@ -30,4 +25,12 @@ public class SearchProfileRequest {
     private String profession;
 
     private Boolean baptized;
+
+    // ===== Verification Filters =====
+
+    private Boolean aadhaarVerified;
+
+    private Boolean idVerified;
+
+    private Boolean churchVerified;
 }

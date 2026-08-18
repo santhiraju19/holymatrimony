@@ -6,7 +6,6 @@ import Link from "next/link";
 
 import {
   BriefcaseBusiness,
-  BadgeCheck,
   Church,
   GraduationCap,
   MapPin,
@@ -77,9 +76,17 @@ export default function BrowseProfileCard({
             </div>
           )}
 
+          <div className="absolute left-3 top-3 z-10 max-w-[calc(100%-4.5rem)]">
+  <ProfileTrustBadges
+    profile={profile}
+    compact
+    overlay
+  />
+</div>
+
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-4 pb-3.5 pt-12">
-            <div className="flex items-end justify-between gap-3">
-              <div className="min-w-0">
+            <div>
+  <div className="min-w-0">
                 <h2 className="truncate text-lg font-black text-white">
                   {displayName}
                 </h2>
@@ -91,16 +98,7 @@ export default function BrowseProfileCard({
                 </p>
               </div>
 
-              {profile.verifiedProfile && (
-  <span
-    title="Verified Profile"
-    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm"
-  >
-    <BadgeCheck
-      size={17}
-    />
-  </span>
-)}
+              
             </div>
           </div>
         </div>
@@ -113,12 +111,7 @@ export default function BrowseProfileCard({
           className="block flex-1"
         >
           <div className="space-y-3 p-4">
-            <ProfileTrustBadges
-  profile={
-    profile
-  }
-  compact
-/>
+  
             <div className="space-y-2.5">
               <ProfileDetail
                 icon={

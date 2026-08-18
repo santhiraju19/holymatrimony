@@ -1,7 +1,10 @@
-
 "use client";
 
-import { Client, IMessage, StompSubscription } from "@stomp/stompjs";
+import {
+  Client,
+  IMessage,
+  StompSubscription,
+} from "@stomp/stompjs";
 
 import authService from "@/features/auth/services/auth.service";
 
@@ -40,7 +43,8 @@ function getWebSocketUrl(): string {
 
   if (apiUrl) {
     try {
-      const url = new URL(apiUrl);
+      const url =
+        new URL(apiUrl);
 
       url.protocol =
         url.protocol === "https:"
@@ -53,7 +57,7 @@ function getWebSocketUrl(): string {
 
       return url.toString();
     } catch {
-      // ignore
+      // Fall through to local default.
     }
   }
 
@@ -61,13 +65,47 @@ function getWebSocketUrl(): string {
 }
 
 class NotificationWebSocketService {
-  private client: Client | null = null;
+  private client: Client | null =
+    null;
 
   private subscription:
-    | StompSubscription
-    | null = null;
+    StompSubscription | null =
+      null;
 
-  connect(options: ConnectOptions) {
+  private options:
+    ConnectOptions | null =
+      null;
+
+  private disconnectPromise:
+    Promise<void> | null =
+      null;
+
+  connect(
+    options: ConnectOptions
+  ): void {
+    /*
+     * Always retain the newest callbacks.
+     *
+     * This lets React update handlers without
+     * requiring the STOMP connection to restart.
+     */
+    this.options =
+      options;
+
+    if (this.disconnectPromise) {
+      void this.disconnectPromise.then(
+        () => {
+          if (this.options) {
+            this.connect(
+              this.options
+            );
+          }
+        }
+      );
+
+      return;
+    }
+
     if (
       this.client?.active ||
       this.client?.connected
@@ -79,47 +117,88 @@ class NotificationWebSocketService {
       authService.getToken();
 
     if (!token) {
-      options.onStatusChange?.(
-        "disconnected"
-      );
+      this.options
+        ?.onStatusChange?.(
+          "disconnected"
+        );
+
       return;
     }
 
-    options.onStatusChange?.(
-      "connecting"
-    );
+    this.options
+      ?.onStatusChange?.(
+        "connecting"
+      );
 
-    const client = new Client({
-      brokerURL: getWebSocketUrl(),
+    const client =
+      new Client({
+        brokerURL:
+          getWebSocketUrl(),
 
-      reconnectDelay: 5000,
+        reconnectDelay:
+          5000,
 
-      heartbeatIncoming: 10000,
-      heartbeatOutgoing: 10000,
+        heartbeatIncoming:
+          10000,
 
-      connectHeaders: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+        heartbeatOutgoing:
+          10000,
+
+        connectionTimeout:
+          10000,
+
+        connectHeaders: {
+          Authorization:
+            `Bearer ${token}`,
+        },
+      });
+
+    /*
+     * Always use the newest access token when
+     * STOMP reconnects automatically.
+     */
+    client.beforeConnect =
+      async () => {
+        const currentToken =
+          authService.getToken();
+
+        if (!currentToken) {
+          throw new Error(
+            "Authentication token is unavailable."
+          );
+        }
+
+        client.connectHeaders = {
+          Authorization:
+            `Bearer ${currentToken}`,
+        };
+      };
 
     client.onConnect = () => {
-      options.onStatusChange?.(
-        "connected"
-      );
+      this.options
+        ?.onStatusChange?.(
+          "connected"
+        );
+
+      this.subscription
+        ?.unsubscribe();
 
       this.subscription =
         client.subscribe(
           "/user/queue/notifications",
-          (message: IMessage) => {
+          (
+            message: IMessage
+          ) => {
             try {
               const notification =
                 JSON.parse(
                   message.body
                 ) as AppNotification;
 
-              options.onNotification(
-                notification
-              );
+              this.options
+                ?.onNotification(
+                  notification
+                );
             } catch (error) {
               console.error(
                 "Notification parse error",
@@ -133,43 +212,85 @@ class NotificationWebSocketService {
     client.onStompError = (
       frame
     ) => {
-      options.onStatusChange?.(
-        "error"
-      );
+      this.options
+        ?.onStatusChange?.(
+          "error"
+        );
 
-      options.onError?.(
-        frame.headers.message ||
-          frame.body
-      );
+      this.options
+        ?.onError?.(
+          frame.headers.message ||
+            frame.body
+        );
     };
 
-    client.onWebSocketClose = () => {
-      options.onStatusChange?.(
-        "disconnected"
-      );
-    };
+    client.onWebSocketClose =
+      () => {
+        this.options
+          ?.onStatusChange?.(
+            "disconnected"
+          );
+      };
 
-    client.onWebSocketError = () => {
-      options.onStatusChange?.(
-        "error"
-      );
-    };
+    client.onWebSocketError =
+      () => {
+        this.options
+          ?.onStatusChange?.(
+            "error"
+          );
+      };
 
     this.client = client;
 
     client.activate();
   }
 
-  disconnect() {
-    this.subscription?.unsubscribe();
+  disconnect(): void {
+    this.subscription
+      ?.unsubscribe();
 
-    this.subscription = null;
+    this.subscription =
+      null;
 
-    if (this.client?.active) {
-      void this.client.deactivate();
+    const client =
+      this.client;
+
+    this.client =
+      null;
+
+    if (!client?.active) {
+      return;
     }
 
-    this.client = null;
+    const promise =
+      client
+        .deactivate()
+        .then(() => {
+          if (
+            this.disconnectPromise ===
+            promise
+          ) {
+            this.disconnectPromise =
+              null;
+          }
+        })
+        .catch((error) => {
+          console.warn(
+            "[Notification WebSocket] disconnect error:",
+            error
+          );
+
+          if (
+            this.disconnectPromise ===
+            promise
+          ) {
+            this.disconnectPromise =
+              null;
+          }
+        });
+
+    this.disconnectPromise =
+      promise;
   }
 }
 

@@ -33,10 +33,27 @@ function getWebSocketUrl(): string {
 class PresenceWebSocketService {
   private client: Client | null = null;
 
+  private disconnectPromise:
+    Promise<void> | null = null;
+
   connect(): void {
     if (
       typeof window === "undefined"
     ) {
+      return;
+    }
+
+    /*
+     * If the previous client is still shutting down,
+     * wait for it before creating another connection.
+     */
+    if (this.disconnectPromise) {
+      void this.disconnectPromise.then(
+        () => {
+          this.connect();
+        }
+      );
+
       return;
     }
 
@@ -53,33 +70,41 @@ class PresenceWebSocketService {
       return;
     }
 
-    const client = new Client({
-      brokerURL: getWebSocketUrl(),
+    const client =
+      new Client({
+        brokerURL:
+          getWebSocketUrl(),
 
-      connectHeaders: {
-        Authorization:
-          `Bearer ${token}`,
-      },
+        connectHeaders: {
+          Authorization:
+            `Bearer ${token}`,
+        },
 
-      reconnectDelay:
-        RECONNECT_DELAY,
+        reconnectDelay:
+          RECONNECT_DELAY,
 
-      heartbeatIncoming: 10000,
-      heartbeatOutgoing: 10000,
+        heartbeatIncoming:
+          10000,
 
-      connectionTimeout: 10000,
+        heartbeatOutgoing:
+          10000,
 
-      debug:
-        process.env.NODE_ENV ===
-        "development"
-          ? (message: string) => {
-              console.debug(
-                "[Presence STOMP]",
-                message
-              );
-            }
-          : () => {},
-    });
+        connectionTimeout:
+          10000,
+
+        debug:
+          process.env.NODE_ENV ===
+          "development"
+            ? (
+                message: string
+              ) => {
+                console.debug(
+                  "[Presence STOMP]",
+                  message
+                );
+              }
+            : () => {},
+      });
 
     client.beforeConnect =
       async () => {
@@ -104,12 +129,12 @@ class PresenceWebSocketService {
       );
     };
 
-client.onWebSocketClose =
-  () => {
-    console.debug(
-      "[Presence] WebSocket disconnected"
-    );
-  };
+    client.onWebSocketClose =
+      () => {
+        console.debug(
+          "[Presence] WebSocket disconnected"
+        );
+      };
 
     client.onStompError = (
       frame
@@ -139,11 +164,49 @@ client.onWebSocketClose =
     const client =
       this.client;
 
+    if (!client) {
+      return;
+    }
+
+    /*
+     * Remove the active reference immediately so
+     * repeated disconnect calls remain harmless.
+     */
     this.client = null;
 
-    if (client?.active) {
-      void client.deactivate();
+    if (!client.active) {
+      return;
     }
+
+    const promise =
+      client
+        .deactivate()
+        .then(() => {
+          if (
+            this.disconnectPromise ===
+            promise
+          ) {
+            this.disconnectPromise =
+              null;
+          }
+        })
+        .catch((error) => {
+          console.warn(
+            "[Presence] WebSocket disconnect error:",
+            error
+          );
+
+          if (
+            this.disconnectPromise ===
+            promise
+          ) {
+            this.disconnectPromise =
+              null;
+          }
+        });
+
+    this.disconnectPromise =
+      promise;
   }
 
   isConnected(): boolean {

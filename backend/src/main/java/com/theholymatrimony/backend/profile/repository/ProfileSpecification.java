@@ -2,9 +2,16 @@ package com.theholymatrimony.backend.profile.repository;
 
 import com.theholymatrimony.backend.profile.dto.SearchProfileRequest;
 import com.theholymatrimony.backend.profile.entity.Profile;
+import com.theholymatrimony.backend.verification.document.IdentityDocumentType;
+import com.theholymatrimony.backend.verification.document.IdentityVerificationDocument;
+import com.theholymatrimony.backend.verification.entity.MemberVerification;
+import com.theholymatrimony.backend.verification.enums.VerificationStatus;
+import com.theholymatrimony.backend.verification.enums.VerificationType;
 
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 
 import org.springframework.data.jpa.domain.Specification;
 
@@ -177,12 +184,199 @@ public final class ProfileSpecification {
                 );
             }
 
+            /*
+             * =====================================================
+             * Verification filters
+             * =====================================================
+             */
+
+            if (
+                    Boolean.TRUE.equals(
+                            request.getChurchVerified()
+                    )
+            ) {
+
+                predicates.add(
+                        approvedVerificationExists(
+                                root,
+                                query,
+                                criteriaBuilder,
+                                VerificationType.CHURCH
+                        )
+                );
+            }
+
+            if (
+                    Boolean.TRUE.equals(
+                            request.getAadhaarVerified()
+                    )
+            ) {
+
+                predicates.add(
+                        approvedIdentityDocumentExists(
+                                root,
+                                query,
+                                criteriaBuilder,
+                                true
+                        )
+                );
+            }
+
+            if (
+                    Boolean.TRUE.equals(
+                            request.getIdVerified()
+                    )
+            ) {
+
+                predicates.add(
+                        approvedIdentityDocumentExists(
+                                root,
+                                query,
+                                criteriaBuilder,
+                                false
+                        )
+                );
+            }
+
             return criteriaBuilder.and(
                     predicates.toArray(
                             new Predicate[0]
                     )
             );
         };
+    }
+
+    private static Predicate approvedVerificationExists(
+            Root<Profile> profileRoot,
+            jakarta.persistence.criteria.CriteriaQuery<?> query,
+            jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
+            VerificationType verificationType
+    ) {
+
+        Subquery<Integer> subquery =
+                query.subquery(
+                        Integer.class
+                );
+
+        Root<MemberVerification> verificationRoot =
+                subquery.from(
+                        MemberVerification.class
+                );
+
+        subquery.select(
+                criteriaBuilder.literal(1)
+        );
+
+        subquery.where(
+                criteriaBuilder.and(
+                        criteriaBuilder.equal(
+                                verificationRoot
+                                        .get("user")
+                                        .get("id"),
+                                profileRoot
+                                        .get("user")
+                                        .get("id")
+                        ),
+
+                        criteriaBuilder.equal(
+                                verificationRoot
+                                        .get("verificationType"),
+                                verificationType
+                        ),
+
+                        criteriaBuilder.equal(
+                                verificationRoot
+                                        .get("verificationStatus"),
+                                VerificationStatus.APPROVED
+                        )
+                )
+        );
+
+        return criteriaBuilder.exists(
+                subquery
+        );
+    }
+
+    private static Predicate approvedIdentityDocumentExists(
+            Root<Profile> profileRoot,
+            jakarta.persistence.criteria.CriteriaQuery<?> query,
+            jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
+            boolean aadhaarOnly
+    ) {
+
+        Subquery<Integer> subquery =
+                query.subquery(
+                        Integer.class
+                );
+
+        Root<IdentityVerificationDocument> documentRoot =
+                subquery.from(
+                        IdentityVerificationDocument.class
+                );
+
+        subquery.select(
+                criteriaBuilder.literal(1)
+        );
+
+        Predicate sameUser =
+                criteriaBuilder.equal(
+                        documentRoot
+                                .get("user")
+                                .get("id"),
+                        profileRoot
+                                .get("user")
+                                .get("id")
+                );
+
+        Predicate approvedIdentity =
+                criteriaBuilder.and(
+                        criteriaBuilder.equal(
+                                documentRoot
+                                        .get("verification")
+                                        .get("verificationType"),
+                                VerificationType.IDENTITY
+                        ),
+
+                        criteriaBuilder.equal(
+                                documentRoot
+                                        .get("verification")
+                                        .get("verificationStatus"),
+                                VerificationStatus.APPROVED
+                        )
+                );
+
+        Predicate documentTypePredicate;
+
+        if (aadhaarOnly) {
+
+            documentTypePredicate =
+                    criteriaBuilder.equal(
+                            documentRoot
+                                    .get("documentType"),
+                            IdentityDocumentType.AADHAAR
+                    );
+
+        } else {
+
+            documentTypePredicate =
+                    criteriaBuilder.notEqual(
+                            documentRoot
+                                    .get("documentType"),
+                            IdentityDocumentType.AADHAAR
+                    );
+        }
+
+        subquery.where(
+                criteriaBuilder.and(
+                        sameUser,
+                        approvedIdentity,
+                        documentTypePredicate
+                )
+        );
+
+        return criteriaBuilder.exists(
+                subquery
+        );
     }
 
     private static void addCaseInsensitiveEquals(
@@ -225,9 +419,9 @@ public final class ProfileSpecification {
         String pattern =
                 "%"
                         + value.trim()
-                        .toLowerCase(
-                                Locale.ROOT
-                        )
+                                .toLowerCase(
+                                        Locale.ROOT
+                                )
                         + "%";
 
         predicates.add(
@@ -243,6 +437,7 @@ public final class ProfileSpecification {
     private static boolean hasText(
             String value
     ) {
+
         return value != null
                 && !value.isBlank();
     }

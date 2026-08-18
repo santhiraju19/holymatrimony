@@ -11,6 +11,9 @@ import com.theholymatrimony.backend.profile.repository.ProfileSpecification;
 import com.theholymatrimony.backend.verification.enums.VerificationStatus;
 import com.theholymatrimony.backend.verification.enums.VerificationType;
 import com.theholymatrimony.backend.verification.repository.MemberVerificationRepository;
+import com.theholymatrimony.backend.verification.document.IdentityDocumentType;
+import com.theholymatrimony.backend.verification.document.IdentityVerificationDocument;
+import com.theholymatrimony.backend.verification.document.IdentityVerificationDocumentRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -33,6 +36,9 @@ public class BrowseProfileService {
     private static final int MAXIMUM_PAGE_SIZE = 24;
 
     private final ProfileRepository profileRepository;
+
+    private final IdentityVerificationDocumentRepository
+        identityVerificationDocumentRepository;
 
     private final ProfilePhotoRepository
             profilePhotoRepository;
@@ -163,6 +169,20 @@ public class BrowseProfileService {
             );
         }
 
+        if (
+        Boolean.TRUE.equals(
+                request.getAadhaarVerified()
+        )
+        && Boolean.TRUE.equals(
+                request.getIdVerified()
+        )
+) {
+
+    throw new IllegalArgumentException(
+            "Aadhaar Verified and ID Verified cannot be selected together"
+    );
+}
+
         if (ageFrom != null
                 && ageTo != null
                 && ageFrom > ageTo) {
@@ -230,15 +250,37 @@ public class BrowseProfileService {
                 );
 
         boolean identityVerified =
-                isVerificationApproved(
-                        userId,
-                        VerificationType.IDENTITY
-                );
+        isVerificationApproved(
+                userId,
+                VerificationType.IDENTITY
+        );
 
-        boolean verifiedProfile =
-                mobileVerified
-                        && churchVerified
-                        && identityVerified;
+IdentityVerificationDocument identityDocument =
+        identityVerified
+                ? identityVerificationDocumentRepository
+                        .findByUserId(userId)
+                        .orElse(null)
+                : null;
+
+boolean aadhaarVerified =
+        identityDocument != null
+                && identityDocument.getDocumentType()
+                        == IdentityDocumentType.AADHAAR;
+
+boolean idVerified =
+        identityDocument != null
+                && identityDocument.getDocumentType()
+                        != IdentityDocumentType.AADHAAR;
+
+/*
+ * Keep the existing generic field for compatibility.
+ *
+ * Church verification is intentionally independent
+ * from identity verification.
+ */
+boolean verifiedProfile =
+        mobileVerified
+                && identityVerified;
 
         return BrowseProfileResponse.builder()
                 .id(profile.getId())
@@ -281,18 +323,24 @@ public class BrowseProfileService {
                 .profileCompleted(
                         profile.getProfileCompleted()
                 )
-                .mobileVerified(
-                        mobileVerified
-                )
-                .churchVerified(
-                        churchVerified
-                )
-                .identityVerified(
-                        identityVerified
-                )
-                .verifiedProfile(
-                        verifiedProfile
-                )
+              .mobileVerified(
+        mobileVerified
+)
+.churchVerified(
+        churchVerified
+)
+.identityVerified(
+        identityVerified
+)
+.aadhaarVerified(
+        aadhaarVerified
+)
+.idVerified(
+        idVerified
+)
+.verifiedProfile(
+        verifiedProfile
+)
                 .primaryPhotoId(
                         primaryPhoto == null
                                 ? null

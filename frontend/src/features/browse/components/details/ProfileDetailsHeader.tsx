@@ -2,10 +2,6 @@
 
 import Link from "next/link";
 
-import {
-  BadgeCheck,
-} from "lucide-react";
-
 import InterestButton from "@/features/interests/components/InterestButton";
 import ShortlistButton from "@/features/shortlist/components/ShortlistButton";
 
@@ -26,7 +22,6 @@ interface ProfileDetailsHeaderProps {
 function getInitials(
   fullName: string
 ): string {
-
   return fullName
     .trim()
     .split(/\s+/)
@@ -44,7 +39,6 @@ function getInitials(
 function buildSummary(
   profile: BrowseProfile
 ): string {
-
   return [
     profile.age
       ? `${profile.age} years`
@@ -61,7 +55,6 @@ function buildSummary(
 function buildLocation(
   profile: BrowseProfile
 ): string {
-
   return [
     profile.city,
     profile.state,
@@ -74,7 +67,6 @@ function buildLocation(
 export default function ProfileDetailsHeader({
   profile,
 }: ProfileDetailsHeaderProps) {
-
   const photoUrl =
     resolveBrowsePhotoUrl(
       profile.primaryPhotoUrl
@@ -85,190 +77,154 @@ export default function ProfileDetailsHeader({
     "Holy Matrimony Member";
 
   const summary =
-    buildSummary(
-      profile
-    );
+    buildSummary(profile);
 
   const location =
-    buildLocation(
-      profile
+    buildLocation(profile);
+
+  const hasTrustBadge =
+    Boolean(
+      profile.aadhaarVerified ||
+      profile.idVerified ||
+      profile.churchVerified
     );
 
   return (
     <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-
       <div className="grid lg:grid-cols-[380px_1fr]">
 
         {/* =====================================================
             Profile Photo
-           ===================================================== */}
+            ===================================================== */}
 
         <div className="relative min-h-[460px] overflow-hidden bg-gradient-to-br from-blue-100 via-indigo-50 to-slate-100">
-
           {photoUrl ? (
-
             <img
-              src={
-                photoUrl
-              }
+              src={photoUrl}
               alt={`${displayName} profile photo`}
               className="absolute inset-0 h-full w-full object-cover"
             />
-
           ) : (
-
             <div className="flex min-h-[460px] items-center justify-center">
-
               <div className="flex h-32 w-32 items-center justify-center rounded-full bg-white text-4xl font-bold text-blue-700 shadow-lg">
-
                 {getInitials(
                   displayName
                 )}
-
               </div>
-
             </div>
           )}
 
           {/* ===================================================
-              Overall Verified Profile Badge
-             =================================================== */}
+              Premium Trust Badge Contrast
+              =================================================== */}
 
-          {profile.verifiedProfile && (
-
-            <span
-              title="Mobile, Church and Identity verified"
-              className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-lg"
-            >
-
-              <BadgeCheck
-                size={18}
-              />
-
-              Verified Profile
-
-            </span>
+          {hasTrustBadge && (
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-32 bg-gradient-to-b from-black/45 via-black/15 to-transparent" />
           )}
 
+          {/* ===================================================
+              Premium Trust Badges
+              =================================================== */}
+
+          {hasTrustBadge && (
+            <div className="absolute left-4 right-4 top-4 z-10">
+              <ProfileTrustBadges
+                profile={profile}
+                overlay
+              />
+            </div>
+          )}
         </div>
 
         {/* =====================================================
             Profile Information
-           ===================================================== */}
+            ===================================================== */}
 
         <div className="flex flex-col justify-between p-6 sm:p-8 lg:p-10">
-
           <div>
-
             <Link
               href="/browse"
               className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition hover:text-blue-800"
             >
-
               <span aria-hidden="true">
                 ←
               </span>
 
               Back to profiles
-
             </Link>
 
             {/* =================================================
                 Name / Completion / Summary
-               ================================================= */}
+                ================================================= */}
 
             <div className="mt-7">
-
               <div className="flex flex-wrap items-center gap-3">
-
                 <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-
                   {displayName}
-
                 </h1>
 
                 {profile.completionPercentage !=
                   null && (
-
                   <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700">
-
                     {
                       profile
                         .completionPercentage
                     }
                     % complete
-
                   </span>
                 )}
-
               </div>
 
               {summary && (
-
                 <p className="mt-3 text-lg text-slate-600">
-
                   {summary}
-
                 </p>
               )}
 
               {location && (
-
                 <p className="mt-2 text-base font-medium text-slate-700">
-
                   📍 {location}
-
                 </p>
               )}
 
-              {/* ===============================================
-                  Trust Badges
-                 =============================================== */}
+              {/* =================================================
+                  Public Trust Credentials
+                  ================================================= */}
 
-              <div className="mt-5">
-
-                <ProfileTrustBadges
-                  profile={
-                    profile
-                  }
-                />
-
-              </div>
-
+              {hasTrustBadge && (
+                <div className="mt-5">
+                  <ProfileTrustBadges
+                    profile={profile}
+                  />
+                </div>
+              )}
             </div>
 
             {/* =================================================
                 About
-               ================================================= */}
+                ================================================= */}
 
             {profile.aboutMe && (
-
               <div className="mt-8">
-
                 <h2 className="text-lg font-bold text-slate-900">
                   About
                 </h2>
 
                 <p className="mt-3 whitespace-pre-line leading-7 text-slate-600">
-
                   {
                     profile
                       .aboutMe
                   }
-
                 </p>
-
               </div>
             )}
-
           </div>
 
           {/* ===================================================
               Actions
-             =================================================== */}
+              =================================================== */}
 
           <div className="mt-10 grid gap-3 sm:grid-cols-2">
-
             <InterestButton
               receiverProfileId={
                 profile.id
@@ -287,13 +243,9 @@ export default function ProfileDetailsHeader({
                 displayName
               }
             />
-
           </div>
-
         </div>
-
       </div>
-
     </section>
   );
 }

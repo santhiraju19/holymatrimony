@@ -39,9 +39,31 @@ public class BrowseProfileResponse {
     private Boolean profileCompleted;
 
     // ===== Trust Verification =====
+
     private Boolean mobileVerified;
+
     private Boolean churchVerified;
+
+    /*
+     * Any approved identity document.
+     * Kept for backward compatibility.
+     */
     private Boolean identityVerified;
+
+    /*
+     * Approved Aadhaar document.
+     */
+    private Boolean aadhaarVerified;
+
+    /*
+     * Approved non-Aadhaar identity document:
+     * Passport / Driving Licence / Voter ID.
+     */
+    private Boolean idVerified;
+
+    /*
+     * Existing compatibility field.
+     */
     private Boolean verifiedProfile;
 
     private UUID primaryPhotoId;

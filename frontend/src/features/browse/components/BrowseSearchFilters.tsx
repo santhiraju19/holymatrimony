@@ -6,10 +6,14 @@ import type {
 } from "react";
 
 import {
+  BadgeCheck,
   ChevronDown,
+  Church,
   Filter,
+  Fingerprint,
   RotateCcw,
   Search,
+  ShieldCheck,
 } from "lucide-react";
 
 import {
@@ -30,7 +34,9 @@ import type {
 
 interface BrowseSearchFiltersProps {
   filters: BrowseSearchFiltersType;
+
   loading: boolean;
+
   isFiltering: boolean;
 
   onChange: (
@@ -39,6 +45,7 @@ interface BrowseSearchFiltersProps {
   ) => void;
 
   onApply: () => void;
+
   onReset: () => void;
 }
 
@@ -97,6 +104,7 @@ export default function BrowseSearchFilters({
     event: FormEvent<HTMLFormElement>
   ): void {
     event.preventDefault();
+
     onApply();
   }
 
@@ -133,6 +141,67 @@ export default function BrowseSearchFilters({
     );
   }
 
+  function handleAadhaarToggle(): void {
+    const nextValue =
+      filters.aadhaarVerified ===
+      "true"
+        ? ""
+        : "true";
+
+    onChange(
+      "aadhaarVerified",
+      nextValue
+    );
+
+    /*
+     * Aadhaar and generic ID verification are
+     * mutually exclusive because the current
+     * identity model has one document per member.
+     */
+    if (
+      nextValue ===
+      "true"
+    ) {
+      onChange(
+        "idVerified",
+        ""
+      );
+    }
+  }
+
+  function handleIdToggle(): void {
+    const nextValue =
+      filters.idVerified ===
+      "true"
+        ? ""
+        : "true";
+
+    onChange(
+      "idVerified",
+      nextValue
+    );
+
+    if (
+      nextValue ===
+      "true"
+    ) {
+      onChange(
+        "aadhaarVerified",
+        ""
+      );
+    }
+  }
+
+  function handleChurchToggle(): void {
+    onChange(
+      "churchVerified",
+      filters.churchVerified ===
+        "true"
+        ? ""
+        : "true"
+    );
+  }
+
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
@@ -149,8 +218,8 @@ export default function BrowseSearchFilters({
             </h2>
 
             <p className="text-xs text-slate-500 sm:text-sm">
-              Search using the same profile values members use when creating
-              their profiles.
+              Find members using profile details and trusted
+              verification credentials.
             </p>
           </div>
         </div>
@@ -163,11 +232,15 @@ export default function BrowseSearchFilters({
       </div>
 
       <form
-        className="space-y-4"
+        className="space-y-5"
         onSubmit={
           handleSubmit
         }
       >
+        {/* =====================================================
+            Standard Profile Filters
+            ===================================================== */}
+
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <FilterField
             label="Age From"
@@ -190,8 +263,7 @@ export default function BrowseSearchFilters({
               ) =>
                 onChange(
                   "ageFrom",
-                  event.target
-                    .value
+                  event.target.value
                 )
               }
             />
@@ -218,8 +290,7 @@ export default function BrowseSearchFilters({
               ) =>
                 onChange(
                   "ageTo",
-                  event.target
-                    .value
+                  event.target.value
                 )
               }
             />
@@ -242,8 +313,7 @@ export default function BrowseSearchFilters({
                 ) =>
                   onChange(
                     "gender",
-                    event.target
-                      .value
+                    event.target.value
                   )
                 }
               >
@@ -279,8 +349,7 @@ export default function BrowseSearchFilters({
                 ) =>
                   onChange(
                     "maritalStatus",
-                    event.target
-                      .value
+                    event.target.value
                   )
                 }
               >
@@ -324,8 +393,7 @@ export default function BrowseSearchFilters({
                 ) =>
                   onChange(
                     "denomination",
-                    event.target
-                      .value
+                    event.target.value
                   )
                 }
               >
@@ -372,8 +440,7 @@ export default function BrowseSearchFilters({
                 ) =>
                   onChange(
                     "highestEducation",
-                    event.target
-                      .value
+                    event.target.value
                   )
                 }
               >
@@ -420,8 +487,7 @@ export default function BrowseSearchFilters({
                 ) =>
                   onChange(
                     "profession",
-                    event.target
-                      .value
+                    event.target.value
                   )
                 }
               >
@@ -481,8 +547,7 @@ export default function BrowseSearchFilters({
                 ) =>
                   onChange(
                     "baptized",
-                    event.target
-                      .value
+                    event.target.value
                   )
                 }
               >
@@ -517,8 +582,7 @@ export default function BrowseSearchFilters({
                   event
                 ) =>
                   handleCountryChange(
-                    event.target
-                      .value
+                    event.target.value
                   )
                 }
               >
@@ -578,8 +642,7 @@ export default function BrowseSearchFilters({
                   event
                 ) =>
                   handleStateChange(
-                    event.target
-                      .value
+                    event.target.value
                   )
                 }
               >
@@ -641,8 +704,7 @@ export default function BrowseSearchFilters({
                 ) =>
                   onChange(
                     "city",
-                    event.target
-                      .value
+                    event.target.value
                   )
                 }
               >
@@ -684,9 +746,141 @@ export default function BrowseSearchFilters({
           </FilterField>
         </div>
 
+        {/* =====================================================
+            Premium Verification Filters
+            ===================================================== */}
+
+        <div className="overflow-hidden rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/90 via-white to-blue-50/80 shadow-sm">
+          <div className="border-b border-amber-100/80 px-4 py-4 sm:px-5">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 via-yellow-400 to-amber-500 text-slate-950 shadow-[0_6px_18px_rgba(245,158,11,0.22)]">
+                <BadgeCheck
+                  size={20}
+                  strokeWidth={2.5}
+                />
+              </span>
+
+              <div>
+                <h3 className="text-sm font-black text-[#0B2D5C] sm:text-base">
+                  Verified Profiles
+                </h3>
+
+                <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500 sm:text-sm">
+                  Search members by trusted verification credentials.
+                  Church verification can be combined with Aadhaar or ID
+                  verification.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-3 p-4 sm:grid-cols-3 sm:p-5">
+            <VerificationToggle
+              active={
+                filters.aadhaarVerified ===
+                "true"
+              }
+              disabled={loading}
+              title="Aadhaar Verified"
+              description="Identity approved using an Aadhaar document."
+              icon={
+                <ShieldCheck
+                  size={19}
+                  strokeWidth={2.4}
+                />
+              }
+              variant="aadhaar"
+              onClick={
+                handleAadhaarToggle
+              }
+            />
+
+            <VerificationToggle
+              active={
+                filters.idVerified ===
+                "true"
+              }
+              disabled={loading}
+              title="ID Verified"
+              description="Passport, Driving Licence or Voter ID approved."
+              icon={
+                <Fingerprint
+                  size={19}
+                  strokeWidth={2.4}
+                />
+              }
+              variant="identity"
+              onClick={
+                handleIdToggle
+              }
+            />
+
+            <VerificationToggle
+              active={
+                filters.churchVerified ===
+                "true"
+              }
+              disabled={loading}
+              title="Church Verified"
+              description="Church information has been reviewed and approved."
+              icon={
+                <Church
+                  size={19}
+                  strokeWidth={2.4}
+                />
+              }
+              variant="church"
+              onClick={
+                handleChurchToggle
+              }
+            />
+          </div>
+
+          {(filters.aadhaarVerified ===
+            "true" ||
+            filters.idVerified ===
+              "true" ||
+            filters.churchVerified ===
+              "true") && (
+            <div className="border-t border-amber-100/80 bg-white/60 px-4 py-3 sm:px-5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">
+                  Active trust filters
+                </span>
+
+                {filters.aadhaarVerified ===
+                  "true" && (
+                  <ActiveVerificationChip
+                    variant="aadhaar"
+                    label="Aadhaar Verified"
+                  />
+                )}
+
+                {filters.idVerified ===
+                  "true" && (
+                  <ActiveVerificationChip
+                    variant="identity"
+                    label="ID Verified"
+                  />
+                )}
+
+                {filters.churchVerified ===
+                  "true" && (
+                  <ActiveVerificationChip
+                    variant="church"
+                    label="Church Verified"
+                  />
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
         <p className="text-xs leading-5 text-slate-500">
-          Choose a country to load its states. Choose a state to load its
-          cities. Leaving a field on Any does not restrict that field.
+          Choose a country to load its states. Choose a state to load
+          its cities. Leaving a field on Any does not restrict that
+          field. When multiple verification filters are selected, the
+          profile must satisfy all selected credentials.
         </p>
 
         <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
@@ -701,6 +895,7 @@ export default function BrowseSearchFilters({
             <RotateCcw
               size={16}
             />
+
             Reset Filters
           </button>
 
@@ -720,6 +915,150 @@ export default function BrowseSearchFilters({
         </div>
       </form>
     </section>
+  );
+}
+
+type VerificationVariant =
+  | "aadhaar"
+  | "identity"
+  | "church";
+
+function VerificationToggle({
+  active,
+  disabled,
+  title,
+  description,
+  icon,
+  variant,
+  onClick,
+}: {
+  active: boolean;
+  disabled: boolean;
+  title: string;
+  description: string;
+  icon: ReactNode;
+  variant: VerificationVariant;
+  onClick: () => void;
+}) {
+  const activeStyles: Record<
+    VerificationVariant,
+    string
+  > = {
+    aadhaar:
+      "border-amber-400 bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100 shadow-[0_8px_26px_rgba(245,158,11,0.15)]",
+
+    identity:
+      "border-blue-400 bg-gradient-to-br from-sky-50 via-white to-blue-100 shadow-[0_8px_26px_rgba(37,99,235,0.13)]",
+
+    church:
+      "border-indigo-400 bg-gradient-to-br from-indigo-50 via-white to-blue-100 shadow-[0_8px_26px_rgba(79,70,229,0.13)]",
+  };
+
+  const iconStyles: Record<
+    VerificationVariant,
+    string
+  > = {
+    aadhaar:
+      "bg-gradient-to-br from-amber-400 to-yellow-500 text-slate-950",
+
+    identity:
+      "bg-gradient-to-br from-blue-600 to-indigo-600 text-white",
+
+    church:
+      "bg-gradient-to-br from-[#0B2D5C] to-blue-700 text-white",
+  };
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      aria-pressed={active}
+      onClick={onClick}
+      className={[
+        "group relative flex min-h-[108px] w-full items-start gap-3 overflow-hidden rounded-2xl border p-4 text-left transition duration-200",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+        "disabled:cursor-not-allowed disabled:opacity-50",
+        active
+          ? activeStyles[variant]
+          : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md",
+      ].join(" ")}
+    >
+      <span
+        className={[
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm transition",
+          active
+            ? iconStyles[variant]
+            : "bg-slate-100 text-slate-500 group-hover:bg-slate-200",
+        ].join(" ")}
+      >
+        {icon}
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5 text-sm font-black text-[#0B2D5C]">
+          {title}
+
+          {active && (
+            <BadgeCheck
+              size={16}
+              strokeWidth={2.5}
+              className="shrink-0 text-emerald-600"
+            />
+          )}
+        </span>
+
+        <span className="mt-1 block text-xs leading-5 text-slate-500">
+          {description}
+        </span>
+      </span>
+
+      <span
+        className={[
+          "absolute right-3 top-3 h-2 w-2 rounded-full transition",
+          active
+            ? "bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]"
+            : "bg-slate-200",
+        ].join(" ")}
+      />
+    </button>
+  );
+}
+
+function ActiveVerificationChip({
+  variant,
+  label,
+}: {
+  variant: VerificationVariant;
+  label: string;
+}) {
+  const styles: Record<
+    VerificationVariant,
+    string
+  > = {
+    aadhaar:
+      "border-amber-200 bg-amber-50 text-amber-800",
+
+    identity:
+      "border-blue-200 bg-blue-50 text-blue-800",
+
+    church:
+      "border-indigo-200 bg-indigo-50 text-indigo-800",
+  };
+
+  return (
+    <span
+      className={[
+        "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold",
+        styles[variant],
+      ].join(" ")}
+    >
+      <BadgeCheck
+        size={12}
+        strokeWidth={2.5}
+      />
+
+      {label}
+    </span>
   );
 }
 
