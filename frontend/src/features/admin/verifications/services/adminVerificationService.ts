@@ -163,3 +163,26 @@ export async function getAdminIdentityDocument(
     );
   }
 }
+
+export async function getAdminChurchDocument(
+  verificationId: string
+): Promise<Blob> {
+  try {
+    const response =
+      await api.get(
+        `/admin/verifications/${verificationId}/church-proof`,
+        {
+          responseType: "blob",
+        }
+      );
+
+    return response.data as Blob;
+  } catch (error) {
+    throw new Error(
+      getApiErrorMessage(
+        error,
+        "Unable to load church verification document."
+      )
+    );
+  }
+}

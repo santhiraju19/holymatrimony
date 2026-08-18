@@ -1,10 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  useParams,
+  useRouter,
+} from "next/navigation";
+
 import {
   ArrowLeft,
   CheckCircle2,
+  Church,
   Eye,
   FileText,
   Loader2,
@@ -13,6 +23,7 @@ import {
 } from "lucide-react";
 
 import {
+  getAdminChurchDocument,
   getAdminIdentityDocument,
   getAdminVerification,
   updateAdminVerification,
@@ -20,25 +31,36 @@ import {
 
 import type {
   AdminMemberVerification,
+  ChurchVerificationMethod,
   VerificationStatus,
   VerificationType,
 } from "@/features/admin/verifications/types/adminVerification";
 
+/*
+ * ============================================================
+ * Formatting
+ * ============================================================
+ */
+
 function formatDate(
   value?: string | null
 ): string {
+
   if (!value) {
     return "—";
   }
 
   const date =
-    new Date(value);
+    new Date(
+      value
+    );
 
   if (
     Number.isNaN(
       date.getTime()
     )
   ) {
+
     return value;
   }
 
@@ -48,22 +70,30 @@ function formatDate(
 function formatFileSize(
   value?: number | null
 ): string {
+
   if (
     value === null ||
     value === undefined ||
     value <= 0
   ) {
+
     return "—";
   }
 
-  if (value < 1024) {
+  if (
+    value < 1024
+  ) {
+
     return `${value} B`;
   }
 
   const kb =
     value / 1024;
 
-  if (kb < 1024) {
+  if (
+    kb < 1024
+  ) {
+
     return `${kb.toFixed(1)} KB`;
   }
 
@@ -76,7 +106,9 @@ function formatFileSize(
 function formatVerificationType(
   type: VerificationType
 ): string {
+
   switch (type) {
+
     case "MOBILE":
       return "Mobile";
 
@@ -94,11 +126,13 @@ function formatVerificationType(
 function formatDocumentType(
   value?: string | null
 ): string {
+
   if (!value) {
     return "—";
   }
 
   switch (value) {
+
     case "AADHAAR":
       return "Aadhaar";
 
@@ -113,7 +147,10 @@ function formatDocumentType(
 
     default:
       return value
-        .replaceAll("_", " ")
+        .replaceAll(
+          "_",
+          " "
+        )
         .toLowerCase()
         .replace(
           /\b\w/g,
@@ -123,10 +160,34 @@ function formatDocumentType(
   }
 }
 
+function formatChurchVerificationMethod(
+  value?:
+    | ChurchVerificationMethod
+    | null
+): string {
+
+  switch (value) {
+
+    case "DOCUMENT":
+      return "Church-issued Document";
+
+    case "PASTOR_CONTACT":
+      return "Pastor / Church Contact";
+
+    case "MEMBERSHIP_ID":
+      return "Membership ID";
+
+    default:
+      return "—";
+  }
+}
+
 function getStatusClasses(
   status: VerificationStatus
 ): string {
+
   switch (status) {
+
     case "APPROVED":
       return "border-emerald-200 bg-emerald-50 text-emerald-700";
 
@@ -142,6 +203,12 @@ function getStatusClasses(
   }
 }
 
+/*
+ * ============================================================
+ * Detail Card
+ * ============================================================
+ */
+
 function DetailCard({
   label,
   value,
@@ -149,8 +216,10 @@ function DetailCard({
   label: string;
   value: string;
 }) {
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+
       <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
         {label}
       </p>
@@ -158,11 +227,19 @@ function DetailCard({
       <p className="mt-2 break-words text-sm font-semibold text-slate-900">
         {value}
       </p>
+
     </div>
   );
 }
 
+/*
+ * ============================================================
+ * Page
+ * ============================================================
+ */
+
 export default function AdminVerificationDetailPage() {
+
   const params =
     useParams<{
       id: string;
@@ -209,16 +286,22 @@ export default function AdminVerificationDetailPage() {
     setActionLoading,
   ] =
     useState<
-      "APPROVED" |
-      "REJECTED" |
+      | "APPROVED"
+      | "REJECTED"
+      | null
+    >(
       null
-    >(null);
+    );
 
   const [
     reason,
     setReason,
   ] =
     useState("");
+
+  /*
+   * Identity document state
+   */
 
   const [
     documentLoading,
@@ -234,23 +317,59 @@ export default function AdminVerificationDetailPage() {
       null
     );
 
+  /*
+   * Church document state
+   */
+
+  const [
+    churchDocumentLoading,
+    setChurchDocumentLoading,
+  ] =
+    useState(false);
+
+  const [
+    churchDocumentError,
+    setChurchDocumentError,
+  ] =
+    useState<string | null>(
+      null
+    );
+
+  /*
+   * ============================================================
+   * Load Verification
+   * ============================================================
+   */
+
   const loadVerification =
     useCallback(
       async () => {
-        if (!verificationId) {
+
+        if (
+          !verificationId
+        ) {
+
           setError(
             "Verification ID is missing."
           );
 
-          setLoading(false);
+          setLoading(
+            false
+          );
 
           return;
         }
 
-        setLoading(true);
-        setError(null);
+        setLoading(
+          true
+        );
+
+        setError(
+          null
+        );
 
         try {
+
           const data =
             await getAdminVerification(
               verificationId
@@ -259,37 +378,56 @@ export default function AdminVerificationDetailPage() {
           setVerification(
             data
           );
+
         } catch (
           loadError
         ) {
+
           setError(
             loadError instanceof Error
               ? loadError.message
               : "Unable to load verification request."
           );
+
         } finally {
-          setLoading(false);
+
+          setLoading(
+            false
+          );
         }
       },
-      [verificationId]
+      [
+        verificationId,
+      ]
     );
 
   useEffect(
     () => {
+
       void loadVerification();
     },
-    [loadVerification]
+    [
+      loadVerification,
+    ]
   );
+
+  /*
+   * ============================================================
+   * Review
+   * ============================================================
+   */
 
   async function handleReview(
     status:
       | "APPROVED"
       | "REJECTED"
   ): Promise<void> {
+
     if (
       !verification ||
       actionLoading
     ) {
+
       return;
     }
 
@@ -301,6 +439,7 @@ export default function AdminVerificationDetailPage() {
         "REJECTED" &&
       !normalizedReason
     ) {
+
       setActionError(
         "Please enter a reason before rejecting this verification."
       );
@@ -317,6 +456,7 @@ export default function AdminVerificationDetailPage() {
     );
 
     try {
+
       const updated =
         await updateAdminVerification(
           verification.id,
@@ -333,26 +473,39 @@ export default function AdminVerificationDetailPage() {
       );
 
       setReason("");
+
     } catch (
       reviewError
     ) {
+
       setActionError(
         reviewError instanceof Error
           ? reviewError.message
           : "Unable to update verification request."
       );
+
     } finally {
+
       setActionLoading(
         null
       );
     }
   }
 
-  async function handleViewIdentityDocument(): Promise<void> {
+  /*
+   * ============================================================
+   * Identity Document Preview
+   * ============================================================
+   */
+
+  async function handleViewIdentityDocument():
+    Promise<void> {
+
     if (
       !verification ||
       documentLoading
     ) {
+
       return;
     }
 
@@ -365,77 +518,176 @@ export default function AdminVerificationDetailPage() {
     );
 
     try {
+
       const blob =
         await getAdminIdentityDocument(
           verification.id
         );
 
-      const url =
-        URL.createObjectURL(
-          blob
-        );
-
-      const newWindow =
-        window.open(
-          url,
-          "_blank",
-          "noopener,noreferrer"
-        );
-
-      if (!newWindow) {
-        URL.revokeObjectURL(
-          url
-        );
-
-        throw new Error(
-          "The browser blocked the document preview window."
-        );
-      }
-
-      window.setTimeout(
-        () => {
-          URL.revokeObjectURL(
-            url
-          );
-        },
-        60_000
+      openDocumentBlob(
+        blob
       );
+
     } catch (
       viewError
     ) {
+
       setDocumentError(
         viewError instanceof Error
           ? viewError.message
           : "Unable to open identity document."
       );
+
     } finally {
+
       setDocumentLoading(
         false
       );
     }
   }
 
-  if (loading) {
+  /*
+   * ============================================================
+   * Church Document Preview
+   * ============================================================
+   */
+
+  async function handleViewChurchDocument():
+    Promise<void> {
+
+    if (
+      !verification ||
+      churchDocumentLoading
+    ) {
+
+      return;
+    }
+
+    setChurchDocumentLoading(
+      true
+    );
+
+    setChurchDocumentError(
+      null
+    );
+
+    try {
+
+      const blob =
+        await getAdminChurchDocument(
+          verification.id
+        );
+
+      openDocumentBlob(
+        blob
+      );
+
+    } catch (
+      viewError
+    ) {
+
+      setChurchDocumentError(
+        viewError instanceof Error
+          ? viewError.message
+          : "Unable to open church verification document."
+      );
+
+    } finally {
+
+      setChurchDocumentLoading(
+        false
+      );
+    }
+  }
+
+  /*
+   * ============================================================
+   * Open Protected Blob
+   * ============================================================
+   */
+
+  function openDocumentBlob(
+    blob: Blob
+  ): void {
+
+    const url =
+      URL.createObjectURL(
+        blob
+      );
+
+    const newWindow =
+      window.open(
+        url,
+        "_blank",
+        "noopener,noreferrer"
+      );
+
+    if (
+      !newWindow
+    ) {
+
+      URL.revokeObjectURL(
+        url
+      );
+
+      throw new Error(
+        "The browser blocked the document preview window."
+      );
+    }
+
+    window.setTimeout(
+      () => {
+
+        URL.revokeObjectURL(
+          url
+        );
+      },
+      60_000
+    );
+  }
+
+  /*
+   * ============================================================
+   * Loading
+   * ============================================================
+   */
+
+  if (
+    loading
+  ) {
+
     return (
       <div className="flex min-h-[420px] items-center justify-center">
+
         <div className="flex items-center gap-3 text-sm font-semibold text-slate-600">
+
           <Loader2
             size={20}
             className="animate-spin"
           />
 
           Loading verification...
+
         </div>
+
       </div>
     );
   }
+
+  /*
+   * ============================================================
+   * Error
+   * ============================================================
+   */
 
   if (
     error ||
     !verification
   ) {
+
     return (
       <div className="space-y-6">
+
         <button
           type="button"
           onClick={() =>
@@ -445,31 +697,68 @@ export default function AdminVerificationDetailPage() {
           }
           className="inline-flex items-center gap-2 text-sm font-bold text-[#0B2D5C] transition hover:text-[#D4AF37]"
         >
+
           <ArrowLeft
             size={17}
           />
 
           Back to Verifications
+
         </button>
 
         <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-sm font-semibold text-red-700">
           {error ||
             "Verification request was not found."}
         </div>
+
       </div>
     );
   }
 
+  /*
+   * ============================================================
+   * Derived State
+   * ============================================================
+   */
+
   const isPending =
-    verification.verificationStatus ===
+    verification
+      .verificationStatus ===
     "PENDING";
 
   const isIdentity =
-    verification.verificationType ===
+    verification
+      .verificationType ===
     "IDENTITY";
+
+  const isChurch =
+    verification
+      .verificationType ===
+    "CHURCH";
+
+  const churchMethod =
+    verification
+      .churchVerificationMethod;
+
+  const approvalBlocked =
+    (
+      isIdentity &&
+      !verification.hasIdentityDocument
+    ) ||
+    (
+      isChurch &&
+      !verification.hasChurchSubmission
+    );
+
+  /*
+   * ============================================================
+   * Render
+   * ============================================================
+   */
 
   return (
     <div className="space-y-6">
+
       <button
         type="button"
         onClick={() =>
@@ -479,24 +768,37 @@ export default function AdminVerificationDetailPage() {
         }
         className="inline-flex items-center gap-2 text-sm font-bold text-[#0B2D5C] transition hover:text-[#D4AF37]"
       >
+
         <ArrowLeft
           size={17}
         />
 
         Back to Verifications
+
       </button>
 
+      {/* ========================================================
+          Header
+         ======================================================== */}
+
       <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+
         <div className="border-b border-slate-200 bg-gradient-to-r from-[#0B2D5C] to-[#123f75] px-6 py-7 text-white sm:px-8">
+
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+
             <div className="flex items-start gap-4">
+
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10">
+
                 <ShieldCheck
                   size={24}
                 />
+
               </div>
 
               <div>
+
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-100">
                   Member Verification
                 </p>
@@ -511,7 +813,9 @@ export default function AdminVerificationDetailPage() {
                 <p className="mt-2 text-sm text-blue-100">
                   Review the member submission and update its verification status.
                 </p>
+
               </div>
+
             </div>
 
             <span
@@ -519,15 +823,20 @@ export default function AdminVerificationDetailPage() {
                 verification.verificationStatus
               )}`}
             >
-              {verification.verificationStatus.replaceAll(
-                "_",
-                " "
-              )}
+              {verification
+                .verificationStatus
+                .replaceAll(
+                  "_",
+                  " "
+                )}
             </span>
+
           </div>
+
         </div>
 
         <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3 sm:p-8">
+
           <DetailCard
             label="Member"
             value={
@@ -546,35 +855,50 @@ export default function AdminVerificationDetailPage() {
 
           <DetailCard
             label="Verification Type"
-            value={formatVerificationType(
-              verification.verificationType
-            )}
+            value={
+              formatVerificationType(
+                verification.verificationType
+              )
+            }
           />
 
           <DetailCard
             label="Submitted"
-            value={formatDate(
-              verification.submittedAt
-            )}
+            value={
+              formatDate(
+                verification.submittedAt
+              )
+            }
           />
 
           <DetailCard
             label="Created"
-            value={formatDate(
-              verification.createdAt
-            )}
+            value={
+              formatDate(
+                verification.createdAt
+              )
+            }
           />
 
           <DetailCard
             label="Last Updated"
-            value={formatDate(
-              verification.updatedAt
-            )}
+            value={
+              formatDate(
+                verification.updatedAt
+              )
+            }
           />
+
         </div>
+
       </section>
 
+      {/* ========================================================
+          Member Note
+         ======================================================== */}
+
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+
         <h2 className="text-lg font-black text-[#0B2D5C]">
           Member Note
         </h2>
@@ -583,19 +907,31 @@ export default function AdminVerificationDetailPage() {
           {verification.memberNote ||
             "No note was provided by the member."}
         </div>
+
       </section>
 
+      {/* ========================================================
+          Identity Verification
+         ======================================================== */}
+
       {isIdentity && (
+
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+
             <div className="flex items-start gap-3">
+
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#0B2D5C]">
+
                 <FileText
                   size={21}
                 />
+
               </div>
 
               <div>
+
                 <h2 className="text-lg font-black text-[#0B2D5C]">
                   Identity Document
                 </h2>
@@ -603,10 +939,13 @@ export default function AdminVerificationDetailPage() {
                 <p className="mt-1 text-sm text-slate-500">
                   Private document submitted by the member for identity verification.
                 </p>
+
               </div>
+
             </div>
 
             {verification.hasIdentityDocument && (
+
               <button
                 type="button"
                 disabled={
@@ -617,31 +956,42 @@ export default function AdminVerificationDetailPage() {
                 }}
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0B2D5C] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#123f75] disabled:cursor-not-allowed disabled:opacity-50"
               >
+
                 {documentLoading ? (
+
                   <Loader2
                     size={17}
                     className="animate-spin"
                   />
+
                 ) : (
+
                   <Eye
                     size={17}
                   />
+
                 )}
 
                 {documentLoading
                   ? "Opening..."
                   : "View Document"}
+
               </button>
             )}
+
           </div>
 
           {verification.hasIdentityDocument ? (
+
             <div className="mt-5 grid gap-4 md:grid-cols-2">
+
               <DetailCard
                 label="Document Type"
-                value={formatDocumentType(
-                  verification.identityDocumentType
-                )}
+                value={
+                  formatDocumentType(
+                    verification.identityDocumentType
+                  )
+                }
               />
 
               <DetailCard
@@ -662,37 +1012,272 @@ export default function AdminVerificationDetailPage() {
 
               <DetailCard
                 label="File Size"
-                value={formatFileSize(
-                  verification.identityDocumentFileSize
-                )}
+                value={
+                  formatFileSize(
+                    verification.identityDocumentFileSize
+                  )
+                }
               />
+
             </div>
+
           ) : (
+
             <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
               No identity document is attached to this verification request.
             </div>
+
           )}
 
           {documentError && (
+
             <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
               {documentError}
             </div>
+
           )}
+
         </section>
       )}
 
-      {verification.reviewedAt && (
+      {/* ========================================================
+          Church Verification
+         ======================================================== */}
+
+      {isChurch && (
+
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+
+            <div className="flex items-start gap-3">
+
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#0B2D5C]">
+
+                <Church
+                  size={21}
+                />
+
+              </div>
+
+              <div>
+
+                <h2 className="text-lg font-black text-[#0B2D5C]">
+                  Church Verification Submission
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Review how the member has chosen to verify their church affiliation.
+                </p>
+
+              </div>
+
+            </div>
+
+            {verification.hasChurchDocument && (
+
+              <button
+                type="button"
+                disabled={
+                  churchDocumentLoading
+                }
+                onClick={() => {
+                  void handleViewChurchDocument();
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0B2D5C] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#123f75] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+
+                {churchDocumentLoading ? (
+
+                  <Loader2
+                    size={17}
+                    className="animate-spin"
+                  />
+
+                ) : (
+
+                  <Eye
+                    size={17}
+                  />
+
+                )}
+
+                {churchDocumentLoading
+                  ? "Opening..."
+                  : "View Church Proof"}
+
+              </button>
+            )}
+
+          </div>
+
+          {verification.hasChurchSubmission ? (
+
+            <>
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+
+                <DetailCard
+                  label="Verification Method"
+                  value={
+                    formatChurchVerificationMethod(
+                      churchMethod
+                    )
+                  }
+                />
+
+                {churchMethod ===
+                  "PASTOR_CONTACT" && (
+                  <DetailCard
+                    label="Pastor / Contact Name"
+                    value={
+                      verification.churchPastorName ||
+                      "—"
+                    }
+                  />
+                )}
+
+                {churchMethod ===
+                  "PASTOR_CONTACT" && (
+                  <DetailCard
+                    label="Church Phone"
+                    value={
+                      verification.churchPhone ||
+                      "—"
+                    }
+                  />
+                )}
+
+                {churchMethod ===
+                  "PASTOR_CONTACT" && (
+                  <DetailCard
+                    label="Church Email"
+                    value={
+                      verification.churchEmail ||
+                      "—"
+                    }
+                  />
+                )}
+
+                {churchMethod ===
+                  "MEMBERSHIP_ID" && (
+                  <DetailCard
+                    label="Membership ID / Member Number"
+                    value={
+                      verification.churchMembershipId ||
+                      "—"
+                    }
+                  />
+                )}
+
+              </div>
+
+              {verification.hasChurchDocument && (
+
+                <div className="mt-5">
+
+                  <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">
+                    Supporting Document
+                  </h3>
+
+                  <div className="mt-3 grid gap-4 md:grid-cols-3">
+
+                    <DetailCard
+                      label="File Name"
+                      value={
+                        verification.churchDocumentFileName ||
+                        "—"
+                      }
+                    />
+
+                    <DetailCard
+                      label="Content Type"
+                      value={
+                        verification.churchDocumentContentType ||
+                        "—"
+                      }
+                    />
+
+                    <DetailCard
+                      label="File Size"
+                      value={
+                        formatFileSize(
+                          verification.churchDocumentFileSize
+                        )
+                      }
+                    />
+
+                  </div>
+
+                </div>
+              )}
+
+              {churchMethod ===
+                "DOCUMENT" &&
+                !verification.hasChurchDocument && (
+
+                <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+                  This request selected document verification, but no church document is attached.
+                </div>
+              )}
+
+              {churchMethod ===
+                "PASTOR_CONTACT" && (
+
+                <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-800">
+                  Verify the member&apos;s affiliation using the church phone or email before approving this request.
+                </div>
+              )}
+
+              {churchMethod ===
+                "MEMBERSHIP_ID" && (
+
+                <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-800">
+                  Review the membership number and any optional supporting document before approving this request.
+                </div>
+              )}
+
+            </>
+
+          ) : (
+
+            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+              No Church verification submission is attached to this request.
+            </div>
+
+          )}
+
+          {churchDocumentError && (
+
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
+              {churchDocumentError}
+            </div>
+
+          )}
+
+        </section>
+      )}
+
+      {/* ========================================================
+          Review Result
+         ======================================================== */}
+
+      {verification.reviewedAt && (
+
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+
           <h2 className="text-lg font-black text-[#0B2D5C]">
             Review Result
           </h2>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
+
             <DetailCard
               label="Reviewed At"
-              value={formatDate(
-                verification.reviewedAt
-              )}
+              value={
+                formatDate(
+                  verification.reviewedAt
+                )
+              }
             />
 
             <DetailCard
@@ -702,24 +1287,36 @@ export default function AdminVerificationDetailPage() {
                 "—"
               }
             />
+
           </div>
 
           {verification.reviewReason && (
+
             <div className="mt-4">
+
               <DetailCard
                 label="Review Reason / Note"
                 value={
                   verification.reviewReason
                 }
               />
+
             </div>
           )}
+
         </section>
       )}
 
+      {/* ========================================================
+          Review Actions
+         ======================================================== */}
+
       {isPending && (
+
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+
           <div>
+
             <h2 className="text-lg font-black text-[#0B2D5C]">
               Review Verification
             </h2>
@@ -727,16 +1324,27 @@ export default function AdminVerificationDetailPage() {
             <p className="mt-1 text-sm text-slate-500">
               Approve the request or provide a reason and reject it.
             </p>
+
           </div>
 
           {isIdentity &&
             !verification.hasIdentityDocument && (
-              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
-                This identity request has no document attached. The backend will prevent approval until a document exists.
-              </div>
-            )}
+
+            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+              This identity request has no document attached. Approval is disabled.
+            </div>
+          )}
+
+          {isChurch &&
+            !verification.hasChurchSubmission && (
+
+            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+              This Church request has no Church verification submission. Approval is disabled.
+            </div>
+          )}
 
           <div className="mt-5">
+
             <label
               htmlFor="review-reason"
               className="text-sm font-bold text-slate-700"
@@ -747,35 +1355,37 @@ export default function AdminVerificationDetailPage() {
             <textarea
               id="review-reason"
               rows={4}
-              value={reason}
-              onChange={(
-                event
-              ) =>
-                setReason(
-                  event.target.value
-                )
+              value={
+                reason
+              }
+              onChange={
+                (event) =>
+                  setReason(
+                    event.target.value
+                  )
               }
               placeholder="Add an optional approval note, or enter the required reason when rejecting..."
               className="mt-2 w-full resize-none rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0B2D5C] focus:ring-4 focus:ring-blue-100"
             />
+
           </div>
 
           {actionError && (
+
             <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
               {actionError}
             </div>
+
           )}
 
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+
             <button
               type="button"
               disabled={
                 actionLoading !==
                   null ||
-                (
-                  isIdentity &&
-                  !verification.hasIdentityDocument
-                )
+                approvalBlocked
               }
               onClick={() => {
                 void handleReview(
@@ -784,22 +1394,28 @@ export default function AdminVerificationDetailPage() {
               }}
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
+
               {actionLoading ===
               "APPROVED" ? (
+
                 <Loader2
                   size={17}
                   className="animate-spin"
                 />
+
               ) : (
+
                 <CheckCircle2
                   size={17}
                 />
+
               )}
 
               {actionLoading ===
               "APPROVED"
                 ? "Approving..."
                 : "Approve"}
+
             </button>
 
             <button
@@ -815,32 +1431,43 @@ export default function AdminVerificationDetailPage() {
               }}
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
+
               {actionLoading ===
               "REJECTED" ? (
+
                 <Loader2
                   size={17}
                   className="animate-spin"
                 />
+
               ) : (
+
                 <XCircle
                   size={17}
                 />
+
               )}
 
               {actionLoading ===
               "REJECTED"
                 ? "Rejecting..."
                 : "Reject"}
+
             </button>
+
           </div>
+
         </section>
       )}
 
       {!isPending && (
+
         <section className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-600">
           This verification request has already been reviewed and can no longer be changed.
         </section>
+
       )}
+
     </div>
   );
 }

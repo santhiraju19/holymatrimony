@@ -1,5 +1,6 @@
 package com.theholymatrimony.backend.admin.dto;
 
+import com.theholymatrimony.backend.verification.church.ChurchVerificationMethod;
 import com.theholymatrimony.backend.verification.document.IdentityDocumentType;
 import com.theholymatrimony.backend.verification.enums.VerificationStatus;
 import com.theholymatrimony.backend.verification.enums.VerificationType;
@@ -40,6 +41,12 @@ public class AdminMemberVerificationResponse {
 
     private LocalDateTime updatedAt;
 
+    /*
+     * ============================================================
+     * Identity Verification
+     * ============================================================
+     */
+
     private boolean hasIdentityDocument;
 
     private IdentityDocumentType identityDocumentType;
@@ -49,4 +56,30 @@ public class AdminMemberVerificationResponse {
     private String identityDocumentContentType;
 
     private Long identityDocumentFileSize;
+
+    /*
+     * ============================================================
+     * Church Verification
+     * ============================================================
+     */
+
+    private boolean hasChurchSubmission;
+
+    private ChurchVerificationMethod churchVerificationMethod;
+
+    private String churchPastorName;
+
+    private String churchPhone;
+
+    private String churchEmail;
+
+    private String churchMembershipId;
+
+    private boolean hasChurchDocument;
+
+    private String churchDocumentFileName;
+
+    private String churchDocumentContentType;
+
+    private Long churchDocumentFileSize;
 }
