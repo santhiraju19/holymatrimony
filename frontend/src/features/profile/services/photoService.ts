@@ -43,7 +43,8 @@ function requireAccessToken(): string {
 function buildHeaders(
   contentType?: string
 ): HeadersInit {
-  const token = requireAccessToken();
+  const token =
+    requireAccessToken();
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${token}`,
@@ -51,7 +52,8 @@ function buildHeaders(
   };
 
   if (contentType) {
-    headers["Content-Type"] = contentType;
+    headers["Content-Type"] =
+      contentType;
   }
 
   return headers;
@@ -61,10 +63,11 @@ async function parseErrorResponse(
   response: Response
 ): Promise<string> {
   try {
-    const data = (await response.json()) as {
-      message?: string;
-      error?: string;
-    };
+    const data =
+      (await response.json()) as {
+        message?: string;
+        error?: string;
+      };
 
     return (
       data.message ??
@@ -84,38 +87,120 @@ async function ensureSuccess(
   }
 
   const message =
-    await parseErrorResponse(response);
+    await parseErrorResponse(
+      response
+    );
 
   throw new Error(message);
 }
 
 export function resolvePhotoUrl(
-  imageUrl: string
+  imageUrl: string | null | undefined
 ): string {
   if (!imageUrl) {
     return "";
   }
 
+  const trimmed =
+    imageUrl.trim();
+
+  if (!trimmed) {
+    return "";
+  }
+
   if (
-    imageUrl.startsWith("http://") ||
-    imageUrl.startsWith("https://") ||
-    imageUrl.startsWith("blob:")
+    trimmed.startsWith("blob:") ||
+    trimmed.startsWith("data:")
   ) {
-    return imageUrl;
+    return trimmed;
+  }
+
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://")
+  ) {
+    try {
+      const url =
+        new URL(trimmed);
+
+      if (
+        url.pathname.startsWith(
+          "/api/v1/uploads/"
+        )
+      ) {
+        const staticPath =
+          url.pathname.replace(
+            "/api/v1/uploads/",
+            "/uploads/"
+          );
+
+        if (
+          typeof window !==
+          "undefined"
+        ) {
+          return `${window.location.origin}${staticPath}`;
+        }
+
+        return `${url.origin}${staticPath}`;
+      }
+
+      return trimmed;
+    } catch {
+      return trimmed;
+    }
   }
 
   const normalizedPath =
-    imageUrl.startsWith("/")
-      ? imageUrl
-      : `/${imageUrl}`;
+    trimmed.startsWith("/")
+      ? trimmed
+      : `/${trimmed}`;
 
-  /*
-   * If the backend returns /api/v1/profile/photos/...
-   * use the backend origin only.
-   */
-  if (normalizedPath.startsWith("/api/")) {
+  if (
+    normalizedPath.startsWith(
+      "/api/v1/uploads/"
+    )
+  ) {
+    const staticPath =
+      normalizedPath.replace(
+        "/api/v1/uploads/",
+        "/uploads/"
+      );
+
+    if (
+      typeof window !==
+      "undefined"
+    ) {
+      return `${window.location.origin}${staticPath}`;
+    }
+
+    return staticPath;
+  }
+
+  if (
+    normalizedPath.startsWith(
+      "/uploads/"
+    )
+  ) {
+    if (
+      typeof window !==
+      "undefined"
+    ) {
+      return `${window.location.origin}${normalizedPath}`;
+    }
+
+    return normalizedPath;
+  }
+
+  if (
+    normalizedPath.startsWith(
+      "/api/"
+    )
+  ) {
     const backendOrigin =
-      API_BASE_URL.replace(/\/api\/v1$/, "");
+      API_BASE_URL.replace(
+        /\/api\/v1$/,
+        ""
+      );
 
     return `${backendOrigin}${normalizedPath}`;
   }
@@ -123,19 +208,21 @@ export function resolvePhotoUrl(
   return `${API_BASE_URL}${normalizedPath}`;
 }
 
-export async function getPhotos(): Promise<
-  ProfilePhotoResponse[]
-> {
-  const response = await fetch(
-    PHOTO_API_URL,
-    {
-      method: "GET",
-      headers: buildHeaders(),
-      cache: "no-store",
-    }
-  );
+export async function getPhotos():
+  Promise<ProfilePhotoResponse[]> {
+  const response =
+    await fetch(
+      PHOTO_API_URL,
+      {
+        method: "GET",
+        headers: buildHeaders(),
+        cache: "no-store",
+      }
+    );
 
-  await ensureSuccess(response);
+  await ensureSuccess(
+    response
+  );
 
   return response.json();
 }
@@ -154,165 +241,248 @@ function uploadWithXmlHttpRequest(
   file: File,
   options: UploadPhotoOptions
 ): Promise<ProfilePhotoResponse> {
-  return new Promise((resolve, reject) => {
-    const request = new XMLHttpRequest();
-    const formData = new FormData();
+  return new Promise(
+    (resolve, reject) => {
+      let settled = false;
 
-    let token: string;
+      let abortHandler:
+        (() => void) | null =
+        null;
 
-    try {
-      token = requireAccessToken();
-    } catch (error) {
-      reject(error);
-      return;
-    }
-
-    formData.append("file", file);
-
-    request.open(
-      "POST",
-      PHOTO_API_URL,
-      true
-    );
-
-    request.setRequestHeader(
-      "Authorization",
-      `Bearer ${token}`
-    );
-
-    request.setRequestHeader(
-      "Accept",
-      "application/json"
-    );
-
-    request.upload.onprogress = (
-      event: ProgressEvent
-    ) => {
-      if (
-        !event.lengthComputable ||
-        !options.onProgress
-      ) {
-        return;
-      }
-
-      const percentage = Math.round(
-        (event.loaded / event.total) * 100
-      );
-
-      options.onProgress(percentage);
-    };
-
-    request.onload = () => {
-      if (
-        request.status >= 200 &&
-        request.status < 300
-      ) {
-        try {
-          const response = JSON.parse(
-            request.responseText
-          ) as ProfilePhotoResponse;
-
-          options.onProgress?.(100);
-          resolve(response);
-        } catch {
-          reject(
-            new Error(
-              "The photo upload response was invalid."
-            )
-          );
+      const finishResolve = (
+        photo: ProfilePhotoResponse
+      ) => {
+        if (settled) {
+          return;
         }
 
-        return;
+        settled = true;
+
+        if (
+          options.signal &&
+          abortHandler
+        ) {
+          options.signal
+            .removeEventListener(
+              "abort",
+              abortHandler
+            );
+        }
+
+        resolve(photo);
+      };
+
+      const finishReject = (
+        error: Error
+      ) => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+
+        if (
+          options.signal &&
+          abortHandler
+        ) {
+          options.signal
+            .removeEventListener(
+              "abort",
+              abortHandler
+            );
+        }
+
+        reject(error);
+      };
+
+      const token =
+        requireAccessToken();
+
+      const formData =
+        new FormData();
+
+      formData.append(
+        "file",
+        file
+      );
+
+      const xhr =
+        new XMLHttpRequest();
+
+      xhr.open(
+        "POST",
+        PHOTO_API_URL,
+        true
+      );
+
+      xhr.setRequestHeader(
+        "Authorization",
+        `Bearer ${token}`
+      );
+
+      xhr.setRequestHeader(
+        "Accept",
+        "application/json"
+      );
+
+      xhr.upload.onprogress = (
+        event
+      ) => {
+        if (
+          !event.lengthComputable
+        ) {
+          return;
+        }
+
+        const percentage =
+          Math.round(
+            (
+              event.loaded /
+              event.total
+            ) * 100
+          );
+
+        options.onProgress?.(
+          Math.min(
+            Math.max(
+              percentage,
+              0
+            ),
+            100
+          )
+        );
+      };
+
+      xhr.onload = () => {
+        if (
+          xhr.status >= 200 &&
+          xhr.status < 300
+        ) {
+          try {
+            const response =
+              JSON.parse(
+                xhr.responseText
+              ) as ProfilePhotoResponse;
+
+            options.onProgress?.(
+              100
+            );
+
+            finishResolve(
+              response
+            );
+          } catch {
+            finishReject(
+              new Error(
+                "Photo uploaded, but the server response could not be read."
+              )
+            );
+          }
+
+          return;
+        }
+
+        finishReject(
+          new Error(
+            parseXmlHttpRequestError(
+              xhr
+            )
+          )
+        );
+      };
+
+      xhr.onerror = () => {
+        finishReject(
+          new Error(
+            "Unable to upload the photo. Please check your connection and try again."
+          )
+        );
+      };
+
+      xhr.onabort = () => {
+        finishReject(
+          new Error(
+            "Photo upload was cancelled."
+          )
+        );
+      };
+
+      xhr.ontimeout = () => {
+        finishReject(
+          new Error(
+            "Photo upload timed out. Please try again."
+          )
+        );
+      };
+
+      abortHandler = () => {
+        xhr.abort();
+      };
+
+      if (options.signal) {
+        if (
+          options.signal.aborted
+        ) {
+          finishReject(
+            new Error(
+              "Photo upload was cancelled."
+            )
+          );
+
+          return;
+        }
+
+        options.signal
+          .addEventListener(
+            "abort",
+            abortHandler,
+            {
+              once: true,
+            }
+          );
       }
 
-      reject(
-        new Error(
-          extractXmlHttpRequestError(request)
-        )
-      );
-    };
-
-    request.onerror = () => {
-      reject(
-        new Error(
-          "Unable to connect to the photo upload service."
-        )
-      );
-    };
-
-    request.onabort = () => {
-      reject(
-        new DOMException(
-          "Photo upload was cancelled.",
-          "AbortError"
-        )
-      );
-    };
-
-    if (options.signal) {
-      if (options.signal.aborted) {
-        request.abort();
-        return;
-      }
-
-      options.signal.addEventListener(
-        "abort",
-        () => request.abort(),
-        { once: true }
+      xhr.send(
+        formData
       );
     }
-
-    request.send(formData);
-  });
-}
-
-function extractXmlHttpRequestError(
-  request: XMLHttpRequest
-): string {
-  try {
-    const data = JSON.parse(
-      request.responseText
-    ) as {
-      message?: string;
-      error?: string;
-    };
-
-    return (
-      data.message ??
-      data.error ??
-      `Upload failed with status ${request.status}`
-    );
-  } catch {
-    return `Upload failed with status ${request.status}`;
-  }
+  );
 }
 
 export async function deletePhoto(
-  photoId: string
+  id: string
 ): Promise<void> {
-  const response = await fetch(
-    `${PHOTO_API_URL}/${photoId}`,
-    {
-      method: "DELETE",
-      headers: buildHeaders(),
-    }
-  );
+  const response =
+    await fetch(
+      `${PHOTO_API_URL}/${id}`,
+      {
+        method: "DELETE",
+        headers: buildHeaders(),
+        cache: "no-store",
+      }
+    );
 
-  await ensureSuccess(response);
+  await ensureSuccess(
+    response
+  );
 }
 
 export async function setPrimaryPhoto(
-  photoId: string
+  id: string
 ): Promise<ProfilePhotoResponse> {
-  const response = await fetch(
-    `${PHOTO_API_URL}/${photoId}/primary`,
-    {
-      method: "PUT",
-      headers: buildHeaders(),
-    }
-  );
+  const response =
+    await fetch(
+      `${PHOTO_API_URL}/${id}/primary`,
+      {
+        method: "PUT",
+        headers: buildHeaders(),
+        cache: "no-store",
+      }
+    );
 
-  await ensureSuccess(response);
+  await ensureSuccess(
+    response
+  );
 
   return response.json();
 }
@@ -320,22 +490,55 @@ export async function setPrimaryPhoto(
 export async function reorderPhotos(
   photoIds: string[]
 ): Promise<ProfilePhotoResponse[]> {
-  const requestBody: PhotoOrderRequest = {
+  const request:
+    PhotoOrderRequest = {
     photoIds,
   };
 
-  const response = await fetch(
-    `${PHOTO_API_URL}/order`,
-    {
-      method: "PUT",
-      headers: buildHeaders(
-        "application/json"
-      ),
-      body: JSON.stringify(requestBody),
-    }
+  const response =
+    await fetch(
+      `${PHOTO_API_URL}/order`,
+      {
+        method: "PUT",
+        headers: buildHeaders(
+          "application/json"
+        ),
+        body: JSON.stringify(
+          request
+        ),
+        cache: "no-store",
+      }
+    );
+
+  await ensureSuccess(
+    response
   );
 
-  await ensureSuccess(response);
-
   return response.json();
+}
+
+function parseXmlHttpRequestError(
+  xhr: XMLHttpRequest
+): string {
+  if (!xhr.responseText) {
+    return `Photo upload failed with status ${xhr.status}.`;
+  }
+
+  try {
+    const data =
+      JSON.parse(
+        xhr.responseText
+      ) as {
+        message?: string;
+        error?: string;
+      };
+
+    return (
+      data.message ??
+      data.error ??
+      `Photo upload failed with status ${xhr.status}.`
+    );
+  } catch {
+    return `Photo upload failed with status ${xhr.status}.`;
+  }
 }
