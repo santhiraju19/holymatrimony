@@ -24,8 +24,10 @@ import {
 } from "react";
 
 import verificationService from "@/features/verification/api/verification.service";
+import ChurchVerificationCard from "@/features/verification/components/ChurchVerificationCard";
 
 import type {
+  ChurchVerificationMethod,
   IdentityDocumentType,
   TrustVerificationResponse,
   VerificationItem,
@@ -41,6 +43,17 @@ const MAX_IDENTITY_FILE_SIZE =
   5 * 1024 * 1024;
 
 const ALLOWED_IDENTITY_TYPES =
+  new Set([
+    "image/jpeg",
+    "image/png",
+    "application/pdf",
+  ]);
+
+
+  const MAX_CHURCH_FILE_SIZE =
+  5 * 1024 * 1024;
+
+const ALLOWED_CHURCH_FILE_TYPES =
   new Set([
     "image/jpeg",
     "image/png",
@@ -193,6 +206,74 @@ export default function TrustVerificationCenter() {
   useEffect(() => {
     void load();
   }, []);
+
+    const [
+    churchMethod,
+    setChurchMethod,
+  ] =
+    useState<ChurchVerificationMethod>(
+      "DOCUMENT"
+    );
+
+  const [
+    churchPastorName,
+    setChurchPastorName,
+  ] =
+    useState("");
+
+  const [
+    churchPhone,
+    setChurchPhone,
+  ] =
+    useState("");
+
+  const [
+    churchEmail,
+    setChurchEmail,
+  ] =
+    useState("");
+
+  const [
+    churchMembershipId,
+    setChurchMembershipId,
+  ] =
+    useState("");
+
+  const [
+    churchFile,
+    setChurchFile,
+  ] =
+    useState<File | null>(
+      null
+    );
+
+  const [
+    churchNote,
+    setChurchNote,
+  ] =
+    useState("");
+
+  const [
+    churchSubmitting,
+    setChurchSubmitting,
+  ] =
+    useState(false);
+
+  const [
+    churchError,
+    setChurchError,
+  ] =
+    useState<string | null>(
+      null
+    );
+
+  const [
+    churchMessage,
+    setChurchMessage,
+  ] =
+    useState<string | null>(
+      null
+    );
 
   async function load(): Promise<void> {
 
@@ -604,6 +685,255 @@ export default function TrustVerificationCenter() {
     }
   }
 
+
+  async function submitChurchVerification():
+    Promise<void> {
+
+    if (
+      churchSubmitting
+    ) {
+      return;
+    }
+
+    setChurchError(
+      null
+    );
+
+    setChurchMessage(
+      null
+    );
+
+    /*
+     * ============================================================
+     * Document Verification
+     * ============================================================
+     */
+
+    if (
+      churchMethod ===
+      "DOCUMENT"
+    ) {
+
+      if (
+        !churchFile
+      ) {
+
+        setChurchError(
+          "Please choose a church verification document."
+        );
+
+        return;
+      }
+
+      if (
+        !ALLOWED_CHURCH_FILE_TYPES
+          .has(
+            churchFile.type
+          )
+      ) {
+
+        setChurchError(
+          "Only JPEG, PNG or PDF files are allowed."
+        );
+
+        return;
+      }
+
+      if (
+        churchFile.size >
+        MAX_CHURCH_FILE_SIZE
+      ) {
+
+        setChurchError(
+          "Church verification document must not exceed 5 MB."
+        );
+
+        return;
+      }
+    }
+
+    /*
+     * ============================================================
+     * Pastor / Church Contact
+     * ============================================================
+     */
+
+    if (
+      churchMethod ===
+      "PASTOR_CONTACT"
+    ) {
+
+      const normalizedPhone =
+        churchPhone.trim();
+
+      const normalizedEmail =
+        churchEmail.trim();
+
+      if (
+        !normalizedPhone &&
+        !normalizedEmail
+      ) {
+
+        setChurchError(
+          "Please provide a church phone number or church email."
+        );
+
+        return;
+      }
+
+      if (
+        normalizedEmail &&
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
+          .test(
+            normalizedEmail
+          )
+      ) {
+
+        setChurchError(
+          "Please enter a valid church email address."
+        );
+
+        return;
+      }
+    }
+
+    /*
+     * ============================================================
+     * Membership ID
+     * ============================================================
+     */
+
+    if (
+      churchMethod ===
+      "MEMBERSHIP_ID" &&
+      !churchMembershipId.trim()
+    ) {
+
+      setChurchError(
+        "Please enter the membership ID or member number issued by your church."
+      );
+
+      return;
+    }
+
+    /*
+     * A supporting document may optionally accompany
+     * membership verification.
+     */
+
+    if (
+      churchMethod ===
+        "MEMBERSHIP_ID" &&
+      churchFile
+    ) {
+
+      if (
+        !ALLOWED_CHURCH_FILE_TYPES
+          .has(
+            churchFile.type
+          )
+      ) {
+
+        setChurchError(
+          "Only JPEG, PNG or PDF files are allowed."
+        );
+
+        return;
+      }
+
+      if (
+        churchFile.size >
+        MAX_CHURCH_FILE_SIZE
+      ) {
+
+        setChurchError(
+          "Church verification document must not exceed 5 MB."
+        );
+
+        return;
+      }
+    }
+
+    setChurchSubmitting(
+      true
+    );
+
+    try {
+
+      await verificationService
+        .submitChurchVerification({
+          verificationMethod:
+            churchMethod,
+
+          pastorName:
+            churchMethod ===
+              "PASTOR_CONTACT"
+              ? churchPastorName.trim() ||
+                undefined
+              : undefined,
+
+          churchPhone:
+            churchMethod ===
+              "PASTOR_CONTACT"
+              ? churchPhone.trim() ||
+                undefined
+              : undefined,
+
+          churchEmail:
+            churchMethod ===
+              "PASTOR_CONTACT"
+              ? churchEmail.trim() ||
+                undefined
+              : undefined,
+
+          membershipId:
+            churchMethod ===
+              "MEMBERSHIP_ID"
+              ? churchMembershipId.trim()
+              : undefined,
+
+          file:
+            churchMethod ===
+              "DOCUMENT" ||
+            churchMethod ===
+              "MEMBERSHIP_ID"
+              ? churchFile
+              : null,
+
+          note:
+            churchNote.trim() ||
+            undefined,
+        });
+
+      setChurchMessage(
+        "Church verification submitted successfully and is now under review."
+      );
+
+      setChurchFile(
+        null
+      );
+
+      setChurchNote("");
+
+      await refreshVerificationCenter();
+
+    } catch (err) {
+
+      setChurchError(
+        getApiErrorMessage(
+          err,
+          "Unable to submit church verification."
+        )
+      );
+
+    } finally {
+
+      setChurchSubmitting(
+        false
+      );
+    }
+  }
+
   async function refreshVerificationCenter():
     Promise<void> {
 
@@ -656,6 +986,15 @@ export default function TrustVerificationCenter() {
 
   const identityStatus =
     identityItem
+      ?.status ??
+    "NOT_SUBMITTED";
+
+      const churchItem =
+    verificationMap
+      .get("CHURCH");
+
+  const churchStatus =
+    churchItem
       ?.status ??
     "NOT_SUBMITTED";
 
@@ -795,46 +1134,83 @@ export default function TrustVerificationCenter() {
           }
         />
 
-        <VerificationCard
-          icon={
-            <Church
-              size={23}
-            />
-          }
-          title="Church Verification"
-          description="Submit your church information for Holy Matrimony review."
+                <ChurchVerificationCard
           status={
-            verificationMap
-              .get("CHURCH")
-              ?.status ??
-            "NOT_SUBMITTED"
+            churchStatus
           }
           item={
-            verificationMap
-              .get("CHURCH")
+            churchItem
+          }
+          method={
+            churchMethod
+          }
+          pastorName={
+            churchPastorName
+          }
+          churchPhone={
+            churchPhone
+          }
+          churchEmail={
+            churchEmail
+          }
+          membershipId={
+            churchMembershipId
+          }
+          file={
+            churchFile
           }
           note={
-            notes.CHURCH ??
-            ""
+            churchNote
           }
-          onNoteChange={
-            (value) =>
-              setNotes(
-                (current) => ({
-                  ...current,
-                  CHURCH:
-                    value,
-                })
-              )
+          message={
+            churchMessage
+          }
+          error={
+            churchError
           }
           submitting={
-            submittingType ===
-            "CHURCH"
+            churchSubmitting
+          }
+          onMethodChange={
+            (method) => {
+
+              setChurchMethod(
+                method
+              );
+
+              setChurchError(
+                null
+              );
+
+              setChurchMessage(
+                null
+              );
+
+              setChurchFile(
+                null
+              );
+            }
+          }
+          onPastorNameChange={
+            setChurchPastorName
+          }
+          onChurchPhoneChange={
+            setChurchPhone
+          }
+          onChurchEmailChange={
+            setChurchEmail
+          }
+          onMembershipIdChange={
+            setChurchMembershipId
+          }
+          onFileChange={
+            setChurchFile
+          }
+          onNoteChange={
+            setChurchNote
           }
           onSubmit={() =>
-            void submit(
-              "CHURCH"
-            )
+            void submitChurchVerification()
           }
         />
 

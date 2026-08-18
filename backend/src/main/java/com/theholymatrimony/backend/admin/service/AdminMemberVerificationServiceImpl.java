@@ -5,6 +5,8 @@ import com.theholymatrimony.backend.admin.dto.AdminMemberVerificationResponse;
 import com.theholymatrimony.backend.admin.dto.UpdateMemberVerificationRequest;
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.auth.repository.UserRepository;
+import com.theholymatrimony.backend.verification.church.ChurchVerificationSubmission;
+import com.theholymatrimony.backend.verification.church.ChurchVerificationSubmissionRepository;
 import com.theholymatrimony.backend.verification.document.IdentityVerificationDocument;
 import com.theholymatrimony.backend.verification.document.IdentityVerificationDocumentRepository;
 import com.theholymatrimony.backend.verification.entity.MemberVerification;
@@ -26,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -46,6 +49,15 @@ public class AdminMemberVerificationServiceImpl
 
     private final IdentityVerificationDocumentRepository
             identityVerificationDocumentRepository;
+
+    private final ChurchVerificationSubmissionRepository
+            churchVerificationSubmissionRepository;
+
+    /*
+     * ============================================================
+     * LIST VERIFICATIONS
+     * ============================================================
+     */
 
     @Override
     public AdminMemberVerificationPageResponse getVerifications(
@@ -128,6 +140,12 @@ public class AdminMemberVerificationServiceImpl
                 .build();
     }
 
+    /*
+     * ============================================================
+     * GET VERIFICATION
+     * ============================================================
+     */
+
     @Override
     public AdminMemberVerificationResponse getVerification(
             UUID verificationId
@@ -139,6 +157,12 @@ public class AdminMemberVerificationServiceImpl
                 )
         );
     }
+
+    /*
+     * ============================================================
+     * REVIEW VERIFICATION
+     * ============================================================
+     */
 
     @Override
     @Transactional
@@ -152,6 +176,10 @@ public class AdminMemberVerificationServiceImpl
                         verificationId
                 );
 
+        /*
+         * Mobile verification is automatic
+         * through the OTP workflow.
+         */
         if (
                 verification.getVerificationType() ==
                         VerificationType.MOBILE
@@ -169,6 +197,13 @@ public class AdminMemberVerificationServiceImpl
 
             throw new IllegalStateException(
                     "Only pending verification requests can be reviewed."
+            );
+        }
+
+        if (request == null) {
+
+            throw new IllegalArgumentException(
+                    "Verification review request is required."
             );
         }
 
@@ -206,9 +241,14 @@ public class AdminMemberVerificationServiceImpl
         }
 
         /*
-         * Identity verification cannot be approved
-         * unless a securely uploaded document exists.
+         * ========================================================
+         * Identity Approval Protection
+         * ========================================================
+         *
+         * Identity verification cannot be approved unless
+         * its securely uploaded identity document exists.
          */
+
         if (
                 verification.getVerificationType() ==
                         VerificationType.IDENTITY
@@ -225,6 +265,34 @@ public class AdminMemberVerificationServiceImpl
 
             throw new IllegalStateException(
                     "Identity verification cannot be approved without an identity document."
+            );
+        }
+
+        /*
+         * ========================================================
+         * Church Approval Protection
+         * ========================================================
+         *
+         * Church verification cannot be approved unless
+         * a method-based Church submission exists.
+         */
+
+        if (
+                verification.getVerificationType() ==
+                        VerificationType.CHURCH
+                        &&
+                requestedStatus ==
+                        VerificationStatus.APPROVED
+                        &&
+                churchVerificationSubmissionRepository
+                        .findByVerificationId(
+                                verification.getId()
+                        )
+                        .isEmpty()
+        ) {
+
+            throw new IllegalStateException(
+                    "Church verification cannot be approved without a church verification submission."
             );
         }
 
@@ -260,9 +328,22 @@ public class AdminMemberVerificationServiceImpl
         );
     }
 
+    /*
+     * ============================================================
+     * FIND VERIFICATION
+     * ============================================================
+     */
+
     private MemberVerification findVerification(
             UUID verificationId
     ) {
+
+        if (verificationId == null) {
+
+            throw new IllegalArgumentException(
+                    "Verification ID is required."
+            );
+        }
 
         return memberVerificationRepository
                 .findById(
@@ -276,6 +357,12 @@ public class AdminMemberVerificationServiceImpl
                                 )
                 );
     }
+
+    /*
+     * ============================================================
+     * CURRENT ADMIN
+     * ============================================================
+     */
 
     private User getCurrentAdmin() {
 
@@ -300,12 +387,17 @@ public class AdminMemberVerificationServiceImpl
             );
         }
 
+        String normalizedEmail =
+                authentication
+                        .getName()
+                        .trim()
+                        .toLowerCase(
+                                Locale.ROOT
+                        );
+
         return userRepository
                 .findByEmail(
-                        authentication
-                                .getName()
-                                .trim()
-                                .toLowerCase()
+                        normalizedEmail
                 )
                 .orElseThrow(
                         () ->
@@ -314,6 +406,12 @@ public class AdminMemberVerificationServiceImpl
                                 )
                 );
     }
+
+    /*
+     * ============================================================
+     * RESPONSE MAPPING
+     * ============================================================
+     */
 
     private AdminMemberVerificationResponse toResponse(
             MemberVerification verification
@@ -326,6 +424,14 @@ public class AdminMemberVerificationServiceImpl
                 identityDocument =
                 null;
 
+        ChurchVerificationSubmission
+                churchSubmission =
+                null;
+
+        /*
+         * Load identity-specific metadata only for
+         * IDENTITY verification requests.
+         */
         if (
                 verification.getVerificationType() ==
                         VerificationType.IDENTITY
@@ -333,6 +439,23 @@ public class AdminMemberVerificationServiceImpl
 
             identityDocument =
                     identityVerificationDocumentRepository
+                            .findByVerificationId(
+                                    verification.getId()
+                            )
+                            .orElse(null);
+        }
+
+        /*
+         * Load Church-specific metadata only for
+         * CHURCH verification requests.
+         */
+        if (
+                verification.getVerificationType() ==
+                        VerificationType.CHURCH
+        ) {
+
+            churchSubmission =
+                    churchVerificationSubmissionRepository
                             .findByVerificationId(
                                     verification.getId()
                             )
@@ -385,7 +508,16 @@ public class AdminMemberVerificationServiceImpl
                         )
                         .hasIdentityDocument(
                                 identityDocument != null
+                        )
+                        .hasChurchSubmission(
+                                churchSubmission != null
                         );
+
+        /*
+         * ========================================================
+         * Identity Metadata
+         * ========================================================
+         */
 
         if (identityDocument != null) {
 
@@ -408,8 +540,68 @@ public class AdminMemberVerificationServiceImpl
                     );
         }
 
+        /*
+         * ========================================================
+         * Church Metadata
+         * ========================================================
+         */
+
+        if (churchSubmission != null) {
+
+            boolean hasChurchDocument =
+                    churchSubmission
+                            .getStoredFileName() != null
+                            &&
+                    !churchSubmission
+                            .getStoredFileName()
+                            .isBlank();
+
+            builder
+                    .churchVerificationMethod(
+                            churchSubmission
+                                    .getVerificationMethod()
+                    )
+                    .churchPastorName(
+                            churchSubmission
+                                    .getPastorName()
+                    )
+                    .churchPhone(
+                            churchSubmission
+                                    .getChurchPhone()
+                    )
+                    .churchEmail(
+                            churchSubmission
+                                    .getChurchEmail()
+                    )
+                    .churchMembershipId(
+                            churchSubmission
+                                    .getMembershipId()
+                    )
+                    .hasChurchDocument(
+                            hasChurchDocument
+                    )
+                    .churchDocumentFileName(
+                            churchSubmission
+                                    .getOriginalFileName()
+                    )
+                    .churchDocumentContentType(
+                            churchSubmission
+                                    .getContentType()
+                    )
+                    .churchDocumentFileSize(
+                            churchSubmission
+                                    .getFileSize()
+                    );
+        }
+
         return builder.build();
     }
+
+    /*
+     * ============================================================
+     * PAGE SIZE
+     * ============================================================
+     */
 
     private int normalizePageSize(
             int size
@@ -424,6 +616,12 @@ public class AdminMemberVerificationServiceImpl
                 MAX_PAGE_SIZE
         );
     }
+
+    /*
+     * ============================================================
+     * SEARCH NORMALIZATION
+     * ============================================================
+     */
 
     private String normalizeSearch(
             String search

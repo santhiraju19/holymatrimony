@@ -66,3 +66,43 @@ export interface UploadIdentityDocumentRequest {
   file: File;
   note?: string;
 }
+
+export type ChurchVerificationMethod =
+  | "DOCUMENT"
+  | "PASTOR_CONTACT"
+  | "MEMBERSHIP_ID";
+
+export interface ChurchVerificationSubmission {
+  id: string;
+  verificationId: string;
+
+  verificationMethod: ChurchVerificationMethod;
+
+  pastorName?: string | null;
+  churchPhone?: string | null;
+  churchEmail?: string | null;
+
+  membershipId?: string | null;
+
+  documentAvailable: boolean;
+  originalFileName?: string | null;
+  contentType?: string | null;
+  fileSize?: number | null;
+
+  submittedAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface SubmitChurchVerificationRequest {
+  verificationMethod: ChurchVerificationMethod;
+
+  pastorName?: string;
+  churchPhone?: string;
+  churchEmail?: string;
+
+  membershipId?: string;
+
+  file?: File | null;
+
+  note?: string;
+}

@@ -15,6 +15,11 @@ export type IdentityDocumentType =
   | "DRIVING_LICENCE"
   | "VOTER_ID";
 
+export type ChurchVerificationMethod =
+  | "DOCUMENT"
+  | "PASTOR_CONTACT"
+  | "MEMBERSHIP_ID";
+
 export interface AdminMemberVerification {
   id: string;
   userId: string;
@@ -36,12 +41,42 @@ export interface AdminMemberVerification {
   createdAt?: string | null;
   updatedAt?: string | null;
 
+  /*
+   * ============================================================
+   * Identity Verification
+   * ============================================================
+   */
+
   hasIdentityDocument: boolean;
 
   identityDocumentType?: IdentityDocumentType | null;
   identityDocumentFileName?: string | null;
   identityDocumentContentType?: string | null;
   identityDocumentFileSize?: number | null;
+
+  /*
+   * ============================================================
+   * Church Verification
+   * ============================================================
+   */
+
+  hasChurchSubmission: boolean;
+
+  churchVerificationMethod?:
+    | ChurchVerificationMethod
+    | null;
+
+  churchPastorName?: string | null;
+  churchPhone?: string | null;
+  churchEmail?: string | null;
+
+  churchMembershipId?: string | null;
+
+  hasChurchDocument: boolean;
+
+  churchDocumentFileName?: string | null;
+  churchDocumentContentType?: string | null;
+  churchDocumentFileSize?: number | null;
 }
 
 export interface AdminMemberVerificationPage {

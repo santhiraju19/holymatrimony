@@ -237,17 +237,22 @@ public class MemberVerificationService {
         }
 
         /*
-         * Church verification requires the
-         * church-related profile information
-         * to be completed first.
+         * Church verification uses the dedicated
+         * method-based submission workflow.
+         *
+         * Members must submit through one of:
+         *
+         * DOCUMENT
+         * PASTOR_CONTACT
+         * MEMBERSHIP_ID
          */
         if (
                 type ==
                         VerificationType.CHURCH
         ) {
 
-            validateChurchVerification(
-                    user
+            throw new IllegalStateException(
+                    "Church verification must be submitted through the dedicated church verification workflow."
             );
         }
 
@@ -310,46 +315,6 @@ public class MemberVerificationService {
         return getVerificationCenter(
                 email
         );
-    }
-
-    /*
-     * ============================================================
-     * CHURCH VERIFICATION VALIDATION
-     * ============================================================
-     */
-
-    private void validateChurchVerification(
-            User user
-    ) {
-
-        Profile profile =
-                profileRepository
-                        .findByUser(
-                                user
-                        )
-                        .orElseThrow(
-                                () ->
-                                        new IllegalStateException(
-                                                "Complete your profile before requesting church verification."
-                                        )
-                        );
-
-        if (
-                isBlank(
-                        profile.getChurchName()
-                ) ||
-                isBlank(
-                        profile.getDenomination()
-                ) ||
-                isBlank(
-                        profile.getChurchAddress()
-                )
-        ) {
-
-            throw new IllegalStateException(
-                    "Complete your church name, denomination and church location before requesting church verification."
-            );
-        }
     }
 
     /*
