@@ -27,6 +27,11 @@ export interface BrowseProfile {
   completionPercentage: number | null;
   profileCompleted: boolean;
 
+  mobileVerified: boolean;
+  churchVerified: boolean;
+  identityVerified: boolean;
+  verifiedProfile: boolean;
+
   primaryPhotoId: string | null;
   primaryPhotoUrl: string | null;
 }

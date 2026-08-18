@@ -6,7 +6,7 @@ import Link from "next/link";
 
 import {
   BriefcaseBusiness,
-  CheckCircle2,
+  BadgeCheck,
   Church,
   GraduationCap,
   MapPin,
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import InterestButton from "@/features/interests/components/InterestButton";
+import ProfileTrustBadges from "@/features/browse/components/ProfileTrustBadges";
 
 import type { BrowseProfile } from "../types";
 import { resolveBrowsePhotoUrl } from "../utils/photoUrl";
@@ -90,16 +91,16 @@ export default function BrowseProfileCard({
                 </p>
               </div>
 
-              {profile.profileCompleted && (
-                <span
-                  title="Completed profile"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-blue-600 shadow-sm"
-                >
-                  <CheckCircle2
-                    size={17}
-                  />
-                </span>
-              )}
+              {profile.verifiedProfile && (
+  <span
+    title="Verified Profile"
+    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm"
+  >
+    <BadgeCheck
+      size={17}
+    />
+  </span>
+)}
             </div>
           </div>
         </div>
@@ -112,6 +113,12 @@ export default function BrowseProfileCard({
           className="block flex-1"
         >
           <div className="space-y-3 p-4">
+            <ProfileTrustBadges
+  profile={
+    profile
+  }
+  compact
+/>
             <div className="space-y-2.5">
               <ProfileDetail
                 icon={

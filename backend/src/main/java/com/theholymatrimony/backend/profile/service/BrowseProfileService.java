@@ -8,6 +8,9 @@ import com.theholymatrimony.backend.profile.entity.ProfilePhoto;
 import com.theholymatrimony.backend.profile.repository.ProfilePhotoRepository;
 import com.theholymatrimony.backend.profile.repository.ProfileRepository;
 import com.theholymatrimony.backend.profile.repository.ProfileSpecification;
+import com.theholymatrimony.backend.verification.enums.VerificationStatus;
+import com.theholymatrimony.backend.verification.enums.VerificationType;
+import com.theholymatrimony.backend.verification.repository.MemberVerificationRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -33,6 +36,9 @@ public class BrowseProfileService {
 
     private final ProfilePhotoRepository
             profilePhotoRepository;
+
+    private final MemberVerificationRepository
+            memberVerificationRepository;
 
     public BrowseProfilesPageResponse browseProfiles(
             String authenticatedEmail,
@@ -211,6 +217,29 @@ public class BrowseProfileService {
                         )
                         .orElse(null);
 
+        boolean mobileVerified =
+                isVerificationApproved(
+                        userId,
+                        VerificationType.MOBILE
+                );
+
+        boolean churchVerified =
+                isVerificationApproved(
+                        userId,
+                        VerificationType.CHURCH
+                );
+
+        boolean identityVerified =
+                isVerificationApproved(
+                        userId,
+                        VerificationType.IDENTITY
+                );
+
+        boolean verifiedProfile =
+                mobileVerified
+                        && churchVerified
+                        && identityVerified;
+
         return BrowseProfileResponse.builder()
                 .id(profile.getId())
                 .userId(userId)
@@ -252,6 +281,18 @@ public class BrowseProfileService {
                 .profileCompleted(
                         profile.getProfileCompleted()
                 )
+                .mobileVerified(
+                        mobileVerified
+                )
+                .churchVerified(
+                        churchVerified
+                )
+                .identityVerified(
+                        identityVerified
+                )
+                .verifiedProfile(
+                        verifiedProfile
+                )
                 .primaryPhotoId(
                         primaryPhoto == null
                                 ? null
@@ -263,5 +304,18 @@ public class BrowseProfileService {
                                 : primaryPhoto.getImageUrl()
                 )
                 .build();
+    }
+
+    private boolean isVerificationApproved(
+            UUID userId,
+            VerificationType verificationType
+    ) {
+
+        return memberVerificationRepository
+                .existsByUserIdAndVerificationTypeAndVerificationStatus(
+                        userId,
+                        verificationType,
+                        VerificationStatus.APPROVED
+                );
     }
 }
