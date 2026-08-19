@@ -2089,21 +2089,95 @@ export default function useChat() {
 
   /*
    * ============================================================
+   * WEBSOCKET HANDLER REFS
+   * ============================================================
+   *
+   * Keep the latest React callbacks available to the long-lived
+   * STOMP connection without making callback identity part of
+   * the connection lifecycle.
+   *
+   * Conversation/message state may legitimately change and cause
+   * these callbacks to be recreated. That must not disconnect and
+   * recreate the WebSocket.
+   */
+
+  const webSocketMessageHandlerRef =
+    useRef(
+      handleWebSocketMessage
+    );
+
+  const typingEventHandlerRef =
+    useRef(
+      handleTypingEvent
+    );
+
+  const presenceEventHandlerRef =
+    useRef(
+      handlePresenceEvent
+    );
+
+  useEffect(() => {
+    webSocketMessageHandlerRef.current =
+      handleWebSocketMessage;
+  }, [
+    handleWebSocketMessage,
+  ]);
+
+  useEffect(() => {
+    typingEventHandlerRef.current =
+      handleTypingEvent;
+  }, [
+    handleTypingEvent,
+  ]);
+
+  useEffect(() => {
+    presenceEventHandlerRef.current =
+      handlePresenceEvent;
+  }, [
+    handlePresenceEvent,
+  ]);
+
+  /*
+   * ============================================================
    * WEBSOCKET CONNECTION
    * ============================================================
+   *
+   * One connection for the lifetime of useChat().
+   *
+   * STOMP may perform its own network reconnect when necessary,
+   * but normal React renders/state changes must not tear down the
+   * connection.
    */
 
   useEffect(() => {
     chatWebSocketService
       .connect({
-        onMessage:
-          handleWebSocketMessage,
+        onMessage: (
+          message
+        ) => {
+          webSocketMessageHandlerRef
+            .current(
+              message
+            );
+        },
 
-        onTyping:
-          handleTypingEvent,
+        onTyping: (
+          event
+        ) => {
+          typingEventHandlerRef
+            .current(
+              event
+            );
+        },
 
-        onPresence:
-          handlePresenceEvent,
+        onPresence: (
+          presence
+        ) => {
+          presenceEventHandlerRef
+            .current(
+              presence
+            );
+        },
 
         onStatusChange:
           setWebSocketStatus,
@@ -2144,11 +2218,7 @@ export default function useChat() {
       chatWebSocketService
         .disconnect();
     };
-  }, [
-    handleWebSocketMessage,
-    handleTypingEvent,
-    handlePresenceEvent,
-  ]);
+  }, []);
 
   /*
    * ============================================================

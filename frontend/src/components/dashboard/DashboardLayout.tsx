@@ -11,6 +11,10 @@ import {
 
 import PresenceConnection from "@/features/chat/components/PresenceConnection";
 
+import {
+  NotificationProvider,
+} from "@/features/notifications/context/NotificationContext";
+
 import ProfileProvider from "@/features/profile/context/ProfileProvider";
 
 import DashboardFooter from "./DashboardFooter";
@@ -99,7 +103,8 @@ export default function DashboardLayout({
 
   return (
     <ProfileProvider>
-      <PresenceConnection />
+      <NotificationProvider>
+        <PresenceConnection />
 
       <div className="relative min-h-screen overflow-x-hidden bg-[#F7F9FC]">
 
@@ -216,6 +221,7 @@ export default function DashboardLayout({
           </div>
         </div>
       </div>
+      </NotificationProvider>
     </ProfileProvider>
   );
 }
