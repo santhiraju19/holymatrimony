@@ -117,6 +117,27 @@ private final MembershipEntitlementService
             int size
     ) {
 
+        /*
+         * ============================================================
+         * MEMBERSHIP / ADVANCED SEARCH ENTITLEMENT
+         * ============================================================
+         *
+         * Normal profile browsing remains available to all members.
+         *
+         * Applying search filters is an Advanced Search capability
+         * available to SILVER, GOLD and PLATINUM memberships.
+         *
+         * Keep the entitlement check in the service layer so the
+         * restriction cannot be bypassed by calling the API directly.
+         */
+        membershipEntitlementService
+                .requireFeature(
+                        resolveAuthenticatedUserId(
+                                authenticatedEmail
+                        ),
+                        MembershipFeature.ADVANCED_SEARCH
+                );
+
         validateSearchRequest(
                 request
         );

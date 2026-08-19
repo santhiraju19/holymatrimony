@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import {
   BadgeCheck,
   HeartHandshake,
@@ -12,6 +14,7 @@ import {
 
 import Button from "@/components/ui/button";
 
+import AdvancedSearchUpgradeModal from "./AdvancedSearchUpgradeModal";
 import BrowseEmptyState from "./BrowseEmptyState";
 import BrowseErrorState from "./BrowseErrorState";
 import BrowsePagination from "./BrowsePagination";
@@ -50,6 +53,40 @@ export default function BrowseProfilesPage() {
     initialPage: 0,
     pageSize: 12,
   });
+
+  const [
+    upgradeModalOpen,
+    setUpgradeModalOpen,
+  ] = useState(false);
+
+  const membershipUpgradeRequired =
+    Boolean(
+      error &&
+        (
+          error
+            .toLowerCase()
+            .includes(
+              "upgrade your membership"
+            ) ||
+          error
+            .toLowerCase()
+            .includes(
+              "advanced search"
+            )
+        )
+    );
+
+  useEffect(() => {
+    if (
+      membershipUpgradeRequired
+    ) {
+      setUpgradeModalOpen(
+        true
+      );
+    }
+  }, [
+    membershipUpgradeRequired,
+  ]);
 
   return (
     <div className="space-y-6 pb-4">
@@ -235,7 +272,8 @@ export default function BrowseProfilesPage() {
           </Button>
         </div>
 
-        {error ? (
+        {error &&
+        !membershipUpgradeRequired ? (
           <BrowseErrorState
             message={error}
             onRetry={() =>
@@ -300,6 +338,17 @@ export default function BrowseProfilesPage() {
           </>
         )}
       </section>
+
+      <AdvancedSearchUpgradeModal
+        open={
+          upgradeModalOpen
+        }
+        onClose={() => {
+          setUpgradeModalOpen(
+            false
+          );
+        }}
+      />
     </div>
   );
 }
