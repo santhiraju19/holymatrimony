@@ -1,9 +1,12 @@
 package com.theholymatrimony.backend.common.exception;
 
-import com.theholymatrimony.backend.auth.exception.InvalidRefreshTokenException;
 import com.theholymatrimony.backend.auth.exception.AccountStatusException;
+import com.theholymatrimony.backend.auth.exception.InvalidRefreshTokenException;
 import com.theholymatrimony.backend.common.response.ApiResponse;
+import com.theholymatrimony.backend.membership.entitlement.MembershipFeatureRequiredException;
+
 import jakarta.validation.ConstraintViolationException;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -21,58 +24,45 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 public class GlobalExceptionHandler {
 
     /*
-     * 409 Conflict
-     *
-     * Used when a resource already exists.
-     *
-     * Examples:
-     * - Duplicate email address
-     * - Duplicate interest
-     * - Duplicate profile record
+     * ============================================================
+     * 409 CONFLICT
+     * ============================================================
      */
+
     @ExceptionHandler(ResourceAlreadyExistsException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ApiResponse handleResourceAlreadyExists(
             ResourceAlreadyExistsException exception
     ) {
-        return buildResponse(exception.getMessage());
+
+        return buildResponse(
+                exception.getMessage()
+        );
     }
 
-    /*
-     * 409 Conflict
-     *
-     * Handles database constraint violations.
-     *
-     * Examples:
-     * - Unique constraint violation
-     * - Duplicate database record
-     * - Foreign-key constraint violation
-     */
     @ExceptionHandler(DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ApiResponse handleDataIntegrityViolation(
             DataIntegrityViolationException exception
     ) {
+
         return buildResponse(
                 "The requested operation conflicts with existing data."
         );
     }
 
     /*
-     * 400 Bad Request
-     *
-     * Handles invalid business-state transitions.
-     *
-     * Examples:
-     * - Accepting an already accepted interest
-     * - Declining an already declined interest
-     * - Withdrawing a non-pending interest
+     * ============================================================
+     * 400 BAD REQUEST
+     * ============================================================
      */
+
     @ExceptionHandler(IllegalStateException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse handleIllegalStateException(
             IllegalStateException exception
     ) {
+
         return buildResponse(
                 resolveMessage(
                         exception,
@@ -81,21 +71,12 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /*
-     * 400 Bad Request
-     *
-     * Handles invalid method arguments raised by application services.
-     *
-     * Examples:
-     * - Invalid UUID-related application input
-     * - Invalid status value
-     * - Invalid pagination value
-     */
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse handleIllegalArgumentException(
             IllegalArgumentException exception
     ) {
+
         return buildResponse(
                 resolveMessage(
                         exception,
@@ -104,116 +85,106 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /*
-     * 400 Bad Request
-     *
-     * Handles @Valid request-body validation failures.
-     *
-     * Example:
-     * A required DTO field is empty or incorrectly formatted.
-     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse handleValidationException(
             MethodArgumentNotValidException exception
     ) {
-        String message = exception.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .findFirst()
-                .map(error -> {
-                    String defaultMessage = error.getDefaultMessage();
 
-                    if (defaultMessage == null || defaultMessage.isBlank()) {
-                        return "Invalid value for field '" +
-                                error.getField() +
-                                "'.";
-                    }
+        String message =
+                exception
+                        .getBindingResult()
+                        .getFieldErrors()
+                        .stream()
+                        .findFirst()
+                        .map(error -> {
 
-                    return defaultMessage;
-                })
-                .orElse("Request validation failed.");
+                            String defaultMessage =
+                                    error.getDefaultMessage();
 
-        return buildResponse(message);
+                            if (
+                                    defaultMessage == null
+                                    || defaultMessage.isBlank()
+                            ) {
+                                return "Invalid value for field '"
+                                        + error.getField()
+                                        + "'.";
+                            }
+
+                            return defaultMessage;
+                        })
+                        .orElse(
+                                "Request validation failed."
+                        );
+
+        return buildResponse(
+                message
+        );
     }
 
-    /*
-     * 400 Bad Request
-     *
-     * Handles validation failures on:
-     * - Request parameters
-     * - Path variables
-     * - Controller method arguments
-     */
     @ExceptionHandler(ConstraintViolationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse handleConstraintViolation(
             ConstraintViolationException exception
     ) {
-        String message = exception.getConstraintViolations()
-                .stream()
-                .findFirst()
-                .map(violation -> violation.getMessage())
-                .orElse("Request validation failed.");
 
-        return buildResponse(message);
+        String message =
+                exception
+                        .getConstraintViolations()
+                        .stream()
+                        .findFirst()
+                        .map(
+                                violation ->
+                                        violation.getMessage()
+                        )
+                        .orElse(
+                                "Request validation failed."
+                        );
+
+        return buildResponse(
+                message
+        );
     }
 
-    /*
-     * 400 Bad Request
-     *
-     * Handles malformed JSON request bodies.
-     *
-     * Examples:
-     * - Missing quotation marks
-     * - Invalid JSON syntax
-     * - Invalid enum value
-     * - Wrong value type
-     */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse handleHttpMessageNotReadable(
             HttpMessageNotReadableException exception
     ) {
+
         return buildResponse(
                 "The request body is missing, malformed, or contains an invalid value."
         );
     }
 
-    /*
-     * 400 Bad Request
-     *
-     * Handles path-variable and request-parameter type mismatches.
-     *
-     * Examples:
-     * - Invalid UUID
-     * - Text passed where a number is required
-     * - Invalid enum request parameter
-     */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse handleMethodArgumentTypeMismatch(
             MethodArgumentTypeMismatchException exception
     ) {
-        String parameterName = exception.getName();
+
+        String parameterName =
+                exception.getName();
 
         return buildResponse(
-                "Invalid value provided for parameter '" +
-                        parameterName +
-                        "'."
+                "Invalid value provided for parameter '"
+                        + parameterName
+                        + "'."
         );
     }
 
     /*
-     * 401 Unauthorized
-     *
-     * Handles invalid, expired, revoked, or missing refresh tokens.
+     * ============================================================
+     * 401 UNAUTHORIZED
+     * ============================================================
      */
+
     @ExceptionHandler(InvalidRefreshTokenException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public ApiResponse handleInvalidRefreshToken(
             InvalidRefreshTokenException exception
     ) {
+
         return buildResponse(
                 resolveMessage(
                         exception,
@@ -222,116 +193,132 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /*
-     * 401 Unauthorized
-     *
-     * Handles incorrect login credentials.
-     */
     @ExceptionHandler(BadCredentialsException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public ApiResponse handleBadCredentials(
             BadCredentialsException exception
     ) {
+
         return buildResponse(
                 "Invalid email address or password."
         );
     }
 
-    /*
-     * 401 Unauthorized
-     *
-     * Handles requests where authentication is required but no
-     * authenticated user is available.
-     */
     @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public ApiResponse handleAuthenticationCredentialsNotFound(
             AuthenticationCredentialsNotFoundException exception
     ) {
+
         return buildResponse(
                 "Authentication is required to access this resource."
         );
     }
 
     /*
-     * 403 Forbidden
-     *
-     * Handles authenticated users who do not have permission
-     * to perform the requested action.
-     *
-     * Examples:
-     * - Sender tries to accept an interest
-     * - User modifies another user's profile
-     * - Non-admin accesses an admin endpoint
+     * ============================================================
+     * 403 FORBIDDEN
+     * ============================================================
      */
-  @ExceptionHandler(AccessDeniedException.class)
-@ResponseStatus(HttpStatus.FORBIDDEN)
-public ApiResponse handleAccessDenied(
-        AccessDeniedException exception
-) {
-    return buildResponse(
-            resolveMessage(
-                    exception,
-                    "You do not have permission to perform this action."
-            )
-    );
-}
 
     /*
-     * 405 Method Not Allowed
+     * Membership entitlement failure.
      *
-     * Example:
-     * A GET request is sent to a POST-only endpoint.
+     * This handler MUST appear separately from AccessDeniedException
+     * because membership restrictions are business entitlements,
+     * not general authorization failures.
      */
+    @ExceptionHandler(MembershipFeatureRequiredException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ApiResponse handleMembershipFeatureRequired(
+            MembershipFeatureRequiredException exception
+    ) {
+
+        return buildResponse(
+                resolveMessage(
+                        exception,
+                        "Upgrade your membership to access this feature."
+                )
+        );
+    }
+
+    /*
+     * General authorization failure.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ApiResponse handleAccessDenied(
+            AccessDeniedException exception
+    ) {
+
+        return buildResponse(
+                resolveMessage(
+                        exception,
+                        "You do not have permission to perform this action."
+                )
+        );
+    }
+
+    /*
+     * Account suspended, blocked, deactivated,
+     * or otherwise unavailable.
+     */
+    @ExceptionHandler(AccountStatusException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ApiResponse handleAccountStatusException(
+            AccountStatusException exception
+    ) {
+
+        return buildResponse(
+                resolveMessage(
+                        exception,
+                        "Your account is not currently active."
+                )
+        );
+    }
+
+    /*
+     * ============================================================
+     * 405 METHOD NOT ALLOWED
+     * ============================================================
+     */
+
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
     public ApiResponse handleMethodNotSupported(
             HttpRequestMethodNotSupportedException exception
     ) {
-        String method = exception.getMethod();
+
+        String method =
+                exception.getMethod();
 
         return buildResponse(
-                "Request method '" +
-                        method +
-                        "' is not supported for this endpoint."
+                "Request method '"
+                        + method
+                        + "' is not supported for this endpoint."
         );
     }
 
     /*
-     * 500 Internal Server Error
-     *
-     * Final fallback for unexpected server failures.
-     *
-     * Do not expose exception details to API clients.
+     * ============================================================
+     * 500 INTERNAL SERVER ERROR
+     * ============================================================
      */
 
-    /*
- * 403 Forbidden
- *
- * Account has been suspended,
- * blocked, or deactivated by admin.
- */
-@ExceptionHandler(AccountStatusException.class)
-@ResponseStatus(HttpStatus.FORBIDDEN)
-public ApiResponse handleAccountStatusException(
-        AccountStatusException exception
-) {
-    return buildResponse(
-            resolveMessage(
-                    exception,
-                    "Your account is not currently active."
-            )
-    );
-}
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiResponse handleUnexpectedException(
             Exception exception
     ) {
+
         /*
          * Temporary development logging.
-         * This prints the complete exception in the backend console
-         * while returning a safe message to the client.
+         *
+         * Keep this while actively developing so unexpected
+         * exceptions remain visible in the backend console.
+         *
+         * The exception details themselves are never returned
+         * to the API client.
          */
         exception.printStackTrace();
 
@@ -341,27 +328,34 @@ public ApiResponse handleAccountStatusException(
     }
 
     /*
-     * Creates the standard Holy Matrimony API error response.
+     * ============================================================
+     * RESPONSE HELPERS
+     * ============================================================
      */
+
     private ApiResponse buildResponse(
             String message
     ) {
-        return ApiResponse.builder()
+
+        return ApiResponse
+                .builder()
                 .success(false)
                 .message(message)
                 .build();
     }
 
-    /*
-     * Prevents null or blank exception messages from being returned.
-     */
     private String resolveMessage(
             Exception exception,
             String fallbackMessage
     ) {
-        String message = exception.getMessage();
 
-        if (message == null || message.isBlank()) {
+        String message =
+                exception.getMessage();
+
+        if (
+                message == null
+                || message.isBlank()
+        ) {
             return fallbackMessage;
         }
 

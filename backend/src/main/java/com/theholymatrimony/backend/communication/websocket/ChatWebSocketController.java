@@ -3,6 +3,7 @@ package com.theholymatrimony.backend.communication.websocket;
 import com.theholymatrimony.backend.communication.dto.MessageResponse;
 import com.theholymatrimony.backend.communication.dto.SendMessageRequest;
 import com.theholymatrimony.backend.communication.service.CommunicationService;
+import com.theholymatrimony.backend.membership.entitlement.MembershipFeatureRequiredException;
 
 import jakarta.validation.Valid;
 
@@ -47,6 +48,7 @@ public class ChatWebSocketController {
     @MessageMapping("/chat.send")
     public void sendMessage(
             Principal principal,
+
             @Valid
             @Payload
             SendMessageRequest request
@@ -57,6 +59,18 @@ public class ChatWebSocketController {
                         principal
                 );
 
+        /*
+         * CommunicationService performs all authoritative
+         * messaging validation, including:
+         *
+         * - membership CHAT entitlement
+         * - blocked-user safety rules
+         * - accepted-interest requirement
+         * - message validation
+         *
+         * Keeping those rules in the shared service protects
+         * both REST and WebSocket message sends.
+         */
         MessageResponse savedMessage =
                 communicationService
                         .sendMessage(
@@ -72,11 +86,7 @@ public class ChatWebSocketController {
                         );
 
         /*
-         * Send persisted message to receiver.
-         *
-         * Reply-to-message fields are already part
-         * of MessageResponse, so no special WebSocket
-         * payload is needed for replies.
+         * Deliver persisted message to receiver.
          */
         messagingTemplate
                 .convertAndSendToUser(
@@ -87,6 +97,10 @@ public class ChatWebSocketController {
 
         /*
          * Echo persisted message to sender.
+         *
+         * This keeps multiple tabs/devices synchronized and
+         * ensures the sender receives the authoritative
+         * persisted representation.
          */
         messagingTemplate
                 .convertAndSendToUser(
@@ -106,6 +120,7 @@ public class ChatWebSocketController {
     @MessageMapping("/chat.delivered")
     public void markMessageAsDelivered(
             Principal principal,
+
             @Payload
             DeliveryReceiptRequest request
     ) {
@@ -134,8 +149,8 @@ public class ChatWebSocketController {
                         );
 
         /*
-         * Tell the original sender the message
-         * has reached the receiver.
+         * Tell the original sender that the message
+         * reached the receiver.
          */
         messagingTemplate
                 .convertAndSendToUser(
@@ -145,7 +160,7 @@ public class ChatWebSocketController {
                 );
 
         /*
-         * Keep all receiver tabs/devices synchronized.
+         * Keep receiver tabs/devices synchronized.
          */
         messagingTemplate
                 .convertAndSendToUser(
@@ -165,6 +180,7 @@ public class ChatWebSocketController {
     @MessageMapping("/chat.typing")
     public void handleTyping(
             Principal principal,
+
             @Payload
             TypingEventRequest request
     ) {
@@ -212,6 +228,14 @@ public class ChatWebSocketController {
      * ============================================================
      * WEBSOCKET ERROR HANDLER
      * ============================================================
+     *
+     * REST requests are handled by GlobalExceptionHandler.
+     *
+     * STOMP/WebSocket messages use this handler instead.
+     *
+     * MembershipFeatureRequiredException represents an expected
+     * business restriction, not a backend failure, so it is logged
+     * at INFO rather than ERROR.
      */
 
     @MessageExceptionHandler
@@ -224,17 +248,42 @@ public class ChatWebSocketController {
             Exception exception
     ) {
 
-        log.error(
-                "[Chat WebSocket] Request failed",
-                exception
-        );
+        /*
+         * Membership entitlement failures are normal
+         * user-facing business events.
+         *
+         * Example:
+         *
+         * "Upgrade your membership to access chat."
+         */
+        if (
+                exception instanceof
+                        MembershipFeatureRequiredException
+        ) {
+
+            log.info(
+                    "[Chat WebSocket] Membership upgrade required: {}",
+                    resolveExceptionMessage(
+                            exception
+                    )
+            );
+
+        } else {
+
+            /*
+             * Unexpected WebSocket failures remain visible
+             * with the complete stack trace.
+             */
+            log.error(
+                    "[Chat WebSocket] Request failed",
+                    exception
+            );
+        }
 
         String message =
-                StringUtils.hasText(
-                        exception.getMessage()
-                )
-                        ? exception.getMessage()
-                        : "Unable to process the WebSocket message";
+                resolveExceptionMessage(
+                        exception
+                );
 
         return new WebSocketErrorResponse(
                 false,
@@ -335,6 +384,33 @@ public class ChatWebSocketController {
         return principal
                 .getName()
                 .trim();
+    }
+
+
+    /*
+     * ============================================================
+     * EXCEPTION MESSAGE
+     * ============================================================
+     */
+
+    private String resolveExceptionMessage(
+            Exception exception
+    ) {
+
+        if (
+                exception != null
+                        &&
+                StringUtils.hasText(
+                        exception.getMessage()
+                )
+        ) {
+
+            return exception
+                    .getMessage()
+                    .trim();
+        }
+
+        return "Unable to process the WebSocket message";
     }
 
 

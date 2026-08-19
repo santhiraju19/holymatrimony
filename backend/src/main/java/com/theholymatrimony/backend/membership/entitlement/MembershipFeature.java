@@ -1,0 +1,34 @@
+package com.theholymatrimony.backend.membership.entitlement;
+
+public enum MembershipFeature {
+
+    UNLIMITED_PROFILE_VIEWS,
+
+    UNLIMITED_INTERESTS,
+
+    ADVANCED_SEARCH,
+
+    CHAT,
+
+    VIEW_CONTACT_DETAILS,
+
+    PRIORITY_SEARCH,
+
+    HIGHLIGHTED_PROFILE,
+
+    WHO_VIEWED_ME,
+
+    COMPATIBILITY_SCORE,
+
+    PRIORITY_SUPPORT,
+
+    RELATIONSHIP_MANAGER,
+
+    TOP_SEARCH_PLACEMENT,
+
+    VERIFIED_PREMIUM_BADGE,
+
+    PRIORITY_CHURCH_VERIFICATION,
+
+    EARLY_ACCESS
+}

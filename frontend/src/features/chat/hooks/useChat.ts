@@ -2119,6 +2119,20 @@ export default function useChat() {
             false
           );
 
+          /*
+           * Surface backend WebSocket errors
+           * to the chat UI.
+           *
+           * This is especially important for
+           * membership restrictions because
+           * WebSocket sends do not reject the
+           * sendMessage() Promise directly.
+           */
+          setError(
+            message ||
+              "Unable to send the message."
+          );
+
           console.warn(
             "[Chat WebSocket]",
             message

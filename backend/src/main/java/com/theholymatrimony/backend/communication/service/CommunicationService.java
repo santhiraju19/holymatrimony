@@ -17,6 +17,8 @@ import com.theholymatrimony.backend.communication.repository.ChatMessageReposito
 import com.theholymatrimony.backend.communication.repository.ConversationRepository;
 import com.theholymatrimony.backend.communication.validator.CommunicationValidator;
 import com.theholymatrimony.backend.notification.service.NotificationFactory;
+import com.theholymatrimony.backend.membership.entitlement.MembershipEntitlementService;
+import com.theholymatrimony.backend.membership.entitlement.MembershipFeature;
 import com.theholymatrimony.backend.safety.service.SafetyService;
 import com.theholymatrimony.backend.communication.entity.ChatMessageReaction;
 import com.theholymatrimony.backend.communication.repository.ChatMessageReactionRepository;
@@ -69,6 +71,9 @@ public class CommunicationService {
 
     private final SafetyService safetyService;
 
+    private final MembershipEntitlementService
+            membershipEntitlementService;
+
 
     /*
      * ============================================================
@@ -92,6 +97,25 @@ public class CommunicationService {
         User sender =
                 getUserByEmail(
                         authenticatedEmail
+                );
+
+        /*
+         * ============================================================
+         * MEMBERSHIP / CHAT ENTITLEMENT
+         * ============================================================
+         *
+         * FREE members cannot send chat messages.
+         *
+         * SILVER, GOLD and PLATINUM members can send messages
+         * while their membership is active.
+         *
+         * Keep this check in the shared CommunicationService so
+         * both REST and WebSocket message sends are protected.
+         */
+        membershipEntitlementService
+                .requireFeature(
+                        sender.getId(),
+                        MembershipFeature.CHAT
                 );
 
         User receiver =
