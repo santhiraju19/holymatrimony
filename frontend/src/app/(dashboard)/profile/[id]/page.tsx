@@ -19,6 +19,7 @@ import {
 import Card from "@/components/ui/Card";
 
 import InterestButton from "@/features/interests/components/InterestButton";
+import ProfileContactButton from "@/features/browse/components/details/ProfileContactButton";
 import {
   getBrowseProfileById,
 } from "@/features/browse/api/browseApi";
@@ -240,6 +241,10 @@ export default function MemberProfilePage() {
             }
             memberName={displayName}
             message={`Hello ${displayName}, I am interested in connecting with you through Holy Matrimony.`}
+          />
+
+          <ProfileContactButton
+            profileId={profile.id}
           />
         </div>
 

@@ -5,6 +5,7 @@ import com.theholymatrimony.backend.profile.dto.BrowseProfileResponse;
 import com.theholymatrimony.backend.profile.dto.BrowseProfilesPageResponse;
 import com.theholymatrimony.backend.profile.dto.SearchProfileRequest;
 import com.theholymatrimony.backend.profile.service.BrowseProfileService;
+import com.theholymatrimony.backend.profile.dto.ProfileContactResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -90,5 +91,28 @@ public class BrowseProfileController {
                 );
 
         return ApiResponse.success(response);
+
+        
     }
+
+@GetMapping(
+        "/{profileId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/contact"
+)
+public ApiResponse<ProfileContactResponse>
+getProfileContact(
+        Authentication authentication,
+
+        @PathVariable
+        UUID profileId
+) {
+
+    ProfileContactResponse response =
+            browseProfileService.getProfileContact(
+                    authentication.getName(),
+                    profileId
+            );
+
+    return ApiResponse.success(response);
+}
+
 }

@@ -14,6 +14,8 @@ import ShortlistButton from "@/features/shortlist/components/ShortlistButton";
 
 import ProfileTrustBadges from "../ProfileTrustBadges";
 
+import ProfileContactButton from "./ProfileContactButton";
+
 import type {
   BrowseProfile,
 } from "../../types";
@@ -115,6 +117,7 @@ export default function ProfileDetailsHeader({
             ===================================================== */}
 
         <div className="relative min-h-[310px] overflow-hidden bg-gradient-to-br from-blue-100 via-indigo-50 to-slate-100 sm:min-h-[340px] lg:min-h-[360px]">
+
           {photoUrl ? (
             <img
               src={photoUrl}
@@ -134,6 +137,7 @@ export default function ProfileDetailsHeader({
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#020817]/80 via-transparent to-black/25" />
 
           {/* Trust badges on photo */}
+
           {hasTrustBadge && (
             <div className="absolute left-3 right-3 top-3 z-10">
               <ProfileTrustBadges
@@ -145,6 +149,7 @@ export default function ProfileDetailsHeader({
           )}
 
           {/* Identity on photo for mobile */}
+
           <div className="absolute inset-x-0 bottom-0 p-4 lg:hidden">
             <h1 className="truncate text-2xl font-black tracking-[-0.03em] text-white">
               {displayName}
@@ -170,6 +175,7 @@ export default function ProfileDetailsHeader({
           />
 
           <div className="relative z-10">
+
             <Link
               href="/browse"
               className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-bold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"
@@ -182,14 +188,18 @@ export default function ProfileDetailsHeader({
             </Link>
 
             {/* Desktop identity */}
+
             <div className="mt-4 hidden lg:block">
+
               <div className="flex flex-wrap items-center gap-3">
+
                 <h1 className="text-3xl font-black tracking-[-0.04em] text-[#0B2D5C]">
                   {displayName}
                 </h1>
 
                 {completion > 0 && (
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-black text-blue-700">
+
                     <Sparkles
                       size={12}
                     />
@@ -197,6 +207,7 @@ export default function ProfileDetailsHeader({
                     {completion}% Complete
                   </span>
                 )}
+
               </div>
 
               {summary && (
@@ -204,21 +215,26 @@ export default function ProfileDetailsHeader({
                   {summary}
                 </p>
               )}
+
             </div>
 
             {/* Location */}
+
             {location && (
               <div className="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600">
+
                 <MapPin
                   size={15}
                   className="shrink-0 text-blue-600"
                 />
 
                 {location}
+
               </div>
             )}
 
             {/* Desktop trust badges */}
+
             {hasTrustBadge && (
               <div className="mt-4 hidden lg:block">
                 <ProfileTrustBadges
@@ -228,9 +244,12 @@ export default function ProfileDetailsHeader({
             )}
 
             {/* About */}
+
             {profile.aboutMe && (
               <div className="mt-5 rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 via-white to-blue-50/30 p-4">
+
                 <div className="flex items-center gap-2">
+
                   <HeartHandshake
                     size={16}
                     className="text-[#0B2D5C]"
@@ -239,6 +258,7 @@ export default function ProfileDetailsHeader({
                   <h2 className="text-sm font-black text-[#0B2D5C]">
                     About
                   </h2>
+
                 </div>
 
                 <p className="mt-2 line-clamp-4 whitespace-pre-line text-sm leading-6 text-slate-600">
@@ -246,34 +266,57 @@ export default function ProfileDetailsHeader({
                     profile.aboutMe
                   }
                 </p>
+
               </div>
             )}
+
           </div>
 
           {/* ===================================================
               Actions
               =================================================== */}
 
-          <div className="relative z-10 mt-5 grid gap-2.5 sm:grid-cols-2">
-            <InterestButton
-              receiverProfileId={
-                profile.id
-              }
-              memberName={
-                displayName
-              }
-              message={`Hello ${displayName}, I am interested in connecting with you through Holy Matrimony.`}
-            />
+          <div className="relative z-10 mt-5">
 
-            <ShortlistButton
-              profileId={
-                profile.id
-              }
-              memberName={
-                displayName
-              }
-            />
+            <div className="grid gap-2.5 sm:grid-cols-2">
+
+              <InterestButton
+                receiverProfileId={
+                  profile.id
+                }
+                memberName={
+                  displayName
+                }
+                message={`Hello ${displayName}, I am interested in connecting with you through Holy Matrimony.`}
+              />
+
+              <ShortlistButton
+                profileId={
+                  profile.id
+                }
+                memberName={
+                  displayName
+                }
+              />
+
+            </div>
+
+            {/* =================================================
+                Protected Contact Details
+                ================================================= */}
+
+            <div className="mt-3">
+
+              <ProfileContactButton
+                profileId={
+                  profile.id
+                }
+              />
+
+            </div>
+
           </div>
+
         </div>
       </div>
 

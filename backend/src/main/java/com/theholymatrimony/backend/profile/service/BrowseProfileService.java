@@ -4,6 +4,10 @@ import com.theholymatrimony.backend.profile.dto.BrowseProfileResponse;
 import com.theholymatrimony.backend.profile.dto.BrowseProfilesPageResponse;
 import com.theholymatrimony.backend.profile.dto.SearchProfileRequest;
 
+import com.theholymatrimony.backend.membership.entitlement.MembershipEntitlementService;
+import com.theholymatrimony.backend.membership.entitlement.MembershipFeature;
+import com.theholymatrimony.backend.profile.dto.ProfileContactResponse;
+
 import com.theholymatrimony.backend.profile.entity.Profile;
 import com.theholymatrimony.backend.profile.entity.ProfilePhoto;
 
@@ -55,6 +59,8 @@ public class BrowseProfileService {
 
     private static final String SORT_TRUST_VERIFIED =
             "TRUST_VERIFIED";
+private final MembershipEntitlementService
+        membershipEntitlementService;
 
     private final ProfileRepository
             profileRepository;
@@ -164,7 +170,117 @@ public class BrowseProfileService {
                 profile
         );
     }
+/*
+ * ============================================================
+ * GET PROTECTED PROFILE CONTACT DETAILS
+ * ============================================================
+ */
 
+public ProfileContactResponse getProfileContact(
+        String authenticatedEmail,
+        UUID profileId
+) {
+
+    Profile profile =
+            profileRepository
+                    .findByIdAndProfileCompletedTrueAndUserEmailNot(
+                            profileId,
+                            authenticatedEmail
+                    )
+                    .orElseThrow(
+                            () ->
+                                    new EntityNotFoundException(
+                                            "Profile not found"
+                                    )
+                    );
+
+    membershipEntitlementService.requireFeature(
+            resolveAuthenticatedUserId(
+                    authenticatedEmail
+            ),
+            MembershipFeature.VIEW_CONTACT_DETAILS
+    );
+
+    String mobile =
+            profile.getMobile();
+
+    if (
+            mobile == null
+                    || mobile.isBlank()
+    ) {
+
+        mobile =
+                profile
+                        .getUser()
+                        .getMobile();
+    }
+
+    boolean mobileVerified =
+            isVerificationApproved(
+                    profile
+                            .getUser()
+                            .getId(),
+                    VerificationType.MOBILE
+            );
+
+    return ProfileContactResponse
+            .builder()
+
+            .profileId(
+                    profile.getId()
+            )
+
+            .fullName(
+                    profile
+                            .getUser()
+                            .getFullName()
+            )
+
+            .email(
+                    profile
+                            .getUser()
+                            .getEmail()
+            )
+
+            .mobile(
+                    mobile
+            )
+
+            .mobileVerified(
+                    mobileVerified
+            )
+
+            .build();
+}
+
+
+/*
+ * ============================================================
+ * AUTHENTICATED USER RESOLUTION
+ * ============================================================
+ */
+
+private UUID resolveAuthenticatedUserId(
+        String authenticatedEmail
+) {
+
+    return profileRepository
+            .findByUserEmail(
+                    authenticatedEmail
+            )
+            .map(
+                    profile ->
+                            profile
+                                    .getUser()
+                                    .getId()
+            )
+            .orElseThrow(
+                    () ->
+                            new EntityNotFoundException(
+                                    "Authenticated profile not found"
+                            )
+            );
+}
     /*
      * ============================================================
      * DEFAULT PAGINATION
