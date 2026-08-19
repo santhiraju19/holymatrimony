@@ -1,27 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import {
+  useState,
+} from "react";
 
-import { getApiErrorMessage } from "@/lib/api";
-import { interestService } from "../services/interest.service";
+import {
+  getApiErrorMessage,
+} from "@/lib/api";
+
+import {
+  interestService,
+} from "../services/interest.service";
 
 export default function useInterest() {
-  const [loading, setLoading] =
+  const [
+    loading,
+    setLoading,
+  ] =
     useState(false);
 
-  const [sent, setSent] =
+  const [
+    sent,
+    setSent,
+  ] =
     useState(false);
 
-  const [error, setError] =
-    useState<string | null>(null);
+  const [
+    error,
+    setError,
+  ] =
+    useState<string | null>(
+      null
+    );
 
   async function sendInterest(
     receiverProfileId: string,
-    memberName: string,
     message?: string
-  ): Promise<void> {
-    if (loading || sent) {
-      return;
+  ): Promise<boolean> {
+    if (
+      loading ||
+      sent
+    ) {
+      return false;
     }
 
     setLoading(true);
@@ -35,21 +55,33 @@ export default function useInterest() {
 
       setSent(true);
 
-      alert(
-        `Interest sent successfully to ${memberName}.`
-      );
-    } catch (caughtError: unknown) {
+      return true;
+
+    } catch (
+      caughtError:
+        unknown
+    ) {
       const messageText =
         getApiErrorMessage(
           caughtError,
           "Unable to send interest."
         );
 
-      setError(messageText);
-      alert(messageText);
+      setError(
+        messageText
+      );
+
+      return false;
+
     } finally {
       setLoading(false);
     }
+  }
+
+  function clearError(): void {
+    setError(
+      null
+    );
   }
 
   return {
@@ -57,5 +89,6 @@ export default function useInterest() {
     sent,
     error,
     sendInterest,
+    clearError,
   };
 }

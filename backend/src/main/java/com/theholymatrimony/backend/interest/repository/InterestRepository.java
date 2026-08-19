@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -90,6 +91,13 @@ public interface InterestRepository
             String receiverEmail,
             InterestStatus status,
             Pageable pageable
+    );
+
+
+    long countBySenderIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+            UUID senderId,
+            LocalDateTime startDateTime,
+            LocalDateTime endDateTime
     );
 
     long countByReceiverEmailAndStatus(

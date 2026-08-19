@@ -11,6 +11,8 @@ import com.theholymatrimony.backend.interest.dto.SendInterestRequest;
 import com.theholymatrimony.backend.interest.entity.Interest;
 import com.theholymatrimony.backend.interest.enums.InterestStatus;
 import com.theholymatrimony.backend.interest.repository.InterestRepository;
+import com.theholymatrimony.backend.membership.entitlement.MembershipEntitlementService;
+import com.theholymatrimony.backend.membership.entitlement.MembershipFeature;
 import com.theholymatrimony.backend.profile.entity.Profile;
 import com.theholymatrimony.backend.profile.entity.ProfilePhoto;
 import com.theholymatrimony.backend.profile.repository.ProfilePhotoRepository;
@@ -27,6 +29,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,6 +43,7 @@ public class InterestService {
     private final ProfileRepository profileRepository;
     private final ProfilePhotoRepository profilePhotoRepository;
     private final CommunicationService communicationService;
+    private final MembershipEntitlementService membershipEntitlementService;
 
     /*
      * ============================================================
@@ -78,6 +82,10 @@ public class InterestService {
                 receiver.getId()
         );
 
+        validateInterestAllowance(
+                sender
+        );
+
         Interest interest =
                 Interest.builder()
                         .sender(sender)
@@ -103,6 +111,66 @@ public class InterestService {
                 senderProfile,
                 receiverProfile
         );
+    }
+
+
+    /*
+     * ============================================================
+     * Membership interest allowance
+     * ============================================================
+     *
+     * Members with UNLIMITED_INTERESTS bypass the quota.
+     *
+     * Free members may send up to five interests during each
+     * calendar month. The count resets automatically on the first
+     * day of the next month.
+     */
+
+    private void validateInterestAllowance(
+            User sender
+    ) {
+
+        if (
+                membershipEntitlementService.hasFeature(
+                        sender.getId(),
+                        MembershipFeature.UNLIMITED_INTERESTS
+                )
+        ) {
+            return;
+        }
+
+        final long freeMonthlyLimit = 5L;
+
+        LocalDateTime now =
+                LocalDateTime.now();
+
+        LocalDateTime monthStart =
+                now
+                        .withDayOfMonth(1)
+                        .toLocalDate()
+                        .atStartOfDay();
+
+        LocalDateTime nextMonthStart =
+                monthStart.plusMonths(1);
+
+        long sentThisMonth =
+                interestRepository
+                        .countBySenderIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                                sender.getId(),
+                                monthStart,
+                                nextMonthStart
+                        );
+
+        if (
+                sentThisMonth >=
+                        freeMonthlyLimit
+        ) {
+
+            throw new IllegalStateException(
+                    "You have used your 5 free interests for this month. "
+                            + "Upgrade your membership to send unlimited interests."
+            );
+        }
     }
 
     /*
