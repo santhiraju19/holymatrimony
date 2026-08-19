@@ -1,7 +1,14 @@
-import axios, {
-  AxiosInstance,
+import type {
   AxiosResponse,
 } from "axios";
+
+import api from "@/lib/api";
+
+/*
+ * ============================================================
+ * Create Order
+ * ============================================================
+ */
 
 export interface CreateOrderResponse {
   orderId: string;
@@ -10,60 +17,122 @@ export interface CreateOrderResponse {
   currency: string;
 }
 
+/*
+ * ============================================================
+ * Verify Payment
+ * ============================================================
+ */
+
 export interface VerifyPaymentRequest {
   razorpay_order_id: string;
   razorpay_payment_id: string;
   razorpay_signature: string;
 }
 
+/*
+ * ============================================================
+ * Payment History
+ * ============================================================
+ */
+
+export type PaymentSource =
+  | "RAZORPAY"
+  | "COUPON";
+
+export type TransactionStatus =
+  | "CREATED"
+  | "PENDING"
+  | "SUCCESS"
+  | "FAILED"
+  | "REFUNDED"
+  | "CANCELLED";
+
 export interface PaymentHistory {
-  id: number;
-  razorpayOrderId: string;
-  razorpayPaymentId: string | null;
+  /*
+   * Backend uses UUID.
+   */
+  id: string;
+
+  razorpayOrderId:
+    | string
+    | null;
+
+  razorpayPaymentId:
+    | string
+    | null;
+
   plan: string;
+
   billingCycle: string;
+
+  /*
+   * Backend stores amount in paise.
+   */
   amountInPaise: number;
+
   amountInRupees: number;
+
   currency: string;
-  status: string;
-  paidAt: string | null;
+
+  status: TransactionStatus;
+
+  /*
+   * RAZORPAY / COUPON
+   */
+  paymentSource: PaymentSource;
+
+  /*
+   * UPI / CARD / NETBANKING /
+   * WALLET / EMI / COUPON
+   */
+  paymentMethod:
+    | string
+    | null;
+
+  /*
+   * Example: HOLY100
+   */
+  couponCode:
+    | string
+    | null;
+
+  receiptAvailable: boolean;
+
+  paidAt:
+    | string
+    | null;
+
   createdAt: string;
 }
 
+/*
+ * ============================================================
+ * Payment Service
+ * ============================================================
+ *
+ * IMPORTANT:
+ *
+ * Use the application's shared `api` client.
+ *
+ * src/lib/api.ts already provides:
+ *
+ * - Authorization header
+ * - access-token lookup
+ * - refresh-token flow
+ * - automatic retry after refresh
+ * - withCredentials
+ * - centralized authentication behaviour
+ *
+ * Do not create another Axios instance here.
+ */
+
 class PaymentService {
-  private readonly api: AxiosInstance;
 
-  constructor() {
-    this.api = axios.create({
-      baseURL:
-        process.env.NEXT_PUBLIC_API_URL ??
-        "http://localhost:8080/api/v1",
-
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    this.api.interceptors.request.use(
-      (config) => {
-        if (typeof window !== "undefined") {
-          const token =
-            localStorage.getItem(
-              "hm_access_token"
-            ) ??
-            localStorage.getItem("hm_token");
-
-          if (token) {
-            config.headers.Authorization =
-              `Bearer ${token}`;
-          }
-        }
-
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
-  }
+  /*
+   * ========================================================
+   * Create Razorpay Order
+   * ========================================================
+   */
 
   async createOrder(
     plan: string,
@@ -72,8 +141,10 @@ class PaymentService {
     email: string,
     phone: string
   ): Promise<CreateOrderResponse> {
-    const response: AxiosResponse<CreateOrderResponse> =
-      await this.api.post(
+
+    const response:
+      AxiosResponse<CreateOrderResponse> =
+      await api.post(
         "/payments/create-order",
         {
           plan,
@@ -87,41 +158,71 @@ class PaymentService {
     return response.data;
   }
 
+  /*
+   * ========================================================
+   * Verify Razorpay Checkout Signature
+   * ========================================================
+   */
+
   async verifyPayment(
-    request: VerifyPaymentRequest
-  ): Promise<string> {
-    const response: AxiosResponse<string> =
-      await this.api.post(
-        "/payments/verify",
-        request
+    request:
+      VerifyPaymentRequest
+  ): Promise<void> {
+
+    await api.post(
+      "/payments/verify",
+      request
+    );
+  }
+
+  /*
+   * ========================================================
+   * Transaction History
+   * ========================================================
+   */
+
+  async getPaymentHistory():
+    Promise<PaymentHistory[]> {
+
+    const response:
+      AxiosResponse<
+        PaymentHistory[]
+      > =
+      await api.get(
+        "/payments/history"
       );
 
-    return response.data;
+    return Array.isArray(
+      response.data
+    )
+      ? response.data
+      : [];
   }
 
-  async getPaymentHistory(): Promise<
-    PaymentHistory[]
-  > {
-    const response: AxiosResponse<
-      PaymentHistory[]
-    > = await this.api.get("/payments/history");
-
-    return response.data;
-  }
+  /*
+   * ========================================================
+   * Download Membership Receipt
+   * ========================================================
+   */
 
   async downloadReceipt(
-    paymentId: number
+    paymentId: string
   ): Promise<void> {
-    const response: AxiosResponse<Blob> =
-      await this.api.get(
+
+    const response:
+      AxiosResponse<Blob> =
+      await api.get(
         `/payments/${paymentId}/receipt`,
         {
-          responseType: "blob",
+          responseType:
+            "blob",
         }
       );
 
     const contentDisposition =
-      response.headers["content-disposition"];
+      response.headers[
+        "content-disposition"
+      ];
 
     const filename =
       this.extractFilename(
@@ -135,31 +236,86 @@ class PaymentService {
       );
 
     const link =
-      document.createElement("a");
+      document.createElement(
+        "a"
+      );
 
-    link.href = objectUrl;
-    link.download = filename;
+    link.href =
+      objectUrl;
 
-    document.body.appendChild(link);
+    link.download =
+      filename;
+
+    document.body.appendChild(
+      link
+    );
+
     link.click();
+
     link.remove();
 
-    window.URL.revokeObjectURL(objectUrl);
+    window.URL.revokeObjectURL(
+      objectUrl
+    );
   }
 
+  /*
+   * ========================================================
+   * Receipt Filename
+   * ========================================================
+   */
+
   private extractFilename(
-    contentDisposition?: string
+    contentDisposition?:
+      string
   ): string | null {
-    if (!contentDisposition) {
+
+    if (
+      !contentDisposition
+    ) {
       return null;
     }
 
-    const match =
+    /*
+     * RFC 5987:
+     *
+     * filename*=UTF-8''receipt.pdf
+     */
+    const utf8Match =
       contentDisposition.match(
-        /filename="?([^"]+)"?/i
+        /filename\*=UTF-8''([^;]+)/i
       );
 
-    return match?.[1] ?? null;
+    if (
+      utf8Match?.[1]
+    ) {
+
+      try {
+
+        return decodeURIComponent(
+          utf8Match[1]
+        );
+
+      } catch {
+
+        return utf8Match[1];
+      }
+    }
+
+    /*
+     * Standard:
+     *
+     * filename="receipt.pdf"
+     */
+    const filenameMatch =
+      contentDisposition.match(
+        /filename="?([^";]+)"?/i
+      );
+
+    return (
+      filenameMatch?.[1] ??
+      null
+    );
   }
 }
 

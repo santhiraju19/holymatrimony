@@ -1,7 +1,15 @@
 "use client";
 
-import { Fragment } from "react";
-import { Check, Minus } from "lucide-react";
+import {
+  Fragment,
+} from "react";
+
+import {
+  Check,
+  Crown,
+  Minus,
+  Sparkles,
+} from "lucide-react";
 
 const features = [
   {
@@ -113,13 +121,35 @@ const features = [
   },
 ];
 
-function Cell({ value }: { value: boolean }) {
+function Cell({
+  value,
+  emphasized = false,
+}: {
+  value: boolean;
+  emphasized?: boolean;
+}) {
   return (
-    <td className="px-4 py-4 text-center">
+    <td
+      className={[
+        "px-3 py-3 text-center sm:px-4",
+        emphasized
+          ? "bg-amber-50/35"
+          : "",
+      ].join(" ")}
+    >
       {value ? (
-        <Check className="mx-auto text-green-600" size={20} />
+        <span className="mx-auto flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+          <Check
+            size={13}
+            strokeWidth={3}
+          />
+        </span>
       ) : (
-        <Minus className="mx-auto text-gray-300" size={20} />
+        <span className="mx-auto flex h-6 w-6 items-center justify-center rounded-full bg-slate-50 text-slate-300">
+          <Minus
+            size={13}
+          />
+        </span>
       )}
     </td>
   );
@@ -127,75 +157,123 @@ function Cell({ value }: { value: boolean }) {
 
 export default function FeatureComparison() {
   return (
-    <section className="bg-white py-24">
-      <div className="container mx-auto px-4">
-        <div className="mb-14 text-center">
-          <h2 className="text-4xl font-bold">
-            Compare Membership Plans
+    <section className="bg-white py-14 sm:py-16">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl text-center">
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-[#0B2D5C]">
+            <Sparkles
+              size={10}
+            />
+            Compare Benefits
+          </div>
+
+          <h2 className="mt-3 text-2xl font-black tracking-[-0.025em] text-[#0B2D5C] sm:text-3xl">
+            See what each plan includes
           </h2>
 
-          <p className="mt-4 text-gray-600">
-            See what's included in each membership plan.
+          <p className="mt-2 text-xs leading-6 text-slate-500 sm:text-sm">
+            Compare communication, search and premium benefits before choosing your membership.
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-3xl border shadow-sm">
-          <table className="min-w-full border-collapse">
-            <thead className="bg-primary text-white">
-              <tr>
-                <th className="px-6 py-5 text-left">
-                  Features
-                </th>
+        <div className="mt-7 overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+          <div className="overflow-x-auto">
+            <table className="min-w-[720px] w-full border-collapse">
+              <thead>
+                <tr className="bg-gradient-to-r from-[#071B36] via-[#0B2D5C] to-[#174A87] text-white">
+                  <th className="px-4 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.08em] sm:px-5">
+                    Features
+                  </th>
 
-                <th className="px-4 py-5 text-center">
-                  Free
-                </th>
+                  <th className="px-3 py-3.5 text-center text-[10px] font-black sm:px-4">
+                    Free
+                  </th>
 
-                <th className="px-4 py-5 text-center">
-                  Silver
-                </th>
+                  <th className="px-3 py-3.5 text-center text-[10px] font-black sm:px-4">
+                    Silver
+                  </th>
 
-                <th className="px-4 py-5 text-center">
-                  Gold
-                </th>
+                  <th className="bg-[#D4AF37]/15 px-3 py-3.5 text-center text-[10px] font-black text-[#FFF3BF] sm:px-4">
+                    <span className="inline-flex items-center gap-1">
+                      <Crown
+                        size={11}
+                      />
+                      Gold
+                    </span>
+                  </th>
 
-                <th className="px-4 py-5 text-center">
-                  Platinum
-                </th>
-              </tr>
-            </thead>
+                  <th className="px-3 py-3.5 text-center text-[10px] font-black sm:px-4">
+                    Platinum
+                  </th>
+                </tr>
+              </thead>
 
-            <tbody>
-              {features.map((group) => (
-                <Fragment key={group.category}>
-                  <tr className="bg-gray-100">
-                    <td
-                      colSpan={5}
-                      className="px-6 py-4 font-bold"
+              <tbody>
+                {features.map(
+                  (group) => (
+                    <Fragment
+                      key={
+                        group.category
+                      }
                     >
-                      {group.category}
-                    </td>
-                  </tr>
+                      <tr className="border-t border-slate-100 bg-slate-50/80">
+                        <td
+                          colSpan={5}
+                          className="px-4 py-2.5 text-[9px] font-black uppercase tracking-[0.1em] text-[#B38B19] sm:px-5"
+                        >
+                          {
+                            group.category
+                          }
+                        </td>
+                      </tr>
 
-                  {group.items.map((item) => (
-                    <tr
-                      key={item.name}
-                      className="border-t"
-                    >
-                      <td className="px-6 py-4">
-                        {item.name}
-                      </td>
+                      {group.items.map(
+                        (item) => (
+                          <tr
+                            key={
+                              item.name
+                            }
+                            className="border-t border-slate-100 transition hover:bg-slate-50/60"
+                          >
+                            <td className="px-4 py-3 text-[10px] font-bold text-slate-600 sm:px-5 sm:text-[11px]">
+                              {
+                                item.name
+                              }
+                            </td>
 
-                      <Cell value={item.free} />
-                      <Cell value={item.silver} />
-                      <Cell value={item.gold} />
-                      <Cell value={item.platinum} />
-                    </tr>
-                  ))}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
+                            <Cell
+                              value={
+                                item.free
+                              }
+                            />
+
+                            <Cell
+                              value={
+                                item.silver
+                              }
+                            />
+
+                            <Cell
+                              value={
+                                item.gold
+                              }
+                              emphasized
+                            />
+
+                            <Cell
+                              value={
+                                item.platinum
+                              }
+                            />
+                          </tr>
+                        )
+                      )}
+                    </Fragment>
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>

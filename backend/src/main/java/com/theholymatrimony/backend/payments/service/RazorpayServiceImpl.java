@@ -17,6 +17,7 @@ import com.theholymatrimony.backend.payments.entity.Payment;
 
 import com.theholymatrimony.backend.payments.enums.BillingCycle;
 import com.theholymatrimony.backend.payments.enums.MembershipPlan;
+import com.theholymatrimony.backend.payments.enums.PaymentSource;
 import com.theholymatrimony.backend.payments.enums.PaymentStatus;
 
 import com.theholymatrimony.backend.payments.repository.PaymentRepository;
@@ -37,7 +38,6 @@ import java.math.RoundingMode;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-
 import java.time.format.DateTimeFormatter;
 
 import java.util.List;
@@ -61,14 +61,8 @@ public class RazorpayServiceImpl
     private final UserRepository userRepository;
 
     /*
-     * Successful payment completion is intentionally
-     * centralized here.
-     *
-     * Razorpay checkout verification records the
-     * authenticated payment details.
-     *
-     * payment.captured webhook performs final
-     * SUCCESS + membership activation.
+     * Successful payment fulfilment remains centralized
+     * in PaymentFinalizationService / Razorpay webhook.
      */
     private final PaymentFinalizationService
             paymentFinalizationService;
@@ -81,7 +75,7 @@ public class RazorpayServiceImpl
 
     /*
      * ============================================================
-     * CREATE ORDER
+     * CREATE RAZORPAY ORDER
      * ============================================================
      */
 
@@ -131,6 +125,12 @@ public class RazorpayServiceImpl
                         plan,
                         billingCycle
                 );
+
+        /*
+         * ========================================================
+         * RAZORPAY ORDER
+         * ========================================================
+         */
 
         JSONObject options =
                 new JSONObject();
@@ -186,6 +186,17 @@ public class RazorpayServiceImpl
                         "id"
                 );
 
+        /*
+         * ========================================================
+         * LOCAL PAYMENT RECORD
+         * ========================================================
+         *
+         * Amount is stored in paise.
+         *
+         * Payment remains PENDING until Razorpay confirms
+         * capture through the webhook.
+         */
+
         Payment payment =
                 Payment.builder()
                         .user(
@@ -209,17 +220,24 @@ public class RazorpayServiceImpl
                                 user.getEmail()
                         )
                         .phone(
-                                request.getPhone() == null
-                                        ? null
-                                        : request
-                                                .getPhone()
-                                                .trim()
+                                normalizeNullable(
+                                        request.getPhone()
+                                )
                         )
                         .amount(
                                 amountInPaise
                         )
                         .currency(
                                 "INR"
+                        )
+                        .paymentSource(
+                                PaymentSource.RAZORPAY
+                        )
+                        .paymentMethod(
+                                null
+                        )
+                        .couponCode(
+                                null
                         )
                         .status(
                                 PaymentStatus.PENDING
@@ -240,13 +258,8 @@ public class RazorpayServiceImpl
 
     /*
      * ============================================================
-     * VERIFY CHECKOUT SIGNATURE
+     * VERIFY RAZORPAY CHECKOUT SIGNATURE
      * ============================================================
-     *
-     * This endpoint verifies the checkout response.
-     *
-     * It intentionally does NOT mark the payment SUCCESS.
-     * Fulfilment occurs when Razorpay sends payment.captured.
      */
 
     @Override
@@ -294,8 +307,8 @@ public class RazorpayServiceImpl
         }
 
         /*
-         * payment.captured webhook may have completed
-         * the transaction before the browser callback.
+         * The webhook may already have completed this
+         * transaction before the browser callback arrives.
          */
         if (
                 payment.getStatus()
@@ -305,36 +318,38 @@ public class RazorpayServiceImpl
         }
 
         /*
-         * Protect against assigning one Razorpay payment
-         * to multiple local payment records.
+         * Prevent one Razorpay payment ID from being assigned
+         * to multiple local transaction records.
          */
+
         paymentRepository
                 .findByRazorpayPaymentId(
                         request.getRazorpay_payment_id()
                 )
-                .ifPresent(existingPayment -> {
+                .ifPresent(
+                        existingPayment -> {
 
-                    if (
-                            !existingPayment
-                                    .getId()
-                                    .equals(
-                                            payment.getId()
-                                    )
-                    ) {
-                        throw new IllegalArgumentException(
-                                "This payment has already been processed."
-                        );
-                    }
-                });
+                            if (
+                                    !existingPayment
+                                            .getId()
+                                            .equals(
+                                                    payment.getId()
+                                            )
+                            ) {
+                                throw new IllegalArgumentException(
+                                        "This payment has already been processed."
+                                );
+                            }
+                        }
+                );
 
         JSONObject signatureAttributes =
                 new JSONObject();
 
         /*
-         * Use the order ID stored by our server.
-         * Do not trust a different order identifier
-         * supplied by the browser.
+         * Always verify against the server-stored order ID.
          */
+
         signatureAttributes.put(
                 "razorpay_order_id",
                 payment.getRazorpayOrderId()
@@ -357,23 +372,18 @@ public class RazorpayServiceImpl
                 );
 
         if (!signatureValid) {
-
-            /*
-             * We reject the checkout response.
-             *
-             * Do not activate membership.
-             */
             throw new IllegalArgumentException(
                     "Invalid Razorpay payment signature."
             );
         }
 
         /*
-         * Signature is genuine.
+         * Store checkout identifiers.
          *
-         * Store the identifiers, but remain PENDING until
-         * payment.captured confirms that money was captured.
+         * Final SUCCESS + membership activation remains
+         * webhook controlled.
          */
+
         payment.setRazorpayPaymentId(
                 request.getRazorpay_payment_id()
         );
@@ -381,6 +391,14 @@ public class RazorpayServiceImpl
         payment.setRazorpaySignature(
                 request.getRazorpay_signature()
         );
+
+        if (
+                payment.getPaymentSource() == null
+        ) {
+            payment.setPaymentSource(
+                    PaymentSource.RAZORPAY
+            );
+        }
 
         paymentRepository.save(
                 payment
@@ -436,8 +454,11 @@ public class RazorpayServiceImpl
 
     /*
      * ============================================================
-     * PAYMENT RECEIPT
+     * RECEIPT
      * ============================================================
+     *
+     * Successful Razorpay transactions AND successful coupon
+     * activations can generate a receipt.
      */
 
     @Override
@@ -447,7 +468,9 @@ public class RazorpayServiceImpl
             String authenticatedEmail
     ) {
 
-        if (paymentId == null) {
+        if (
+                paymentId == null
+        ) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "A valid payment ID is required."
@@ -487,7 +510,7 @@ public class RazorpayServiceImpl
         ) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "A receipt is available only for successful payments."
+                    "A receipt is available only for successful transactions."
             );
         }
 
@@ -514,6 +537,11 @@ public class RazorpayServiceImpl
                                 RoundingMode.HALF_UP
                         );
 
+        PaymentSource effectiveSource =
+                resolvePaymentSource(
+                        payment
+                );
+
         return PaymentReceiptResponse
                 .builder()
                 .paymentRecordId(
@@ -530,6 +558,15 @@ public class RazorpayServiceImpl
                 )
                 .razorpayPaymentId(
                         payment.getRazorpayPaymentId()
+                )
+                .paymentSource(
+                        effectiveSource.name()
+                )
+                .paymentMethod(
+                        payment.getPaymentMethod()
+                )
+                .couponCode(
+                        payment.getCouponCode()
                 )
                 .memberName(
                         payment.getCustomerName()
@@ -566,22 +603,39 @@ public class RazorpayServiceImpl
                 .createdAt(
                         payment.getCreatedAt()
                 )
+
+                /*
+                 * =================================================
+                 * RECEIPT COMPANY DETAILS
+                 * =================================================
+                 *
+                 * Keep the PDF compact.
+                 *
+                 * Do not print the complete registered street
+                 * address on the customer receipt.
+                 */
+
                 .companyName(
-                        "Holy Matrimony Services Private Limited"
+                        "HOLY MATRIMONY SERVICES PVT LTD"
                 )
                 .companyGstin(
                         "37AAICH7679D1Z5"
                 )
                 .companyAddress(
-                        "8-17-154, 1st Line, Mangaldas Nagar, " +
-                                "Guntur - 522001, Andhra Pradesh, India"
+                        "Guntur, Andhra Pradesh"
+                )
+                .companyEmail(
+                        "support@theholymatrimony.com"
+                )
+                .companyWebsite(
+                        "theholymatrimony.com"
                 )
                 .build();
     }
 
     /*
      * ============================================================
-     * PAYMENT HISTORY MAPPING
+     * HISTORY MAPPING
      * ============================================================
      */
 
@@ -594,6 +648,11 @@ public class RazorpayServiceImpl
                 payment.getAmount() == null
                         ? 0
                         : payment.getAmount();
+
+        PaymentSource effectiveSource =
+                resolvePaymentSource(
+                        payment
+                );
 
         return PaymentHistoryResponse
                 .builder()
@@ -624,6 +683,19 @@ public class RazorpayServiceImpl
                 .status(
                         payment.getStatus()
                 )
+                .paymentSource(
+                        effectiveSource
+                )
+                .paymentMethod(
+                        payment.getPaymentMethod()
+                )
+                .couponCode(
+                        payment.getCouponCode()
+                )
+                .receiptAvailable(
+                        payment.getStatus()
+                                == PaymentStatus.SUCCESS
+                )
                 .paidAt(
                         payment.getPaidAt()
                 )
@@ -631,6 +703,30 @@ public class RazorpayServiceImpl
                         payment.getCreatedAt()
                 )
                 .build();
+    }
+
+    /*
+     * ============================================================
+     * PAYMENT SOURCE FALLBACK
+     * ============================================================
+     */
+
+    private PaymentSource resolvePaymentSource(
+            Payment payment
+    ) {
+
+        if (
+                payment.getPaymentSource() != null
+        ) {
+            return payment.getPaymentSource();
+        }
+
+        /*
+         * Older payment rows were Razorpay transactions before
+         * payment_source was introduced.
+         */
+
+        return PaymentSource.RAZORPAY;
     }
 
     /*
@@ -760,7 +856,7 @@ public class RazorpayServiceImpl
 
     /*
      * ============================================================
-     * PLAN PARSING
+     * PLAN
      * ============================================================
      */
 
@@ -802,6 +898,7 @@ public class RazorpayServiceImpl
         } catch (
                 IllegalArgumentException exception
         ) {
+
             throw new IllegalArgumentException(
                     "Invalid membership plan."
             );
@@ -810,7 +907,7 @@ public class RazorpayServiceImpl
 
     /*
      * ============================================================
-     * BILLING CYCLE PARSING
+     * BILLING CYCLE
      * ============================================================
      */
 
@@ -840,6 +937,7 @@ public class RazorpayServiceImpl
         } catch (
                 IllegalArgumentException exception
         ) {
+
             throw new IllegalArgumentException(
                     "Invalid billing cycle."
             );
@@ -856,7 +954,9 @@ public class RazorpayServiceImpl
             CreateOrderRequest request
     ) {
 
-        if (request == null) {
+        if (
+                request == null
+        ) {
             throw new IllegalArgumentException(
                     "Payment request is required."
             );
@@ -896,7 +996,7 @@ public class RazorpayServiceImpl
 
     /*
      * ============================================================
-     * CHECKOUT VERIFICATION VALIDATION
+     * VERIFICATION VALIDATION
      * ============================================================
      */
 
@@ -904,7 +1004,9 @@ public class RazorpayServiceImpl
             VerifyPaymentRequest request
     ) {
 
-        if (request == null) {
+        if (
+                request == null
+        ) {
             throw new IllegalArgumentException(
                     "Verification request is required."
             );
@@ -942,5 +1044,25 @@ public class RazorpayServiceImpl
                     "Razorpay signature is required."
             );
         }
+    }
+
+    /*
+     * ============================================================
+     * NULLABLE STRING
+     * ============================================================
+     */
+
+    private String normalizeNullable(
+            String value
+    ) {
+
+        if (
+                value == null ||
+                value.isBlank()
+        ) {
+            return null;
+        }
+
+        return value.trim();
     }
 }

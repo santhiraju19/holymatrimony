@@ -1,5 +1,6 @@
 package com.theholymatrimony.backend.payments.dto;
 
+import com.theholymatrimony.backend.payments.enums.PaymentSource;
 import com.theholymatrimony.backend.payments.enums.PaymentStatus;
 import lombok.Builder;
 import lombok.Getter;
@@ -28,6 +29,18 @@ public class PaymentHistoryResponse {
     private String currency;
 
     private PaymentStatus status;
+
+    private PaymentSource paymentSource;
+
+    private String paymentMethod;
+
+    private String couponCode;
+
+    /*
+     * Successful Razorpay payments and successful coupon
+     * activations both have downloadable receipts.
+     */
+    private Boolean receiptAvailable;
 
     private LocalDateTime paidAt;
 

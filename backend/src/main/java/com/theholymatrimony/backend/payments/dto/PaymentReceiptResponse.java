@@ -19,20 +19,47 @@ public class PaymentReceiptResponse {
 
     private String invoiceNumber;
 
+    /*
+     * Razorpay identifiers are null for coupon transactions.
+     */
     private String razorpayOrderId;
 
     private String razorpayPaymentId;
 
+    /*
+     * RAZORPAY / COUPON
+     */
+    private String paymentSource;
+
+    /*
+     * UPI / CARD / NETBANKING / WALLET / COUPON
+     */
+    private String paymentMethod;
+
+    /*
+     * Example: HOLY100
+     */
+    private String couponCode;
+
+    /*
+     * Member details
+     */
     private String memberName;
 
     private String email;
 
     private String phone;
 
+    /*
+     * Membership details
+     */
     private String plan;
 
     private String billingCycle;
 
+    /*
+     * Transaction amount
+     */
     private Integer amountInPaise;
 
     private BigDecimal amountInRupees;
@@ -45,9 +72,16 @@ public class PaymentReceiptResponse {
 
     private LocalDateTime createdAt;
 
+    /*
+     * Company details printed on receipt
+     */
     private String companyName;
 
     private String companyGstin;
 
     private String companyAddress;
+
+    private String companyEmail;
+
+    private String companyWebsite;
 }

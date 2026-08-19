@@ -1,8 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
-import { cn } from "@/utils/cn";
+import {
+  useState,
+} from "react";
+
+import {
+  ChevronDown,
+  CircleHelp,
+  Sparkles,
+} from "lucide-react";
+
+import {
+  cn,
+} from "@/utils/cn";
 
 const faqs = [
   {
@@ -38,70 +48,119 @@ const faqs = [
 ];
 
 export default function FAQ() {
-  const [openIndex, setOpenIndex] = useState<number>(0);
+  const [
+    openIndex,
+    setOpenIndex,
+  ] =
+    useState<number>(0);
 
   return (
-    <section className="bg-slate-50 py-24">
-      <div className="container mx-auto max-w-4xl px-4">
-        <div className="mb-14 text-center">
-          <span className="rounded-full bg-primary/10 px-4 py-1 text-sm font-semibold text-primary">
+    <section className="bg-gradient-to-b from-slate-50 to-white py-14 sm:py-16">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6">
+        <div className="text-center">
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-[#B38B19]">
+            <Sparkles
+              size={10}
+            />
             Frequently Asked Questions
-          </span>
+          </div>
 
-          <h2 className="mt-6 text-4xl font-bold">
-            Have Questions?
+          <h2 className="mt-3 text-2xl font-black tracking-[-0.025em] text-[#0B2D5C] sm:text-3xl">
+            Membership questions
           </h2>
 
-          <p className="mt-4 text-gray-600">
-            Everything you need to know about Holy Matrimony memberships.
+          <p className="mt-2 text-xs leading-6 text-slate-500 sm:text-sm">
+            Everything you need to know before choosing or managing a Holy Matrimony membership.
           </p>
         </div>
 
-        <div className="space-y-5">
-          {faqs.map((faq, index) => {
-            const open = openIndex === index;
+        <div className="mt-7 space-y-2.5">
+          {faqs.map(
+            (
+              faq,
+              index
+            ) => {
+              const open =
+                openIndex ===
+                index;
 
-            return (
-              <div
-                key={faq.question}
-                className="overflow-hidden rounded-2xl border bg-white shadow-sm"
-              >
-                <button
-                  type="button"
-                  onClick={() =>
-                    setOpenIndex(open ? -1 : index)
-                  }
-                  className="flex w-full items-center justify-between px-6 py-5 text-left"
-                >
-                  <span className="text-lg font-semibold">
-                    {faq.question}
-                  </span>
-
-                  <ChevronDown
-                    className={cn(
-                      "transition-transform duration-300",
-                      open && "rotate-180"
-                    )}
-                  />
-                </button>
-
+              return (
                 <div
-                  className={cn(
-                    "grid transition-all duration-300",
+                  key={
+                    faq.question
+                  }
+                  className={[
+                    "overflow-hidden rounded-[16px] border bg-white transition",
+
                     open
-                      ? "grid-rows-[1fr]"
-                      : "grid-rows-[0fr]"
-                  )}
+                      ? "border-blue-200 shadow-[0_8px_24px_rgba(15,23,42,0.06)]"
+                      : "border-slate-200 hover:border-slate-300",
+                  ].join(" ")}
                 >
-                  <div className="overflow-hidden">
-                    <div className="border-t px-6 py-5 text-gray-600">
-                      {faq.answer}
+                  <button
+                    type="button"
+                    aria-expanded={
+                      open
+                    }
+                    onClick={() =>
+                      setOpenIndex(
+                        open
+                          ? -1
+                          : index
+                      )
+                    }
+                    className="flex w-full items-center gap-3 px-3.5 py-3 text-left sm:px-4"
+                  >
+                    <span
+                      className={[
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+
+                        open
+                          ? "bg-blue-50 text-[#0B2D5C]"
+                          : "bg-slate-50 text-slate-400",
+                      ].join(" ")}
+                    >
+                      <CircleHelp
+                        size={14}
+                      />
+                    </span>
+
+                    <span className="min-w-0 flex-1 text-xs font-black text-[#0B2D5C] sm:text-sm">
+                      {
+                        faq.question
+                      }
+                    </span>
+
+                    <ChevronDown
+                      size={16}
+                      className={cn(
+                        "shrink-0 text-slate-400 transition-transform duration-300",
+                        open &&
+                          "rotate-180 text-[#0B2D5C]"
+                      )}
+                    />
+                  </button>
+
+                  <div
+                    className={cn(
+                      "grid transition-all duration-300",
+                      open
+                        ? "grid-rows-[1fr]"
+                        : "grid-rows-[0fr]"
+                    )}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="border-t border-slate-100 px-3.5 py-3 text-[11px] leading-6 text-slate-500 sm:px-4 sm:text-xs">
+                        {
+                          faq.answer
+                        }
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            }
+          )}
         </div>
       </div>
     </section>

@@ -4,6 +4,7 @@ import com.razorpay.Utils;
 
 import com.theholymatrimony.backend.payments.entity.Payment;
 
+import com.theholymatrimony.backend.payments.enums.PaymentSource;
 import com.theholymatrimony.backend.payments.enums.PaymentStatus;
 
 import com.theholymatrimony.backend.payments.repository.PaymentRepository;
@@ -21,6 +22,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -84,9 +87,11 @@ public class RazorpayWebhookService {
         }
 
         /*
-         * Verify the signature using the exact
-         * raw request body before parsing it.
+         * IMPORTANT:
+         *
+         * Verify the exact raw request body before parsing.
          */
+
         boolean valid =
                 Utils.verifyWebhookSignature(
                         payload,
@@ -111,15 +116,25 @@ public class RazorpayWebhookService {
                 );
 
         String eventType =
-                event.optString(
-                        "event",
-                        ""
+                normalize(
+                        event.optString(
+                                "event",
+                                null
+                        )
                 );
 
         log.info(
                 "Razorpay webhook received: event={}",
                 eventType
         );
+
+        if (
+                eventType == null
+        ) {
+            throw new IllegalArgumentException(
+                    "Razorpay webhook event type is missing."
+            );
+        }
 
         switch (eventType) {
 
@@ -180,11 +195,42 @@ public class RazorpayWebhookService {
                         )
                 );
 
+        /*
+         * ========================================================
+         * ACTUAL RAZORPAY PAYMENT METHOD
+         * ========================================================
+         *
+         * Razorpay normally returns values such as:
+         *
+         * card
+         * upi
+         * netbanking
+         * wallet
+         * emi
+         *
+         * We store a normalized uppercase representation:
+         *
+         * CARD
+         * UPI
+         * NETBANKING
+         * WALLET
+         * EMI
+         */
+
+        String paymentMethod =
+                normalizePaymentMethod(
+                        paymentEntity.optString(
+                                "method",
+                                null
+                        )
+                );
+
         log.info(
-                "Processing Razorpay payment.captured: orderId={}, paymentId={}, gatewayStatus={}",
+                "Processing Razorpay payment.captured: orderId={}, paymentId={}, gatewayStatus={}, paymentMethod={}",
                 razorpayOrderId,
                 razorpayPaymentId,
-                gatewayStatus
+                gatewayStatus,
+                paymentMethod
         );
 
         if (
@@ -204,9 +250,10 @@ public class RazorpayWebhookService {
         }
 
         /*
-         * Be defensive even though this method
-         * is called only for payment.captured.
+         * Be defensive even though this method is only called
+         * for payment.captured.
          */
+
         if (
                 gatewayStatus != null &&
                 !"captured"
@@ -248,42 +295,47 @@ public class RazorpayWebhookService {
                         );
 
         /*
-         * Protect against assigning the same
-         * Razorpay payment to another local row.
+         * ========================================================
+         * DUPLICATE PAYMENT-ID PROTECTION
+         * ========================================================
          */
+
         paymentRepository
                 .findByRazorpayPaymentId(
                         razorpayPaymentId
                 )
-                .ifPresent(existingPayment -> {
+                .ifPresent(
+                        existingPayment -> {
 
-                    if (
-                            !existingPayment
-                                    .getId()
-                                    .equals(
-                                            payment.getId()
-                                    )
-                    ) {
+                            if (
+                                    !existingPayment
+                                            .getId()
+                                            .equals(
+                                                    payment.getId()
+                                            )
+                            ) {
 
-                        log.error(
-                                "Razorpay payment ID is already linked to another local payment: paymentId={}, existingLocalPaymentId={}, requestedLocalPaymentId={}",
-                                razorpayPaymentId,
-                                existingPayment.getId(),
-                                payment.getId()
-                        );
+                                log.error(
+                                        "Razorpay payment ID is already linked to another local payment: paymentId={}, existingLocalPaymentId={}, requestedLocalPaymentId={}",
+                                        razorpayPaymentId,
+                                        existingPayment.getId(),
+                                        payment.getId()
+                                );
 
-                        throw new IllegalArgumentException(
-                                "Razorpay payment ID is already associated with another payment."
-                        );
-                    }
-                });
+                                throw new IllegalArgumentException(
+                                        "Razorpay payment ID is already associated with another payment."
+                                );
+                            }
+                        }
+                );
 
         /*
-         * Browser verification may already have
-         * stored the payment ID.
+         * Browser verification may already have stored the
+         * Razorpay payment ID.
          *
-         * If so, it must match the webhook.
+         * If it has, it MUST match the webhook.
          */
+
         if (
                 payment.getRazorpayPaymentId() != null &&
                 !payment
@@ -309,10 +361,56 @@ public class RazorpayWebhookService {
         }
 
         /*
-         * PaymentFinalizationService performs
-         * idempotent SUCCESS + membership
-         * activation.
+         * ========================================================
+         * STORE PAYMENT SOURCE
+         * ========================================================
          */
+
+        payment.setPaymentSource(
+                PaymentSource.RAZORPAY
+        );
+
+        /*
+         * ========================================================
+         * STORE ACTUAL PAYMENT METHOD
+         * ========================================================
+         *
+         * Do this BEFORE finalization so the SUCCESS transaction
+         * and membership are persisted with the gateway method.
+         */
+
+        if (
+                paymentMethod != null
+        ) {
+            payment.setPaymentMethod(
+                    paymentMethod
+            );
+        }
+
+        /*
+         * Save before finalization.
+         *
+         * This also makes the payment method durable if the
+         * finalization method performs a flush.
+         */
+
+        paymentRepository.save(
+                payment
+        );
+
+        /*
+         * ========================================================
+         * FINALIZE SUCCESSFUL PAYMENT
+         * ========================================================
+         *
+         * PaymentFinalizationService performs idempotent:
+         *
+         * PENDING -> SUCCESS
+         * paidAt assignment
+         * Razorpay payment ID persistence
+         * membership activation
+         */
+
         paymentFinalizationService
                 .finalizeSuccessfulPayment(
                         payment,
@@ -321,10 +419,11 @@ public class RazorpayWebhookService {
                 );
 
         log.info(
-                "Razorpay payment finalized successfully: localPaymentId={}, orderId={}, paymentId={}",
+                "Razorpay payment finalized successfully: localPaymentId={}, orderId={}, paymentId={}, paymentMethod={}",
                 payment.getId(),
                 razorpayOrderId,
-                razorpayPaymentId
+                razorpayPaymentId,
+                paymentMethod
         );
     }
 
@@ -359,13 +458,24 @@ public class RazorpayWebhookService {
                         )
                 );
 
+        String paymentMethod =
+                normalizePaymentMethod(
+                        paymentEntity.optString(
+                                "method",
+                                null
+                        )
+                );
+
         log.info(
-                "Processing Razorpay payment.failed: orderId={}, paymentId={}",
+                "Processing Razorpay payment.failed: orderId={}, paymentId={}, paymentMethod={}",
                 razorpayOrderId,
-                razorpayPaymentId
+                razorpayPaymentId,
+                paymentMethod
         );
 
-        if (razorpayOrderId == null) {
+        if (
+                razorpayOrderId == null
+        ) {
 
             log.warn(
                     "Ignoring Razorpay payment.failed event because order_id is missing."
@@ -384,9 +494,10 @@ public class RazorpayWebhookService {
                             /*
                              * Webhook ordering is not guaranteed.
                              *
-                             * Never downgrade a payment already
+                             * Never downgrade a transaction already
                              * confirmed SUCCESS.
                              */
+
                             if (
                                     payment.getStatus()
                                             == PaymentStatus.SUCCESS
@@ -402,15 +513,28 @@ public class RazorpayWebhookService {
                                 return;
                             }
 
+                            payment.setPaymentSource(
+                                    PaymentSource.RAZORPAY
+                            );
+
+                            if (
+                                    paymentMethod != null
+                            ) {
+                                payment.setPaymentMethod(
+                                        paymentMethod
+                                );
+                            }
+
                             if (
                                     razorpayPaymentId != null &&
                                     (
                                             payment.getRazorpayPaymentId()
-                                                == null ||
+                                                    == null ||
                                             payment.getRazorpayPaymentId()
-                                                .isBlank()
+                                                    .isBlank()
                                     )
                             ) {
+
                                 payment.setRazorpayPaymentId(
                                         razorpayPaymentId
                                 );
@@ -425,10 +549,11 @@ public class RazorpayWebhookService {
                             );
 
                             log.info(
-                                    "Razorpay payment marked FAILED: localPaymentId={}, orderId={}, paymentId={}",
+                                    "Razorpay payment marked FAILED: localPaymentId={}, orderId={}, paymentId={}, paymentMethod={}",
                                     payment.getId(),
                                     razorpayOrderId,
-                                    razorpayPaymentId
+                                    razorpayPaymentId,
+                                    paymentMethod
                             );
                         },
                         () ->
@@ -455,7 +580,9 @@ public class RazorpayWebhookService {
                         "payload"
                 );
 
-        if (payload == null) {
+        if (
+                payload == null
+        ) {
             throw new IllegalArgumentException(
                     "Razorpay webhook payload is missing."
             );
@@ -466,7 +593,9 @@ public class RazorpayWebhookService {
                         "payment"
                 );
 
-        if (payment == null) {
+        if (
+                payment == null
+        ) {
             throw new IllegalArgumentException(
                     "Razorpay payment payload is missing."
             );
@@ -477,13 +606,42 @@ public class RazorpayWebhookService {
                         "entity"
                 );
 
-        if (entity == null) {
+        if (
+                entity == null
+        ) {
             throw new IllegalArgumentException(
                     "Razorpay payment entity is missing."
             );
         }
 
         return entity;
+    }
+
+    /*
+     * ============================================================
+     * PAYMENT METHOD NORMALIZATION
+     * ============================================================
+     */
+
+    private String normalizePaymentMethod(
+            String value
+    ) {
+
+        String normalized =
+                normalize(
+                        value
+                );
+
+        if (
+                normalized == null
+        ) {
+            return null;
+        }
+
+        return normalized
+                .toUpperCase(
+                        Locale.ROOT
+                );
     }
 
     /*
