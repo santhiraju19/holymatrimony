@@ -1,22 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import {
+  useState,
+} from "react";
 
 import {
   CheckCircle2,
   CreditCard,
+  Crown,
   Loader2,
+  LockKeyhole,
+  ReceiptText,
   ShieldCheck,
+  Sparkles,
   Tag,
 } from "lucide-react";
 
-import { useRouter } from "next/navigation";
+import {
+  useRouter,
+} from "next/navigation";
 
 import Button from "@/components/ui/button";
 
-import { useMembership } from "@/features/membership/context/MembershipContext";
+import {
+  useMembership,
+} from "@/features/membership/context/MembershipContext";
 
-import { paymentService } from "@/features/membership/services/payment.service";
+import {
+  paymentService,
+} from "@/features/membership/services/payment.service";
 
 import {
   membershipActivationService,
@@ -114,20 +126,20 @@ declare global {
 function getErrorMessage(
   error: unknown
 ): string {
-
   if (
     typeof error === "object" &&
     error !== null &&
     "response" in error
   ) {
-    const axiosError = error as {
-      response?: {
-        data?: {
-          message?: string;
-          error?: string;
+    const axiosError =
+      error as {
+        response?: {
+          data?: {
+            message?: string;
+            error?: string;
+          };
         };
       };
-    };
 
     return (
       axiosError.response?.data?.message ??
@@ -136,7 +148,9 @@ function getErrorMessage(
     );
   }
 
-  if (error instanceof Error) {
+  if (
+    error instanceof Error
+  ) {
     return error.message;
   }
 
@@ -149,70 +163,90 @@ function getErrorMessage(
  * ============================================================
  */
 
-function loadRazorpayScript(): Promise<boolean> {
+function loadRazorpayScript():
+  Promise<boolean> {
+  return new Promise(
+    (resolve) => {
+      if (
+        typeof window ===
+        "undefined"
+      ) {
+        resolve(false);
+        return;
+      }
 
-  return new Promise((resolve) => {
+      if (
+        window.Razorpay
+      ) {
+        resolve(true);
+        return;
+      }
 
-    if (
-      typeof window === "undefined"
-    ) {
-      resolve(false);
-      return;
-    }
+      const existingScript =
+        document.querySelector(
+          'script[src="https://checkout.razorpay.com/v1/checkout.js"]'
+        ) as
+          | HTMLScriptElement
+          | null;
 
-    if (window.Razorpay) {
-      resolve(true);
-      return;
-    }
+      if (
+        existingScript
+      ) {
+        existingScript.addEventListener(
+          "load",
+          () =>
+            resolve(
+              true
+            ),
+          {
+            once: true,
+          }
+        );
 
-    const existingScript =
-      document.querySelector(
-        'script[src="https://checkout.razorpay.com/v1/checkout.js"]'
-      ) as HTMLScriptElement | null;
+        existingScript.addEventListener(
+          "error",
+          () =>
+            resolve(
+              false
+            ),
+          {
+            once: true,
+          }
+        );
 
-    if (existingScript) {
+        return;
+      }
 
-      existingScript.addEventListener(
-        "load",
-        () => resolve(true),
-        {
-          once: true,
-        }
+      const script =
+        document.createElement(
+          "script"
+        );
+
+      script.src =
+        "https://checkout.razorpay.com/v1/checkout.js";
+
+      script.async =
+        true;
+
+      script.onload =
+        () => {
+          resolve(
+            true
+          );
+        };
+
+      script.onerror =
+        () => {
+          resolve(
+            false
+          );
+        };
+
+      document.body.appendChild(
+        script
       );
-
-      existingScript.addEventListener(
-        "error",
-        () => resolve(false),
-        {
-          once: true,
-        }
-      );
-
-      return;
     }
-
-    const script =
-      document.createElement(
-        "script"
-      );
-
-    script.src =
-      "https://checkout.razorpay.com/v1/checkout.js";
-
-    script.async = true;
-
-    script.onload = () => {
-      resolve(true);
-    };
-
-    script.onerror = () => {
-      resolve(false);
-    };
-
-    document.body.appendChild(
-      script
-    );
-  });
+  );
 }
 
 /*
@@ -222,7 +256,6 @@ function loadRazorpayScript(): Promise<boolean> {
  */
 
 export default function OrderSummary() {
-
   const router =
     useRouter();
 
@@ -241,22 +274,26 @@ export default function OrderSummary() {
   const [
     loading,
     setLoading,
-  ] = useState(false);
+  ] =
+    useState(false);
 
   const [
     success,
     setSuccess,
-  ] = useState(false);
+  ] =
+    useState(false);
 
   const [
     successMessage,
     setSuccessMessage,
-  ] = useState("");
+  ] =
+    useState("");
 
   const [
     error,
     setError,
-  ] = useState("");
+  ] =
+    useState("");
 
   if (!plan) {
     return null;
@@ -277,13 +314,18 @@ export default function OrderSummary() {
       .toUpperCase();
 
   const isEligiblePlan =
-    checkoutData.plan === "silver" ||
-    checkoutData.plan === "gold" ||
-    checkoutData.plan === "platinum";
+    checkoutData.plan ===
+      "silver" ||
+    checkoutData.plan ===
+      "gold" ||
+    checkoutData.plan ===
+      "platinum";
 
   const isHoly100Eligible =
-    normalizedCoupon === "HOLY100" &&
-    billingCycle === "monthly" &&
+    normalizedCoupon ===
+      "HOLY100" &&
+    billingCycle ===
+      "monthly" &&
     isEligiblePlan &&
     total === 0;
 
@@ -295,7 +337,6 @@ export default function OrderSummary() {
 
   function validateBillingDetails():
     boolean {
-
     if (
       !checkoutData.fullName ||
       !checkoutData.email ||
@@ -319,7 +360,6 @@ export default function OrderSummary() {
 
   async function activateWaivedPlan():
     Promise<void> {
-
     setError("");
 
     if (
@@ -329,7 +369,8 @@ export default function OrderSummary() {
     }
 
     if (
-      normalizedCoupon !== "HOLY100"
+      normalizedCoupon !==
+      "HOLY100"
     ) {
       setError(
         "Enter coupon code HOLY100 to activate this monthly plan free."
@@ -339,7 +380,8 @@ export default function OrderSummary() {
     }
 
     if (
-      billingCycle !== "monthly"
+      billingCycle !==
+      "monthly"
     ) {
       setError(
         "HOLY100 is valid only for monthly memberships."
@@ -348,7 +390,9 @@ export default function OrderSummary() {
       return;
     }
 
-    if (!isEligiblePlan) {
+    if (
+      !isEligiblePlan
+    ) {
       setError(
         "HOLY100 is valid only for Silver, Gold, and Platinum plans."
       );
@@ -356,7 +400,9 @@ export default function OrderSummary() {
       return;
     }
 
-    if (total !== 0) {
+    if (
+      total !== 0
+    ) {
       setError(
         "The coupon must reduce the total payable amount to ₹0."
       );
@@ -365,8 +411,9 @@ export default function OrderSummary() {
     }
 
     try {
-
-      setLoading(true);
+      setLoading(
+        true
+      );
 
       await membershipActivationService
         .activateHoly100({
@@ -385,25 +432,23 @@ export default function OrderSummary() {
         "Your membership is now active."
       );
 
-      setSuccess(true);
+      setSuccess(
+        true
+      );
 
       window.setTimeout(
         () => {
-
           resetCheckout();
 
           router.push(
             "/dashboard/membership?activated=true"
           );
-
         },
         1500
       );
-
     } catch (
       activationError
     ) {
-
       console.error(
         "Membership activation failed:",
         activationError
@@ -414,10 +459,10 @@ export default function OrderSummary() {
           activationError
         )
       );
-
     } finally {
-
-      setLoading(false);
+      setLoading(
+        false
+      );
     }
   }
 
@@ -429,7 +474,6 @@ export default function OrderSummary() {
 
   async function handlePayment():
     Promise<void> {
-
     setError("");
     setSuccess(false);
     setSuccessMessage("");
@@ -440,7 +484,9 @@ export default function OrderSummary() {
       return;
     }
 
-    if (!isEligiblePlan) {
+    if (
+      !isEligiblePlan
+    ) {
       setError(
         "Please select a valid paid membership plan."
       );
@@ -450,29 +496,26 @@ export default function OrderSummary() {
 
     /*
      * HOLY100 is a free monthly waiver.
-     *
-     * If it has legitimately reduced the
-     * payable amount to zero, use the waiver
-     * activation flow rather than Razorpay.
      */
-    if (isHoly100Eligible) {
-
+    if (
+      isHoly100Eligible
+    ) {
       await activateWaivedPlan();
-
       return;
     }
 
     /*
-     * Prevent an invalid/non-zero HOLY100
-     * attempt from being silently converted
-     * into a paid transaction.
+     * Prevent invalid HOLY100
+     * attempts from silently
+     * becoming paid transactions.
      */
     if (
-      normalizedCoupon === "HOLY100"
+      normalizedCoupon ===
+      "HOLY100"
     ) {
-
       if (
-        billingCycle !== "monthly"
+        billingCycle !==
+        "monthly"
       ) {
         setError(
           "HOLY100 is valid only for monthly memberships. Remove the coupon to continue with online payment."
@@ -481,7 +524,9 @@ export default function OrderSummary() {
         return;
       }
 
-      if (total !== 0) {
+      if (
+        total !== 0
+      ) {
         setError(
           "HOLY100 must reduce the monthly membership total to ₹0. Please review the coupon before continuing."
         );
@@ -491,15 +536,13 @@ export default function OrderSummary() {
     }
 
     try {
-
-      setLoading(true);
+      setLoading(
+        true
+      );
 
       /*
-       * --------------------------------------------------------
-       * Load Razorpay Checkout
-       * --------------------------------------------------------
+       * Load Razorpay Checkout.
        */
-
       const scriptLoaded =
         await loadRazorpayScript();
 
@@ -513,15 +556,9 @@ export default function OrderSummary() {
       }
 
       /*
-       * --------------------------------------------------------
-       * Create Razorpay Order on Backend
-       * --------------------------------------------------------
-       *
-       * The backend decides the real amount.
-       * We intentionally do NOT send the frontend
-       * calculated total to Razorpay.
+       * Backend determines
+       * authoritative order amount.
        */
-
       const order =
         await paymentService
           .createOrder(
@@ -543,175 +580,142 @@ export default function OrderSummary() {
         );
       }
 
-      /*
-       * --------------------------------------------------------
-       * Razorpay Checkout Options
-       * --------------------------------------------------------
-       */
-
       const options:
         RazorpayOptions = {
+          key:
+            order.key,
 
-        key:
-          order.key,
+          amount:
+            order.amount,
 
-        amount:
-          order.amount,
-
-        currency:
-          order.currency,
-
-        name:
-          "Holy Matrimony",
-
-        description:
-          `${selectedPlanName} - ${billingCycle} membership`,
-
-        order_id:
-          order.orderId,
-
-        prefill: {
+          currency:
+            order.currency,
 
           name:
-            checkoutData.fullName,
+            "Holy Matrimony",
 
-          email:
-            checkoutData.email,
+          description:
+            `${selectedPlanName} - ${billingCycle} membership`,
 
-          contact:
-            checkoutData.phone,
-        },
+          order_id:
+            order.orderId,
 
-        notes: {
+          prefill: {
+            name:
+              checkoutData.fullName,
 
-          plan:
-            checkoutData.plan,
+            email:
+              checkoutData.email,
 
-          billingCycle:
+            contact:
+              checkoutData.phone,
+          },
+
+          notes: {
+            plan:
+              checkoutData.plan,
+
             billingCycle,
-        },
-
-        theme: {
-          color:
-            "#0B2D5C",
-        },
-
-        retry: {
-          enabled:
-            true,
-        },
-
-        modal: {
-
-          confirm_close:
-            true,
-
-          ondismiss: () => {
-
-            setLoading(false);
-
-            setError(
-              "Payment was cancelled. No membership changes were made."
-            );
           },
-        },
 
-        /*
-         * ------------------------------------------------------
-         * Successful Checkout
-         * ------------------------------------------------------
-         */
+          theme: {
+            color:
+              "#0B2D5C",
+          },
 
-        handler:
-          async (
-            response:
-              RazorpaySuccessResponse
-          ) => {
+          retry: {
+            enabled:
+              true,
+          },
 
-            try {
+          modal: {
+            confirm_close:
+              true,
 
-              /*
-               * Always verify the Razorpay
-               * signature on the backend.
-               */
-              await paymentService
-                .verifyPayment({
+            ondismiss:
+              () => {
+                setLoading(
+                  false
+                );
 
-                  razorpay_order_id:
-                    response
-                      .razorpay_order_id,
+                setError(
+                  "Payment was cancelled. No membership changes were made."
+                );
+              },
+          },
 
-                  razorpay_payment_id:
-                    response
-                      .razorpay_payment_id,
+          handler:
+            async (
+              response:
+                RazorpaySuccessResponse
+            ) => {
+              try {
+                /*
+                 * Verify Razorpay
+                 * signature on backend.
+                 */
+                await paymentService
+                  .verifyPayment({
+                    razorpay_order_id:
+                      response
+                        .razorpay_order_id,
 
-                  razorpay_signature:
-                    response
-                      .razorpay_signature,
-                });
+                    razorpay_payment_id:
+                      response
+                        .razorpay_payment_id,
 
-              /*
-               * The webhook performs final
-               * captured-payment fulfilment.
-               */
-              setSuccessMessage(
-                "Payment completed successfully. Your membership is being activated."
-              );
+                    razorpay_signature:
+                      response
+                        .razorpay_signature,
+                  });
 
-              setSuccess(true);
-              setError("");
+                setSuccessMessage(
+                  "Payment completed successfully. Your membership is being activated."
+                );
 
-              window.setTimeout(
-                () => {
+                setSuccess(
+                  true
+                );
 
-                  resetCheckout();
+                setError(
+                  ""
+                );
 
-                  router.push(
-                    "/dashboard/membership?payment=success"
-                  );
+                window.setTimeout(
+                  () => {
+                    resetCheckout();
 
-                },
-                2500
-              );
-
-            } catch (
-              verificationError
-            ) {
-
-              console.error(
-                "Payment verification failed:",
+                    router.push(
+                      "/dashboard/membership?payment=success"
+                    );
+                  },
+                  2500
+                );
+              } catch (
                 verificationError
-              );
-
-              setError(
-                getErrorMessage(
+              ) {
+                console.error(
+                  "Payment verification failed:",
                   verificationError
-                )
-              );
+                );
 
-            } finally {
-
-              setLoading(false);
-            }
-          },
-      };
-
-      /*
-       * --------------------------------------------------------
-       * Open Razorpay Checkout
-       * --------------------------------------------------------
-       */
+                setError(
+                  getErrorMessage(
+                    verificationError
+                  )
+                );
+              } finally {
+                setLoading(
+                  false
+                );
+              }
+            },
+        };
 
       const razorpay =
         new window.Razorpay(
           options
         );
-
-      /*
-       * --------------------------------------------------------
-       * Razorpay Payment Failure
-       * --------------------------------------------------------
-       */
 
       razorpay.on(
         "payment.failed",
@@ -719,7 +723,6 @@ export default function OrderSummary() {
           response:
             RazorpayFailureResponse
         ) => {
-
           console.error(
             "Razorpay payment failed:",
             response
@@ -734,16 +737,16 @@ export default function OrderSummary() {
               "Payment failed. Please try again."
           );
 
-          setLoading(false);
+          setLoading(
+            false
+          );
         }
       );
 
       razorpay.open();
-
     } catch (
       paymentError
     ) {
-
       console.error(
         "Payment could not be started:",
         paymentError
@@ -755,314 +758,376 @@ export default function OrderSummary() {
         )
       );
 
-      setLoading(false);
+      setLoading(
+        false
+      );
     }
   }
 
-  /*
-   * ============================================================
-   * UI
-   * ============================================================
-   */
-
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+    <section className="overflow-hidden rounded-[18px] border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
 
-      <h2 className="text-xl font-black text-[#0B2D5C]">
-        Order Summary
-      </h2>
+      {/* =====================================================
+          Header
+          ===================================================== */}
 
-      {success && (
-        <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+      <div className="border-b border-slate-100 bg-gradient-to-r from-amber-50/70 via-white to-blue-50/50 px-4 py-3.5">
+        <div className="flex items-start gap-2.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#D4AF37] text-[#071B36] shadow-sm">
+            <ReceiptText
+              size={17}
+            />
+          </div>
 
-          <div className="flex items-start gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1">
+              <Sparkles
+                size={9}
+                className="text-[#B38B19]"
+              />
 
+              <p className="text-[8px] font-black uppercase tracking-[0.12em] text-[#B38B19]">
+                Review Membership
+              </p>
+            </div>
+
+            <h2 className="mt-0.5 text-base font-black text-[#0B2D5C]">
+              Order Summary
+            </h2>
+
+            <p className="mt-0.5 text-[10px] text-slate-500">
+              Confirm your plan before activation or payment.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4">
+
+        {/* =====================================================
+            Plan Highlight
+            ===================================================== */}
+
+        <div className="rounded-[15px] bg-gradient-to-r from-[#071B36] via-[#0B2D5C] to-[#174A87] p-3.5 text-white">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-[#F2D675]">
+                <Crown
+                  size={15}
+                />
+              </div>
+
+              <div>
+                <p className="text-[8px] font-bold uppercase tracking-[0.1em] text-blue-200">
+                  Selected plan
+                </p>
+
+                <p className="mt-0.5 text-sm font-black">
+                  {
+                    plan.name
+                  }
+                </p>
+              </div>
+            </div>
+
+            <span className="rounded-full border border-white/15 bg-white/10 px-2 py-1 text-[8px] font-black capitalize text-blue-100">
+              {
+                billingCycle
+              }
+            </span>
+          </div>
+        </div>
+
+        {/* =====================================================
+            Success / Error
+            ===================================================== */}
+
+        {success && (
+          <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
             <CheckCircle2
+              size={15}
               className="mt-0.5 shrink-0 text-emerald-600"
-              size={20}
             />
 
             <div>
-
-              <p className="font-bold text-emerald-800">
-                Payment Successful
+              <p className="text-[10px] font-black text-emerald-800">
+                Membership Successful
               </p>
 
-              <p className="mt-1 text-sm leading-6 text-emerald-700">
-                {successMessage}
-                {" "}
+              <p className="mt-0.5 text-[10px] leading-5 text-emerald-700">
+                {
+                  successMessage
+                }{" "}
                 Redirecting to your membership centre...
               </p>
-
             </div>
-          </div>
-        </div>
-      )}
-
-      {error && (
-        <div
-          role="alert"
-          className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700"
-        >
-          {error}
-        </div>
-      )}
-
-      <div className="mt-8 space-y-5">
-
-        <div className="flex justify-between gap-4">
-
-          <span className="text-slate-600">
-            Plan
-          </span>
-
-          <strong className="text-right text-slate-900">
-            {plan.name}
-          </strong>
-
-        </div>
-
-        <div className="flex justify-between gap-4">
-
-          <span className="text-slate-600">
-            Billing Cycle
-          </span>
-
-          <strong className="capitalize text-slate-900">
-            {billingCycle}
-          </strong>
-
-        </div>
-
-        <div className="flex justify-between gap-4">
-
-          <span className="text-slate-600">
-            Membership Fee
-          </span>
-
-          <strong className="text-slate-900">
-            ₹{subtotal.toLocaleString()}
-          </strong>
-
-        </div>
-
-        {discount > 0 && (
-          <div className="flex justify-between gap-4 text-emerald-600">
-
-            <span>
-              Discount{" "}
-
-              {couponCode && (
-                <span className="text-xs font-bold">
-                  ({normalizedCoupon})
-                </span>
-              )}
-            </span>
-
-            <strong>
-              -₹{discount.toLocaleString()}
-            </strong>
-
           </div>
         )}
 
-        <div className="flex justify-between gap-4">
+        {error && (
+          <div
+            role="alert"
+            className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[10px] font-semibold leading-5 text-red-700"
+          >
+            {error}
+          </div>
+        )}
 
-          <span className="text-slate-600">
-            GST (18%)
-          </span>
+        {/* =====================================================
+            Pricing Breakdown
+            ===================================================== */}
 
-          <strong className="text-slate-900">
-            ₹{gst.toLocaleString()}
-          </strong>
+        <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
+          <SummaryRow
+            label="Plan"
+            value={
+              plan.name
+            }
+          />
 
-        </div>
+          <SummaryRow
+            label="Billing Cycle"
+            value={
+              billingCycle
+            }
+            capitalize
+          />
 
-        <hr className="border-slate-200" />
+          <SummaryRow
+            label="Membership Fee"
+            value={`₹${subtotal.toLocaleString(
+              "en-IN"
+            )}`}
+          />
 
-        <div className="flex justify-between gap-4 text-xl font-bold">
-
-          <span className="text-slate-900">
-            Total Payable
-          </span>
-
-          <span className="text-[#0B2D5C]">
-            ₹{total.toLocaleString()}
-          </span>
-
-        </div>
-
-      </div>
-
-      {isHoly100Eligible ? (
-
-        <Button
-          className="mt-8 w-full"
-          onClick={() => {
-            void activateWaivedPlan();
-          }}
-          disabled={
-            loading ||
-            success
-          }
-        >
-
-          {loading ? (
-
-            <span className="inline-flex items-center gap-2">
-
-              <Loader2
-                size={18}
-                className="animate-spin"
-              />
-
-              Activating...
-
-            </span>
-
-          ) : success ? (
-
-            <span className="inline-flex items-center gap-2">
-
-              <CheckCircle2
-                size={18}
-              />
-
-              Activated
-
-            </span>
-
-          ) : (
-
-            <span className="inline-flex items-center gap-2">
-
-              <ShieldCheck
-                size={18}
-              />
-
-              Activate Membership
-
-            </span>
+          {discount > 0 && (
+            <SummaryRow
+              label={
+                couponCode
+                  ? `Discount (${normalizedCoupon})`
+                  : "Discount"
+              }
+              value={`-₹${discount.toLocaleString(
+                "en-IN"
+              )}`}
+              tone="green"
+            />
           )}
 
-        </Button>
+          <SummaryRow
+            label="GST (18%)"
+            value={`₹${gst.toLocaleString(
+              "en-IN"
+            )}`}
+          />
 
-      ) : (
-
-        <Button
-          className="mt-8 w-full"
-          onClick={() => {
-            void handlePayment();
-          }}
-          disabled={
-            loading ||
-            success
-          }
-        >
-
-          {loading ? (
-
-            <span className="inline-flex items-center gap-2">
-
-              <Loader2
-                size={18}
-                className="animate-spin"
-              />
-
-              Preparing Secure Payment...
-
+          <div className="flex items-center justify-between gap-4 border-t border-slate-200 bg-gradient-to-r from-blue-50/70 to-amber-50/50 px-3.5 py-3">
+            <span className="text-xs font-black text-[#0B2D5C]">
+              Total Payable
             </span>
 
-          ) : success ? (
-
-            <span className="inline-flex items-center gap-2">
-
-              <CheckCircle2
-                size={18}
-              />
-
-              Payment Completed
-
+            <span className="text-lg font-black text-[#0B2D5C]">
+              ₹
+              {total.toLocaleString(
+                "en-IN"
+              )}
             </span>
+          </div>
+        </div>
 
-          ) : (
+        {/* =====================================================
+            Main Action
+            ===================================================== */}
 
-            <span className="inline-flex items-center gap-2">
+        {isHoly100Eligible ? (
+          <Button
+            type="button"
+            fullWidth
+            className="mt-4 h-10"
+            disabled={
+              loading ||
+              success
+            }
+            onClick={() => {
+              void activateWaivedPlan();
+            }}
+          >
+            {loading ? (
+              <span className="inline-flex items-center gap-1.5">
+                <Loader2
+                  size={14}
+                  className="animate-spin"
+                />
 
-              <CreditCard
-                size={18}
-              />
+                Activating...
+              </span>
+            ) : success ? (
+              <span className="inline-flex items-center gap-1.5">
+                <CheckCircle2
+                  size={14}
+                />
 
-              Pay ₹{total.toLocaleString()}
+                Activated
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5">
+                <ShieldCheck
+                  size={14}
+                />
 
-            </span>
-          )}
+                Activate Membership
+              </span>
+            )}
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            fullWidth
+            className="mt-4 h-10"
+            disabled={
+              loading ||
+              success
+            }
+            onClick={() => {
+              void handlePayment();
+            }}
+          >
+            {loading ? (
+              <span className="inline-flex items-center gap-1.5">
+                <Loader2
+                  size={14}
+                  className="animate-spin"
+                />
 
-        </Button>
-      )}
+                Preparing Payment...
+              </span>
+            ) : success ? (
+              <span className="inline-flex items-center gap-1.5">
+                <CheckCircle2
+                  size={14}
+                />
 
-      {billingCycle === "monthly" ? (
+                Payment Completed
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5">
+                <CreditCard
+                  size={14}
+                />
 
-        <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                Pay ₹
+                {total.toLocaleString(
+                  "en-IN"
+                )}
+              </span>
+            )}
+          </Button>
+        )}
 
-          <div className="flex gap-3">
+        {/* =====================================================
+            Coupon / Payment Guidance
+            ===================================================== */}
 
+        {billingCycle ===
+        "monthly" ? (
+          <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2.5">
             <Tag
-              size={19}
+              size={13}
               className="mt-0.5 shrink-0 text-amber-700"
             />
 
-            <p className="text-sm leading-6 text-amber-800">
-
+            <p className="text-[10px] leading-5 text-amber-800">
               Use coupon{" "}
               <strong>
                 HOLY100
               </strong>{" "}
-              for a 100% waiver on Silver,
-              Gold, or Platinum monthly plans.
-
+              for a 100% waiver on Silver, Gold or Platinum monthly plans.
             </p>
-
           </div>
-        </div>
-
-      ) : (
-
-        <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-
-          <div className="flex gap-3">
-
+        ) : (
+          <div className="mt-3 flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2.5">
             <ShieldCheck
-              size={19}
+              size={13}
               className="mt-0.5 shrink-0 text-[#0B2D5C]"
             />
 
-            <p className="text-sm leading-6 text-slate-700">
-
-              Secure online payment is available
-              for{" "}
-
+            <p className="text-[10px] leading-5 text-slate-600">
+              Secure online payment is available for{" "}
               <strong className="capitalize">
-                {billingCycle}
+                {
+                  billingCycle
+                }
               </strong>{" "}
-
-              memberships. HOLY100 applies only
-              to monthly memberships.
-
+              memberships. HOLY100 applies only to monthly memberships.
             </p>
-
           </div>
+        )}
+
+        {/* =====================================================
+            Security
+            ===================================================== */}
+
+        <div className="mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-slate-50 px-3 py-2">
+          <LockKeyhole
+            size={11}
+            className="text-emerald-600"
+          />
+
+          <p className="text-center text-[9px] font-semibold leading-4 text-slate-400">
+            Payments are processed securely through Razorpay. Membership activation follows successful payment confirmation.
+          </p>
         </div>
-      )}
+      </div>
+    </section>
+  );
+}
 
-      <p className="mt-5 text-center text-xs leading-5 text-slate-500">
+type SummaryTone =
+  | "default"
+  | "green";
 
-        Payments are processed securely through
-        Razorpay. Your membership is activated
-        after successful payment confirmation.
+function SummaryRow({
+  label,
+  value,
+  capitalize = false,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  capitalize?: boolean;
+  tone?: SummaryTone;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-3.5 py-2.5 last:border-b-0">
+      <span
+        className={[
+          "text-[10px] font-semibold",
 
-      </p>
+          tone ===
+          "green"
+            ? "text-emerald-600"
+            : "text-slate-500",
+        ].join(" ")}
+      >
+        {label}
+      </span>
 
+      <strong
+        className={[
+          "text-right text-[11px]",
+
+          capitalize
+            ? "capitalize"
+            : "",
+
+          tone ===
+          "green"
+            ? "text-emerald-600"
+            : "text-slate-800",
+        ].join(" ")}
+      >
+        {value}
+      </strong>
     </div>
   );
 }

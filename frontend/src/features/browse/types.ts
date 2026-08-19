@@ -1,3 +1,8 @@
+export type BrowseSortOption =
+  | "RECOMMENDED"
+  | "NEWEST"
+  | "TRUST_VERIFIED";
+
 export interface BrowseProfile {
   id: string;
   userId: string;
@@ -47,18 +52,16 @@ export interface BrowseProfile {
   identityVerified: boolean;
 
   /*
-   * True only when the approved identity
-   * document is Aadhaar.
+   * Approved Aadhaar identity document.
    */
   aadhaarVerified: boolean;
 
   /*
-   * True when an approved non-Aadhaar identity
-   * document was used:
+   * Approved non-Aadhaar identity document:
    *
-   * - Passport
-   * - Driving Licence
-   * - Voter ID
+   * Passport
+   * Driving Licence
+   * Voter ID
    */
   idVerified: boolean;
 
@@ -109,14 +112,13 @@ export interface BrowseSearchFilters {
 
   baptized: string;
 
-  /*
-   * Verification filters are string-based because
-   * the existing Browse filter form uses the same
-   * onChange(name, value: string) contract.
-   */
+  // Trust filters
   aadhaarVerified: string;
   idVerified: string;
   churchVerified: string;
+
+  // Result ordering
+  sort: BrowseSortOption;
 }
 
 export interface BrowseSearchParams
@@ -140,6 +142,8 @@ export interface BrowseSearchParams
   aadhaarVerified?: boolean;
   idVerified?: boolean;
   churchVerified?: boolean;
+
+  sort?: BrowseSortOption;
 }
 
 export const EMPTY_BROWSE_SEARCH_FILTERS: BrowseSearchFilters = {
@@ -162,14 +166,42 @@ export const EMPTY_BROWSE_SEARCH_FILTERS: BrowseSearchFilters = {
   aadhaarVerified: "",
   idVerified: "",
   churchVerified: "",
+
+  sort: "RECOMMENDED",
 };
 
 export function hasActiveBrowseFilters(
   filters: BrowseSearchFilters
 ): boolean {
-  return Object.values(filters).some(
-    (value) =>
-      value.trim().length > 0
+  return (
+    filters.ageFrom.trim().length >
+      0 ||
+    filters.ageTo.trim().length >
+      0 ||
+    filters.gender.trim().length >
+      0 ||
+    filters.denomination.trim()
+      .length > 0 ||
+    filters.maritalStatus.trim()
+      .length > 0 ||
+    filters.country.trim().length >
+      0 ||
+    filters.state.trim().length >
+      0 ||
+    filters.city.trim().length >
+      0 ||
+    filters.highestEducation
+      .trim().length > 0 ||
+    filters.profession.trim()
+      .length > 0 ||
+    filters.baptized.trim().length >
+      0 ||
+    filters.aadhaarVerified ===
+      "true" ||
+    filters.idVerified === "true" ||
+    filters.churchVerified ===
+      "true" ||
+    filters.sort !== "RECOMMENDED"
   );
 }
 
@@ -180,6 +212,7 @@ export function buildBrowseSearchParams(
   const params: BrowseSearchParams = {
     page: pagination.page ?? 0,
     size: pagination.size ?? 12,
+    sort: filters.sort,
   };
 
   const ageFrom =

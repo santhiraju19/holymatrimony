@@ -2,6 +2,13 @@
 
 import Link from "next/link";
 
+import {
+  ArrowLeft,
+  HeartHandshake,
+  MapPin,
+  Sparkles,
+} from "lucide-react";
+
 import InterestButton from "@/features/interests/components/InterestButton";
 import ShortlistButton from "@/features/shortlist/components/ShortlistButton";
 
@@ -85,19 +92,29 @@ export default function ProfileDetailsHeader({
   const hasTrustBadge =
     Boolean(
       profile.aadhaarVerified ||
-      profile.idVerified ||
-      profile.churchVerified
+        profile.idVerified ||
+        profile.churchVerified
+    );
+
+  const completion =
+    Math.min(
+      Math.max(
+        profile.completionPercentage ??
+          0,
+        0
+      ),
+      100
     );
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="grid lg:grid-cols-[380px_1fr]">
+    <section className="overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.07)]">
+      <div className="grid lg:grid-cols-[310px_minmax(0,1fr)]">
 
         {/* =====================================================
-            Profile Photo
+            Compact Profile Photo
             ===================================================== */}
 
-        <div className="relative min-h-[460px] overflow-hidden bg-gradient-to-br from-blue-100 via-indigo-50 to-slate-100">
+        <div className="relative min-h-[310px] overflow-hidden bg-gradient-to-br from-blue-100 via-indigo-50 to-slate-100 sm:min-h-[340px] lg:min-h-[360px]">
           {photoUrl ? (
             <img
               src={photoUrl}
@@ -105,8 +122,8 @@ export default function ProfileDetailsHeader({
               className="absolute inset-0 h-full w-full object-cover"
             />
           ) : (
-            <div className="flex min-h-[460px] items-center justify-center">
-              <div className="flex h-32 w-32 items-center justify-center rounded-full bg-white text-4xl font-bold text-blue-700 shadow-lg">
+            <div className="flex h-full min-h-[310px] items-center justify-center">
+              <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white bg-white/90 text-2xl font-black text-blue-700 shadow-xl backdrop-blur">
                 {getInitials(
                   displayName
                 )}
@@ -114,106 +131,119 @@ export default function ProfileDetailsHeader({
             </div>
           )}
 
-          {/* ===================================================
-              Premium Trust Badge Contrast
-              =================================================== */}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#020817]/80 via-transparent to-black/25" />
 
+          {/* Trust badges on photo */}
           {hasTrustBadge && (
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-32 bg-gradient-to-b from-black/45 via-black/15 to-transparent" />
-          )}
-
-          {/* ===================================================
-              Premium Trust Badges
-              =================================================== */}
-
-          {hasTrustBadge && (
-            <div className="absolute left-4 right-4 top-4 z-10">
+            <div className="absolute left-3 right-3 top-3 z-10">
               <ProfileTrustBadges
                 profile={profile}
+                compact
                 overlay
               />
             </div>
           )}
+
+          {/* Identity on photo for mobile */}
+          <div className="absolute inset-x-0 bottom-0 p-4 lg:hidden">
+            <h1 className="truncate text-2xl font-black tracking-[-0.03em] text-white">
+              {displayName}
+            </h1>
+
+            {summary && (
+              <p className="mt-1 text-sm font-semibold text-white/85">
+                {summary}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* =====================================================
             Profile Information
             ===================================================== */}
 
-        <div className="flex flex-col justify-between p-6 sm:p-8 lg:p-10">
-          <div>
+        <div className="relative flex min-w-0 flex-col justify-between p-5 sm:p-6 lg:p-7">
+
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute right-0 top-0 h-44 w-44 rounded-full bg-blue-100/50 blur-3xl"
+          />
+
+          <div className="relative z-10">
             <Link
               href="/browse"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition hover:text-blue-800"
+              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-bold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"
             >
-              <span aria-hidden="true">
-                ←
-              </span>
+              <ArrowLeft
+                size={14}
+              />
 
               Back to profiles
             </Link>
 
-            {/* =================================================
-                Name / Completion / Summary
-                ================================================= */}
-
-            <div className="mt-7">
+            {/* Desktop identity */}
+            <div className="mt-4 hidden lg:block">
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+                <h1 className="text-3xl font-black tracking-[-0.04em] text-[#0B2D5C]">
                   {displayName}
                 </h1>
 
-                {profile.completionPercentage !=
-                  null && (
-                  <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700">
-                    {
-                      profile
-                        .completionPercentage
-                    }
-                    % complete
+                {completion > 0 && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-black text-blue-700">
+                    <Sparkles
+                      size={12}
+                    />
+
+                    {completion}% Complete
                   </span>
                 )}
               </div>
 
               {summary && (
-                <p className="mt-3 text-lg text-slate-600">
+                <p className="mt-2 text-sm font-semibold text-slate-500">
                   {summary}
                 </p>
               )}
-
-              {location && (
-                <p className="mt-2 text-base font-medium text-slate-700">
-                  📍 {location}
-                </p>
-              )}
-
-              {/* =================================================
-                  Public Trust Credentials
-                  ================================================= */}
-
-              {hasTrustBadge && (
-                <div className="mt-5">
-                  <ProfileTrustBadges
-                    profile={profile}
-                  />
-                </div>
-              )}
             </div>
 
-            {/* =================================================
-                About
-                ================================================= */}
+            {/* Location */}
+            {location && (
+              <div className="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600">
+                <MapPin
+                  size={15}
+                  className="shrink-0 text-blue-600"
+                />
 
+                {location}
+              </div>
+            )}
+
+            {/* Desktop trust badges */}
+            {hasTrustBadge && (
+              <div className="mt-4 hidden lg:block">
+                <ProfileTrustBadges
+                  profile={profile}
+                />
+              </div>
+            )}
+
+            {/* About */}
             {profile.aboutMe && (
-              <div className="mt-8">
-                <h2 className="text-lg font-bold text-slate-900">
-                  About
-                </h2>
+              <div className="mt-5 rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 via-white to-blue-50/30 p-4">
+                <div className="flex items-center gap-2">
+                  <HeartHandshake
+                    size={16}
+                    className="text-[#0B2D5C]"
+                  />
 
-                <p className="mt-3 whitespace-pre-line leading-7 text-slate-600">
+                  <h2 className="text-sm font-black text-[#0B2D5C]">
+                    About
+                  </h2>
+                </div>
+
+                <p className="mt-2 line-clamp-4 whitespace-pre-line text-sm leading-6 text-slate-600">
                   {
-                    profile
-                      .aboutMe
+                    profile.aboutMe
                   }
                 </p>
               </div>
@@ -224,7 +254,7 @@ export default function ProfileDetailsHeader({
               Actions
               =================================================== */}
 
-          <div className="mt-10 grid gap-3 sm:grid-cols-2">
+          <div className="relative z-10 mt-5 grid gap-2.5 sm:grid-cols-2">
             <InterestButton
               receiverProfileId={
                 profile.id
@@ -246,6 +276,8 @@ export default function ProfileDetailsHeader({
           </div>
         </div>
       </div>
+
+      <div className="h-[2px] bg-gradient-to-r from-transparent via-[#D4AF37]/65 to-transparent" />
     </section>
   );
 }

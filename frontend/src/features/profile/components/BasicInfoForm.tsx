@@ -100,7 +100,8 @@ function calculateAge(
     return "";
   }
 
-  const today = new Date();
+  const today =
+    new Date();
 
   if (birthDate > today) {
     return "";
@@ -132,7 +133,8 @@ function calculateAge(
 }
 
 function getMaximumDateOfBirth(): string {
-  const today = new Date();
+  const today =
+    new Date();
 
   const maximumDate =
     new Date(
@@ -184,12 +186,6 @@ export default function BasicInfoForm({
   const maximumDateOfBirth =
     getMaximumDateOfBirth();
 
-  /*
-   * Current-location cities.
-   *
-   * Current profile location is separate
-   * from the member's Family Location.
-   */
   const states =
     locationInfo.country
       ? getStatesForCountry(
@@ -230,58 +226,47 @@ export default function BasicInfoForm({
   function clearError(
     field: keyof BasicFormErrors
   ): void {
-    setErrors(
-      (current) => {
-        if (!current[field]) {
-          return current;
-        }
-
-        const next = {
-          ...current,
-        };
-
-        delete next[field];
-
-        return next;
+    setErrors((current) => {
+      if (!current[field]) {
+        return current;
       }
-    );
-  }
 
-  /*
-   * =========================================================
-   * Basic information
-   * =========================================================
-   */
+      const next = {
+        ...current,
+      };
+
+      delete next[field];
+
+      return next;
+    });
+  }
 
   function updateBasicInfo(
     field: keyof BasicInfo,
     value: string
   ): void {
-    setProfile(
-      (previous) => {
-        const updatedBasicInfo = {
-          ...previous.basicInfo,
-          [field]: value,
-        };
+    setProfile((previous) => {
+      const updatedBasicInfo = {
+        ...previous.basicInfo,
+        [field]: value,
+      };
 
-        if (
-          field ===
-          "dateOfBirth"
-        ) {
-          updatedBasicInfo.age =
-            calculateAge(
-              value
-            );
-        }
-
-        return {
-          ...previous,
-
-          basicInfo:
-            updatedBasicInfo,
-        };
+      if (
+        field ===
+        "dateOfBirth"
+      ) {
+        updatedBasicInfo.age =
+          calculateAge(
+            value
+          );
       }
-    );
+
+      return {
+        ...previous,
+        basicInfo:
+          updatedBasicInfo,
+      };
+    });
 
     clearError(field);
 
@@ -293,56 +278,42 @@ export default function BasicInfoForm({
     }
   }
 
-  /*
-   * =========================================================
-   * Current location
-   * =========================================================
-   */
-
   function updateLocation(
     field: keyof LocationInfo,
     value: string
   ): void {
-    setProfile(
-      (previous) => {
-        let nextLocation = {
-          ...previous.locationInfo,
-          [field]: value,
-        };
+    setProfile((previous) => {
+      let nextLocation = {
+        ...previous.locationInfo,
+        [field]: value,
+      };
 
-        /*
-         * Changing country resets state/city.
-         */
-        if (
-          field === "country"
-        ) {
-          nextLocation = {
-            country: value,
-            state: "",
-            city: "",
-          };
-        }
-
-        /*
-         * Changing state resets city.
-         */
-        if (
-          field === "state"
-        ) {
-          nextLocation = {
-            ...previous.locationInfo,
-            state: value,
-            city: "",
-          };
-        }
-
-        return {
-          ...previous,
-          locationInfo:
-            nextLocation,
+      if (
+        field === "country"
+      ) {
+        nextLocation = {
+          country: value,
+          state: "",
+          city: "",
         };
       }
-    );
+
+      if (
+        field === "state"
+      ) {
+        nextLocation = {
+          ...previous.locationInfo,
+          state: value,
+          city: "",
+        };
+      }
+
+      return {
+        ...previous,
+        locationInfo:
+          nextLocation,
+      };
+    });
 
     clearError(field);
 
@@ -360,37 +331,23 @@ export default function BasicInfoForm({
     }
   }
 
-  /*
-   * =========================================================
-   * About Me
-   * =========================================================
-   */
-
   function updateAboutInfo(
     field: keyof AboutInfo,
     value: string
   ): void {
-    setProfile(
-      (previous) => ({
-        ...previous,
+    setProfile((previous) => ({
+      ...previous,
 
-        aboutInfo: {
-          ...previous.aboutInfo,
-          [field]: value,
-        },
-      })
-    );
+      aboutInfo: {
+        ...previous.aboutInfo,
+        [field]: value,
+      },
+    }));
 
     clearError(
       "aboutMe"
     );
   }
-
-  /*
-   * =========================================================
-   * Continue
-   * =========================================================
-   */
 
   function handleContinue(): void {
     const validationErrors =
@@ -419,71 +376,66 @@ export default function BasicInfoForm({
 
   return (
     <Card className="overflow-hidden p-0">
-      {/* Header */}
 
-      <div className="border-b border-slate-200 bg-gradient-to-r from-blue-50 via-white to-amber-50 px-4 py-4 sm:px-5 sm:py-5 lg:px-6">
-        <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0B2D5C] text-white shadow-lg ">
+      {/* =====================================================
+          Compact Step Header
+          ===================================================== */}
+
+      <div className="border-b border-slate-100 bg-gradient-to-r from-blue-50/80 via-white to-amber-50/55 px-4 py-3.5 sm:px-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0B2D5C] to-blue-700 text-white shadow-sm">
             <User
-              size={25}
+              size={17}
             />
           </div>
 
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#B38B19]">
+            <p className="text-[9px] font-black uppercase tracking-[0.13em] text-[#B38B19]">
               Step 1 of 7
             </p>
 
-            <h2 className="mt-1 text-xl font-bold tracking-tight text-[#0B2D5C] sm:text-2xl">
+            <h2 className="mt-0.5 text-base font-black tracking-[-0.02em] text-[#0B2D5C] sm:text-lg">
               Basic Information
             </h2>
 
-            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">
-              Introduce yourself,
-              share your current
-              location and tell
-              potential matches a
-              little about yourself.
+            <p className="mt-0.5 max-w-2xl text-[11px] leading-5 text-slate-500 sm:text-xs">
+              Introduce yourself, share your location and tell potential matches a little about your life.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="p-4 sm:p-5 lg:p-6">
-        <div className="mb-5 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-blue-800">
-          All profile information
-          marked with a red{" "}
-          <span className="font-bold text-red-500">
+      <div className="p-4 sm:p-5">
+
+        {/* Required reminder */}
+
+        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2.5 text-[11px] leading-5 text-blue-800">
+          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-blue-100 font-black text-blue-700">
             *
-          </span>{" "}
-          is required to reach
-          100% profile completion
-          and become eligible for
-          profile verification.
+          </span>
+
+          <p>
+            Fields marked with a red{" "}
+            <span className="font-black text-red-500">
+              *
+            </span>{" "}
+            are required for profile completion and verification eligibility.
+          </p>
         </div>
 
         {/* =====================================================
-            Personal details
+            Personal Details
             ===================================================== */}
 
-        <div className="mb-5 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-[#0B2D5C]">
-            <User size={19} />
-          </div>
+        <SectionHeading
+          icon={
+            <User size={15} />
+          }
+          title="Personal Details"
+          description="Your personal and contact information."
+        />
 
-          <div>
-            <h3 className="font-bold text-[#0B2D5C]">
-              Personal Details
-            </h3>
-
-            <p className="text-sm text-slate-500">
-              Your personal and
-              contact information.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-2">
+        <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-2">
           <FormField
             label="Full Name"
             required
@@ -492,12 +444,13 @@ export default function BasicInfoForm({
               errors.fullName
             }
           >
-            <div className="relative">
-              <User
-                size={18}
-                className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400"
-              />
-
+            <IconField
+              icon={
+                <User
+                  size={16}
+                />
+              }
+            >
               <Input
                 id="profile-full-name"
                 autoComplete="name"
@@ -508,7 +461,7 @@ export default function BasicInfoForm({
                   errors.fullName
                 }
                 placeholder="Enter your full name"
-                className="pl-11"
+                className="pl-10"
                 onChange={(event) =>
                   updateBasicInfo(
                     "fullName",
@@ -516,7 +469,7 @@ export default function BasicInfoForm({
                   )
                 }
               />
-            </div>
+            </IconField>
           </FormField>
 
           <FormField
@@ -527,12 +480,13 @@ export default function BasicInfoForm({
               errors.email
             }
           >
-            <div className="relative">
-              <Mail
-                size={18}
-                className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400"
-              />
-
+            <IconField
+              icon={
+                <Mail
+                  size={16}
+                />
+              }
+            >
               <Input
                 id="profile-email"
                 type="email"
@@ -544,7 +498,7 @@ export default function BasicInfoForm({
                   errors.email
                 }
                 placeholder="name@example.com"
-                className="pl-11"
+                className="pl-10"
                 onChange={(event) =>
                   updateBasicInfo(
                     "email",
@@ -552,7 +506,7 @@ export default function BasicInfoForm({
                   )
                 }
               />
-            </div>
+            </IconField>
           </FormField>
 
           <FormField
@@ -564,12 +518,13 @@ export default function BasicInfoForm({
             }
             helperText="Include your country code, for example +91."
           >
-            <div className="relative">
-              <Phone
-                size={18}
-                className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400"
-              />
-
+            <IconField
+              icon={
+                <Phone
+                  size={16}
+                />
+              }
+            >
               <Input
                 id="profile-mobile"
                 type="tel"
@@ -582,7 +537,7 @@ export default function BasicInfoForm({
                   errors.mobile
                 }
                 placeholder="+91 98765 43210"
-                className="pl-11"
+                className="pl-10"
                 onChange={(event) =>
                   updateBasicInfo(
                     "mobile",
@@ -590,7 +545,7 @@ export default function BasicInfoForm({
                   )
                 }
               />
-            </div>
+            </IconField>
           </FormField>
 
           <FormField
@@ -602,12 +557,13 @@ export default function BasicInfoForm({
             }
             helperText="You must be at least 18 years old."
           >
-            <div className="relative">
-              <CalendarDays
-                size={18}
-                className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400"
-              />
-
+            <IconField
+              icon={
+                <CalendarDays
+                  size={16}
+                />
+              }
+            >
               <Input
                 id="profile-date-of-birth"
                 type="date"
@@ -620,7 +576,7 @@ export default function BasicInfoForm({
                 error={
                   errors.dateOfBirth
                 }
-                className="pl-11"
+                className="pl-10"
                 onChange={(event) =>
                   updateBasicInfo(
                     "dateOfBirth",
@@ -628,7 +584,7 @@ export default function BasicInfoForm({
                   )
                 }
               />
-            </div>
+            </IconField>
           </FormField>
 
           <FormField
@@ -637,7 +593,7 @@ export default function BasicInfoForm({
             error={
               errors.age
             }
-            helperText="Calculated automatically from your date of birth."
+            helperText="Calculated automatically."
           >
             <Input
               id="profile-age"
@@ -650,7 +606,7 @@ export default function BasicInfoForm({
               placeholder="Calculated automatically"
               readOnly
               aria-readonly="true"
-              className="cursor-not-allowed bg-slate-100 font-semibold text-slate-700"
+              className="cursor-not-allowed bg-slate-50 font-semibold text-slate-700"
             />
           </FormField>
 
@@ -700,45 +656,47 @@ export default function BasicInfoForm({
             }
             className="md:col-span-2"
           >
-            <div className="relative md:max-w-[calc(50%-0.75rem)]">
-              <Heart
-                size={18}
-                className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400"
-              />
-
-              <Select
-                id="profile-marital-status"
-                value={
-                  basicInfo.maritalStatus
-                }
-                error={
-                  errors.maritalStatus
-                }
-                className="pl-11"
-                onChange={(event) =>
-                  updateBasicInfo(
-                    "maritalStatus",
-                    event.target.value
-                  )
+            <div className="relative md:max-w-[calc(50%-0.5rem)]">
+              <IconField
+                icon={
+                  <Heart
+                    size={16}
+                  />
                 }
               >
-                <option value="">
-                  Select marital
-                  status
-                </option>
+                <Select
+                  id="profile-marital-status"
+                  value={
+                    basicInfo.maritalStatus
+                  }
+                  error={
+                    errors.maritalStatus
+                  }
+                  className="pl-10"
+                  onChange={(event) =>
+                    updateBasicInfo(
+                      "maritalStatus",
+                      event.target.value
+                    )
+                  }
+                >
+                  <option value="">
+                    Select marital status
+                  </option>
 
-                <option value="Never Married">
-                  Never Married
-                </option>
+                  <option value="Never Married">
+                    Never Married
+                  </option>
 
-                <option value="Divorced">
-                  Divorced
-                </option>
+                  <option value="Divorced">
+                    Divorced
+                  </option>
 
-                <option value="Widowed">
-                  Widowed
-                </option>
-              </Select>
+                  <option value="Widowed">
+                    Widowed
+                  </option>
+                </Select>
+              </IconField>
             </div>
           </FormField>
         </div>
@@ -747,28 +705,20 @@ export default function BasicInfoForm({
             Current Location
             ===================================================== */}
 
-        <div className="my-8 border-t border-slate-200" />
+        <SectionDivider />
 
-        <div className="mb-5 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-            <MapPin size={19} />
-          </div>
+        <SectionHeading
+          icon={
+            <MapPin
+              size={15}
+            />
+          }
+          title="Current Location"
+          description="Where you currently live. This is separate from your family location."
+          variant="green"
+        />
 
-          <div>
-            <h3 className="font-bold text-[#0B2D5C]">
-              Current Location
-            </h3>
-
-            <p className="text-sm text-slate-500">
-              Tell matches where
-              you currently live.
-              This is separate from
-              your family location.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-3">
+        <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-3">
           <FormField
             label="Country"
             required
@@ -874,9 +824,7 @@ export default function BasicInfoForm({
               {states.map(
                 (state) => (
                   <option
-                    key={
-                      `${locationInfo.country}-${state.isoCode}`
-                    }
+                    key={`${locationInfo.country}-${state.isoCode}`}
                     value={
                       state.value
                     }
@@ -957,69 +905,65 @@ export default function BasicInfoForm({
             About Me
             ===================================================== */}
 
-        <div className="my-8 border-t border-slate-200" />
+        <SectionDivider />
 
-        <div className="mb-5 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-[#B38B19]">
+        <SectionHeading
+          icon={
             <MessageSquareText
-              size={19}
+              size={15}
             />
-          </div>
+          }
+          title="About Me"
+          description="Share a genuine introduction about your faith, values, personality and life."
+          variant="gold"
+        />
 
-          <div>
-            <h3 className="font-bold text-[#0B2D5C]">
-              About Me
-            </h3>
+        <div className="mt-3">
+          <FormField
+            label="Tell Us About Yourself"
+            required
+            htmlFor="profile-about-me"
+            error={
+              errors.aboutMe
+            }
+            helperText={`${aboutInfo.aboutMe.trim().length}/2000 characters`}
+          >
+            <textarea
+              id="profile-about-me"
+              value={
+                aboutInfo.aboutMe
+              }
+              maxLength={2000}
+              rows={5}
+              placeholder="For example: I am a family-oriented Christian who values faith, honesty and meaningful relationships..."
+              className={[
+                "w-full resize-y rounded-xl border bg-white px-3.5 py-3 text-sm leading-6 text-slate-900 outline-none transition",
+                "placeholder:text-slate-400",
+                "focus:border-[#0B2D5C] focus:ring-4 focus:ring-blue-100/80",
 
-            <p className="text-sm text-slate-500">
-              Share a genuine
-              introduction about
-              your faith, values,
-              personality and life.
-            </p>
-          </div>
+                errors.aboutMe
+                  ? "border-red-300 focus:border-red-500 focus:ring-red-100"
+                  : "border-slate-200",
+              ].join(" ")}
+              onChange={(event) =>
+                updateAboutInfo(
+                  "aboutMe",
+                  event.target.value
+                )
+              }
+            />
+          </FormField>
         </div>
 
-        <FormField
-          label="Tell Us About Yourself"
-          required
-          htmlFor="profile-about-me"
-          error={
-            errors.aboutMe
-          }
-          helperText={`${aboutInfo.aboutMe.trim().length}/2000 characters`}
-        >
-          <textarea
-            id="profile-about-me"
-            value={
-              aboutInfo.aboutMe
-            }
-            maxLength={2000}
-            rows={7}
-            placeholder="For example: I am a family-oriented Christian who values faith, honesty and meaningful relationships. I enjoy spending time with family, serving at church..."
-            className={[
-              "w-full resize-y rounded-xl border bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition",
-              "placeholder:text-slate-400",
-              "focus:border-[#0B2D5C] focus:ring-4 focus:ring-blue-100",
-              errors.aboutMe
-                ? "border-red-300 focus:border-red-500 focus:ring-red-100"
-                : "border-slate-300",
-            ].join(" ")}
-            onChange={(event) =>
-              updateAboutInfo(
-                "aboutMe",
-                event.target.value
-              )
-            }
-          />
-        </FormField>
+        {/* =====================================================
+            Navigation
+            ===================================================== */}
 
-        {/* Navigation */}
-
-        <div className="mt-10 flex flex-col-reverse gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-6 flex flex-col-reverse gap-2.5 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
           <Button
             type="button"
             variant="secondary"
+            size="sm"
             disabled
             fullWidth
             className="sm:w-auto"
@@ -1030,13 +974,14 @@ export default function BasicInfoForm({
           <Button
             type="button"
             variant="primary"
+            size="sm"
             fullWidth
             rightIcon={
               <Users
-                size={18}
+                size={15}
               />
             }
-            className="sm:w-auto"
+            className="sm:min-w-[150px] sm:w-auto"
             onClick={
               handleContinue
             }
@@ -1046,5 +991,83 @@ export default function BasicInfoForm({
         </div>
       </div>
     </Card>
+  );
+}
+
+function IconField({
+  icon,
+  children,
+}: {
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-slate-400">
+        {icon}
+      </span>
+
+      {children}
+    </div>
+  );
+}
+
+type SectionHeadingVariant =
+  | "blue"
+  | "green"
+  | "gold";
+
+function SectionHeading({
+  icon,
+  title,
+  description,
+  variant = "blue",
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  variant?: SectionHeadingVariant;
+}) {
+  const styles: Record<
+    SectionHeadingVariant,
+    string
+  > = {
+    blue:
+      "bg-blue-50 text-[#0B2D5C]",
+
+    green:
+      "bg-emerald-50 text-emerald-700",
+
+    gold:
+      "bg-amber-50 text-[#B38B19]",
+  };
+
+  return (
+    <div className="flex items-start gap-2.5">
+      <div
+        className={[
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+          styles[variant],
+        ].join(" ")}
+      >
+        {icon}
+      </div>
+
+      <div className="min-w-0">
+        <h3 className="text-sm font-black text-[#0B2D5C]">
+          {title}
+        </h3>
+
+        <p className="mt-0.5 text-[11px] leading-5 text-slate-500">
+          {description}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function SectionDivider() {
+  return (
+    <div className="my-5 border-t border-slate-100" />
   );
 }

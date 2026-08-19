@@ -1,73 +1,119 @@
 "use client";
 
-import { forwardRef, TextareaHTMLAttributes } from "react";
+import {
+  forwardRef,
+  TextareaHTMLAttributes,
+} from "react";
 
-interface Props
+import {
+  AlertCircle,
+} from "lucide-react";
+
+import { cn } from "@/utils/cn";
+
+interface TextareaProps
   extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
-  helperText?: string;
   error?: string;
-  required?: boolean;
+  hint?: string;
 }
 
-const Textarea = forwardRef<HTMLTextAreaElement, Props>(
+const Textarea = forwardRef<
+  HTMLTextAreaElement,
+  TextareaProps
+>(
   (
     {
       label,
-      helperText,
       error,
-      required,
-      className = "",
+      hint,
+      className,
+      id,
       ...props
     },
     ref
   ) => {
+    const hasError =
+      Boolean(error);
+
     return (
       <div className="space-y-2">
-
         {label && (
-          <label className="block text-sm font-semibold text-slate-700">
+          <label
+            htmlFor={id}
+            className="ml-0.5 block text-sm font-bold tracking-[-0.01em] text-slate-700"
+          >
             {label}
-
-            {required && (
-              <span className="ml-1 text-red-500">*</span>
-            )}
           </label>
         )}
 
         <textarea
           ref={ref}
+          id={id}
+          aria-invalid={
+            hasError
+              ? "true"
+              : undefined
+          }
+          className={cn(
+            "min-h-32 w-full resize-y rounded-2xl border",
+            "bg-white/95 px-4 py-3.5",
+            "text-[15px] font-medium leading-6 text-slate-900",
+            "shadow-[0_3px_12px_rgba(15,23,42,0.04)]",
+            "outline-none",
+            "transition-all duration-250 ease-out",
+
+            "placeholder:font-normal placeholder:text-slate-400",
+
+            "hover:border-slate-400/80",
+            "hover:shadow-[0_5px_16px_rgba(15,23,42,0.06)]",
+
+            "focus:border-blue-500",
+            "focus:bg-white",
+            "focus:ring-4",
+            "focus:ring-blue-500/10",
+            "focus:shadow-[0_7px_22px_rgba(37,99,235,0.09)]",
+
+            "disabled:cursor-not-allowed",
+            "disabled:border-slate-200",
+            "disabled:bg-slate-100/80",
+            "disabled:text-slate-500",
+            "disabled:shadow-none",
+
+            hasError
+              ? "border-red-300 bg-red-50/40 focus:border-red-500 focus:ring-red-500/10"
+              : "border-slate-200",
+
+            className
+          )}
           {...props}
-          className={`
-            w-full rounded-2xl border bg-white px-4 py-4 shadow-sm
-            outline-none transition-all duration-300
-            ${
-              error
-                ? "border-red-400 focus:border-red-500 focus:ring-red-100"
-                : "border-slate-300 focus:border-[#D4AF37] focus:ring-[#D4AF37]/20"
-            }
-            focus:ring-4
-            ${className}
-          `}
         />
 
-        {error ? (
-          <p className="text-sm text-red-500">
-            {error}
+        {hint && !error && (
+          <p className="ml-0.5 text-xs leading-5 text-slate-500">
+            {hint}
           </p>
-        ) : (
-          helperText && (
-            <p className="text-sm text-slate-500">
-              {helperText}
-            </p>
-          )
         )}
 
+        {error && (
+          <p
+            role="alert"
+            className="ml-0.5 flex items-start gap-1.5 text-xs font-semibold leading-5 text-red-600"
+          >
+            <AlertCircle
+              size={14}
+              className="mt-0.5 shrink-0"
+            />
+
+            {error}
+          </p>
+        )}
       </div>
     );
   }
 );
 
-Textarea.displayName = "Textarea";
+Textarea.displayName =
+  "Textarea";
 
 export default Textarea;

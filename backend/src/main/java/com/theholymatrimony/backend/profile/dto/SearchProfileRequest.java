@@ -8,6 +8,7 @@ import lombok.Setter;
 public class SearchProfileRequest {
 
     private Integer ageFrom;
+
     private Integer ageTo;
 
     private String gender;
@@ -17,7 +18,9 @@ public class SearchProfileRequest {
     private String maritalStatus;
 
     private String country;
+
     private String state;
+
     private String city;
 
     private String highestEducation;
@@ -26,11 +29,33 @@ public class SearchProfileRequest {
 
     private Boolean baptized;
 
-    // ===== Verification Filters =====
+    /*
+     * =====================================================
+     * Trust Verification Filters
+     * =====================================================
+     */
 
     private Boolean aadhaarVerified;
 
     private Boolean idVerified;
 
     private Boolean churchVerified;
+
+    /*
+     * =====================================================
+     * Result Ordering
+     * =====================================================
+     *
+     * Supported values:
+     *
+     * RECOMMENDED
+     * NEWEST
+     * TRUST_VERIFIED
+     *
+     * RECOMMENDED currently follows newest-first ordering.
+     * This gives us a stable API contract for introducing
+     * matchmaking relevance ranking later.
+     */
+
+    private String sort;
 }

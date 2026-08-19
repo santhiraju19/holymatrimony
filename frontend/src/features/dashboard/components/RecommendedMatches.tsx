@@ -5,13 +5,13 @@ import Link from "next/link";
 
 import {
   ArrowRight,
-  Briefcase,
+  BriefcaseBusiness,
   CheckCircle2,
   Church,
-  Heart,
   MapPin,
   Search,
   Sparkles,
+  UserRound,
   UsersRound,
 } from "lucide-react";
 
@@ -30,7 +30,9 @@ function getInitials(
   return name
     .split(" ")
     .filter(Boolean)
-    .map((part) => part.charAt(0))
+    .map((part) =>
+      part.charAt(0)
+    )
     .join("")
     .slice(0, 2)
     .toUpperCase();
@@ -38,15 +40,15 @@ function getInitials(
 
 function MatchSkeleton() {
   return (
-    <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
-      <div className="aspect-[16/10] animate-pulse bg-slate-200" />
+    <div className="overflow-hidden rounded-[20px] border border-slate-200 bg-white">
+      <div className="aspect-[5/3] animate-pulse bg-slate-200" />
 
-      <div className="space-y-3 p-5">
-        <div className="h-5 w-2/3 animate-pulse rounded bg-slate-200" />
+      <div className="space-y-2.5 p-4">
+        <div className="h-4 w-2/3 animate-pulse rounded bg-slate-200" />
 
-        <div className="h-4 w-1/2 animate-pulse rounded bg-slate-100" />
+        <div className="h-3 w-1/2 animate-pulse rounded bg-slate-100" />
 
-        <div className="h-10 animate-pulse rounded-2xl bg-slate-100" />
+        <div className="h-9 animate-pulse rounded-xl bg-slate-100" />
       </div>
     </div>
   );
@@ -57,177 +59,250 @@ export default function RecommendedMatches({
   loading = false,
 }: RecommendedMatchesProps) {
   return (
-    <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.07)]">
-      <div className="flex flex-col gap-4 border-b border-slate-200 bg-gradient-to-r from-blue-50 via-white to-amber-50 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div>
-          <div className="flex items-center gap-2">
-            <Sparkles
-              size={16}
-              className="text-[#B38B19]"
-            />
+    <section className="overflow-hidden rounded-[20px] border border-slate-200/80 bg-white shadow-[0_8px_28px_rgba(15,23,42,0.05)]">
 
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-[#B38B19]">
-              Suggested for you
-            </p>
+      {/* =====================================================
+          Compact Header
+          ===================================================== */}
+
+      <div className="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-blue-50/70 via-white to-amber-50/60 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#0B2D5C] text-[#F2D675] shadow-sm">
+            <UsersRound
+              size={17}
+            />
           </div>
 
-          <h2 className="mt-1 text-xl font-black text-[#0B2D5C] sm:text-2xl">
-            Recommended Matches
-          </h2>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <Sparkles
+                size={11}
+                className="text-[#B38B19]"
+              />
 
-          <p className="mt-1 text-sm text-slate-500">
-            Profiles based on your saved
-            partner preferences.
-          </p>
+              <p className="text-[9px] font-black uppercase tracking-[0.13em] text-[#B38B19] sm:text-[10px]">
+                Suggested for you
+              </p>
+            </div>
+
+            <h2 className="mt-0.5 text-base font-black tracking-[-0.02em] text-[#0B2D5C] sm:text-lg">
+              Recommended Matches
+            </h2>
+
+            <p className="mt-0.5 text-[11px] text-slate-500 sm:text-xs">
+              Profiles based on your partner preferences.
+            </p>
+          </div>
         </div>
 
         <Link
           href="/search"
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-blue-100 bg-white px-4 text-sm font-bold text-[#0B2D5C] shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+          className="inline-flex h-9 w-fit items-center justify-center gap-1.5 rounded-xl border border-blue-100 bg-white px-3.5 text-xs font-bold text-[#0B2D5C] shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
         >
           View All
 
-          <ArrowRight size={16} />
+          <ArrowRight
+            size={14}
+          />
         </Link>
       </div>
 
-      <div className="p-5 sm:p-6">
+      <div className="p-4 sm:p-5">
         {loading ? (
-          <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
             <MatchSkeleton />
             <MatchSkeleton />
             <MatchSkeleton />
           </div>
         ) : matches.length === 0 ? (
-          <div className="relative overflow-hidden rounded-[26px] border border-dashed border-blue-200 bg-gradient-to-br from-blue-50 via-white to-amber-50 px-6 py-12 text-center">
-            <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-blue-200/30 blur-3xl" />
 
-            <div className="relative">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-[#0B2D5C] text-white shadow-xl">
-                <UsersRound size={34} />
+          /* =================================================
+              Compact Empty State
+              ================================================= */
+
+          <div className="relative overflow-hidden rounded-[18px] border border-dashed border-blue-200 bg-gradient-to-r from-blue-50/80 via-white to-amber-50/60 px-4 py-5 sm:px-5">
+            <div className="pointer-events-none absolute -right-14 -top-16 h-36 w-36 rounded-full bg-blue-200/25 blur-3xl" />
+
+            <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0B2D5C] text-white shadow-md">
+                  <UsersRound
+                    size={20}
+                  />
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-black text-[#0B2D5C] sm:text-base">
+                    Find your next match
+                  </h3>
+
+                  <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500 sm:text-sm">
+                    Complete your partner preferences and browse suitable Christian profiles. Personalized recommendations will appear here as matching data becomes available.
+                  </p>
+                </div>
               </div>
-
-              <h3 className="mt-5 text-xl font-black text-[#0B2D5C]">
-                Match recommendations are coming
-              </h3>
-
-              <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-slate-600">
-                Complete your partner preferences
-                and use Search to discover suitable
-                Christian profiles. Personalized
-                dashboard recommendations will appear
-                once the recommendation API is
-                connected.
-              </p>
 
               <Link
                 href="/search"
-                className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#0B2D5C] px-6 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#123C73]"
+                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0B2D5C] to-blue-700 px-4 text-xs font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:text-sm"
               >
-                <Search size={18} />
+                <Search
+                  size={15}
+                />
 
                 Search Profiles
               </Link>
             </div>
           </div>
         ) : (
-          <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
-            {matches.map((match) => (
-              <article
-                key={match.id}
-                className="group overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(15,23,42,0.12)]"
-              >
-                <div className="relative flex aspect-[16/10] items-center justify-center overflow-hidden bg-gradient-to-br from-[#0B2D5C] via-blue-700 to-blue-400">
-                  {match.imageUrl ? (
-                    <Image
-                      src={match.imageUrl}
-                      alt={match.name}
-                      fill
-                      className="object-cover transition duration-500 group-hover:scale-105"
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                    />
-                  ) : (
-                    <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-white/20 bg-white/15 text-3xl font-black text-white backdrop-blur">
-                      {getInitials(match.name)}
-                    </div>
-                  )}
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+          /* =================================================
+              Match Cards
+              ================================================= */
 
-                  <button
-                    type="button"
-                    aria-label={`Shortlist ${match.name}`}
-                    className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-2xl bg-white/90 text-rose-500 shadow-lg transition hover:scale-105"
-                  >
-                    <Heart size={19} />
-                  </button>
-
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <div className="flex flex-wrap gap-2">
-                      {match.verified && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-1 text-[10px] font-bold text-white">
-                          <CheckCircle2 size={12} />
-
-                          Verified
-                        </span>
-                      )}
-
-                      {match.churchVerified && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-[#D4AF37] px-2.5 py-1 text-[10px] font-bold text-[#071B36]">
-                          <Church size={12} />
-
-                          Church Verified
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-5">
-                  <h3 className="text-lg font-black text-[#0B2D5C]">
-                    {match.name}, {match.age}
-                  </h3>
-
-                  <p className="mt-1 text-sm font-bold text-[#B38B19]">
-                    {match.denomination}
-                  </p>
-
-                  <div className="mt-4 space-y-3">
-                    <div className="flex items-center gap-3 text-sm text-slate-600">
-                      <Briefcase
-                        size={17}
-                        className="shrink-0 text-blue-600"
-                      />
-
-                      <span className="truncate">
-                        {match.profession}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-3 text-sm text-slate-600">
-                      <MapPin
-                        size={17}
-                        className="shrink-0 text-rose-500"
-                      />
-
-                      <span className="truncate">
-                        {match.location}
-                      </span>
-                    </div>
-                  </div>
-
+          <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+            {matches.map(
+              (match) => (
+                <article
+                  key={match.id}
+                  className="group overflow-hidden rounded-[20px] border border-slate-200/80 bg-white shadow-[0_7px_22px_rgba(15,23,42,0.05)] transition duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_14px_32px_rgba(15,23,42,0.09)]"
+                >
                   <Link
-                    href={`/profile/${match.id}`}
-                    className="mt-5 flex h-11 items-center justify-center rounded-2xl bg-[#0B2D5C] text-sm font-bold text-white transition hover:bg-[#123C73]"
+                    href={`/browse/${match.id}`}
+                    className="block"
                   >
-                    View Profile
+                    <div className="relative flex aspect-[5/3] items-center justify-center overflow-hidden bg-gradient-to-br from-[#0B2D5C] via-blue-700 to-blue-400">
+                      {match.imageUrl ? (
+                        <Image
+                          src={
+                            match.imageUrl
+                          }
+                          alt={
+                            match.name
+                          }
+                          fill
+                          className="object-cover transition duration-500 group-hover:scale-[1.03]"
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                        />
+                      ) : (
+                        <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/20 bg-white/15 text-xl font-black text-white backdrop-blur">
+                          {getInitials(
+                            match.name
+                          ) || (
+                            <UserRound
+                              size={34}
+                            />
+                          )}
+                        </div>
+                      )}
+
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
+
+                      <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
+                        {match.verified && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300/25 bg-emerald-500/90 px-2 py-1 text-[9px] font-black text-white backdrop-blur">
+                            <CheckCircle2
+                              size={11}
+                            />
+
+                            Verified
+                          </span>
+                        )}
+
+                        {match.churchVerified && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-200/30 bg-[#D4AF37]/95 px-2 py-1 text-[9px] font-black text-[#071B36]">
+                            <Church
+                              size={11}
+                            />
+
+                            Church
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="absolute inset-x-0 bottom-0 px-3.5 pb-3.5 pt-10">
+                        <h3 className="truncate text-lg font-black tracking-[-0.02em] text-white">
+                          {match.name}
+                          {match.age
+                            ? `, ${match.age}`
+                            : ""}
+                        </h3>
+
+                        {match.denomination && (
+                          <p className="mt-0.5 truncate text-xs font-bold text-[#F2D675]">
+                            {
+                              match.denomination
+                            }
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </Link>
-                </div>
-              </article>
-            ))}
+
+                  <div className="p-3.5">
+                    <div className="space-y-2">
+                      <MatchDetail
+                        icon={
+                          <BriefcaseBusiness
+                            size={14}
+                          />
+                        }
+                        value={
+                          match.profession ||
+                          "Profession not specified"
+                        }
+                      />
+
+                      <MatchDetail
+                        icon={
+                          <MapPin
+                            size={14}
+                          />
+                        }
+                        value={
+                          match.location ||
+                          "Location not specified"
+                        }
+                      />
+                    </div>
+
+                    <Link
+                      href={`/browse/${match.id}`}
+                      className="mt-3 flex h-9 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0B2D5C] to-blue-700 text-xs font-black text-white transition hover:shadow-md"
+                    >
+                      View Profile
+
+                      <ArrowRight
+                        size={13}
+                      />
+                    </Link>
+                  </div>
+                </article>
+              )
+            )}
           </div>
         )}
       </div>
     </section>
+  );
+}
+
+function MatchDetail({
+  icon,
+  value,
+}: {
+  icon: React.ReactNode;
+  value: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+        {icon}
+      </span>
+
+      <span className="truncate text-xs font-semibold text-slate-600">
+        {value}
+      </span>
+    </div>
   );
 }

@@ -1,3 +1,7 @@
+import type {
+  ReactNode,
+} from "react";
+
 import {
   BadgeCheck,
   CheckCircle2,
@@ -7,7 +11,9 @@ import {
   Smartphone,
 } from "lucide-react";
 
-import type { BrowseProfile } from "../../types";
+import type {
+  BrowseProfile,
+} from "../../types";
 
 import ProfileInfoSection from "./ProfileInfoSection";
 
@@ -16,7 +22,10 @@ interface ProfileDetailsContentProps {
 }
 
 function formatBoolean(
-  value: boolean | null | undefined
+  value:
+    | boolean
+    | null
+    | undefined
 ): string {
   if (value === true) {
     return "Yes";
@@ -30,7 +39,10 @@ function formatBoolean(
 }
 
 function formatDate(
-  value: string | null | undefined
+  value:
+    | string
+    | null
+    | undefined
 ): string {
   if (!value) {
     return "";
@@ -61,19 +73,20 @@ export default function ProfileDetailsContent({
   profile,
 }: ProfileDetailsContentProps) {
   return (
-    <div className="mt-8 space-y-6">
+    <div className="mt-5 space-y-5">
       <TrustVerificationSection
         profile={profile}
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <ProfileInfoSection
-          title="Basic information"
+          title="Basic Information"
           description="Personal and marital details"
           items={[
             {
               label: "Full name",
-              value: profile.fullName,
+              value:
+                profile.fullName,
             },
             {
               label: "Age",
@@ -82,17 +95,20 @@ export default function ProfileDetailsContent({
                 : "",
             },
             {
-              label: "Date of birth",
+              label:
+                "Date of birth",
               value: formatDate(
                 profile.dateOfBirth
               ),
             },
             {
               label: "Gender",
-              value: profile.gender,
+              value:
+                profile.gender,
             },
             {
-              label: "Marital status",
+              label:
+                "Marital status",
               value:
                 profile.maritalStatus,
             },
@@ -100,30 +116,33 @@ export default function ProfileDetailsContent({
         />
 
         <ProfileInfoSection
-          title="Church and faith"
+          title="Church & Faith"
           description="Spiritual background and church details"
           items={[
             {
-              label: "Denomination",
+              label:
+                "Denomination",
               value:
                 profile.denomination,
             },
             {
-              label: "Church name",
+              label:
+                "Church name",
               value:
                 profile.churchName,
             },
             {
               label: "Baptized",
-              value: formatBoolean(
-                profile.baptized
-              ),
+              value:
+                formatBoolean(
+                  profile.baptized
+                ),
             },
           ]}
         />
 
         <ProfileInfoSection
-          title="Education and career"
+          title="Education & Career"
           description="Academic and professional information"
           items={[
             {
@@ -133,7 +152,8 @@ export default function ProfileDetailsContent({
                 profile.highestEducation,
             },
             {
-              label: "Profession",
+              label:
+                "Profession",
               value:
                 profile.profession,
             },
@@ -143,7 +163,8 @@ export default function ProfileDetailsContent({
                 profile.company,
             },
             {
-              label: "Annual income",
+              label:
+                "Annual income",
               value:
                 profile.annualIncome,
             },
@@ -156,15 +177,18 @@ export default function ProfileDetailsContent({
           items={[
             {
               label: "City",
-              value: profile.city,
+              value:
+                profile.city,
             },
             {
               label: "State",
-              value: profile.state,
+              value:
+                profile.state,
             },
             {
               label: "Country",
-              value: profile.country,
+              value:
+                profile.country,
             },
           ]}
         />
@@ -209,23 +233,13 @@ function TrustVerificationSection({
 
   const verifiedCount = [
     mobileVerified,
-    churchVerified,
     identityVerified,
+    churchVerified,
   ].filter(Boolean).length;
 
   const fullyVerified =
-    Boolean(
-      profile.verifiedProfile
-    ) ||
     verifiedCount === 3;
 
-  /*
-   * Public identity wording.
-   *
-   * Aadhaar gets its own trust label.
-   * Passport / Driving Licence / Voter ID
-   * use the generic ID Verified label.
-   */
   const identityLabel =
     aadhaarVerified
       ? "Aadhaar"
@@ -241,53 +255,58 @@ function TrustVerificationSection({
         : "Identity document approved";
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-[20px] border border-slate-200/80 bg-white shadow-[0_8px_26px_rgba(15,23,42,0.05)]">
+
       {/* =====================================================
-          Trust Header
+          Compact Header
           ===================================================== */}
 
-      <div className="border-b border-slate-100 bg-gradient-to-r from-blue-50 via-white to-amber-50 px-5 py-5 sm:px-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#0B2D5C] text-white shadow-sm">
-              <ShieldCheck
-                size={22}
-              />
-            </div>
-
-            <div>
-              <h2 className="text-lg font-black text-[#0B2D5C]">
-                Trust & Verification
-              </h2>
-
-              <p className="mt-1 text-sm leading-6 text-slate-500">
-                Verification checks completed through Holy Matrimony.
-              </p>
-            </div>
+      <div className="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-blue-50/70 via-white to-amber-50/60 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0B2D5C] to-blue-700 text-white shadow-sm">
+            <ShieldCheck
+              size={18}
+            />
           </div>
 
+          <div>
+            <h2 className="text-sm font-black text-[#0B2D5C] sm:text-base">
+              Trust & Verification
+            </h2>
+
+            <p className="mt-0.5 text-[10px] text-slate-500 sm:text-[11px]">
+              Verification checks completed through Holy Matrimony.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black text-[#0B2D5C]">
+            {verifiedCount}/3 Verified
+          </span>
+
           {fullyVerified && (
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-black text-emerald-700">
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-700">
               <BadgeCheck
-                size={17}
+                size={12}
               />
 
-              Verified Profile
-            </div>
+              Fully Verified
+            </span>
           )}
         </div>
       </div>
 
-      <div className="p-5 sm:p-6">
-        {/* ===================================================
-            Individual Verification Checks
-            =================================================== */}
+      {/* =====================================================
+          Verification Credentials
+          ===================================================== */}
 
-        <div className="grid gap-3 md:grid-cols-3">
+      <div className="p-4 sm:p-5">
+        <div className="grid gap-2.5 md:grid-cols-3">
           <VerificationStatus
             icon={
               <Smartphone
-                size={20}
+                size={17}
               />
             }
             label="Mobile"
@@ -301,11 +320,11 @@ function TrustVerificationSection({
             icon={
               aadhaarVerified ? (
                 <ShieldCheck
-                  size={20}
+                  size={17}
                 />
               ) : (
                 <Fingerprint
-                  size={20}
+                  size={17}
                 />
               )
             }
@@ -321,14 +340,14 @@ function TrustVerificationSection({
             variant={
               aadhaarVerified
                 ? "aadhaar"
-                : "default"
+                : "identity"
             }
           />
 
           <VerificationStatus
             icon={
               <Church
-                size={20}
+                size={17}
               />
             }
             label="Church"
@@ -340,55 +359,39 @@ function TrustVerificationSection({
           />
         </div>
 
-        {/* ===================================================
-            Verification Summary
-            =================================================== */}
+        {/* Progress / summary */}
+        <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/80 px-3.5 py-3">
+          <div className="flex items-center gap-3">
+            <CheckCircle2
+              size={16}
+              className={
+                fullyVerified
+                  ? "shrink-0 text-emerald-600"
+                  : "shrink-0 text-blue-600"
+              }
+            />
 
-        <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4 sm:px-5">
-          {fullyVerified ? (
-            <div className="flex items-start gap-3">
-              <CheckCircle2
-                size={20}
-                className="mt-0.5 shrink-0 text-emerald-600"
-              />
-
-              <div>
-                <p className="text-sm font-black text-slate-800">
-                  All available verification checks completed
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-black text-slate-700">
+                  {fullyVerified
+                    ? "All verification checks completed"
+                    : "Verification progress"}
                 </p>
 
-                <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
-                  This member has completed mobile,{" "}
-                  {aadhaarVerified
-                    ? "Aadhaar"
-                    : idVerified
-                      ? "ID"
-                      : "identity"}{" "}
-                  and church verification through Holy Matrimony.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-sm font-black text-slate-800">
-                  Verification progress
-                </p>
-
-                <span className="text-sm font-black text-[#0B2D5C]">
-                  {verifiedCount}/3
+                <span className="text-[10px] font-black text-[#0B2D5C]">
+                  {Math.round(
+                    (verifiedCount /
+                      3) *
+                      100
+                  )}
+                  %
                 </span>
               </div>
 
-              <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
-                This member has completed{" "}
-                {verifiedCount} of 3 available
-                verification checks.
-              </p>
-
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-500 transition-all duration-300"
+                  className="h-full rounded-full bg-gradient-to-r from-[#0B2D5C] via-blue-600 to-emerald-500 transition-all duration-300"
                   style={{
                     width: `${
                       (verifiedCount /
@@ -399,16 +402,12 @@ function TrustVerificationSection({
                 />
               </div>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* ===================================================
-            Trust Disclaimer
-            =================================================== */}
-
-        <p className="mt-4 text-xs leading-5 text-slate-400">
-          Verification badges indicate checks completed through
-          Holy Matrimony. Members should still communicate carefully
+        <p className="mt-3 text-[10px] leading-5 text-slate-400 sm:text-[11px]">
+          Verification indicates checks completed through Holy
+          Matrimony. Members should still communicate carefully
           and make independent decisions before proceeding.
         </p>
       </div>
@@ -419,10 +418,11 @@ function TrustVerificationSection({
 type VerificationStatusVariant =
   | "default"
   | "aadhaar"
+  | "identity"
   | "church";
 
 interface VerificationStatusProps {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   verified: boolean;
   description?: string;
@@ -436,21 +436,24 @@ function VerificationStatus({
   description,
   variant = "default",
 }: VerificationStatusProps) {
-  const verifiedCardStyles: Record<
+  const cardStyles: Record<
     VerificationStatusVariant,
     string
   > = {
     default:
-      "border-emerald-200 bg-emerald-50/70",
+      "border-emerald-200 bg-emerald-50/60",
 
     aadhaar:
-      "border-amber-200 bg-gradient-to-br from-amber-50 via-yellow-50 to-white",
+      "border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50/70",
+
+    identity:
+      "border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50/60",
 
     church:
-      "border-indigo-200 bg-gradient-to-br from-indigo-50 via-blue-50 to-white",
+      "border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50/60",
   };
 
-  const verifiedIconStyles: Record<
+  const iconStyles: Record<
     VerificationStatusVariant,
     string
   > = {
@@ -458,83 +461,72 @@ function VerificationStatus({
       "bg-emerald-100 text-emerald-700",
 
     aadhaar:
-      "bg-gradient-to-br from-amber-400 to-yellow-500 text-slate-950",
+      "bg-gradient-to-br from-amber-400 to-yellow-500 text-[#0B2D5C]",
+
+    identity:
+      "bg-gradient-to-br from-blue-600 to-indigo-600 text-white",
 
     church:
-      "bg-[#0B2D5C] text-white",
-  };
-
-  const verifiedTextStyles: Record<
-    VerificationStatusVariant,
-    string
-  > = {
-    default:
-      "text-emerald-700",
-
-    aadhaar:
-      "text-amber-800",
-
-    church:
-      "text-indigo-700",
+      "bg-gradient-to-br from-[#0B2D5C] to-blue-700 text-white",
   };
 
   return (
     <div
       className={[
-        "rounded-2xl border p-4 transition",
+        "flex min-h-[72px] items-center gap-3 rounded-xl border px-3 py-2.5 transition",
         verified
-          ? verifiedCardStyles[
+          ? cardStyles[
               variant
             ]
           : "border-slate-200 bg-slate-50",
       ].join(" ")}
     >
-      <div className="flex items-start gap-3">
-        <div
-          className={[
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm",
-            verified
-              ? verifiedIconStyles[
-                  variant
-                ]
-              : "bg-slate-200 text-slate-500",
-          ].join(" ")}
-        >
-          {icon}
-        </div>
+      <div
+        className={[
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg shadow-sm",
+          verified
+            ? iconStyles[
+                variant
+              ]
+            : "bg-slate-200 text-slate-500",
+        ].join(" ")}
+      >
+        {icon}
+      </div>
 
-        <div className="min-w-0">
-          <p className="truncate text-sm font-black text-slate-800">
-            {label} Verification
+      <div className="min-w-0">
+        <div className="flex items-center gap-1.5">
+          <p className="truncate text-xs font-black text-slate-800 sm:text-sm">
+            {label}
           </p>
 
-          <div
-            className={[
-              "mt-1 flex items-center gap-1.5 text-xs font-bold",
-              verified
-                ? verifiedTextStyles[
-                    variant
-                  ]
-                : "text-slate-500",
-            ].join(" ")}
-          >
-            {verified && (
-              <CheckCircle2
-                size={14}
-              />
-            )}
+          {verified && (
+            <BadgeCheck
+              size={13}
+              className="shrink-0 text-emerald-600"
+            />
+          )}
+        </div>
 
-            {verified
-              ? "Verified"
-              : "Not verified"}
-          </div>
+        <p
+          className={[
+            "mt-0.5 text-[10px] font-bold",
+            verified
+              ? "text-emerald-700"
+              : "text-slate-400",
+          ].join(" ")}
+        >
+          {verified
+            ? "Verified"
+            : "Not verified"}
+        </p>
 
-          {description && (
-            <p className="mt-1.5 text-[11px] leading-4 text-slate-500">
+        {verified &&
+          description && (
+            <p className="mt-0.5 truncate text-[9px] text-slate-500 sm:text-[10px]">
               {description}
             </p>
           )}
-        </div>
       </div>
     </div>
   );

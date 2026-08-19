@@ -217,6 +217,177 @@ textarea {
 
   100% {
       left: 220%;
+/* ============================================================
+   Holy Matrimony Premium Application Foundation
+   ============================================================ */
+
+::selection {
+  background: rgba(37, 99, 235, 0.16);
+  color: #0b2d5c;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/*
+ * Premium native scrollbar.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color:
+    rgba(100, 116, 139, 0.45)
+    transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background:
+    rgba(100, 116, 139, 0.35);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background:
+    rgba(37, 99, 235, 0.4);
+  background-clip: padding-box;
+}
+
+/*
+ * Consistent premium focus behavior.
+ */
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color:
+    transparent;
+}
+
+/*
+ * Generic premium page heading helpers.
+ */
+.hm-page-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  border: 1px solid
+    rgba(212, 175, 55, 0.26);
+
+  border-radius: 9999px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 251, 235, 0.96),
+      rgba(255, 255, 255, 0.96)
+    );
+
+  padding:
+    0.35rem 0.75rem;
+
+  color: #8a6500;
+
+  font-size: 0.7rem;
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hm-page-title {
+  color: #0b2d5c;
+
+  font-weight: 900;
+
+  letter-spacing: -0.035em;
+
+  line-height: 1.1;
+}
+
+.hm-page-description {
+  color: #64748b;
+
+  line-height: 1.7;
+}
+
+/*
+ * Reusable premium surface.
+ */
+.hm-surface {
+  border:
+    1px solid
+    rgba(226, 232, 240, 0.9);
+
+  border-radius: 1.5rem;
+
+  background:
+    rgba(255, 255, 255, 0.94);
+
+  box-shadow:
+    0 10px 30px
+    rgba(15, 23, 42, 0.055);
+
+  backdrop-filter:
+    blur(14px);
+}
+
+/*
+ * Premium elevated surface.
+ */
+.hm-surface-elevated {
+  border:
+    1px solid
+    rgba(226, 232, 240, 0.82);
+
+  border-radius: 1.75rem;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.98),
+      rgba(248, 250, 252, 0.96)
+    );
+
+  box-shadow:
+    0 18px 50px
+    rgba(15, 23, 42, 0.075);
+}
+
+/*
+ * Gold divider for special/premium areas.
+ */
+.hm-gold-divider {
+  height: 1px;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(212, 175, 55, 0.5),
+      transparent
+    );
+}
+
   }
 
+  
 }

@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -8,15 +7,15 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-import {
+import type {
   PresenceStatus,
 } from "@/features/chat/api/presence.service";
 
-import {
+import type {
   Conversation,
 } from "@/features/chat/types";
 
-import {
+import type {
   BlockStatusResponse,
 } from "@/features/safety/api/safety.service";
 
@@ -36,7 +35,7 @@ interface ChatHeaderProps {
   blockStatus:
     BlockStatusResponse | null;
 
-      onDeleteConversation: (
+  onDeleteConversation: (
     conversationId: string
   ) => Promise<void>;
 
@@ -59,12 +58,13 @@ function getIndiaDateKey(
       {
         timeZone:
           INDIA_TIME_ZONE,
-
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
       }
-    ).formatToParts(date);
+    ).formatToParts(
+      date
+    );
 
   const year =
     parts.find(
@@ -96,7 +96,6 @@ function getIndiaYear(
       {
         timeZone:
           INDIA_TIME_ZONE,
-
         year: "numeric",
       }
     ).format(date)
@@ -126,7 +125,8 @@ function formatLastSeen(
     Math.max(
       0,
       Math.floor(
-        difference / 60000
+        difference /
+          60000
       )
     );
 
@@ -143,8 +143,12 @@ function formatLastSeen(
   }
 
   const today =
-    getIndiaDateKey(date) ===
-    getIndiaDateKey(now);
+    getIndiaDateKey(
+      date
+    ) ===
+    getIndiaDateKey(
+      now
+    );
 
   if (today) {
     return `Last seen today at ${new Intl.DateTimeFormat(
@@ -152,10 +156,8 @@ function formatLastSeen(
       {
         timeZone:
           INDIA_TIME_ZONE,
-
         hour: "numeric",
         minute: "2-digit",
-
         hour12: true,
       }
     ).format(date)}`;
@@ -166,13 +168,15 @@ function formatLastSeen(
     {
       timeZone:
         INDIA_TIME_ZONE,
-
       day: "numeric",
       month: "short",
-
       year:
-        getIndiaYear(date) ===
-        getIndiaYear(now)
+        getIndiaYear(
+          date
+        ) ===
+        getIndiaYear(
+          now
+        )
           ? undefined
           : "numeric",
     }
@@ -193,7 +197,8 @@ export default function ChatHeader({
     conversation.otherUser;
 
   const online =
-    presence?.online === true;
+    presence?.online ===
+    true;
 
   let statusText =
     realtimeConnected
@@ -201,7 +206,7 @@ export default function ChatHeader({
       : "Connecting…";
 
   let statusClass =
-    "text-slate-500";
+    "text-slate-400";
 
   if (
     blockStatus?.messagingBlocked
@@ -210,20 +215,24 @@ export default function ChatHeader({
       "Messaging unavailable";
 
     statusClass =
-      "font-medium text-amber-700";
-  } else if (otherUserTyping) {
+      "font-bold text-amber-600";
+  } else if (
+    otherUserTyping
+  ) {
     statusText =
       "Typing…";
 
     statusClass =
-      "font-semibold text-emerald-600";
+      "font-bold text-emerald-600";
   } else if (online) {
     statusText =
       "Online";
 
     statusClass =
-      "font-semibold text-emerald-600";
-  } else if (presence) {
+      "font-bold text-emerald-600";
+  } else if (
+    presence
+  ) {
     statusText =
       formatLastSeen(
         presence.lastSeenAt
@@ -231,14 +240,18 @@ export default function ChatHeader({
   }
 
   return (
-    <header className="flex min-h-[64px] items-center gap-2.5 border-b border-slate-200 bg-white px-3 py-2.5 sm:px-4 md:px-5">
+    <header className="flex min-h-[58px] items-center gap-2.5 border-b border-slate-100 bg-white px-3 py-2.5 sm:px-4">
       <button
         type="button"
-        onClick={onBack}
+        onClick={
+          onBack
+        }
         aria-label="Back to conversations"
-        className="shrink-0 rounded-lg p-2 text-slate-600 transition hover:bg-slate-100 md:hidden"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-[#0B2D5C] md:hidden"
       >
-        <ArrowLeft size={21} />
+        <ArrowLeft
+          size={18}
+        />
       </button>
 
       <div className="relative">
@@ -249,6 +262,7 @@ export default function ChatHeader({
           photoUrl={
             user.photoUrl
           }
+          size="sm"
         />
 
         <span
@@ -258,42 +272,51 @@ export default function ChatHeader({
               : "Offline"
           }
           className={[
-            "absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white",
+            "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white",
 
             online
-              ? "bg-emerald-500"
+              ? "bg-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.12)]"
               : "bg-slate-400",
           ].join(" ")}
         />
       </div>
 
       <div className="min-w-0 flex-1">
-        <h2 className="truncate font-bold text-slate-900">
-          {user.fullName}
+        <div className="flex items-center gap-2">
+          <h2 className="truncate text-sm font-black text-[#0B2D5C]">
+            {user.fullName}
 
-          {user.age
-            ? `, ${user.age}`
-            : ""}
-        </h2>
+            {user.age
+              ? `, ${user.age}`
+              : ""}
+          </h2>
+
+          {online && (
+            <span className="hidden rounded-full bg-emerald-50 px-1.5 py-0.5 text-[8px] font-black text-emerald-700 sm:inline">
+              ONLINE
+            </span>
+          )}
+        </div>
 
         <p
-          className={`mt-0.5 truncate text-xs ${statusClass}`}
+          className={`mt-0.5 truncate text-[10px] ${statusClass}`}
         >
           {statusText}
         </p>
       </div>
 
       <Link
-        href={`/profile/${user.profileId}`}
+        href={`/browse/${user.profileId}`}
         title="View profile"
-        className="shrink-0 rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+        aria-label={`View ${user.fullName}'s profile`}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
       >
         <ExternalLink
-          size={18}
+          size={14}
         />
       </Link>
 
-           <ChatSafetyMenu
+      <ChatSafetyMenu
         userId={
           user.userId
         }

@@ -39,7 +39,10 @@ import {
 } from "@/features/profile/services/photoService";
 
 import { useProfile } from "@/features/profile/context/useProfile";
-import { PhotoItem } from "@/features/profile/types";
+
+import type {
+  PhotoItem,
+} from "@/features/profile/types";
 
 interface PhotoUploadProps {
   onBack: () => void;
@@ -47,7 +50,8 @@ interface PhotoUploadProps {
 }
 
 const MAX_PHOTOS = 6;
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_SIZE =
+  10 * 1024 * 1024;
 
 const ALLOWED_FILE_TYPES = [
   "image/jpeg",
@@ -60,9 +64,13 @@ function mapApiPhoto(
 ): PhotoItem {
   return {
     id: photo.id,
-    preview: resolvePhotoUrl(photo.imageUrl),
-    isPrimary: photo.primaryPhoto,
-    displayOrder: photo.displayOrder,
+    preview: resolvePhotoUrl(
+      photo.imageUrl
+    ),
+    isPrimary:
+      photo.primaryPhoto,
+    displayOrder:
+      photo.displayOrder,
   };
 }
 
@@ -99,7 +107,8 @@ export default function PhotoUpload({
     setProfile,
   } = useProfile();
 
-  const photos = photoInfo.photos;
+  const photos =
+    photoInfo.photos;
 
   const [
     loading,
@@ -119,46 +128,57 @@ export default function PhotoUpload({
   const [
     processingPhotoId,
     setProcessingPhotoId,
-  ] = useState<string | null>(null);
+  ] = useState<
+    string | null
+  >(null);
 
   const [
     error,
     setError,
-  ] = useState<string | null>(null);
+  ] = useState<
+    string | null
+  >(null);
 
   const primaryPhoto =
     photos.find(
-      (photo) => photo.isPrimary
+      (photo) =>
+        photo.isPrimary
     ) ?? null;
 
-  const updatePhotos = useCallback(
-    (
-      nextPhotos: PhotoItem[]
-    ): void => {
-      const sortedPhotos =
-        sortPhotos(nextPhotos);
+  const updatePhotos =
+    useCallback(
+      (
+        nextPhotos: PhotoItem[]
+      ): void => {
+        const sortedPhotos =
+          sortPhotos(
+            nextPhotos
+          );
 
-      const primaryPhotoId =
-        sortedPhotos.find(
-          (photo) =>
-            photo.isPrimary
-        )?.id ?? "";
+        const primaryPhotoId =
+          sortedPhotos.find(
+            (photo) =>
+              photo.isPrimary
+          )?.id ?? "";
 
-      setProfile(
-        (currentProfile) => ({
-          ...currentProfile,
+        setProfile(
+          (
+            currentProfile
+          ) => ({
+            ...currentProfile,
 
-          photoInfo: {
-            ...currentProfile.photoInfo,
-            photos: sortedPhotos,
-            primaryPhoto:
-              primaryPhotoId,
-          },
-        })
-      );
-    },
-    [setProfile]
-  );
+            photoInfo: {
+              ...currentProfile.photoInfo,
+              photos:
+                sortedPhotos,
+              primaryPhoto:
+                primaryPhotoId,
+            },
+          })
+        );
+      },
+      [setProfile]
+    );
 
   const loadPhotos =
     useCallback(
@@ -170,9 +190,13 @@ export default function PhotoUpload({
             await getPhotos();
 
           updatePhotos(
-            response.map(mapApiPhoto)
+            response.map(
+              mapApiPhoto
+            )
           );
-        } catch (loadError) {
+        } catch (
+          loadError
+        ) {
           setError(
             getErrorMessage(
               loadError,
@@ -190,16 +214,19 @@ export default function PhotoUpload({
     void loadPhotos();
   }, [loadPhotos]);
 
-  const progress = useMemo(
-    () =>
-      Math.min(
-        (photos.length /
-          MAX_PHOTOS) *
-          100,
-        100
-      ),
-    [photos.length]
-  );
+  const progress =
+    useMemo(
+      () =>
+        Math.min(
+          (
+            photos.length /
+            MAX_PHOTOS
+          ) *
+            100,
+          100
+        ),
+      [photos.length]
+    );
 
   function validateFile(
     file: File
@@ -259,7 +286,10 @@ export default function PhotoUpload({
         validateFile(file);
 
       if (fileError) {
-        setError(fileError);
+        setError(
+          fileError
+        );
+
         return;
       }
     }
@@ -289,7 +319,8 @@ export default function PhotoUpload({
                 fileProgress
               ) => {
                 const completed =
-                  index * 100;
+                  index *
+                  100;
 
                 const totalProgress =
                   Math.round(
@@ -323,14 +354,16 @@ export default function PhotoUpload({
         combinedPhotos
       );
 
-      setUploadPercentage(100);
+      setUploadPercentage(
+        100
+      );
 
       /*
-       * Photos are optional.
+       * Photos remain optional.
        *
-       * If a user chooses to upload photos,
-       * automatically make the first photo
-       * primary when no primary photo exists.
+       * If photos are uploaded and
+       * no primary exists, make the
+       * first photo primary.
        */
       const hasPrimary =
         combinedPhotos.some(
@@ -353,6 +386,7 @@ export default function PhotoUpload({
           combinedPhotos.map(
             (photo) => ({
               ...photo,
+
               isPrimary:
                 photo.id ===
                 firstPhoto.id,
@@ -360,7 +394,9 @@ export default function PhotoUpload({
           )
         );
       }
-    } catch (uploadError) {
+    } catch (
+      uploadError
+    ) {
       setError(
         getErrorMessage(
           uploadError,
@@ -379,7 +415,8 @@ export default function PhotoUpload({
   ): Promise<void> {
     if (
       uploading ||
-      processingPhotoId !== null
+      processingPhotoId !==
+        null
     ) {
       return;
     }
@@ -393,19 +430,28 @@ export default function PhotoUpload({
       return;
     }
 
-    setProcessingPhotoId(id);
+    setProcessingPhotoId(
+      id
+    );
+
     setError(null);
 
     try {
-      await deletePhotoRequest(id);
+      await deletePhotoRequest(
+        id
+      );
 
       const response =
         await getPhotos();
 
       updatePhotos(
-        response.map(mapApiPhoto)
+        response.map(
+          mapApiPhoto
+        )
       );
-    } catch (deleteError) {
+    } catch (
+      deleteError
+    ) {
       setError(
         getErrorMessage(
           deleteError,
@@ -424,12 +470,16 @@ export default function PhotoUpload({
   ): Promise<void> {
     if (
       uploading ||
-      processingPhotoId !== null
+      processingPhotoId !==
+        null
     ) {
       return;
     }
 
-    setProcessingPhotoId(id);
+    setProcessingPhotoId(
+      id
+    );
+
     setError(null);
 
     try {
@@ -438,13 +488,18 @@ export default function PhotoUpload({
       );
 
       updatePhotos(
-        photos.map((photo) => ({
-          ...photo,
-          isPrimary:
-            photo.id === id,
-        }))
+        photos.map(
+          (photo) => ({
+            ...photo,
+
+            isPrimary:
+              photo.id === id,
+          })
+        )
       );
-    } catch (primaryError) {
+    } catch (
+      primaryError
+    ) {
       setError(
         getErrorMessage(
           primaryError,
@@ -458,23 +513,19 @@ export default function PhotoUpload({
     }
   }
 
-  /*
-   * FINAL RULE:
-   *
-   * Photos are OPTIONAL.
-   *
-   * A user can continue to Review without
-   * uploading any photos.
-   *
-   * Photo count must never be used here
-   * to block profile completion or
-   * verification eligibility.
-   */
   function handleContinue(): void {
+    /*
+     * Photos are OPTIONAL.
+     *
+     * Never use photo count to
+     * block completion or
+     * verification eligibility.
+     */
     if (
       loading ||
       uploading ||
-      processingPhotoId !== null
+      processingPhotoId !==
+        null
     ) {
       return;
     }
@@ -485,202 +536,121 @@ export default function PhotoUpload({
   const busy =
     loading ||
     uploading ||
-    processingPhotoId !== null;
+    processingPhotoId !==
+      null;
 
   return (
-    <div className="space-y-4 sm:space-y-5">
+    <div className="space-y-4">
+
       {/* =====================================================
-          Header
+          Main Card
           ===================================================== */}
 
       <Card className="overflow-hidden p-0">
-        <div className="border-b border-slate-200 bg-gradient-to-r from-violet-50 via-white to-blue-50 px-4 py-4 sm:px-5 sm:py-5 lg:px-6">
+        <div className="border-b border-slate-100 bg-gradient-to-r from-violet-50/75 via-white to-blue-50/60 px-4 py-3.5 sm:px-5">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0B2D5C] text-white shadow-lg ">
-              <Camera size={21} />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0B2D5C] to-violet-700 text-white shadow-sm">
+              <Camera
+                size={17}
+              />
             </div>
 
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#B38B19]">
+                <p className="text-[9px] font-black uppercase tracking-[0.13em] text-[#B38B19]">
                   Step 6 of 7
                 </p>
 
-                <span className="rounded-full bg-blue-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-blue-700">
+                <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.08em] text-blue-700">
                   Optional
                 </span>
               </div>
 
-              <h2 className="mt-1 text-xl font-bold tracking-tight text-[#0B2D5C] sm:text-2xl">
+              <h2 className="mt-0.5 text-base font-black tracking-[-0.02em] text-[#0B2D5C] sm:text-lg">
                 Profile Photos
               </h2>
 
-              <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">
-                Photos are optional and do not
-                affect your profile completion
-                or eligibility for profile
-                verification. You can upload
-                them now or add them later.
+              <p className="mt-0.5 max-w-2xl text-[11px] leading-5 text-slate-500 sm:text-xs">
+                Add clear and recent photos for better visibility, or skip this step and add them later.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="p-4 sm:p-5 lg:p-6">
-          {/* =================================================
-              Main recommendation
-              ================================================= */}
+        <div className="p-4 sm:p-5">
+          {/* Photo rules */}
 
-          <div className="mb-5 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-blue-50 p-4 sm:p-5">
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-                <TrendingUp size={22} />
-              </div>
+          <div className="grid gap-2.5 sm:grid-cols-3">
+            <InfoTile
+              icon={
+                <ImagePlus
+                  size={15}
+                />
+              }
+              title="Optional"
+              description="Photos do not count toward profile completion."
+              variant="blue"
+            />
 
-              <div>
-                <h3 className="font-bold text-[#0B2D5C]">
-                  Add photos for better profile
-                  visibility
-                </h3>
+            <InfoTile
+              icon={
+                <Crown
+                  size={15}
+                />
+              }
+              title="Better visibility"
+              description="A clear primary photo helps your profile stand out."
+              variant="gold"
+            />
 
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                  While photos are not required,
-                  adding clear and recent photos
-                  can help your profile attract
-                  more attention and relevant
-                  match interest. A complete
-                  profile with good photos also
-                  helps other members get to
-                  know you better.
-                </p>
-              </div>
-            </div>
+            <InfoTile
+              icon={
+                <ShieldCheck
+                  size={15}
+                />
+              }
+              title="Verification unaffected"
+              description="Verification eligibility does not require photos."
+              variant="green"
+            />
           </div>
 
-          {/* =================================================
-              Information cards
-              ================================================= */}
-
-          <div className="mb-5 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4">
-              <ImagePlus
-                size={22}
-                className="text-blue-700"
-              />
-
-              <p className="mt-3 text-sm font-bold text-blue-950">
-                Completely optional
-              </p>
-
-              <p className="mt-1 text-xs leading-5 text-blue-700">
-                Skip this step if you prefer.
-                Photos are not counted toward
-                your profile completion
-                percentage.
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-amber-100 bg-amber-50/70 p-4">
-              <Crown
-                size={22}
-                className="text-amber-700"
-              />
-
-              <p className="mt-3 text-sm font-bold text-amber-950">
-                Better visibility
-              </p>
-
-              <p className="mt-1 text-xs leading-5 text-amber-700">
-                Adding a clear primary photo can
-                make your profile more
-                noticeable to potential matches.
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-4">
-              <ShieldCheck
-                size={22}
-                className="text-emerald-700"
-              />
-
-              <p className="mt-3 text-sm font-bold text-emerald-950">
-                Verification unaffected
-              </p>
-
-              <p className="mt-1 text-xs leading-5 text-emerald-700">
-                You can complete your profile
-                and become eligible for
-                verification without uploading
-                photos.
-              </p>
-            </div>
+          <div className="mt-4">
+            <UploadProgress
+              current={
+                photos.length
+              }
+              total={
+                MAX_PHOTOS
+              }
+              progress={
+                progress
+              }
+            />
           </div>
 
-          <UploadProgress
-            current={photos.length}
-            total={MAX_PHOTOS}
-            progress={progress}
-          />
-
-          {/* =================================================
-              No-photo recommendation
-              ================================================= */}
-
-          {photos.length === 0 &&
-            !loading && (
-              <div className="mt-4 rounded-xl border border-violet-100 bg-violet-50/70 px-4 py-4">
-                <div className="flex items-start gap-3">
-                  <Sparkles
-                    size={20}
-                    className="mt-0.5 shrink-0 text-violet-700"
-                  />
-
-                  <div>
-                    <p className="text-sm font-bold text-violet-900">
-                      You can skip photos for now
-                    </p>
-
-                    <p className="mt-1 text-sm leading-6 text-violet-700">
-                      Your profile can still
-                      reach 100% completion and
-                      become eligible for
-                      verification. We recommend
-                      adding photos later for
-                      better visibility and
-                      stronger match interest.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-          {/* =================================================
-              Status
-              ================================================= */}
+          {/* Status */}
 
           {loading && (
-            <div
-              role="status"
-              className="mt-6 flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700"
+            <StatusPanel
+              tone="blue"
+              icon={
+                <Loader2
+                  size={15}
+                  className="animate-spin"
+                />
+              }
             >
-              <Loader2
-                size={18}
-                className="animate-spin"
-              />
-
               Loading profile photos...
-            </div>
+            </StatusPanel>
           )}
 
           {uploading && (
-            <div
-              role="status"
-              className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-4"
-            >
-              <div className="flex items-center justify-between gap-4 text-sm font-medium text-blue-700">
+            <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-3">
+              <div className="flex items-center justify-between gap-4 text-xs font-bold text-blue-700">
                 <span className="flex items-center gap-2">
                   <Loader2
-                    size={18}
+                    size={14}
                     className="animate-spin"
                   />
 
@@ -688,13 +658,16 @@ export default function PhotoUpload({
                 </span>
 
                 <span>
-                  {uploadPercentage}%
+                  {
+                    uploadPercentage
+                  }
+                  %
                 </span>
               </div>
 
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-blue-100">
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-blue-100">
                 <div
-                  className="h-full rounded-full bg-blue-600 transition-all duration-300"
+                  className="h-full rounded-full bg-gradient-to-r from-[#0B2D5C] to-blue-600 transition-all duration-300"
                   style={{
                     width: `${uploadPercentage}%`,
                   }}
@@ -704,41 +677,38 @@ export default function PhotoUpload({
           )}
 
           {processingPhotoId && (
-            <div
-              role="status"
-              className="mt-6 flex items-center gap-3 rounded-xl border border-violet-100 bg-violet-50 px-4 py-3 text-sm font-medium text-violet-700"
+            <StatusPanel
+              tone="violet"
+              icon={
+                <Loader2
+                  size={15}
+                  className="animate-spin"
+                />
+              }
             >
-              <Loader2
-                size={18}
-                className="animate-spin"
-              />
-
               Updating photo...
-            </div>
+            </StatusPanel>
           )}
 
           {error && (
-            <div
-              role="alert"
-              className="mt-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700"
+            <StatusPanel
+              tone="red"
+              icon={
+                <AlertCircle
+                  size={15}
+                />
+              }
             >
-              <AlertCircle
-                size={20}
-                className="mt-0.5 shrink-0"
-              />
-
-              <span>{error}</span>
-            </div>
+              {error}
+            </StatusPanel>
           )}
 
-          {/* =================================================
-              Upload area
-              ================================================= */}
+          {/* Upload */}
 
           {!loading &&
             photos.length <
               MAX_PHOTOS && (
-              <div className="mt-5">
+              <div className="mt-4">
                 <DropZone
                   onFilesSelected={(
                     files
@@ -753,126 +723,124 @@ export default function PhotoUpload({
 
           {photos.length >=
             MAX_PHOTOS && (
-            <div className="mt-6 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-              <CheckCircle2
-                size={19}
-                className="shrink-0"
-              />
-
-              You have uploaded the
-              maximum of {MAX_PHOTOS}{" "}
-              photos.
-            </div>
+            <StatusPanel
+              tone="green"
+              icon={
+                <CheckCircle2
+                  size={15}
+                />
+              }
+            >
+              Maximum of{" "}
+              {MAX_PHOTOS} photos
+              uploaded.
+            </StatusPanel>
           )}
         </div>
       </Card>
 
       {/* =====================================================
-          Photo grid / guidelines
+          Photos + Guidelines
           ===================================================== */}
 
-      <div className="grid gap-4 lg:grid-cols-3 xl:gap-5">
-        <div className="lg:col-span-2">
-          {loading ? (
-            <Card className="p-4 sm:p-5">
-              <div className="flex min-h-48 sm:min-h-52 flex-col items-center justify-center text-center">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <Card className="overflow-hidden p-0">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-white to-blue-50/45 px-4 py-3">
+            <div>
+              <h3 className="text-sm font-black text-[#0B2D5C]">
+                Your Photos
+              </h3>
+
+              <p className="mt-0.5 text-[10px] text-slate-500">
+                Preview, delete or choose your primary photo.
+              </p>
+            </div>
+
+            {primaryPhoto && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[9px] font-black text-amber-700">
+                <Sparkles
+                  size={10}
+                />
+
+                Primary selected
+              </span>
+            )}
+          </div>
+
+          <div className="p-4">
+            {loading ? (
+              <div className="flex min-h-[145px] flex-col items-center justify-center text-center">
                 <Loader2
-                  size={32}
+                  size={25}
                   className="animate-spin text-[#0B2D5C]"
                 />
 
-                <p className="mt-4 text-sm text-slate-500">
+                <p className="mt-2 text-xs text-slate-500">
                   Loading photos...
                 </p>
               </div>
-            </Card>
-          ) : photos.length > 0 ? (
-            <Card className="p-4 sm:p-5">
-              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="text-base font-bold text-[#0B2D5C] sm:text-lg">
-                    Your Photos
-                  </h3>
-
-                  <p className="mt-1 text-sm text-slate-500">
-                    Preview, delete or select
-                    your primary photo.
-                  </p>
-                </div>
-
-                {primaryPhoto && (
-                  <div className="inline-flex w-fit items-center gap-2 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-800">
-                    <Sparkles
-                      size={14}
-                    />
-
-                    Primary selected
-                  </div>
-                )}
-              </div>
-
+            ) : photos.length >
+              0 ? (
               <PhotoGrid
-                photos={photos}
-                onPrimary={(id) => {
-                  void setPrimary(id);
+                photos={
+                  photos
+                }
+                onPrimary={(
+                  id
+                ) => {
+                  void setPrimary(
+                    id
+                  );
                 }}
-                onRemove={(id) => {
-                  void removePhoto(id);
+                onRemove={(
+                  id
+                ) => {
+                  void removePhoto(
+                    id
+                  );
                 }}
               />
-            </Card>
-          ) : (
-            <Card className="p-4 sm:p-5">
-              <div className="flex min-h-48 sm:min-h-52 flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 px-6 text-center">
+            ) : (
+              <div className="flex min-h-[145px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-5 text-center">
                 <Camera
-                  size={42}
+                  size={30}
                   className="text-slate-300"
                 />
 
-                <h3 className="mt-3 text-base font-bold text-slate-700 sm:text-lg">
+                <h3 className="mt-2 text-sm font-black text-slate-700">
                   No photos uploaded
                 </h3>
 
-                <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
-                  That's okay. Photos are
-                  optional and do not prevent
-                  profile completion or
-                  verification. You can add
-                  photos later to improve your
-                  profile visibility.
+                <p className="mt-1 max-w-md text-[11px] leading-5 text-slate-500">
+                  That&apos;s okay. Photos are optional and can be added later.
                 </p>
               </div>
-            </Card>
-          )}
-        </div>
+            )}
+          </div>
+        </Card>
 
         <UploadGuidelines />
       </div>
 
       {/* =====================================================
-          Final reminder
+          Recommendation
           ===================================================== */}
 
-      <Card className="border-blue-100 bg-gradient-to-r from-blue-50 via-white to-amber-50 p-4 sm:p-5">
+      <Card className="border-amber-100 bg-gradient-to-r from-amber-50/80 via-white to-blue-50/60 p-3.5 sm:p-4">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0B2D5C] text-white">
-            <ShieldCheck size={21} />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+            <TrendingUp
+              size={15}
+            />
           </div>
 
           <div>
-            <h3 className="font-bold text-[#0B2D5C]">
-              Photos do not affect verification
-              eligibility
+            <h3 className="text-xs font-black text-[#0B2D5C] sm:text-sm">
+              Photos are recommended, not required
             </h3>
 
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Complete all required information
-              in your profile to reach 100% and
-              become eligible for profile
-              verification. Photos are optional,
-              but adding clear photos is strongly
-              recommended for better visibility
-              and match interest.
+            <p className="mt-1 text-[10px] leading-5 text-slate-500 sm:text-[11px]">
+              Clear profile photos can improve visibility and match interest, while profile completion and verification remain independent of photo count.
             </p>
           </div>
         </div>
@@ -882,15 +850,20 @@ export default function PhotoUpload({
           Navigation
           ===================================================== */}
 
-      <Card className="p-4 sm:p-5">
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <Card className="p-3.5 sm:p-4">
+        <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:items-center sm:justify-between">
           <Button
             type="button"
             variant="secondary"
+            size="sm"
             fullWidth
             className="sm:w-auto"
-            onClick={onBack}
-            disabled={busy}
+            onClick={
+              onBack
+            }
+            disabled={
+              busy
+            }
           >
             Back
           </Button>
@@ -898,12 +871,15 @@ export default function PhotoUpload({
           <Button
             type="button"
             variant="primary"
+            size="sm"
             fullWidth
-            className="sm:w-auto"
+            className="sm:min-w-[150px] sm:w-auto"
             onClick={
               handleContinue
             }
-            disabled={busy}
+            disabled={
+              busy
+            }
           >
             {uploading
               ? "Uploading..."
@@ -911,12 +887,113 @@ export default function PhotoUpload({
                 ? "Updating..."
                 : loading
                   ? "Loading..."
-                  : photos.length === 0
+                  : photos.length ===
+                      0
                     ? "Skip & Continue"
                     : "Save & Continue"}
           </Button>
         </div>
       </Card>
+    </div>
+  );
+}
+
+type InfoTileVariant =
+  | "blue"
+  | "gold"
+  | "green";
+
+function InfoTile({
+  icon,
+  title,
+  description,
+  variant,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  variant: InfoTileVariant;
+}) {
+  const styles: Record<
+    InfoTileVariant,
+    string
+  > = {
+    blue:
+      "border-blue-100 bg-blue-50/60 text-blue-700",
+
+    gold:
+      "border-amber-100 bg-amber-50/60 text-amber-700",
+
+    green:
+      "border-emerald-100 bg-emerald-50/60 text-emerald-700",
+  };
+
+  return (
+    <div
+      className={[
+        "rounded-xl border p-3",
+        styles[variant],
+      ].join(" ")}
+    >
+      <div className="flex items-center gap-2">
+        {icon}
+
+        <p className="text-[11px] font-black">
+          {title}
+        </p>
+      </div>
+
+      <p className="mt-1.5 text-[10px] leading-4 opacity-80">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+type StatusTone =
+  | "blue"
+  | "violet"
+  | "green"
+  | "red";
+
+function StatusPanel({
+  tone,
+  icon,
+  children,
+}: {
+  tone: StatusTone;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const styles: Record<
+    StatusTone,
+    string
+  > = {
+    blue:
+      "border-blue-100 bg-blue-50 text-blue-700",
+
+    violet:
+      "border-violet-100 bg-violet-50 text-violet-700",
+
+    green:
+      "border-emerald-200 bg-emerald-50 text-emerald-700",
+
+    red:
+      "border-red-200 bg-red-50 text-red-700",
+  };
+
+  return (
+    <div
+      className={[
+        "mt-3 flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-xs font-semibold",
+        styles[tone],
+      ].join(" ")}
+    >
+      <span className="shrink-0">
+        {icon}
+      </span>
+
+      {children}
     </div>
   );
 }

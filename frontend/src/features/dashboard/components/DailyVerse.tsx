@@ -8,42 +8,57 @@ import {
 
 export default function DailyVerse() {
   return (
-    <section className="relative overflow-hidden rounded-[28px] border border-[#D4AF37]/30 bg-gradient-to-br from-amber-50 via-white to-blue-50 p-6 shadow-[0_14px_40px_rgba(15,23,42,0.06)] sm:p-7">
-      <div className="pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full bg-[#D4AF37]/20 blur-3xl" />
+    <section className="relative overflow-hidden rounded-[20px] border border-[#D4AF37]/25 bg-gradient-to-r from-amber-50/90 via-white to-blue-50/80 px-4 py-4 shadow-[0_8px_26px_rgba(15,23,42,0.05)] sm:px-5">
+      <div className="pointer-events-none absolute -right-10 -top-14 h-36 w-36 rounded-full bg-[#D4AF37]/15 blur-3xl" />
 
-      <div className="relative">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0B2D5C] text-[#F2D675] shadow-md">
-            <BookOpen size={22} />
+      <div className="relative flex flex-col gap-4 md:flex-row md:items-center">
+        <div className="flex shrink-0 items-center gap-3 md:w-[190px]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0B2D5C] text-[#F2D675] shadow-sm">
+            <BookOpen size={18} />
           </div>
 
-          <Sparkles
-            size={20}
-            className="text-[#B38B19]"
-          />
+          <div>
+            <div className="flex items-center gap-1.5">
+              <Sparkles
+                size={11}
+                className="text-[#B38B19]"
+              />
+
+              <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[#B38B19]">
+                Daily Scripture
+              </p>
+            </div>
+
+            <p className="mt-0.5 text-xs font-black text-[#0B2D5C]">
+              Proverbs 3:5
+            </p>
+          </div>
         </div>
 
-        <div className="mt-6">
-          <Quote
-            size={28}
-            className="text-[#D4AF37]"
-          />
+        <div className="hidden h-10 w-px bg-slate-200 md:block" />
 
-          <blockquote className="mt-3 text-xl font-black leading-9 text-[#0B2D5C]">
-            Trust in the Lord with all your
-            heart and lean not on your own
-            understanding.
-          </blockquote>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start gap-2.5">
+            <Quote
+              size={17}
+              className="mt-0.5 shrink-0 text-[#D4AF37]"
+            />
 
-          <p className="mt-4 text-sm font-black uppercase tracking-[0.14em] text-[#B38B19]">
-            Proverbs 3:5
-          </p>
+            <div>
+              <blockquote className="text-sm font-black leading-6 text-[#0B2D5C] sm:text-[15px]">
+                Trust in the Lord with all your
+                heart and lean not on your own
+                understanding.
+              </blockquote>
+
+              <p className="mt-1 text-[11px] leading-5 text-slate-500 sm:text-xs">
+                Let faith, wisdom and patience
+                guide each step of your
+                matrimony journey.
+              </p>
+            </div>
+          </div>
         </div>
-
-        <p className="mt-5 border-t border-amber-200/70 pt-5 text-sm leading-7 text-slate-600">
-          Let faith, wisdom and patience guide
-          each step of your matrimony journey.
-        </p>
       </div>
     </section>
   );

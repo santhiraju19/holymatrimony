@@ -1,22 +1,29 @@
-
 "use client";
 
 import Image from "next/image";
 import Link from "next/link";
 
 import {
+  ArrowUpRight,
   BriefcaseBusiness,
   Church,
   GraduationCap,
   MapPin,
+  Sparkles,
   UserRound,
 } from "lucide-react";
 
 import InterestButton from "@/features/interests/components/InterestButton";
+
 import ProfileTrustBadges from "@/features/browse/components/ProfileTrustBadges";
 
-import type { BrowseProfile } from "../types";
-import { resolveBrowsePhotoUrl } from "../utils/photoUrl";
+import type {
+  BrowseProfile,
+} from "../types";
+
+import {
+  resolveBrowsePhotoUrl,
+} from "../utils/photoUrl";
 
 interface BrowseProfileCardProps {
   profile: BrowseProfile;
@@ -35,10 +42,19 @@ export default function BrowseProfileCard({
     "Holy Matrimony Member";
 
   const location =
-    buildLocation(profile);
+    buildLocation(
+      profile
+    );
 
   const churchDetails =
-    buildChurchDetails(profile);
+    buildChurchDetails(
+      profile
+    );
+
+  const basicDetails =
+    buildBasicDetails(
+      profile
+    );
 
   const completionPercentage =
     Math.min(
@@ -50,73 +66,148 @@ export default function BrowseProfileCard({
       100
     );
 
+  const hasTrustCredentials =
+    Boolean(
+      profile.aadhaarVerified ||
+        profile.idVerified ||
+        profile.churchVerified
+    );
+
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-[0_8px_28px_rgba(15,23,42,0.055)] transition-all duration-300 ease-out hover:-translate-y-1 hover:border-blue-200/80 hover:shadow-[0_20px_48px_rgba(15,23,42,0.12)]">
+
+      {/* =====================================================
+          Premium Accent
+          ===================================================== */}
+
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-12 top-0 z-30 h-[2px] bg-gradient-to-r from-transparent via-[#D4AF37]/70 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+      />
+
+      {/* =====================================================
+          Profile Photo
+          ===================================================== */}
+
       <Link
         href={`/browse/${profile.id}`}
         className="block"
       >
-        {/* Compact portrait */}
-        <div className="relative aspect-[5/4] overflow-hidden bg-slate-100 sm:aspect-[4/3] xl:aspect-[5/4]">
+        <div className="relative aspect-[5/4] overflow-hidden bg-gradient-to-br from-blue-50 via-slate-100 to-indigo-50 sm:aspect-[4/3] xl:aspect-[5/4]">
+
           {photoUrl ? (
             <Image
               src={photoUrl}
               alt={`${displayName} profile photo`}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-              className="object-cover transition duration-500 group-hover:scale-[1.03]"
+              className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.045]"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-              <UserRound
-                size={52}
-                strokeWidth={1.4}
-                className="text-blue-300"
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-100">
+              <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white bg-white/80 text-blue-300 shadow-[0_14px_40px_rgba(37,99,235,0.12)] backdrop-blur-sm">
+                <UserRound
+                  size={48}
+                  strokeWidth={1.35}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* =================================================
+              Photo Lighting / Depth
+              ================================================= */}
+
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#020817]/90 via-[#020817]/15 to-transparent"
+          />
+
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/30 to-transparent"
+          />
+
+          {/* =================================================
+              Premium Trust Badges
+              ================================================= */}
+
+          {hasTrustCredentials && (
+            <div className="absolute left-3 top-3 z-20 max-w-[calc(100%-3.5rem)]">
+              <ProfileTrustBadges
+                profile={profile}
+                compact
+                overlay
               />
             </div>
           )}
 
-          <div className="absolute left-3 top-3 z-10 max-w-[calc(100%-4.5rem)]">
-  <ProfileTrustBadges
-    profile={profile}
-    compact
-    overlay
-  />
-</div>
+          {/* =================================================
+              Open Profile Indicator
+              ================================================= */}
 
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-4 pb-3.5 pt-12">
-            <div>
-  <div className="min-w-0">
-                <h2 className="truncate text-lg font-black text-white">
+          <span className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-xl border border-white/20 bg-black/25 text-white shadow-sm backdrop-blur-xl transition-all duration-300 group-hover:bg-white group-hover:text-[#0B2D5C]">
+            <ArrowUpRight
+              size={17}
+              strokeWidth={2.3}
+            />
+          </span>
+
+          {/* =================================================
+              Profile Identity Overlay
+              ================================================= */}
+
+          <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-4 pt-16">
+            <div className="flex items-end justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="truncate text-xl font-black tracking-[-0.025em] text-white drop-shadow-sm">
                   {displayName}
                 </h2>
 
-                <p className="mt-0.5 truncate text-xs font-medium text-white/90 sm:text-sm">
-                  {buildBasicDetails(
-                    profile
-                  )}
-                </p>
+                {basicDetails && (
+                  <p className="mt-1 truncate text-xs font-semibold text-white/85 sm:text-sm">
+                    {basicDetails}
+                  </p>
+                )}
               </div>
 
-              
+              {completionPercentage ===
+                100 && (
+                <span
+                  title="Profile complete"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-200/30 bg-amber-300/15 text-amber-200 backdrop-blur-md"
+                >
+                  <Sparkles
+                    size={15}
+                    strokeWidth={2.3}
+                  />
+                </span>
+              )}
             </div>
           </div>
         </div>
       </Link>
 
-      {/* Profile information */}
+      {/* =====================================================
+          Profile Information
+          ===================================================== */}
+
       <div className="flex flex-1 flex-col">
         <Link
           href={`/browse/${profile.id}`}
           className="block flex-1"
         >
-          <div className="space-y-3 p-4">
-  
+          <div className="space-y-4 px-4 pb-4 pt-4">
+
+            {/* =================================================
+                Core Details
+                ================================================= */}
+
             <div className="space-y-2.5">
               <ProfileDetail
                 icon={
                   <BriefcaseBusiness
-                    size={15}
+                    size={16}
                   />
                 }
                 value={
@@ -128,7 +219,7 @@ export default function BrowseProfileCard({
               <ProfileDetail
                 icon={
                   <GraduationCap
-                    size={15}
+                    size={16}
                   />
                 }
                 value={
@@ -140,7 +231,7 @@ export default function BrowseProfileCard({
               <ProfileDetail
                 icon={
                   <Church
-                    size={15}
+                    size={16}
                   />
                 }
                 value={
@@ -152,7 +243,7 @@ export default function BrowseProfileCard({
               <ProfileDetail
                 icon={
                   <MapPin
-                    size={15}
+                    size={16}
                   />
                 }
                 value={
@@ -162,113 +253,166 @@ export default function BrowseProfileCard({
               />
             </div>
 
-            <div className="border-t border-slate-100 pt-3">
-              <div className="mb-1.5 flex items-center justify-between gap-3">
-                <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500 sm:text-xs">
-                  Profile completion
-                </span>
+            {/* =================================================
+                Profile Completion
+                ================================================= */}
 
-                <span className="text-xs font-black text-blue-700">
-                  {completionPercentage}%
+            <div className="rounded-2xl border border-slate-100 bg-gradient-to-r from-slate-50 via-white to-blue-50/50 px-3.5 py-3">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.1em] text-slate-400">
+                    Profile completion
+                  </p>
+                </div>
+
+                <span
+                  className={[
+                    "rounded-full px-2 py-0.5 text-[11px] font-black",
+                    completionPercentage >=
+                    90
+                      ? "bg-emerald-50 text-emerald-700"
+                      : completionPercentage >=
+                          60
+                        ? "bg-blue-50 text-blue-700"
+                        : "bg-amber-50 text-amber-700",
+                  ].join(" ")}
+                >
+                  {
+                    completionPercentage
+                  }
+                  %
                 </span>
               </div>
 
               <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-300"
+                  className="h-full rounded-full bg-gradient-to-r from-[#0B2D5C] via-blue-600 to-indigo-500 transition-all duration-500"
                   style={{
                     width: `${completionPercentage}%`,
                   }}
                 />
               </div>
             </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-blue-700 sm:text-sm">
-                View profile
-              </span>
-
-              <span className="text-base text-blue-700 transition-transform group-hover:translate-x-1">
-                →
-              </span>
-            </div>
           </div>
         </Link>
 
-        <div className="border-t border-slate-100 p-3.5 sm:p-4">
-          <InterestButton
-            receiverProfileId={
-              profile.id
-            }
-            memberName={
-              displayName
-            }
-            message={`Hello ${displayName}, I am interested in connecting with you through Holy Matrimony.`}
-          />
+        {/* =====================================================
+            Premium Action Footer
+            ===================================================== */}
+
+        <div className="mt-auto border-t border-slate-100 bg-gradient-to-r from-white via-white to-blue-50/35 p-3.5">
+          <div className="grid gap-2.5">
+            <InterestButton
+              receiverProfileId={
+                profile.id
+              }
+              memberName={
+                displayName
+              }
+              message={`Hello ${displayName}, I am interested in connecting with you through Holy Matrimony.`}
+            />
+
+            <Link
+              href={`/browse/${profile.id}`}
+              className="group/view inline-flex h-10 items-center justify-center gap-2 rounded-xl text-sm font-extrabold text-[#0B2D5C] transition-colors hover:bg-blue-50 hover:text-blue-700"
+            >
+              View full profile
+
+              <ArrowUpRight
+                size={15}
+                strokeWidth={2.4}
+                className="transition-transform duration-200 group-hover/view:translate-x-0.5 group-hover/view:-translate-y-0.5"
+              />
+            </Link>
+          </div>
         </div>
       </div>
     </article>
   );
 }
 
-interface ProfileDetailProps {
-  icon: React.ReactNode;
-  value: string;
-}
+/*
+ * ============================================================
+ * Detail Row
+ * ============================================================
+ */
 
 function ProfileDetail({
   icon,
   value,
-}: ProfileDetailProps) {
+}: {
+  icon: React.ReactNode;
+  value: string;
+}) {
   return (
-    <div className="flex min-w-0 items-center gap-2.5 text-xs text-slate-600 sm:text-sm">
-      <span className="shrink-0 text-blue-600">
+    <div className="flex min-w-0 items-center gap-2.5">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-50 to-blue-50 text-[#0B2D5C] transition-colors duration-300 group-hover:from-blue-50 group-hover:to-indigo-50 group-hover:text-blue-700">
         {icon}
       </span>
 
-      <span
-        title={value}
-        className="truncate"
-      >
+      <p className="min-w-0 truncate text-[13px] font-semibold text-slate-600">
         {value}
-      </span>
+      </p>
     </div>
   );
 }
 
+/*
+ * ============================================================
+ * Basic Profile Summary
+ * ============================================================
+ */
+
 function buildBasicDetails(
   profile: BrowseProfile
 ): string {
-  const details: string[] = [];
+  return [
+    profile.age
+      ? `${profile.age} yrs`
+      : null,
 
-  if (
-    profile.age !== null &&
-    profile.age !== undefined &&
-    profile.age > 0
-  ) {
-    details.push(
-      `${profile.age} years`
-    );
-  }
+    profile.gender?.trim(),
 
-  if (profile.gender?.trim()) {
-    details.push(
-      profile.gender.trim()
-    );
-  }
-
-  if (
-    profile.maritalStatus?.trim()
-  ) {
-    details.push(
-      profile.maritalStatus.trim()
-    );
-  }
-
-  return details.length > 0
-    ? details.join(" • ")
-    : "Profile details unavailable";
+    profile.maritalStatus?.trim(),
+  ]
+    .filter(Boolean)
+    .join(" • ");
 }
+
+/*
+ * ============================================================
+ * Church Summary
+ * ============================================================
+ */
+
+function buildChurchDetails(
+  profile: BrowseProfile
+): string {
+  const churchName =
+    profile.churchName?.trim();
+
+  const denomination =
+    profile.denomination?.trim();
+
+  if (
+    churchName &&
+    denomination
+  ) {
+    return `${churchName} • ${denomination}`;
+  }
+
+  return (
+    churchName ||
+    denomination ||
+    ""
+  );
+}
+
+/*
+ * ============================================================
+ * Location Summary
+ * ============================================================
+ */
 
 function buildLocation(
   profile: BrowseProfile
@@ -278,23 +422,6 @@ function buildLocation(
     profile.state?.trim(),
     profile.country?.trim(),
   ]
-    .filter(
-      (value): value is string =>
-        Boolean(value)
-    )
+    .filter(Boolean)
     .join(", ");
-}
-
-function buildChurchDetails(
-  profile: BrowseProfile
-): string {
-  return [
-    profile.churchName?.trim(),
-    profile.denomination?.trim(),
-  ]
-    .filter(
-      (value): value is string =>
-        Boolean(value)
-    )
-    .join(" • ");
 }

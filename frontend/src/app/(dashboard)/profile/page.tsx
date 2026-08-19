@@ -119,16 +119,14 @@ export default function ProfilePage() {
     );
 
   /*
-   * Backend completion state.
+   * =========================================================
+   * Backend completion state
+   * =========================================================
    *
-   * IMPORTANT:
-   *
-   * This is what determines whether the
-   * member may submit for verification.
-   *
-   * The backend completion calculation does
-   * not require profile photos.
+   * Verification eligibility comes from
+   * the backend and does not require photos.
    */
+
   const [
     backendCompletionPercentage,
     setBackendCompletionPercentage,
@@ -141,7 +139,7 @@ export default function ProfilePage() {
 
   /*
    * =========================================================
-   * Local wizard profile state
+   * Local profile state
    * =========================================================
    */
 
@@ -165,12 +163,9 @@ export default function ProfilePage() {
     useProfileWizard();
 
   /*
-   * Frontend completion can continue including
-   * photos and other quality indicators.
-   *
-   * This score is used for the normal profile
-   * completion UI only.
+   * Local profile-quality completion.
    */
+
   const completion =
     useMemo(
       () =>
@@ -191,7 +186,7 @@ export default function ProfilePage() {
 
   /*
    * =========================================================
-   * Load backend profile / verification state
+   * Load backend verification/completion state
    * =========================================================
    */
 
@@ -231,10 +226,6 @@ export default function ProfilePage() {
             null
         );
 
-        /*
-         * Verification eligibility comes
-         * directly from the backend.
-         */
         setBackendCompletionPercentage(
           data.completionPercentage ??
             0
@@ -246,13 +237,6 @@ export default function ProfilePage() {
           )
         );
       } catch (loadError) {
-        /*
-         * ProfileProvider already owns the
-         * main profile loading/error flow.
-         *
-         * A verification metadata error should
-         * not break the profile wizard.
-         */
         console.error(
           "Unable to load verification status:",
           loadError
@@ -275,7 +259,7 @@ export default function ProfilePage() {
 
   /*
    * =========================================================
-   * Helper: refresh backend verification/completion data
+   * Refresh backend state
    * =========================================================
    */
 
@@ -344,10 +328,6 @@ export default function ProfilePage() {
         return;
       }
 
-      /*
-       * Refresh backend completion after
-       * every successful save.
-       */
       try {
         await refreshVerificationState();
       } catch (refreshError) {
@@ -396,18 +376,9 @@ export default function ProfilePage() {
     };
 
   /*
-   * =========================================================
-   * Direct Profile Journey navigation
-   * =========================================================
-   *
-   * ProfileStepper exposes human-friendly 1-based
-   * step numbers while useProfileWizard uses 0-based
-   * indexes internally.
-   *
-   * Selecting a journey step only changes the visible
-   * wizard page. It does not save, complete or modify
-   * profile information.
+   * Direct navigation between journey steps.
    */
+
   const handleStepClick = (
     stepNumber: number
   ): void => {
@@ -518,8 +489,9 @@ export default function ProfilePage() {
 
       try {
         /*
-         * Save the latest wizard data first.
+         * Save latest wizard data first.
          */
+
         const saved =
           await saveProfile();
 
@@ -532,15 +504,12 @@ export default function ProfilePage() {
         }
 
         /*
-         * Re-read from the backend.
+         * Re-read from backend.
          *
-         * This is important because backend
-         * completion is the source of truth for
-         * verification eligibility.
-         *
-         * Photos are not required by the backend
-         * completion calculation.
+         * Backend completion is the
+         * verification source of truth.
          */
+
         const latestProfile =
           await profileService
             .getProfile();
@@ -581,14 +550,12 @@ export default function ProfilePage() {
         }
 
         /*
-         * Backend will enforce:
+         * Backend enforces:
          *
          * NOT_SUBMITTED -> PENDING
          * REJECTED      -> PENDING
-         *
-         * PENDING and APPROVED cannot
-         * be submitted again.
          */
+
         const updatedProfile =
           await profileService
             .submitForVerification();
@@ -769,22 +736,21 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[65vh] items-center justify-center">
-        <div className="rounded-[28px] border border-slate-200 bg-white px-10 py-12 text-center shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-50 text-[#0B2D5C]">
+      <div className="flex min-h-[45vh] items-center justify-center">
+        <div className="rounded-[20px] border border-slate-200 bg-white px-8 py-8 text-center shadow-[0_12px_36px_rgba(15,23,42,0.07)]">
+          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-[#0B2D5C]">
             <Loader2
-              size={30}
+              size={22}
               className="animate-spin"
             />
           </div>
 
-          <h2 className="mt-5 text-xl font-black text-[#0B2D5C]">
+          <h2 className="mt-3 text-base font-black text-[#0B2D5C]">
             Loading your profile
           </h2>
 
-          <p className="mt-2 text-sm text-slate-500">
-            Preparing your saved
-            information securely.
+          <p className="mt-1 text-xs text-slate-500">
+            Preparing your saved information securely.
           </p>
         </div>
       </div>
@@ -798,132 +764,128 @@ export default function ProfilePage() {
    */
 
   return (
-    <div className="space-y-4 pb-8 sm:space-y-5 sm:pb-10">
-      {/* Hero */}
+    <div className="space-y-4 pb-8">
 
-      <section className="relative overflow-hidden rounded-[24px] border border-blue-100 bg-gradient-to-br from-[#071B36] via-[#0B2D5C] to-[#174A87] px-4 py-5 text-white shadow-[0_18px_50px_rgba(11,45,92,0.18)] sm:px-6 sm:py-6 lg:px-7 lg:py-6">
-        <div className="pointer-events-none absolute -right-16 -top-20 h-72 w-72 rounded-full bg-blue-400/20 blur-3xl" />
+      {/* =====================================================
+          Compact premium profile header
+          ===================================================== */}
 
-        <div className="pointer-events-none absolute -bottom-28 left-1/3 h-72 w-72 rounded-full bg-[#D4AF37]/15 blur-3xl" />
+      <section className="relative overflow-hidden rounded-[22px] border border-blue-900/10 bg-gradient-to-r from-[#071B36] via-[#0B2D5C] to-[#174A87] px-4 py-4 text-white shadow-[0_14px_38px_rgba(11,45,92,0.16)] sm:px-5 lg:px-6">
+        <div className="pointer-events-none absolute -right-20 -top-24 h-56 w-56 rounded-full bg-blue-400/20 blur-3xl" />
 
-        <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center">
+        <div className="pointer-events-none absolute -bottom-24 left-[30%] h-48 w-48 rounded-full bg-[#D4AF37]/15 blur-3xl" />
+
+        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#F2D675]/30 bg-[#D4AF37]/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-[#F2D675]">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-[#F2D675]/25 bg-[#D4AF37]/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.13em] text-[#F2D675] sm:text-[10px]">
               <Sparkles
-                size={14}
+                size={11}
               />
 
-              Build a meaningful
-              profile
+              Build a meaningful profile
             </div>
 
-            <div className="mt-4 flex items-start gap-3">
-              <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 backdrop-blur sm:flex">
+            <div className="mt-3 flex items-start gap-3">
+              <div className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 backdrop-blur sm:flex">
                 <UserRound
-                  size={22}
+                  size={17}
                 />
               </div>
 
               <div>
-                <h1 className="text-2xl font-black tracking-tight sm:text-3xl lg:text-[32px]">
-                  Complete Your
-                  Profile
+                <h1 className="text-xl font-black tracking-[-0.025em] sm:text-2xl">
+                  Complete Your Profile
                 </h1>
 
-                <p className="mt-2.5 max-w-2xl text-sm leading-6 text-blue-100">
-                  Share the
-                  information that
-                  helps compatible
-                  Christian members
-                  understand your
-                  faith, family and
-                  life journey.
+                <p className="mt-1.5 max-w-xl text-xs leading-5 text-blue-100/90 sm:text-sm">
+                  Share your faith, family and life journey to help compatible members understand you better.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Local profile-quality completion */}
+          {/* Compact profile status */}
 
-          <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur-xl">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-200">
-                  Profile
-                  completion
-                </p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:w-[390px]">
+            <div className="rounded-[15px] border border-white/10 bg-white/[0.08] px-3.5 py-3 backdrop-blur-xl">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.11em] text-blue-200">
+                    Profile completion
+                  </p>
 
-                <p className="mt-1 text-2xl font-black text-white sm:text-3xl">
-                  {
-                    completion.percentage
-                  }
-                  %
-                </p>
-              </div>
+                  <p className="mt-0.5 text-xl font-black">
+                    {
+                      completion.percentage
+                    }
+                    %
+                  </p>
+                </div>
 
-              <div className="relative flex h-14 w-14 items-center justify-center rounded-full border-[5px] border-white/15 bg-white/10 sm:h-16 sm:w-16">
-                <span className="text-sm font-black text-[#F2D675] sm:text-base">
-                  {
-                    completion.percentage
-                  }
-                  %
+                <span className="text-xs font-black text-[#F2D675]">
+                  Step {currentStep}/{TOTAL_STEPS}
                 </span>
               </div>
+
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[#D4AF37] via-[#F2D675] to-[#FFF2B2]"
+                  style={{
+                    width: `${completion.percentage}%`,
+                  }}
+                />
+              </div>
             </div>
 
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[#D4AF37] via-[#F2D675] to-[#FFF2B2] transition-all duration-500"
-                style={{
-                  width: `${completion.percentage}%`,
-                }}
-              />
-            </div>
+            <div className="rounded-[15px] border border-white/10 bg-white/[0.08] px-3.5 py-3 backdrop-blur-xl">
+              <p className="text-[9px] font-bold uppercase tracking-[0.11em] text-blue-200">
+                Profile journey
+              </p>
 
-            <div className="mt-3 flex items-center justify-between gap-3 text-[11px] sm:text-xs">
-              <span className="text-blue-100">
-                Step{" "}
-                {
-                  currentStep
-                }{" "}
-                of{" "}
-                {
-                  TOTAL_STEPS
-                }
-              </span>
-
-              <span className="font-bold text-[#F2D675]">
-                {completion
-                  .pending
-                  .length ===
+              <p className="mt-1 text-sm font-black text-white">
+                {completion.pending.length ===
                 0
-                  ? "Ready"
-                  : `${completion.pending.length} remaining`}
-              </span>
+                  ? "Profile ready"
+                  : `${completion.pending.length} sections remaining`}
+              </p>
+
+              <div className="mt-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-blue-100">
+                <ShieldCheck
+                  size={12}
+                  className="text-emerald-400"
+                />
+
+                Secure profile editing
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Status messages */}
+      {/* =====================================================
+          Compact status messages
+          ===================================================== */}
 
       <div
-        className="min-h-6 space-y-3"
+        className="space-y-2"
         aria-live="polite"
       >
         {(saving ||
           saveStatus ===
             "saving") && (
-          <div className="flex items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 shadow-sm">
-            <Loader2
-              size={18}
-              className="animate-spin"
-            />
-
+          <StatusMessage
+            tone="blue"
+            icon={
+              <Loader2
+                size={15}
+                className="animate-spin"
+              />
+            }
+          >
             {saving
               ? "Saving your profile..."
               : "Saving your draft..."}
-          </div>
+          </StatusMessage>
         )}
 
         {!saving &&
@@ -932,83 +894,78 @@ export default function ProfilePage() {
           !successMessage &&
           !error &&
           !verificationError && (
-            <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 shadow-sm">
-              <CheckCircle2
-                size={18}
-              />
-
-              Draft saved
-              securely
-            </div>
+            <StatusMessage
+              tone="green"
+              icon={
+                <CheckCircle2
+                  size={15}
+                />
+              }
+            >
+              Draft saved securely
+            </StatusMessage>
           )}
 
         {error && (
-          <div
+          <StatusMessage
+            tone="red"
+            icon={
+              <AlertCircle
+                size={15}
+              />
+            }
             role="alert"
-            className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm font-semibold text-red-700 shadow-sm"
           >
-            <AlertCircle
-              size={19}
-              className="mt-0.5 shrink-0"
-            />
-
-            <span>
-              {error}
-            </span>
-          </div>
+            {error}
+          </StatusMessage>
         )}
 
         {verificationError && (
-          <div
+          <StatusMessage
+            tone="red"
+            icon={
+              <AlertCircle
+                size={15}
+              />
+            }
             role="alert"
-            className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm font-semibold text-red-700 shadow-sm"
           >
-            <AlertCircle
-              size={19}
-              className="mt-0.5 shrink-0"
-            />
-
-            <span>
-              {
-                verificationError
-              }
-            </span>
-          </div>
+            {
+              verificationError
+            }
+          </StatusMessage>
         )}
 
         {successMessage &&
           !error &&
           !verificationError && (
-            <div
+            <StatusMessage
+              tone="green"
+              icon={
+                <CheckCircle2
+                  size={15}
+                />
+              }
               role="status"
-              className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm font-semibold text-emerald-700 shadow-sm"
             >
-              <CheckCircle2
-                size={19}
-                className="mt-0.5 shrink-0"
-              />
-
-              <span>
-                {
-                  successMessage
-                }
-              </span>
-            </div>
+              {
+                successMessage
+              }
+            </StatusMessage>
           )}
       </div>
 
-      {/* Main layout */}
+      {/* =====================================================
+          Profile Workspace
+          ===================================================== */}
 
-      <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[250px_minmax(0,1fr)] xl:grid-cols-[270px_minmax(0,1fr)] xl:gap-5">
+      <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[230px_minmax(0,1fr)] xl:grid-cols-[245px_minmax(0,1fr)]">
+
         {/* Sidebar */}
 
-        <aside className="min-w-0 lg:sticky lg:top-[92px]">
-          <div className="space-y-4">
-            {/*
-             * Normal profile quality card.
-             *
-             * This may still encourage photo upload.
-             */}
+        <aside className="min-w-0 lg:sticky lg:top-[88px]">
+          <div className="space-y-3">
+
             <ProfileCompletionCard
               percentage={
                 completion.percentage
@@ -1021,13 +978,6 @@ export default function ProfilePage() {
               }
             />
 
-            {/*
-             * Verification eligibility uses
-             * backend completion, NOT the local
-             * completion score.
-             *
-             * Therefore photos can be skipped.
-             */}
             <ProfileVerificationCard
               status={
                 verificationStatus
@@ -1063,33 +1013,29 @@ export default function ProfilePage() {
               }
             />
 
-            <div className="hidden rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-blue-50 p-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)] xl:block">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
-                <ShieldCheck
-                  size={18}
-                />
-              </div>
+            {/* Compact security note */}
 
-              <h3 className="mt-4 font-black text-[#0B2D5C]">
-                Your information
-                is secure
-              </h3>
+            <div className="hidden rounded-[16px] border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-blue-50 px-3.5 py-3 shadow-[0_6px_18px_rgba(15,23,42,0.04)] xl:block">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white">
+                  <ShieldCheck
+                    size={15}
+                  />
+                </div>
 
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Profile details
-                are saved securely
-                and can be updated
-                later from My
-                Profile.
-              </p>
+                <div>
+                  <h3 className="text-xs font-black text-[#0B2D5C]">
+                    Your information is secure
+                  </h3>
 
-              <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-emerald-700">
-                <Clock3
-                  size={15}
-                />
+                  <div className="mt-0.5 flex items-center gap-1.5 text-[10px] font-semibold text-emerald-700">
+                    <Clock3
+                      size={11}
+                    />
 
-                Draft saving
-                enabled
+                    Draft saving enabled
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1109,6 +1055,57 @@ export default function ProfilePage() {
           </div>
         </section>
       </div>
+    </div>
+  );
+}
+
+type StatusTone =
+  | "blue"
+  | "green"
+  | "red";
+
+function StatusMessage({
+  tone,
+  icon,
+  children,
+  role,
+}: {
+  tone: StatusTone;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  role?:
+    | "alert"
+    | "status";
+}) {
+  const styles: Record<
+    StatusTone,
+    string
+  > = {
+    blue:
+      "border-blue-200 bg-blue-50/80 text-blue-700",
+
+    green:
+      "border-emerald-200 bg-emerald-50/80 text-emerald-700",
+
+    red:
+      "border-red-200 bg-red-50/80 text-red-700",
+  };
+
+  return (
+    <div
+      role={role}
+      className={[
+        "flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-xs font-semibold shadow-sm sm:text-sm",
+        styles[tone],
+      ].join(" ")}
+    >
+      <span className="shrink-0">
+        {icon}
+      </span>
+
+      <span>
+        {children}
+      </span>
     </div>
   );
 }

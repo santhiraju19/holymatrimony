@@ -2,12 +2,17 @@ package com.theholymatrimony.backend.profile.repository;
 
 import com.theholymatrimony.backend.profile.dto.SearchProfileRequest;
 import com.theholymatrimony.backend.profile.entity.Profile;
+
 import com.theholymatrimony.backend.verification.document.IdentityDocumentType;
 import com.theholymatrimony.backend.verification.document.IdentityVerificationDocument;
+
 import com.theholymatrimony.backend.verification.entity.MemberVerification;
+
 import com.theholymatrimony.backend.verification.enums.VerificationStatus;
 import com.theholymatrimony.backend.verification.enums.VerificationType;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
@@ -21,6 +26,9 @@ import java.util.Locale;
 
 public final class ProfileSpecification {
 
+    private static final String SORT_TRUST_VERIFIED =
+            "TRUST_VERIFIED";
+
     private ProfileSpecification() {
     }
 
@@ -29,23 +37,29 @@ public final class ProfileSpecification {
             String authenticatedEmail
     ) {
 
-        return (root, query, criteriaBuilder) -> {
+        return (
+                root,
+                query,
+                criteriaBuilder
+        ) -> {
 
             List<Predicate> predicates =
                     new ArrayList<>();
 
             /*
-             * Only completed/public profiles may appear.
+             * =====================================================
+             * Public profile rules
+             * =====================================================
              */
+
             predicates.add(
                     criteriaBuilder.isTrue(
-                            root.get("profileCompleted")
+                            root.get(
+                                    "profileCompleted"
+                            )
                     )
             );
 
-            /*
-             * Exclude the authenticated user's own profile.
-             */
             predicates.add(
                     criteriaBuilder.notEqual(
                             criteriaBuilder.lower(
@@ -60,7 +74,11 @@ public final class ProfileSpecification {
                     )
             );
 
+            /*
+             * A null request means no optional search filters.
+             */
             if (request == null) {
+
                 return criteriaBuilder.and(
                         predicates.toArray(
                                 new Predicate[0]
@@ -69,12 +87,16 @@ public final class ProfileSpecification {
             }
 
             /*
+             * =====================================================
              * Age
+             * =====================================================
              */
+
             if (
                     request.getAgeFrom()
                             != null
             ) {
+
                 predicates.add(
                         criteriaBuilder
                                 .greaterThanOrEqualTo(
@@ -88,6 +110,7 @@ public final class ProfileSpecification {
                     request.getAgeTo()
                             != null
             ) {
+
                 predicates.add(
                         criteriaBuilder
                                 .lessThanOrEqualTo(
@@ -98,8 +121,11 @@ public final class ProfileSpecification {
             }
 
             /*
+             * =====================================================
              * Basic information
+             * =====================================================
              */
+
             addCaseInsensitiveEquals(
                     predicates,
                     criteriaBuilder,
@@ -115,8 +141,11 @@ public final class ProfileSpecification {
             );
 
             /*
+             * =====================================================
              * Church information
+             * =====================================================
              */
+
             addCaseInsensitiveEquals(
                     predicates,
                     criteriaBuilder,
@@ -125,8 +154,11 @@ public final class ProfileSpecification {
             );
 
             /*
-             * Current location
+             * =====================================================
+             * Location
+             * =====================================================
              */
+
             addCaseInsensitiveEquals(
                     predicates,
                     criteriaBuilder,
@@ -149,8 +181,11 @@ public final class ProfileSpecification {
             );
 
             /*
-             * Education & career
+             * =====================================================
+             * Education & Career
+             * =====================================================
              */
+
             addCaseInsensitiveEquals(
                     predicates,
                     criteriaBuilder,
@@ -159,8 +194,8 @@ public final class ProfileSpecification {
             );
 
             /*
-             * Profession remains contains-based so that
-             * older profile values still remain searchable.
+             * Profession remains contains-based so older
+             * free-text profile values remain searchable.
              */
             addCaseInsensitiveContains(
                     predicates,
@@ -170,12 +205,16 @@ public final class ProfileSpecification {
             );
 
             /*
-             * Baptism status
+             * =====================================================
+             * Baptism
+             * =====================================================
              */
+
             if (
                     request.getBaptized()
                             != null
             ) {
+
                 predicates.add(
                         criteriaBuilder.equal(
                                 root.get("baptized"),
@@ -186,7 +225,7 @@ public final class ProfileSpecification {
 
             /*
              * =====================================================
-             * Verification filters
+             * Verification Filters
              * =====================================================
              */
 
@@ -238,6 +277,41 @@ public final class ProfileSpecification {
                 );
             }
 
+            /*
+             * =====================================================
+             * Trust Verified Ranking
+             * =====================================================
+             *
+             * Ranking:
+             *
+             * Aadhaar + Church = 500
+             * ID + Church      = 400
+             * Aadhaar          = 300
+             * ID               = 200
+             * Church           = 100
+             * Unverified       = 0
+             *
+             * Important:
+             *
+             * Don't add ORDER BY to Spring Data's COUNT query.
+             */
+
+            if (
+                    isTrustVerifiedSort(
+                            request
+                    )
+                            && !isCountQuery(
+                                    query
+                            )
+            ) {
+
+                applyTrustVerifiedOrdering(
+                        root,
+                        query,
+                        criteriaBuilder
+                );
+            }
+
             return criteriaBuilder.and(
                     predicates.toArray(
                             new Predicate[0]
@@ -246,10 +320,157 @@ public final class ProfileSpecification {
         };
     }
 
+    /*
+     * ============================================================
+     * TRUST RANKING
+     * ============================================================
+     */
+
+    private static void applyTrustVerifiedOrdering(
+            Root<Profile> profileRoot,
+            CriteriaQuery<?> query,
+            CriteriaBuilder criteriaBuilder
+    ) {
+
+        Predicate churchVerified =
+                approvedVerificationExists(
+                        profileRoot,
+                        query,
+                        criteriaBuilder,
+                        VerificationType.CHURCH
+                );
+
+        Predicate aadhaarVerified =
+                approvedIdentityDocumentExists(
+                        profileRoot,
+                        query,
+                        criteriaBuilder,
+                        true
+                );
+
+        Predicate idVerified =
+                approvedIdentityDocumentExists(
+                        profileRoot,
+                        query,
+                        criteriaBuilder,
+                        false
+                );
+
+        Expression<Integer> trustScore =
+                criteriaBuilder
+                        .<Integer>selectCase()
+
+                        /*
+                         * Strongest public trust combination.
+                         */
+                        .when(
+                                criteriaBuilder.and(
+                                        aadhaarVerified,
+                                        churchVerified
+                                ),
+                                500
+                        )
+
+                        /*
+                         * Non-Aadhaar government ID + Church.
+                         */
+                        .when(
+                                criteriaBuilder.and(
+                                        idVerified,
+                                        churchVerified
+                                ),
+                                400
+                        )
+
+                        /*
+                         * Aadhaar only.
+                         */
+                        .when(
+                                aadhaarVerified,
+                                300
+                        )
+
+                        /*
+                         * Other approved government ID.
+                         */
+                        .when(
+                                idVerified,
+                                200
+                        )
+
+                        /*
+                         * Church only.
+                         */
+                        .when(
+                                churchVerified,
+                                100
+                        )
+
+                        .otherwise(
+                                0
+                        );
+
+        query.orderBy(
+                criteriaBuilder.desc(
+                        trustScore
+                ),
+
+                /*
+                 * Within the same trust level,
+                 * newest profiles appear first.
+                 */
+                criteriaBuilder.desc(
+                        profileRoot.get(
+                                "createdAt"
+                        )
+                )
+        );
+    }
+
+    private static boolean isTrustVerifiedSort(
+            SearchProfileRequest request
+    ) {
+
+        if (
+                request == null
+                        || !hasText(
+                                request.getSort()
+                        )
+        ) {
+            return false;
+        }
+
+        return SORT_TRUST_VERIFIED.equals(
+                request
+                        .getSort()
+                        .trim()
+                        .toUpperCase(
+                                Locale.ROOT
+                        )
+        );
+    }
+
+    private static boolean isCountQuery(
+            CriteriaQuery<?> query
+    ) {
+
+        Class<?> resultType =
+                query.getResultType();
+
+        return resultType == Long.class
+                || resultType == long.class;
+    }
+
+    /*
+     * ============================================================
+     * APPROVED VERIFICATION EXISTS
+     * ============================================================
+     */
+
     private static Predicate approvedVerificationExists(
             Root<Profile> profileRoot,
-            jakarta.persistence.criteria.CriteriaQuery<?> query,
-            jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
+            CriteriaQuery<?> query,
+            CriteriaBuilder criteriaBuilder,
             VerificationType verificationType
     ) {
 
@@ -264,7 +485,9 @@ public final class ProfileSpecification {
                 );
 
         subquery.select(
-                criteriaBuilder.literal(1)
+                criteriaBuilder.literal(
+                        1
+                )
         );
 
         subquery.where(
@@ -297,10 +520,16 @@ public final class ProfileSpecification {
         );
     }
 
+    /*
+     * ============================================================
+     * APPROVED IDENTITY DOCUMENT EXISTS
+     * ============================================================
+     */
+
     private static Predicate approvedIdentityDocumentExists(
             Root<Profile> profileRoot,
-            jakarta.persistence.criteria.CriteriaQuery<?> query,
-            jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
+            CriteriaQuery<?> query,
+            CriteriaBuilder criteriaBuilder,
             boolean aadhaarOnly
     ) {
 
@@ -315,7 +544,9 @@ public final class ProfileSpecification {
                 );
 
         subquery.select(
-                criteriaBuilder.literal(1)
+                criteriaBuilder.literal(
+                        1
+                )
         );
 
         Predicate sameUser =
@@ -379,10 +610,15 @@ public final class ProfileSpecification {
         );
     }
 
+    /*
+     * ============================================================
+     * STRING FILTER HELPERS
+     * ============================================================
+     */
+
     private static void addCaseInsensitiveEquals(
             List<Predicate> predicates,
-            jakarta.persistence.criteria.CriteriaBuilder
-                    criteriaBuilder,
+            CriteriaBuilder criteriaBuilder,
             Expression<String> field,
             String value
     ) {
@@ -406,8 +642,7 @@ public final class ProfileSpecification {
 
     private static void addCaseInsensitiveContains(
             List<Predicate> predicates,
-            jakarta.persistence.criteria.CriteriaBuilder
-                    criteriaBuilder,
+            CriteriaBuilder criteriaBuilder,
             Expression<String> field,
             String value
     ) {
@@ -418,7 +653,8 @@ public final class ProfileSpecification {
 
         String pattern =
                 "%"
-                        + value.trim()
+                        + value
+                                .trim()
                                 .toLowerCase(
                                         Locale.ROOT
                                 )

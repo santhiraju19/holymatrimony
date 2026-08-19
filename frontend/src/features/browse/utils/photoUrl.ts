@@ -14,6 +14,8 @@ function getBackendOrigin(): string {
  * Converts profile-photo paths returned by the backend into the
  * fastest public URL available.
  *
+ * Production:
+ *
  * Historical database records may contain:
  *
  *   /api/v1/uploads/profile-photos/photo.jpg
@@ -22,8 +24,13 @@ function getBackendOrigin(): string {
  *
  *   /uploads/profile-photos/photo.jpg
  *
- * Using the static route avoids sending every image request through
- * Spring Boot and allows Nginx/browser caching to work efficiently.
+ * Using the static route avoids sending every image request
+ * through Spring Boot and allows Nginx/browser caching.
+ *
+ * Local development:
+ *
+ * Next.js does not serve /uploads directly, so those paths are
+ * routed through the Spring Boot upload endpoint instead.
  */
 export function resolveBrowsePhotoUrl(
   photoUrl: string | null | undefined
@@ -39,17 +46,136 @@ export function resolveBrowsePhotoUrl(
     return photoUrl;
   }
 
-  let value = photoUrl.trim();
+  let value =
+    photoUrl.trim();
+
+  if (!value) {
+    return "";
+  }
 
   /*
-   * Absolute URLs may also contain the historical API upload path.
+   * ============================================================
+   * LOCAL DEVELOPMENT
+   * ============================================================
+   *
+   * Production behavior below remains unchanged.
    */
   if (
-    value.startsWith("http://") ||
-    value.startsWith("https://")
+    process.env.NODE_ENV ===
+    "development"
+  ) {
+    const apiBaseUrl =
+      API_BASE_URL.replace(
+        /\/$/,
+        ""
+      );
+
+    /*
+     * Public upload path:
+     *
+     * /uploads/profile-photos/a.jpg
+     *
+     * becomes:
+     *
+     * http://localhost:8080/api/v1/uploads/profile-photos/a.jpg
+     */
+    if (
+      value.startsWith(
+        "/uploads/"
+      )
+    ) {
+      return `${apiBaseUrl}${value}`;
+    }
+
+    /*
+     * Historical API path:
+     *
+     * /api/v1/uploads/profile-photos/a.jpg
+     *
+     * becomes:
+     *
+     * http://localhost:8080/api/v1/uploads/profile-photos/a.jpg
+     */
+    if (
+      value.startsWith(
+        "/api/v1/uploads/"
+      )
+    ) {
+      return `${getBackendOrigin()}${value}`;
+    }
+
+    /*
+     * Handle URLs that were previously rewritten to the
+     * local Next.js frontend.
+     *
+     * http://localhost:3000/uploads/...
+     *
+     * becomes:
+     *
+     * http://localhost:8080/api/v1/uploads/...
+     */
+    try {
+      const url =
+        new URL(value);
+
+      if (
+        (
+          url.hostname ===
+            "localhost" ||
+          url.hostname ===
+            "127.0.0.1"
+        ) &&
+        url.pathname.startsWith(
+          "/uploads/"
+        )
+      ) {
+        return `${apiBaseUrl}${url.pathname}${url.search}`;
+      }
+
+      /*
+       * Already pointing to the local backend.
+       */
+      if (
+        (
+          url.hostname ===
+            "localhost" ||
+          url.hostname ===
+            "127.0.0.1"
+        ) &&
+        url.pathname.startsWith(
+          "/api/v1/uploads/"
+        )
+      ) {
+        return value;
+      }
+    } catch {
+      /*
+       * Not an absolute URL.
+       * Continue with the normal production resolver.
+       */
+    }
+  }
+
+  /*
+   * ============================================================
+   * PRODUCTION / NORMAL RESOLUTION
+   * ============================================================
+   */
+
+  /*
+   * Absolute URLs may contain the historical API upload path.
+   */
+  if (
+    value.startsWith(
+      "http://"
+    ) ||
+    value.startsWith(
+      "https://"
+    )
   ) {
     try {
-      const url = new URL(value);
+      const url =
+        new URL(value);
 
       if (
         url.pathname.startsWith(
@@ -63,10 +189,15 @@ export function resolveBrowsePhotoUrl(
           );
 
         /*
-         * In the browser, use the current public website origin.
-         * This keeps images on the same host as the frontend.
+         * Browser: use the current public website origin.
+         *
+         * This preserves the existing production Nginx
+         * static-photo delivery path.
          */
-        if (typeof window !== "undefined") {
+        if (
+          typeof window !==
+          "undefined"
+        ) {
           return `${window.location.origin}${staticPath}`;
         }
 
@@ -79,8 +210,14 @@ export function resolveBrowsePhotoUrl(
     }
   }
 
-  if (!value.startsWith("/")) {
-    value = `/${value}`;
+  /*
+   * Normalize relative paths.
+   */
+  if (
+    !value.startsWith("/")
+  ) {
+    value =
+      `/${value}`;
   }
 
   /*
@@ -97,7 +234,10 @@ export function resolveBrowsePhotoUrl(
         "/uploads/"
       );
 
-    if (typeof window !== "undefined") {
+    if (
+      typeof window !==
+      "undefined"
+    ) {
       return `${window.location.origin}${staticPath}`;
     }
 
@@ -107,8 +247,15 @@ export function resolveBrowsePhotoUrl(
   /*
    * Already a public static upload URL.
    */
-  if (value.startsWith("/uploads/")) {
-    if (typeof window !== "undefined") {
+  if (
+    value.startsWith(
+      "/uploads/"
+    )
+  ) {
+    if (
+      typeof window !==
+      "undefined"
+    ) {
       return `${window.location.origin}${value}`;
     }
 
@@ -118,9 +265,16 @@ export function resolveBrowsePhotoUrl(
   /*
    * Other API resources continue to use the backend.
    */
-  if (value.startsWith("/api/")) {
+  if (
+    value.startsWith(
+      "/api/"
+    )
+  ) {
     return `${getBackendOrigin()}${value}`;
   }
 
-  return `${API_BASE_URL.replace(/\/$/, "")}${value}`;
+  return `${API_BASE_URL.replace(
+    /\/$/,
+    ""
+  )}${value}`;
 }

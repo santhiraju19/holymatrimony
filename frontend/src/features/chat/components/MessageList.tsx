@@ -7,9 +7,10 @@ import {
 
 import {
   MessageCircle,
+  ShieldCheck,
 } from "lucide-react";
 
-import {
+import type {
   ChatMessage,
 } from "@/features/chat/types";
 
@@ -75,21 +76,17 @@ export default function MessageList({
         behavior: "smooth",
         block: "end",
       });
-  }, [
-    messages,
-  ]);
+  }, [messages]);
 
   if (loading) {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center bg-slate-50 px-4 py-6">
+      <div className="flex min-h-0 flex-1 items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50/40 px-4 py-6">
         <div className="text-center">
+          <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#0B2D5C]" />
 
-          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-[#0B2D5C]" />
-
-          <p className="mt-3 text-sm text-slate-500">
+          <p className="mt-2.5 text-xs font-semibold text-slate-500">
             Loading messages…
           </p>
-
         </div>
       </div>
     );
@@ -100,33 +97,38 @@ export default function MessageList({
     0
   ) {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center bg-slate-50 px-4 py-6">
+      <div className="flex min-h-0 flex-1 items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/50 px-4 py-6">
         <div className="max-w-sm text-center">
-
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-[#0B2D5C]">
+          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[#0B2D5C] text-white shadow-sm">
             <MessageCircle
-              size={23}
+              size={19}
             />
           </div>
 
-          <h3 className="mt-4 font-semibold text-slate-900">
+          <h3 className="mt-3 text-sm font-black text-[#0B2D5C]">
             Start the conversation
           </h3>
 
-          <p className="mt-1 text-sm leading-6 text-slate-500">
-            Send a message to begin chatting.
+          <p className="mt-1 text-[11px] leading-5 text-slate-500">
+            Send a respectful message and begin getting to know each other.
           </p>
 
+          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-white px-2.5 py-1 text-[9px] font-semibold text-slate-500 shadow-sm">
+            <ShieldCheck
+              size={10}
+              className="text-emerald-600"
+            />
+
+            Communicate safely
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50">
-
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-1.5 px-3 py-3 sm:px-4 sm:py-4 lg:px-5">
-
+    <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-[#FBFDFF] to-blue-50/35">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-1 px-3 py-3 sm:px-4 lg:px-5">
         {messages.map(
           (
             message,
@@ -201,7 +203,6 @@ export default function MessageList({
             bottomRef
           }
         />
-
       </div>
     </div>
   );
@@ -213,14 +214,16 @@ function DateDivider({
   dateValue: string;
 }) {
   return (
-    <div className="my-3 flex items-center justify-center">
+    <div className="my-3 flex items-center gap-3">
+      <div className="h-px flex-1 bg-slate-200/70" />
 
-      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-500 shadow-sm">
+      <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[9px] font-bold text-slate-400 shadow-sm">
         {formatMessageDate(
           dateValue
         )}
       </span>
 
+      <div className="h-px flex-1 bg-slate-200/70" />
     </div>
   );
 }

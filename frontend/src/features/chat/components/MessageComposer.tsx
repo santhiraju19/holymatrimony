@@ -1034,7 +1034,7 @@ export default function MessageComposer({
       onSubmit={
         handleSubmit
       }
-      className="border-t border-slate-200 bg-white px-2.5 py-2.5 sm:px-3 md:p-4"
+      className="border-t border-slate-100 bg-white/95 px-2.5 py-2.5 backdrop-blur-xl sm:px-3 md:px-4 md:py-3"
     >
       <div className="mx-auto max-w-4xl">
 
@@ -1043,12 +1043,12 @@ export default function MessageComposer({
            ====================================================== */}
 
         {replyingTo && (
-          <div className="mb-2.5 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm sm:rounded-2xl">
+          <div className="mb-2 overflow-hidden rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50/80 via-white to-slate-50 shadow-sm">
             <div className="flex items-stretch">
 
-              <div className="w-1 shrink-0 bg-[#0B2D5C]" />
+              <div className="w-[3px] shrink-0 bg-gradient-to-b from-[#D4AF37] to-[#0B2D5C]" />
 
-              <div className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 sm:gap-3 sm:px-3 sm:py-2.5">
+              <div className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 sm:px-3">
 
                 <Reply
                   size={17}
@@ -1057,7 +1057,7 @@ export default function MessageComposer({
 
                 <div className="min-w-0 flex-1">
 
-                  <p className="truncate text-xs font-semibold text-[#0B2D5C]">
+                  <p className="truncate text-[10px] font-black text-[#0B2D5C] sm:text-[11px]">
                     Replying to{" "}
                     {replySenderLabel}
                   </p>
@@ -1110,7 +1110,7 @@ export default function MessageComposer({
                   onClick={
                     onCancelReply
                   }
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-200 hover:text-slate-700 disabled:opacity-50"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
                 >
                   <X
                     size={17}
@@ -1127,7 +1127,7 @@ export default function MessageComposer({
            ====================================================== */}
 
         {imagePreviewUrl && (
-          <div className="mb-2.5 rounded-xl border border-slate-200 bg-slate-50 p-2.5 sm:rounded-2xl sm:p-3">
+          <div className="mb-2 rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50/70 via-white to-slate-50 p-2.5 shadow-sm">
             <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
 
               <img
@@ -1135,12 +1135,12 @@ export default function MessageComposer({
                   imagePreviewUrl
                 }
                 alt="Selected image preview"
-                className="h-16 w-16 shrink-0 rounded-lg object-cover sm:h-20 sm:w-20 sm:rounded-xl"
+                className="h-14 w-14 shrink-0 rounded-xl object-cover shadow-sm ring-1 ring-slate-200 sm:h-16 sm:w-16"
               />
 
               <div className="min-w-0 flex-1">
 
-                <p className="truncate text-sm font-semibold text-slate-800">
+                <p className="truncate text-xs font-black text-[#0B2D5C]">
                   {selectedImage
                     ?.name}
                 </p>
@@ -1157,7 +1157,7 @@ export default function MessageComposer({
                     : ""}
                 </p>
 
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-1 text-[10px] text-slate-400">
                   Add an optional caption below.
                 </p>
 
@@ -1172,7 +1172,7 @@ export default function MessageComposer({
                   busy
                 }
                 aria-label="Remove selected image"
-                className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-200 hover:text-slate-800 disabled:opacity-50"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
               >
                 <X
                   size={18}
@@ -1188,7 +1188,7 @@ export default function MessageComposer({
            ====================================================== */}
 
         {imageError && (
-          <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+          <p className="mb-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-[10px] font-bold text-red-600">
             {imageError}
           </p>
         )}
@@ -1209,7 +1209,7 @@ export default function MessageComposer({
             INPUT ROW
            ====================================================== */}
 
-        <div className="relative flex min-w-0 items-end gap-1.5 sm:gap-2 md:gap-3">
+        <div className="relative flex min-w-0 items-end gap-1.5 sm:gap-2">
 
           <button
             type="button"
@@ -1224,7 +1224,7 @@ export default function MessageComposer({
             }
             title="Send image"
             aria-label="Select image"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:w-11"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:w-10"
           >
             <ImagePlus
               size={19}
@@ -1260,10 +1260,10 @@ export default function MessageComposer({
                 );
               }}
               className={[
-                "flex h-10 w-10 items-center justify-center rounded-full border bg-white transition disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:w-11",
+                "flex h-9 w-9 items-center justify-center rounded-xl border bg-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:w-10",
 
                 emojiPickerOpen
-                  ? "border-blue-400 bg-blue-50 text-blue-700"
+                  ? "border-[#D4AF37] bg-amber-50 text-[#0B2D5C]"
                   : "border-slate-200 text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700",
               ].join(" ")}
             >
@@ -1277,7 +1277,7 @@ export default function MessageComposer({
                 ref={
                   emojiPickerRef
                 }
-                className="absolute bottom-12 -left-12 z-50 max-w-[calc(100vw-1rem)] overflow-hidden rounded-xl shadow-2xl sm:bottom-14 sm:left-0 sm:rounded-2xl"
+                className="absolute bottom-11 -left-12 z-50 max-w-[calc(100vw-1rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:left-0"
               >
                 <EmojiPicker
                   onEmojiClick={
@@ -1338,7 +1338,7 @@ export default function MessageComposer({
                   ? "Reply message"
                   : "Message"
             }
-            className="max-h-32 min-h-10 min-w-0 flex-1 resize-none overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm leading-5 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 sm:max-h-36 sm:min-h-11 sm:rounded-2xl sm:px-4 sm:py-3"
+            className="max-h-32 min-h-9 min-w-0 flex-1 resize-none overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-xs leading-5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-50 disabled:cursor-not-allowed disabled:opacity-60 sm:max-h-36 sm:min-h-10 sm:text-sm"
           />
 
           <button
@@ -1357,7 +1357,7 @@ export default function MessageComposer({
                       ? "Send reply"
                       : "Send message"
             }
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0B2D5C] text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#123C73] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:w-11"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0B2D5C] to-blue-700 text-white shadow-[0_6px_18px_rgba(11,45,92,0.22)] transition hover:-translate-y-0.5 hover:shadow-lg disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:w-10"
           >
             {busy ? (
               <Loader2
@@ -1377,7 +1377,7 @@ export default function MessageComposer({
             FOOTER
            ====================================================== */}
 
-        <div className="mt-1.5 hidden items-center justify-between gap-4 px-1 text-[10px] text-slate-400 sm:flex">
+        <div className="mt-1.5 hidden items-center justify-between gap-4 px-1 text-[9px] font-medium text-slate-400 sm:flex">
 
           <p>
             JPEG, PNG or WebP · Maximum 10 MB
