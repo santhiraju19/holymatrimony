@@ -119,6 +119,33 @@ public class NotificationFactory {
         );
     }
 
+public NotificationResponse profileViewed(
+        String recipientEmail,
+        String viewerName,
+        String viewerProfileId,
+        String viewerPhotoUrl
+) {
+
+    String safeViewerName =
+            safeName(viewerName);
+
+    return notificationService.create(
+            new CreateNotificationRequest(
+                    recipientEmail,
+                    NotificationType.PROFILE_VIEWED,
+                    "Someone viewed your profile",
+                    safeViewerName +
+                            " viewed your profile.",
+                    viewerProfileId,
+                    "/profile/" +
+                            viewerProfileId,
+                    normalizeOptional(
+                            viewerPhotoUrl
+                    )
+            )
+    );
+}
+
     private String safeName(
             String name
     ) {

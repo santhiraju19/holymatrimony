@@ -15,6 +15,8 @@ import com.theholymatrimony.backend.profile.repository.ProfilePhotoRepository;
 import com.theholymatrimony.backend.profile.repository.ProfileRepository;
 import com.theholymatrimony.backend.profile.repository.ProfileSpecification;
 
+import com.theholymatrimony.backend.profileview.service.ProfileViewService;
+
 import com.theholymatrimony.backend.verification.document.IdentityDocumentType;
 import com.theholymatrimony.backend.verification.document.IdentityVerificationDocument;
 import com.theholymatrimony.backend.verification.document.IdentityVerificationDocumentRepository;
@@ -73,6 +75,9 @@ private final MembershipEntitlementService
 
     private final MemberVerificationRepository
             memberVerificationRepository;
+
+    private final ProfileViewService
+            profileViewService;
 
     /*
      * ============================================================
@@ -169,6 +174,7 @@ private final MembershipEntitlementService
      * ============================================================
      */
 
+    @Transactional
     public BrowseProfileResponse getProfile(
             String authenticatedEmail,
             UUID profileId
@@ -186,6 +192,13 @@ private final MembershipEntitlementService
                                                 "Profile not found"
                                         )
                         );
+
+        profileViewService.recordView(
+                authenticatedEmail,
+                profile
+                        .getUser()
+                        .getId()
+        );
 
         return map(
                 profile

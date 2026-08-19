@@ -14,6 +14,7 @@ import {
 
 import {
   Bookmark,
+  Eye,
   ChevronDown,
   Crown,
   Heart,
@@ -100,18 +101,25 @@ const menuItems: MenuItem[] = [
       },
     ],
   },
-  {
-    name: "My Shortlists",
-    description: "Saved member profiles",
-    href: "/shortlists",
-    icon: Bookmark,
-  },
-  {
-    name: "Chat",
-    description: "Private conversations",
-    href: "/chat",
-    icon: MessageCircle,
-  },
+{
+  name: "My Shortlists",
+  description: "Saved member profiles",
+  href: "/shortlists",
+  icon: Bookmark,
+},
+{
+  name: "Who Viewed Me",
+  description: "See who viewed your profile",
+  href: "/who-viewed-me",
+  icon: Eye,
+  badge: "Gold+",
+},
+{
+  name: "Chat",
+  description: "Private conversations",
+  href: "/chat",
+  icon: MessageCircle,
+},
   {
     name: "Membership",
     description: "Manage your subscription",
