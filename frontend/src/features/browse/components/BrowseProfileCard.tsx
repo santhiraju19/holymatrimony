@@ -15,9 +15,10 @@ import {
   UserRound,
 } from "lucide-react";
 
-import InterestButton from "@/features/interests/components/InterestButton";
-
+import PremiumVerifiedBadge from "@/features/browse/components/PremiumVerifiedBadge";
 import ProfileTrustBadges from "@/features/browse/components/ProfileTrustBadges";
+
+import InterestButton from "@/features/interests/components/InterestButton";
 
 import type {
   BrowseProfile,
@@ -309,6 +310,16 @@ export default function BrowseProfileCard({
           className="block flex-1"
         >
           <div className="space-y-4 px-4 pb-4 pt-4">
+
+            {/* =================================================
+                Platinum Verified
+                ================================================= */}
+
+            {profile.verifiedPremiumBadge && (
+              <div className="flex items-center">
+                <PremiumVerifiedBadge />
+              </div>
+            )}
 
             {/* =================================================
                 Highlight Summary

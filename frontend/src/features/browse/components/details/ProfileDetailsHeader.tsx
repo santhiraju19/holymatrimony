@@ -12,6 +12,7 @@ import {
 import InterestButton from "@/features/interests/components/InterestButton";
 import ShortlistButton from "@/features/shortlist/components/ShortlistButton";
 
+import PremiumVerifiedBadge from "../PremiumVerifiedBadge";
 import ProfileTrustBadges from "../ProfileTrustBadges";
 
 import ProfileContactButton from "./ProfileContactButton";
@@ -136,6 +137,17 @@ export default function ProfileDetailsHeader({
 
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#020817]/80 via-transparent to-black/25" />
 
+          {/* Platinum Premium Badge */}
+
+          {profile.verifiedPremiumBadge && (
+            <div className="absolute bottom-4 left-4 z-20 lg:bottom-auto lg:left-auto lg:right-4 lg:top-4">
+              <PremiumVerifiedBadge
+                compact
+                overlay
+              />
+            </div>
+          )}
+
           {/* Trust badges on photo */}
 
           {hasTrustBadge && (
@@ -197,9 +209,12 @@ export default function ProfileDetailsHeader({
                   {displayName}
                 </h1>
 
+                {profile.verifiedPremiumBadge && (
+                  <PremiumVerifiedBadge />
+                )}
+
                 {completion > 0 && (
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-black text-blue-700">
-
                     <Sparkles
                       size={12}
                     />

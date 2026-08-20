@@ -16,6 +16,7 @@ public class BrowseProfileResponse {
     private UUID userId;
 
     private Boolean highlightedProfile;
+    private Boolean verifiedPremiumBadge;
 
     private Integer compatibilityScore;
     private Integer compatibilityAgeScore;

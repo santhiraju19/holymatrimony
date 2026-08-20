@@ -738,6 +738,14 @@ public class BrowseProfileService {
                                 .HIGHLIGHTED_PROFILE
                 );
 
+boolean verifiedPremiumBadge =
+        membershipEntitlementService
+                .hasFeature(
+                        userId,
+                        MembershipFeature
+                                .VERIFIED_PREMIUM_BADGE
+                );
+
         ProfilePhoto primaryPhoto =
                 profilePhotoRepository
                         .findFirstByUserIdAndPrimaryPhotoTrue(
@@ -868,6 +876,10 @@ public class BrowseProfileService {
                 )
 .highlightedProfile(
         highlightedProfile
+)
+
+.verifiedPremiumBadge(
+        verifiedPremiumBadge
 )
 
                 /*
