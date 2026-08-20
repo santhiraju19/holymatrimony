@@ -1,20 +1,23 @@
 import {
   CheckCheck,
+  ImageIcon,
 } from "lucide-react";
 
 import type {
   Conversation,
 } from "@/features/chat/types";
 
-import UserAvatar from "./UserAvatar";
-
 import {
   formatConversationTime,
 } from "@/features/chat/utils/chat.utils";
 
+import UserAvatar from "./UserAvatar";
+
 interface ConversationListItemProps {
   conversation: Conversation;
+
   selected: boolean;
+
   onSelect: () => void;
 }
 
@@ -32,9 +35,32 @@ export default function ConversationListItem({
   } = conversation;
 
   const lastMessageWasMine =
-    lastMessageSenderId &&
-    lastMessageSenderId !==
-      otherUser.userId;
+    Boolean(
+      lastMessageSenderId &&
+      lastMessageSenderId !==
+        otherUser.userId
+    );
+
+  const unread =
+    unreadCount > 0;
+
+  const preview =
+    lastMessage?.trim() ||
+    "Start a conversation";
+
+  const imageMessage =
+    preview
+      .toLowerCase()
+      .includes(
+        "image"
+      );
+
+  const metadata = [
+    otherUser.profession,
+    otherUser.city,
+  ]
+    .filter(Boolean)
+    .join(" • ");
 
   return (
     <button
@@ -43,37 +69,111 @@ export default function ConversationListItem({
         onSelect
       }
       className={[
-        "group relative w-full border-b border-slate-100 px-3 py-3 text-left transition duration-200",
+        `
+          group
+          relative
+          mx-2
+          mb-1
+          block
+          w-[calc(100%-1rem)]
+          overflow-hidden
+          rounded-2xl
+          border
+          px-3
+          py-3
+          text-left
+          transition-all
+          duration-200
+        `,
 
         selected
-          ? "bg-gradient-to-r from-blue-50 to-indigo-50/50"
-          : "bg-white hover:bg-slate-50/80",
+          ? `
+              border-blue-100
+              bg-gradient-to-r
+              from-blue-50
+              via-[#F8FBFF]
+              to-amber-50/30
+              shadow-[0_5px_18px_rgba(37,99,235,0.08)]
+            `
+          : `
+              border-transparent
+              bg-white
+              hover:border-slate-100
+              hover:bg-slate-50/80
+            `,
       ].join(" ")}
     >
+      {/* Selected accent */}
+
       {selected && (
-        <span className="absolute bottom-2 left-0 top-2 w-[3px] rounded-r-full bg-[#D4AF37]" />
+        <span
+          className="
+            absolute
+            bottom-3
+            left-0
+            top-3
+            w-[3px]
+            rounded-r-full
+            bg-gradient-to-b
+            from-[#E2BD45]
+            to-[#B18416]
+          "
+        />
       )}
 
-      <div className="flex items-center gap-2.5">
-        <UserAvatar
-          fullName={
-            otherUser.fullName
-          }
-          photoUrl={
-            otherUser.photoUrl
-          }
-          size="sm"
-        />
+      <div className="flex min-w-0 items-center gap-3">
+
+        {/* Avatar */}
+
+        <div className="relative shrink-0">
+          <UserAvatar
+            fullName={
+              otherUser.fullName
+            }
+            photoUrl={
+              otherUser.photoUrl
+            }
+          />
+
+          {unread && (
+            <span
+              className="
+                absolute
+                -right-0.5
+                -top-0.5
+                h-3
+                w-3
+                rounded-full
+                border-2
+                border-white
+                bg-blue-600
+                shadow-sm
+              "
+            />
+          )}
+        </div>
+
+        {/* Content */}
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
+
+          {/* Name + time */}
+
+          <div className="flex min-w-0 items-start justify-between gap-2">
             <h3
               className={[
-                "truncate text-xs",
+                `
+                  min-w-0
+                  truncate
+                  text-[13px]
+                  tracking-[-0.01em]
+                `,
 
-                unreadCount > 0
+                unread
                   ? "font-black text-[#0B2D5C]"
-                  : "font-bold text-slate-700",
+                  : selected
+                    ? "font-black text-[#0B2D5C]"
+                    : "font-bold text-slate-700",
               ].join(" ")}
             >
               {
@@ -83,11 +183,15 @@ export default function ConversationListItem({
 
             <span
               className={[
-                "shrink-0 text-[9px]",
+                `
+                  shrink-0
+                  pt-0.5
+                  text-[9px]
+                `,
 
-                unreadCount > 0
+                unread
                   ? "font-black text-blue-600"
-                  : "text-slate-400",
+                  : "font-medium text-slate-400",
               ].join(" ")}
             >
               {formatConversationTime(
@@ -96,31 +200,72 @@ export default function ConversationListItem({
             </span>
           </div>
 
-          <div className="mt-1 flex items-center gap-2">
-            <p
-              className={[
-                "flex min-w-0 flex-1 items-center gap-1 truncate text-[10px]",
+          {/* Message preview */}
 
-                unreadCount > 0
+          <div className="mt-1 flex min-w-0 items-center gap-2">
+            <div
+              className={[
+                `
+                  flex
+                  min-w-0
+                  flex-1
+                  items-center
+                  gap-1.5
+                  truncate
+                  text-[11px]
+                  leading-4
+                `,
+
+                unread
                   ? "font-bold text-slate-700"
-                  : "text-slate-500",
+                  : "font-medium text-slate-500",
               ].join(" ")}
             >
               {lastMessageWasMine && (
                 <CheckCheck
+                  size={13}
+                  className="
+                    shrink-0
+                    text-blue-500
+                  "
+                />
+              )}
+
+              {imageMessage && (
+                <ImageIcon
                   size={12}
-                  className="shrink-0 text-blue-500"
+                  className="
+                    shrink-0
+                    text-slate-400
+                  "
                 />
               )}
 
               <span className="truncate">
-                {lastMessage ||
-                  "Start a conversation"}
+                {preview}
               </span>
-            </p>
+            </div>
 
-            {unreadCount > 0 && (
-              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-1 text-[8px] font-black text-white shadow-sm">
+            {unread && (
+              <span
+                className="
+                  flex
+                  h-5
+                  min-w-5
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-gradient-to-r
+                  from-blue-600
+                  to-indigo-600
+                  px-1.5
+                  text-[9px]
+                  font-black
+                  text-white
+                  shadow-[0_3px_8px_rgba(37,99,235,0.25)]
+                "
+              >
                 {unreadCount >
                 99
                   ? "99+"
@@ -129,16 +274,21 @@ export default function ConversationListItem({
             )}
           </div>
 
-          {(otherUser.profession ||
-            otherUser.city) && (
-            <p className="mt-1 truncate text-[9px] font-medium text-slate-400">
-              {[
-                otherUser.profession,
-                otherUser.city,
-              ]
-                .filter(Boolean)
-                .join(" • ")}
-            </p>
+          {/* Member metadata */}
+
+          {metadata && (
+            <div className="mt-1.5 flex min-w-0 items-center">
+              <p
+                className="
+                  truncate
+                  text-[9px]
+                  font-medium
+                  text-slate-400
+                "
+              >
+                {metadata}
+              </p>
+            </div>
           )}
         </div>
       </div>

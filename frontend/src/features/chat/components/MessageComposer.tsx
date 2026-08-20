@@ -18,14 +18,17 @@ import {
 import {
   ImagePlus,
   Loader2,
+  MessageSquareText,
+  Paperclip,
   Reply,
   Send,
+  ShieldCheck,
   Smile,
   Trash2,
   X,
 } from "lucide-react";
 
-import {
+import type {
   ChatMessage,
 } from "@/features/chat/types";
 
@@ -197,25 +200,11 @@ export default function MessageComposer({
       HTMLButtonElement | null
     >(null);
 
-  /*
-   * Keep the latest typing callback without
-   * forcing typing timers to restart whenever
-   * the parent renders.
-   */
   const onTypingChangeRef =
     useRef(
       onTypingChange
     );
 
-  /*
-   * Typing debounce state.
-   *
-   * typingActiveRef prevents us from sending
-   * typing=true on every keystroke.
-   *
-   * typingTimeoutRef determines when the user
-   * has stopped typing.
-   */
   const typingActiveRef =
     useRef(false);
 
@@ -278,7 +267,7 @@ export default function MessageComposer({
 
   /*
    * ============================================================
-   * KEEP CALLBACK REF UPDATED
+   * CALLBACK REF
    * ============================================================
    */
 
@@ -291,7 +280,7 @@ export default function MessageComposer({
 
   /*
    * ============================================================
-   * TYPING HELPERS
+   * TYPING
    * ============================================================
    */
 
@@ -365,12 +354,6 @@ export default function MessageComposer({
       );
   }
 
-  /*
-   * ============================================================
-   * STOP TYPING ON CONVERSATION CHANGE / UNMOUNT
-   * ============================================================
-   */
-
   useEffect(() => {
     return () => {
       if (
@@ -402,7 +385,7 @@ export default function MessageComposer({
 
   /*
    * ============================================================
-   * LOAD DRAFT WHEN CONVERSATION CHANGES
+   * DRAFT
    * ============================================================
    */
 
@@ -427,12 +410,6 @@ export default function MessageComposer({
   }, [
     conversationId,
   ]);
-
-  /*
-   * ============================================================
-   * SAVE DRAFT
-   * ============================================================
-   */
 
   useEffect(() => {
     const draftKey =
@@ -459,7 +436,7 @@ export default function MessageComposer({
 
   /*
    * ============================================================
-   * AUTO-RESIZE TEXTAREA
+   * TEXTAREA SIZE
    * ============================================================
    */
 
@@ -485,7 +462,7 @@ export default function MessageComposer({
 
   /*
    * ============================================================
-   * FOCUS COMPOSER WHEN REPLY STARTS
+   * FOCUS REPLY
    * ============================================================
    */
 
@@ -506,7 +483,7 @@ export default function MessageComposer({
 
   /*
    * ============================================================
-   * CLOSE EMOJI PICKER ON OUTSIDE CLICK
+   * EMOJI PICKER OUTSIDE CLICK
    * ============================================================
    */
 
@@ -560,7 +537,7 @@ export default function MessageComposer({
 
   /*
    * ============================================================
-   * CLEAN IMAGE OBJECT URL
+   * IMAGE PREVIEW CLEANUP
    * ============================================================
    */
 
@@ -577,12 +554,6 @@ export default function MessageComposer({
   }, [
     imagePreviewUrl,
   ]);
-
-  /*
-   * ============================================================
-   * CLEAR IMAGE
-   * ============================================================
-   */
 
   function clearSelectedImage() {
     setSelectedImage(
@@ -617,12 +588,6 @@ export default function MessageComposer({
         .value = "";
     }
   }
-
-  /*
-   * ============================================================
-   * IMAGE SELECTION
-   * ============================================================
-   */
 
   function handleImageSelection(
     event:
@@ -692,15 +657,19 @@ export default function MessageComposer({
           );
       }
     );
+
+    requestAnimationFrame(
+      () => {
+        textareaRef.current
+          ?.focus();
+      }
+    );
   }
 
   /*
    * ============================================================
-   * EMOJI INSERTION
+   * EMOJI
    * ============================================================
-   *
-   * Inserts the selected emoji at the current cursor position
-   * or replaces the current text selection.
    */
 
   function handleEmojiClick(
@@ -779,7 +748,7 @@ export default function MessageComposer({
 
   /*
    * ============================================================
-   * SUBMIT
+   * SEND
    * ============================================================
    */
 
@@ -791,10 +760,6 @@ export default function MessageComposer({
       return;
     }
 
-    /*
-     * Don't stop typing unless there is
-     * actually something that can be sent.
-     */
     if (
       !selectedImage &&
       !trimmedContent
@@ -802,10 +767,6 @@ export default function MessageComposer({
       return;
     }
 
-    /*
-     * Sending a message immediately ends
-     * the typing state.
-     */
     stopTyping();
 
     setEmojiPickerOpen(
@@ -813,15 +774,6 @@ export default function MessageComposer({
     );
 
     try {
-      /*
-       * ========================================================
-       * IMAGE + OPTIONAL CAPTION
-       * ========================================================
-       *
-       * useChat.sendImage() carries the current
-       * replyToMessageId when replyingTo exists.
-       */
-
       if (
         selectedImage
       ) {
@@ -843,12 +795,6 @@ export default function MessageComposer({
             )
           );
 
-        /*
-         * useChat clears replyingTo after
-         * successful send. We intentionally
-         * do not clear it locally here.
-         */
-
         requestAnimationFrame(
           () => {
             textareaRef.current
@@ -858,12 +804,6 @@ export default function MessageComposer({
 
         return;
       }
-
-      /*
-       * ========================================================
-       * NORMAL TEXT MESSAGE
-       * ========================================================
-       */
 
       if (
         !trimmedContent
@@ -901,18 +841,11 @@ export default function MessageComposer({
           textarea.focus();
         }
       );
-
     } catch {
       textareaRef.current
         ?.focus();
     }
   }
-
-  /*
-   * ============================================================
-   * FORM SUBMIT
-   * ============================================================
-   */
 
   async function handleSubmit(
     event:
@@ -933,9 +866,6 @@ export default function MessageComposer({
     event:
       KeyboardEvent<HTMLTextAreaElement>
   ) {
-    /*
-     * Escape closes the emoji picker first.
-     */
     if (
       event.key ===
         "Escape" &&
@@ -950,9 +880,6 @@ export default function MessageComposer({
       return;
     }
 
-    /*
-     * Escape cancels the current reply.
-     */
     if (
       event.key ===
         "Escape" &&
@@ -966,10 +893,6 @@ export default function MessageComposer({
       return;
     }
 
-    /*
-     * Enter = send
-     * Shift + Enter = newline
-     */
     if (
       event.key ===
         "Enter" &&
@@ -983,12 +906,6 @@ export default function MessageComposer({
     }
   }
 
-  /*
-   * ============================================================
-   * CONTENT / TYPING
-   * ============================================================
-   */
-
   function handleContentChange(
     value: string
   ) {
@@ -1001,23 +918,12 @@ export default function MessageComposer({
         value.trim()
       );
 
-    /*
-     * If the composer becomes empty,
-     * stop typing immediately.
-     */
     if (!hasContent) {
       stopTyping();
 
       return;
     }
 
-    /*
-     * First keystroke sends typing=true.
-     *
-     * Continued typing only resets the
-     * inactivity timer instead of sending
-     * repeated typing=true events.
-     */
     startTyping();
   }
 
@@ -1034,36 +940,74 @@ export default function MessageComposer({
       onSubmit={
         handleSubmit
       }
-      className="border-t border-slate-100 bg-white/95 px-2.5 py-2.5 backdrop-blur-xl sm:px-3 md:px-4 md:py-3"
+      className="
+        shrink-0
+        border-t
+        border-slate-200/80
+        bg-white/95
+        px-3
+        pb-3
+        pt-2.5
+        backdrop-blur-2xl
+        sm:px-4
+        sm:pb-4
+        sm:pt-3
+      "
     >
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto w-full max-w-4xl">
 
-        {/* ======================================================
-            REPLY BAR
-           ====================================================== */}
+        {/* =====================================================
+            REPLY PREVIEW
+            ===================================================== */}
 
         {replyingTo && (
-          <div className="mb-2 overflow-hidden rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50/80 via-white to-slate-50 shadow-sm">
+          <div
+            className="
+              mb-2.5
+              overflow-hidden
+              rounded-2xl
+              border
+              border-blue-100
+              bg-gradient-to-r
+              from-blue-50/90
+              via-white
+              to-amber-50/40
+              shadow-[0_5px_18px_rgba(15,23,42,0.05)]
+            "
+          >
             <div className="flex items-stretch">
+              <div className="w-1 shrink-0 bg-gradient-to-b from-[#D4AF37] via-[#B38B19] to-[#0B2D5C]" />
 
-              <div className="w-[3px] shrink-0 bg-gradient-to-b from-[#D4AF37] to-[#0B2D5C]" />
-
-              <div className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 sm:px-3">
-
-                <Reply
-                  size={17}
-                  className="shrink-0 text-[#0B2D5C]"
-                />
+              <div className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 sm:px-4">
+                <div
+                  className="
+                    flex
+                    h-9
+                    w-9
+                    shrink-0
+                    items-center
+                    justify-center
+                    rounded-xl
+                    border
+                    border-blue-100
+                    bg-white
+                    text-[#0B2D5C]
+                    shadow-sm
+                  "
+                >
+                  <Reply
+                    size={16}
+                  />
+                </div>
 
                 <div className="min-w-0 flex-1">
-
-                  <p className="truncate text-[10px] font-black text-[#0B2D5C] sm:text-[11px]">
+                  <p className="truncate text-[10px] font-black uppercase tracking-[0.08em] text-[#B18416]">
                     Replying to{" "}
                     {replySenderLabel}
                   </p>
 
                   {replyDeleted ? (
-                    <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs italic text-slate-500">
+                    <p className="mt-1 flex items-center gap-1.5 truncate text-xs italic text-slate-500">
                       <Trash2
                         size={12}
                       />
@@ -1071,16 +1015,15 @@ export default function MessageComposer({
                       This message was deleted
                     </p>
                   ) : replyIsImage ? (
-                    <div className="mt-0.5 min-w-0">
-
-                      <p className="truncate text-xs text-slate-500">
+                    <div className="mt-1 min-w-0">
+                      <p className="truncate text-xs font-semibold text-slate-600">
                         📷 Photo
                       </p>
 
                       {replyingTo
                         .content
                         ?.trim() && (
-                        <p className="truncate text-xs text-slate-600">
+                        <p className="mt-0.5 truncate text-[11px] text-slate-500">
                           {truncateReplyText(
                             replyingTo
                               .content
@@ -1089,7 +1032,7 @@ export default function MessageComposer({
                       )}
                     </div>
                   ) : (
-                    <p className="mt-0.5 truncate text-xs text-slate-600">
+                    <p className="mt-1 truncate text-xs text-slate-600">
                       {truncateReplyText(
                         replyingTo
                           .content
@@ -1097,7 +1040,6 @@ export default function MessageComposer({
                         "Message"}
                     </p>
                   )}
-
                 </div>
 
                 <button
@@ -1110,42 +1052,101 @@ export default function MessageComposer({
                   onClick={
                     onCancelReply
                   }
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                  className="
+                    flex
+                    h-8
+                    w-8
+                    shrink-0
+                    items-center
+                    justify-center
+                    rounded-xl
+                    text-slate-400
+                    transition
+                    hover:bg-slate-100
+                    hover:text-slate-700
+                    disabled:opacity-50
+                  "
                 >
                   <X
                     size={17}
                   />
                 </button>
-
               </div>
             </div>
           </div>
         )}
 
-        {/* ======================================================
+        {/* =====================================================
             IMAGE PREVIEW
-           ====================================================== */}
+            ===================================================== */}
 
         {imagePreviewUrl && (
-          <div className="mb-2 rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50/70 via-white to-slate-50 p-2.5 shadow-sm">
-            <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
+          <div
+            className="
+              mb-2.5
+              overflow-hidden
+              rounded-2xl
+              border
+              border-blue-100
+              bg-gradient-to-r
+              from-blue-50/80
+              via-white
+              to-slate-50
+              p-3
+              shadow-[0_5px_18px_rgba(15,23,42,0.05)]
+            "
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="relative shrink-0">
+                <img
+                  src={
+                    imagePreviewUrl
+                  }
+                  alt="Selected image preview"
+                  className="
+                    h-16
+                    w-16
+                    rounded-2xl
+                    object-cover
+                    shadow-md
+                    ring-1
+                    ring-slate-200
+                    sm:h-[72px]
+                    sm:w-[72px]
+                  "
+                />
 
-              <img
-                src={
-                  imagePreviewUrl
-                }
-                alt="Selected image preview"
-                className="h-14 w-14 shrink-0 rounded-xl object-cover shadow-sm ring-1 ring-slate-200 sm:h-16 sm:w-16"
-              />
+                <span
+                  className="
+                    absolute
+                    -bottom-1
+                    -right-1
+                    flex
+                    h-6
+                    w-6
+                    items-center
+                    justify-center
+                    rounded-lg
+                    border-2
+                    border-white
+                    bg-[#0B2D5C]
+                    text-white
+                    shadow
+                  "
+                >
+                  <ImagePlus
+                    size={12}
+                  />
+                </span>
+              </div>
 
               <div className="min-w-0 flex-1">
-
                 <p className="truncate text-xs font-black text-[#0B2D5C]">
                   {selectedImage
                     ?.name}
                 </p>
 
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-[11px] font-medium text-slate-500">
                   {selectedImage
                     ? `${(
                         selectedImage.size /
@@ -1157,10 +1158,9 @@ export default function MessageComposer({
                     : ""}
                 </p>
 
-                <p className="mt-1 text-[10px] text-slate-400">
-                  Add an optional caption below.
+                <p className="mt-1.5 text-[10px] text-slate-400">
+                  Add a caption before sending if you like.
                 </p>
-
               </div>
 
               <button
@@ -1172,25 +1172,54 @@ export default function MessageComposer({
                   busy
                 }
                 aria-label="Remove selected image"
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                title="Remove image"
+                className="
+                  flex
+                  h-8
+                  w-8
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-xl
+                  border
+                  border-transparent
+                  text-slate-400
+                  transition
+                  hover:border-red-100
+                  hover:bg-red-50
+                  hover:text-red-600
+                  disabled:opacity-50
+                "
               >
                 <X
-                  size={18}
+                  size={17}
                 />
               </button>
-
             </div>
           </div>
         )}
 
-        {/* ======================================================
+        {/* =====================================================
             IMAGE ERROR
-           ====================================================== */}
+            ===================================================== */}
 
         {imageError && (
-          <p className="mb-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-[10px] font-bold text-red-600">
+          <div
+            className="
+              mb-2.5
+              rounded-xl
+              border
+              border-red-100
+              bg-red-50
+              px-3
+              py-2
+              text-[11px]
+              font-semibold
+              text-red-600
+            "
+          >
             {imageError}
-          </p>
+          </div>
         )}
 
         <input
@@ -1205,11 +1234,36 @@ export default function MessageComposer({
           className="hidden"
         />
 
-        {/* ======================================================
-            INPUT ROW
-           ====================================================== */}
+        {/* =====================================================
+            PREMIUM COMPOSER SHELL
+            ===================================================== */}
 
-        <div className="relative flex min-w-0 items-end gap-1.5 sm:gap-2">
+        <div
+          className={[
+            `
+              relative
+              flex
+              min-w-0
+              items-end
+              gap-1
+              rounded-[22px]
+              border
+              bg-slate-50/90
+              p-1.5
+              shadow-[0_7px_24px_rgba(15,23,42,0.07)]
+              transition-all
+              duration-200
+              sm:gap-1.5
+              sm:p-2
+            `,
+
+            disabled
+              ? "border-slate-200 bg-slate-100/70"
+              : "border-slate-200/90 focus-within:border-blue-300 focus-within:bg-white focus-within:shadow-[0_10px_32px_rgba(37,99,235,0.10)] focus-within:ring-4 focus-within:ring-blue-50/80",
+          ].join(" ")}
+        >
+
+          {/* Attachment */}
 
           <button
             type="button"
@@ -1222,21 +1276,34 @@ export default function MessageComposer({
               disabled ||
               busy
             }
-            title="Send image"
-            aria-label="Select image"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:w-10"
+            title="Attach photo"
+            aria-label="Attach photo"
+            className="
+              flex
+              h-10
+              w-10
+              shrink-0
+              items-center
+              justify-center
+              rounded-2xl
+              text-slate-500
+              transition-all
+              hover:bg-blue-50
+              hover:text-[#0B2D5C]
+              disabled:cursor-not-allowed
+              disabled:opacity-40
+              sm:h-11
+              sm:w-11
+            "
           >
-            <ImagePlus
+            <Paperclip
               size={19}
             />
           </button>
 
-          {/* ====================================================
-              EMOJI PICKER
-             ==================================================== */}
+          {/* Emoji */}
 
           <div className="relative shrink-0">
-
             <button
               ref={
                 emojiButtonRef
@@ -1260,11 +1327,23 @@ export default function MessageComposer({
                 );
               }}
               className={[
-                "flex h-9 w-9 items-center justify-center rounded-xl border bg-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:w-10",
+                `
+                  flex
+                  h-10
+                  w-10
+                  items-center
+                  justify-center
+                  rounded-2xl
+                  transition-all
+                  disabled:cursor-not-allowed
+                  disabled:opacity-40
+                  sm:h-11
+                  sm:w-11
+                `,
 
                 emojiPickerOpen
-                  ? "border-[#D4AF37] bg-amber-50 text-[#0B2D5C]"
-                  : "border-slate-200 text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700",
+                  ? "bg-amber-50 text-[#B18416]"
+                  : "text-slate-500 hover:bg-amber-50 hover:text-[#B18416]",
               ].join(" ")}
             >
               <Smile
@@ -1277,7 +1356,20 @@ export default function MessageComposer({
                 ref={
                   emojiPickerRef
                 }
-                className="absolute bottom-11 -left-12 z-50 max-w-[calc(100vw-1rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:left-0"
+                className="
+                  absolute
+                  bottom-12
+                  -left-12
+                  z-50
+                  max-w-[calc(100vw-1rem)]
+                  overflow-hidden
+                  rounded-[22px]
+                  border
+                  border-slate-200
+                  bg-white
+                  shadow-[0_20px_60px_rgba(15,23,42,0.22)]
+                  sm:left-0
+                "
               >
                 <EmojiPicker
                   onEmojiClick={
@@ -1294,8 +1386,9 @@ export default function MessageComposer({
                 />
               </div>
             )}
-
           </div>
+
+          {/* Textarea */}
 
           <textarea
             ref={
@@ -1338,8 +1431,34 @@ export default function MessageComposer({
                   ? "Reply message"
                   : "Message"
             }
-            className="max-h-32 min-h-9 min-w-0 flex-1 resize-none overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-xs leading-5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-50 disabled:cursor-not-allowed disabled:opacity-60 sm:max-h-36 sm:min-h-10 sm:text-sm"
+            className="
+              max-h-36
+              min-h-10
+              min-w-0
+              flex-1
+              resize-none
+              overflow-y-auto
+              border-0
+              bg-transparent
+              px-1.5
+              py-2.5
+              text-[13px]
+              font-medium
+              leading-5
+              text-slate-800
+              outline-none
+              placeholder:font-normal
+              placeholder:text-slate-400
+              disabled:cursor-not-allowed
+              disabled:text-slate-400
+              sm:min-h-11
+              sm:px-2
+              sm:text-sm
+              sm:leading-6
+            "
           />
+
+          {/* Send */}
 
           <button
             type="submit"
@@ -1357,49 +1476,136 @@ export default function MessageComposer({
                       ? "Send reply"
                       : "Send message"
             }
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0B2D5C] to-blue-700 text-white shadow-[0_6px_18px_rgba(11,45,92,0.22)] transition hover:-translate-y-0.5 hover:shadow-lg disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:w-10"
+            title={
+              selectedImage
+                ? "Send photo"
+                : replyingTo
+                  ? "Send reply"
+                  : "Send message"
+            }
+            className="
+              group
+              flex
+              h-10
+              w-10
+              shrink-0
+              items-center
+              justify-center
+              rounded-2xl
+              bg-gradient-to-br
+              from-[#0B2D5C]
+              via-[#123F78]
+              to-blue-700
+              text-white
+              shadow-[0_8px_20px_rgba(11,45,92,0.25)]
+              transition-all
+              duration-200
+              hover:-translate-y-0.5
+              hover:shadow-[0_12px_28px_rgba(11,45,92,0.32)]
+              active:translate-y-0
+              disabled:translate-y-0
+              disabled:cursor-not-allowed
+              disabled:opacity-40
+              disabled:shadow-none
+              sm:h-11
+              sm:w-11
+            "
           >
             {busy ? (
               <Loader2
-                size={19}
+                size={18}
                 className="animate-spin"
               />
             ) : (
               <Send
-                size={19}
+                size={18}
+                className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
               />
             )}
           </button>
-
         </div>
 
-        {/* ======================================================
-            FOOTER
-           ====================================================== */}
+        {/* =====================================================
+            COMPOSER FOOTER
+            ===================================================== */}
 
-        <div className="mt-1.5 hidden items-center justify-between gap-4 px-1 text-[9px] font-medium text-slate-400 sm:flex">
+        <div
+          className="
+            mt-2
+            hidden
+            items-center
+            justify-between
+            gap-4
+            px-1
+            sm:flex
+          "
+        >
+          <div className="flex min-w-0 items-center gap-2 text-[9px] font-medium text-slate-400">
+            <ShieldCheck
+              size={11}
+              className="shrink-0 text-emerald-500"
+            />
 
-          <p>
-            JPEG, PNG or WebP · Maximum 10 MB
-            {replyingTo
-              ? " · Esc cancels reply"
-              : ""}
-          </p>
+            <span className="truncate">
+              Private & secure
+              <span className="mx-1.5 text-slate-300">
+                •
+              </span>
+              Enter to send
+              <span className="mx-1.5 text-slate-300">
+                •
+              </span>
+              Shift + Enter for new line
+              {replyingTo
+                ? " • Esc cancels reply"
+                : ""}
+            </span>
+          </div>
 
           {content.length >
             1600 && (
-            <p
-              className={
+            <span
+              className={[
+                "shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold",
+
                 remainingCharacters <=
-                  100
-                  ? "font-semibold text-amber-600"
-                  : ""
-              }
+                100
+                  ? "bg-amber-50 text-amber-700"
+                  : "bg-slate-100 text-slate-500",
+              ].join(" ")}
             >
               {remainingCharacters} left
-            </p>
+            </span>
           )}
+        </div>
 
+        {/* Mobile status */}
+
+        <div className="mt-1.5 flex items-center justify-between px-1 sm:hidden">
+          <span className="inline-flex items-center gap-1 text-[9px] font-medium text-slate-400">
+            <ShieldCheck
+              size={10}
+              className="text-emerald-500"
+            />
+
+            Secure messaging
+          </span>
+
+          {content.length >
+            1600 && (
+            <span
+              className={[
+                "text-[9px] font-bold",
+
+                remainingCharacters <=
+                100
+                  ? "text-amber-600"
+                  : "text-slate-400",
+              ].join(" ")}
+            >
+              {remainingCharacters}
+            </span>
+          )}
         </div>
 
       </div>

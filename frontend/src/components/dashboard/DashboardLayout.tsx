@@ -18,6 +18,7 @@ import {
 import ProfileProvider from "@/features/profile/context/ProfileProvider";
 
 import DashboardFooter from "./DashboardFooter";
+import FloatingChatButton from "./FloatingChatButton";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 
@@ -162,8 +163,14 @@ export default function DashboardLayout({
             </div>
           </main>
 
-          <DashboardFooter />
+                  <DashboardFooter />
         </div>
+
+        {/* =====================================================
+            Global Floating Chat Shortcut
+            ===================================================== */}
+
+        <FloatingChatButton />
 
         {/* =====================================================
             Mobile Sidebar

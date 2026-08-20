@@ -6,8 +6,10 @@ import {
 } from "react";
 
 import {
+  HeartHandshake,
   MessageCircle,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 
 import type {
@@ -76,16 +78,56 @@ export default function MessageList({
         behavior: "smooth",
         block: "end",
       });
-  }, [messages]);
+  }, [
+    messages,
+  ]);
 
   if (loading) {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50/40 px-4 py-6">
-        <div className="text-center">
-          <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#0B2D5C]" />
+      <div
+        className="
+          relative
+          flex
+          min-h-0
+          flex-1
+          items-center
+          justify-center
+          overflow-hidden
+          bg-gradient-to-br
+          from-[#F7FAFF]
+          via-white
+          to-blue-50/60
+          px-4
+          py-6
+        "
+      >
+        <div className="pointer-events-none absolute -right-24 -top-24 h-60 w-60 rounded-full bg-blue-100/50 blur-3xl" />
 
-          <p className="mt-2.5 text-xs font-semibold text-slate-500">
-            Loading messages…
+        <div className="relative text-center">
+          <div
+            className="
+              mx-auto
+              flex
+              h-12
+              w-12
+              items-center
+              justify-center
+              rounded-2xl
+              border
+              border-blue-100
+              bg-white
+              shadow-[0_8px_24px_rgba(15,23,42,0.07)]
+            "
+          >
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-[#0B2D5C]" />
+          </div>
+
+          <p className="mt-3 text-xs font-bold text-[#0B2D5C]">
+            Loading conversation
+          </p>
+
+          <p className="mt-1 text-[10px] text-slate-400">
+            Preparing your messages…
           </p>
         </div>
       </div>
@@ -97,29 +139,118 @@ export default function MessageList({
     0
   ) {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/50 px-4 py-6">
-        <div className="max-w-sm text-center">
-          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[#0B2D5C] text-white shadow-sm">
-            <MessageCircle
-              size={19}
+      <div
+        className="
+          relative
+          flex
+          min-h-0
+          flex-1
+          items-center
+          justify-center
+          overflow-hidden
+          bg-gradient-to-br
+          from-[#F8FBFF]
+          via-white
+          to-amber-50/25
+          px-6
+          py-8
+        "
+      >
+        <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-blue-100/55 blur-3xl" />
+
+        <div className="pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-amber-100/35 blur-3xl" />
+
+        <div className="relative max-w-sm text-center">
+          <div
+            className="
+              mx-auto
+              flex
+              h-16
+              w-16
+              items-center
+              justify-center
+              rounded-[22px]
+              bg-gradient-to-br
+              from-[#071B36]
+              via-[#0B2D5C]
+              to-[#174A87]
+              text-white
+              shadow-[0_14px_34px_rgba(11,45,92,0.24)]
+            "
+          >
+            <HeartHandshake
+              size={28}
             />
           </div>
 
-          <h3 className="mt-3 text-sm font-black text-[#0B2D5C]">
+          <div className="mt-4 flex items-center justify-center gap-1.5">
+            <Sparkles
+              size={10}
+              className="text-[#B38B19]"
+            />
+
+            <span
+              className="
+                text-[9px]
+                font-black
+                uppercase
+                tracking-[0.14em]
+                text-[#B38B19]
+              "
+            >
+              A meaningful beginning
+            </span>
+          </div>
+
+          <h3
+            className="
+              mt-1.5
+              text-lg
+              font-black
+              tracking-[-0.025em]
+              text-[#0B2D5C]
+            "
+          >
             Start the conversation
           </h3>
 
-          <p className="mt-1 text-[11px] leading-5 text-slate-500">
-            Send a respectful message and begin getting to know each other.
+          <p
+            className="
+              mx-auto
+              mt-2
+              max-w-[310px]
+              text-[11px]
+              leading-5
+              text-slate-500
+            "
+          >
+            Send a warm and respectful message to begin getting to know your accepted match.
           </p>
 
-          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-white px-2.5 py-1 text-[9px] font-semibold text-slate-500 shadow-sm">
+          <div
+            className="
+              mt-4
+              inline-flex
+              items-center
+              gap-1.5
+              rounded-full
+              border
+              border-emerald-100
+              bg-white
+              px-3
+              py-1.5
+              text-[9px]
+              font-bold
+              text-slate-500
+              shadow-sm
+            "
+          >
             <ShieldCheck
-              size={10}
+              size={11}
               className="text-emerald-600"
             />
 
-            Communicate safely
+            Private & protected conversation
           </div>
         </div>
       </div>
@@ -127,8 +258,50 @@ export default function MessageList({
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-[#FBFDFF] to-blue-50/35">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-1 px-3 py-3 sm:px-4 lg:px-5">
+    <div
+      className="
+        relative
+        min-h-0
+        flex-1
+        overflow-y-auto
+        overscroll-contain
+        bg-gradient-to-br
+        from-[#F7FAFD]
+        via-[#FCFDFE]
+        to-blue-50/40
+      "
+    >
+      {/* subtle background decoration */}
+
+      <div
+        aria-hidden="true"
+        className="
+          pointer-events-none
+          fixed
+          opacity-[0.018]
+        "
+      >
+        <MessageCircle
+          size={180}
+        />
+      </div>
+
+      <div
+        className="
+          mx-auto
+          flex
+          w-full
+          max-w-4xl
+          flex-col
+          gap-1.5
+          px-3
+          pb-5
+          pt-4
+          sm:px-5
+          sm:pb-6
+          lg:px-6
+        "
+      >
         {messages.map(
           (
             message,
@@ -202,6 +375,7 @@ export default function MessageList({
           ref={
             bottomRef
           }
+          className="h-1"
         />
       </div>
     </div>
@@ -214,16 +388,57 @@ function DateDivider({
   dateValue: string;
 }) {
   return (
-    <div className="my-3 flex items-center gap-3">
-      <div className="h-px flex-1 bg-slate-200/70" />
+    <div
+      className="
+        my-5
+        flex
+        items-center
+        gap-3
+      "
+    >
+      <div
+        className="
+          h-px
+          flex-1
+          bg-gradient-to-r
+          from-transparent
+          via-slate-200
+          to-slate-200
+        "
+      />
 
-      <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[9px] font-bold text-slate-400 shadow-sm">
+      <span
+        className="
+          shrink-0
+          rounded-full
+          border
+          border-slate-200
+          bg-white/95
+          px-3
+          py-1.5
+          text-[9px]
+          font-black
+          uppercase
+          tracking-[0.05em]
+          text-slate-400
+          shadow-[0_3px_10px_rgba(15,23,42,0.04)]
+        "
+      >
         {formatMessageDate(
           dateValue
         )}
       </span>
 
-      <div className="h-px flex-1 bg-slate-200/70" />
+      <div
+        className="
+          h-px
+          flex-1
+          bg-gradient-to-l
+          from-transparent
+          via-slate-200
+          to-slate-200
+        "
+      />
     </div>
   );
 }

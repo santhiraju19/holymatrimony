@@ -660,7 +660,7 @@ export default function MessageBubble({
                 false
               );
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-transparent text-slate-400 opacity-70 transition hover:border-slate-200 hover:bg-white hover:text-[#0B2D5C] hover:shadow-sm sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 disabled:opacity-50"
+            className="flex h-8 w-8 items-center justify-center rounded-xl border border-transparent text-slate-400 opacity-70 transition-all hover:border-slate-200 hover:bg-white hover:text-[#0B2D5C] hover:shadow-md sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 disabled:opacity-50"
           >
             <Smile
               size={16}
@@ -670,7 +670,7 @@ export default function MessageBubble({
           {reactionPickerOpen && (
             <div
               className={[
-                "absolute bottom-8 z-40 flex items-center gap-0.5 rounded-2xl border border-slate-200 bg-white p-1 shadow-[0_12px_32px_rgba(15,23,42,0.16)] sm:gap-1 sm:p-1.5",
+                "absolute bottom-9 z-40 flex items-center gap-0.5 rounded-2xl border border-slate-200/80 bg-white/95 p-1.5 shadow-[0_18px_45px_rgba(15,23,42,0.18)] backdrop-blur-xl sm:gap-1",
 
                 own
                   ? "right-0"
@@ -731,7 +731,7 @@ export default function MessageBubble({
           onClick={
             handleReply
           }
-          className="flex h-7 w-7 items-center justify-center rounded-lg border border-transparent text-slate-400 opacity-0 transition hover:border-slate-200 hover:bg-white hover:text-[#0B2D5C] hover:shadow-sm group-hover:opacity-100 focus:opacity-100"
+          className="flex h-8 w-8 items-center justify-center rounded-xl border border-transparent text-slate-400 opacity-0 transition-all hover:border-slate-200 hover:bg-white hover:text-[#0B2D5C] hover:shadow-md group-hover:opacity-100 focus:opacity-100"
         >
           <Reply
             size={16}
@@ -761,7 +761,7 @@ export default function MessageBubble({
                 false
               );
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-transparent text-slate-400 opacity-70 transition hover:border-slate-200 hover:bg-white hover:text-slate-700 hover:shadow-sm sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
+            className="flex h-8 w-8 items-center justify-center rounded-xl border border-transparent text-slate-400 opacity-70 transition-all hover:border-slate-200 hover:bg-white hover:text-slate-700 hover:shadow-md sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
           >
             <MoreVertical
               size={17}
@@ -769,7 +769,7 @@ export default function MessageBubble({
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-8 z-30 min-w-[150px] overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-[0_12px_32px_rgba(15,23,42,0.16)]">
+            <div className="absolute right-0 top-9 z-30 min-w-[165px] overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 p-1.5 shadow-[0_18px_45px_rgba(15,23,42,0.18)] backdrop-blur-xl">
 
               {canReply && (
                 <button
@@ -841,14 +841,14 @@ export default function MessageBubble({
   return (
     <div
       className={[
-        "group flex",
+        "group flex py-0.5",
 
         own
           ? "justify-end"
           : "justify-start",
       ].join(" ")}
     >
-      <div className="relative flex min-w-0 max-w-[90%] items-start gap-1 sm:max-w-[76%] lg:max-w-[68%]">
+      <div className="relative flex min-w-0 max-w-[92%] items-center gap-1.5 sm:max-w-[78%] lg:max-w-[72%]">
 
         {/* ======================================================
             ACTIONS BEFORE OWN MESSAGE
@@ -875,18 +875,18 @@ export default function MessageBubble({
 
           <div
             className={[
-              "min-w-0 overflow-hidden rounded-[16px] shadow-[0_4px_14px_rgba(15,23,42,0.06)]",
+              "min-w-0 overflow-hidden rounded-[18px] transition-shadow duration-200",
 
               isImageMessage
-                ? "p-1 sm:p-1.5"
-                : "px-3 py-2 sm:px-3.5 sm:py-2.5",
+                ? "p-1.5"
+                : "px-3.5 py-2.5 sm:px-4 sm:py-3",
 
               own
-                ? "rounded-br-[5px] bg-gradient-to-br from-[#0B2D5C] to-[#123F78] text-white"
-                : "rounded-bl-[5px] border border-slate-200/90 bg-white text-slate-700",
+                ? "rounded-br-[6px] bg-gradient-to-br from-[#08264D] via-[#0B2D5C] to-[#174A87] text-white shadow-[0_7px_20px_rgba(11,45,92,0.16)]"
+                : "rounded-bl-[6px] border border-slate-200/80 bg-white text-slate-700 shadow-[0_6px_18px_rgba(15,23,42,0.055)]",
 
               deleted
-                ? "italic"
+                ? "italic opacity-90"
                 : "",
             ].join(" ")}
           >
@@ -900,23 +900,23 @@ export default function MessageBubble({
               hasReply && (
                 <div
                   className={[
-                    "mb-2 overflow-hidden rounded-lg border-l-[3px]",
+                    "mb-2.5 overflow-hidden rounded-xl border-l-[3px] backdrop-blur-sm",
 
                     own
-                      ? "border-[#F2D675] bg-white/10"
-                      : "border-[#D4AF37] bg-slate-50/90",
+                      ? "border-[#F2D675] bg-white/[0.09]"
+                      : "border-[#D4AF37] bg-gradient-to-r from-amber-50/70 to-slate-50",
                   ].join(" ")}
                 >
                   <div className="flex min-w-0 items-stretch">
 
-                    <div className="min-w-0 flex-1 px-2.5 py-1.5">
+                    <div className="min-w-0 flex-1 px-3 py-2">
 
                       <p
                         className={[
-                          "mb-0.5 text-[11px] font-semibold",
+                          "mb-0.5 text-[10px] font-black tracking-wide",
 
                           own
-                            ? "text-blue-100"
+                            ? "text-blue-100/85"
                             : "text-[#0B2D5C]",
                         ].join(" ")}
                       >
@@ -1022,7 +1022,7 @@ export default function MessageBubble({
                   "flex items-center gap-1.5 text-xs italic",
 
                   own
-                    ? "text-blue-100"
+                    ? "text-blue-100/85"
                     : "text-slate-500",
                 ].join(" ")}
               >
@@ -1150,7 +1150,7 @@ export default function MessageBubble({
                       }
                       target="_blank"
                       rel="noreferrer"
-                      className="block overflow-hidden rounded-[13px]"
+                      className="group/image block overflow-hidden rounded-[15px] bg-slate-100"
                     >
                       <img
                         src={
@@ -1162,7 +1162,7 @@ export default function MessageBubble({
                           "Chat image"
                         }
                         loading="lazy"
-                        className="max-h-[360px] w-full min-w-0 object-cover transition duration-300 hover:scale-[1.01] hover:opacity-95"
+                        className="max-h-[380px] w-full min-w-0 object-cover transition duration-300 group-hover/image:scale-[1.015] group-hover/image:brightness-[0.97]"
                       />
                     </a>
                   )}
@@ -1175,7 +1175,7 @@ export default function MessageBubble({
                   ?.trim() && (
                     <p
                       className={[
-                        "whitespace-pre-wrap break-words text-[13px] leading-5 sm:text-sm sm:leading-6",
+                        "whitespace-pre-wrap break-words text-[13.5px] font-medium leading-[1.55] tracking-[-0.005em] sm:text-[14px] sm:leading-[1.6]",
 
                         isImageMessage
                           ? "px-2 pt-2"
@@ -1196,14 +1196,14 @@ export default function MessageBubble({
             {!editing && (
               <div
                 className={[
-                  "flex items-center justify-end gap-1 text-[9px] font-medium",
+                  "flex items-center justify-end gap-1 text-[9px] font-semibold tracking-[0.01em]",
 
                   isImageMessage
                     ? "px-2 pb-1 pt-1"
                     : "mt-1",
 
                   own
-                    ? "text-blue-100"
+                    ? "text-blue-100/85"
                     : "text-slate-400",
                 ].join(" ")}
               >
@@ -1289,11 +1289,11 @@ export default function MessageBubble({
                             : `React ${reaction}`
                         }
                         className={[
-                          "flex h-6 items-center gap-1 rounded-full border bg-white px-1.5 text-[10px] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-50",
+                          "flex h-7 items-center gap-1 rounded-full border bg-white px-2 text-[10px] shadow-[0_3px_10px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-md disabled:opacity-50",
 
                           selectedByCurrentUser
-                            ? "border-[#D4AF37]/60 bg-amber-50 text-[#8A6814]"
-                            : "border-slate-200 text-slate-700",
+                            ? "border-[#D4AF37]/60 bg-gradient-to-r from-amber-50 to-yellow-50 text-[#80600F] ring-1 ring-[#D4AF37]/10"
+                            : "border-slate-200 text-slate-700 hover:border-slate-300",
                         ].join(" ")}
                       >
                         <span className="text-sm">
@@ -1348,7 +1348,7 @@ function MessageStatus({
         <CheckCheck
           size={14}
           aria-label="Read"
-          className="text-sky-300"
+          className="text-sky-300 drop-shadow-sm"
         />
       );
 
@@ -1374,7 +1374,7 @@ function MessageStatus({
         <TriangleAlert
           size={13}
           aria-label="Failed"
-          className="text-red-300"
+          className="text-red-300 drop-shadow-sm"
         />
       );
 
