@@ -1,12 +1,15 @@
 package com.theholymatrimony.backend.profile.service;
 
-import com.theholymatrimony.backend.profile.dto.BrowseProfileResponse;
-import com.theholymatrimony.backend.profile.dto.BrowseProfilesPageResponse;
-import com.theholymatrimony.backend.profile.dto.SearchProfileRequest;
+import com.theholymatrimony.backend.compatibility.dto.CompatibilityScoreResponse;
+import com.theholymatrimony.backend.compatibility.service.CompatibilityScoreService;
 
 import com.theholymatrimony.backend.membership.entitlement.MembershipEntitlementService;
 import com.theholymatrimony.backend.membership.entitlement.MembershipFeature;
+
+import com.theholymatrimony.backend.profile.dto.BrowseProfileResponse;
+import com.theholymatrimony.backend.profile.dto.BrowseProfilesPageResponse;
 import com.theholymatrimony.backend.profile.dto.ProfileContactResponse;
+import com.theholymatrimony.backend.profile.dto.SearchProfileRequest;
 
 import com.theholymatrimony.backend.profile.entity.Profile;
 import com.theholymatrimony.backend.profile.entity.ProfilePhoto;
@@ -61,8 +64,9 @@ public class BrowseProfileService {
 
     private static final String SORT_TRUST_VERIFIED =
             "TRUST_VERIFIED";
-private final MembershipEntitlementService
-        membershipEntitlementService;
+
+    private final MembershipEntitlementService
+            membershipEntitlementService;
 
     private final ProfileRepository
             profileRepository;
@@ -79,6 +83,9 @@ private final MembershipEntitlementService
     private final ProfileViewService
             profileViewService;
 
+    private final CompatibilityScoreService
+            compatibilityScoreService;
+
     /*
      * ============================================================
      * BROWSE PROFILES
@@ -90,6 +97,28 @@ private final MembershipEntitlementService
             int page,
             int size
     ) {
+
+        /*
+         * Resolve the authenticated member once.
+         *
+         * This profile becomes the source profile used
+         * to calculate mutual compatibility with every
+         * candidate on the requested page.
+         */
+        Profile currentProfile =
+                resolveAuthenticatedProfile(
+                        authenticatedEmail
+                );
+
+        boolean includeCompatibility =
+                membershipEntitlementService
+                        .hasFeature(
+                                currentProfile
+                                        .getUser()
+                                        .getId(),
+                                MembershipFeature
+                                        .COMPATIBILITY_SCORE
+                        );
 
         Pageable pageable =
                 createPageable(
@@ -105,7 +134,9 @@ private final MembershipEntitlementService
                         );
 
         return mapPage(
-                profilePage
+                profilePage,
+                currentProfile,
+                includeCompatibility
         );
     }
 
@@ -135,13 +166,30 @@ private final MembershipEntitlementService
          * Keep the entitlement check in the service layer so the
          * restriction cannot be bypassed by calling the API directly.
          */
+
+        Profile currentProfile =
+                resolveAuthenticatedProfile(
+                        authenticatedEmail
+                );
+
+        UUID authenticatedUserId =
+                currentProfile
+                        .getUser()
+                        .getId();
+
         membershipEntitlementService
                 .requireFeature(
-                        resolveAuthenticatedUserId(
-                                authenticatedEmail
-                        ),
+                        authenticatedUserId,
                         MembershipFeature.ADVANCED_SEARCH
                 );
+
+        boolean includeCompatibility =
+                membershipEntitlementService
+                        .hasFeature(
+                                authenticatedUserId,
+                                MembershipFeature
+                                        .COMPATIBILITY_SCORE
+                        );
 
         validateSearchRequest(
                 request
@@ -164,7 +212,9 @@ private final MembershipEntitlementService
                 );
 
         return mapPage(
-                profilePage
+                profilePage,
+                currentProfile,
+                includeCompatibility
         );
     }
 
@@ -193,6 +243,10 @@ private final MembershipEntitlementService
                                         )
                         );
 
+        /*
+         * Record the profile visit before returning
+         * the public profile response.
+         */
         profileViewService.recordView(
                 authenticatedEmail,
                 profile
@@ -200,121 +254,152 @@ private final MembershipEntitlementService
                         .getId()
         );
 
+        Profile currentProfile =
+                resolveAuthenticatedProfile(
+                        authenticatedEmail
+                );
+
+        boolean includeCompatibility =
+                membershipEntitlementService
+                        .hasFeature(
+                                currentProfile
+                                        .getUser()
+                                        .getId(),
+                                MembershipFeature
+                                        .COMPATIBILITY_SCORE
+                        );
+
         return map(
-                profile
+                profile,
+                currentProfile,
+                includeCompatibility
         );
     }
-/*
- * ============================================================
- * GET PROTECTED PROFILE CONTACT DETAILS
- * ============================================================
- */
 
-public ProfileContactResponse getProfileContact(
-        String authenticatedEmail,
-        UUID profileId
-) {
+    /*
+     * ============================================================
+     * GET PROTECTED PROFILE CONTACT DETAILS
+     * ============================================================
+     */
 
-    Profile profile =
-            profileRepository
-                    .findByIdAndProfileCompletedTrueAndUserEmailNot(
-                            profileId,
-                            authenticatedEmail
-                    )
-                    .orElseThrow(
-                            () ->
-                                    new EntityNotFoundException(
-                                            "Profile not found"
-                                    )
-                    );
-
-    membershipEntitlementService.requireFeature(
-            resolveAuthenticatedUserId(
-                    authenticatedEmail
-            ),
-            MembershipFeature.VIEW_CONTACT_DETAILS
-    );
-
-    String mobile =
-            profile.getMobile();
-
-    if (
-            mobile == null
-                    || mobile.isBlank()
+    public ProfileContactResponse getProfileContact(
+            String authenticatedEmail,
+            UUID profileId
     ) {
 
-        mobile =
-                profile
-                        .getUser()
-                        .getMobile();
+        Profile profile =
+                profileRepository
+                        .findByIdAndProfileCompletedTrueAndUserEmailNot(
+                                profileId,
+                                authenticatedEmail
+                        )
+                        .orElseThrow(
+                                () ->
+                                        new EntityNotFoundException(
+                                                "Profile not found"
+                                        )
+                        );
+
+        membershipEntitlementService
+                .requireFeature(
+                        resolveAuthenticatedUserId(
+                                authenticatedEmail
+                        ),
+                        MembershipFeature
+                                .VIEW_CONTACT_DETAILS
+                );
+
+        String mobile =
+                profile.getMobile();
+
+        if (
+                mobile == null
+                        || mobile.isBlank()
+        ) {
+
+            mobile =
+                    profile
+                            .getUser()
+                            .getMobile();
+        }
+
+        boolean mobileVerified =
+                isVerificationApproved(
+                        profile
+                                .getUser()
+                                .getId(),
+                        VerificationType.MOBILE
+                );
+
+        return ProfileContactResponse
+                .builder()
+
+                .profileId(
+                        profile.getId()
+                )
+
+                .fullName(
+                        profile
+                                .getUser()
+                                .getFullName()
+                )
+
+                .email(
+                        profile
+                                .getUser()
+                                .getEmail()
+                )
+
+                .mobile(
+                        mobile
+                )
+
+                .mobileVerified(
+                        mobileVerified
+                )
+
+                .build();
     }
 
-    boolean mobileVerified =
-            isVerificationApproved(
-                    profile
-                            .getUser()
-                            .getId(),
-                    VerificationType.MOBILE
-            );
+    /*
+     * ============================================================
+     * AUTHENTICATED PROFILE RESOLUTION
+     * ============================================================
+     */
 
-    return ProfileContactResponse
-            .builder()
+    private Profile resolveAuthenticatedProfile(
+            String authenticatedEmail
+    ) {
 
-            .profileId(
-                    profile.getId()
-            )
+        return profileRepository
+                .findByUserEmail(
+                        authenticatedEmail
+                )
+                .orElseThrow(
+                        () ->
+                                new EntityNotFoundException(
+                                        "Authenticated profile not found"
+                                )
+                );
+    }
 
-            .fullName(
-                    profile
-                            .getUser()
-                            .getFullName()
-            )
+    /*
+     * ============================================================
+     * AUTHENTICATED USER RESOLUTION
+     * ============================================================
+     */
 
-            .email(
-                    profile
-                            .getUser()
-                            .getEmail()
-            )
+    private UUID resolveAuthenticatedUserId(
+            String authenticatedEmail
+    ) {
 
-            .mobile(
-                    mobile
-            )
+        return resolveAuthenticatedProfile(
+                authenticatedEmail
+        )
+                .getUser()
+                .getId();
+    }
 
-            .mobileVerified(
-                    mobileVerified
-            )
-
-            .build();
-}
-
-
-/*
- * ============================================================
- * AUTHENTICATED USER RESOLUTION
- * ============================================================
- */
-
-private UUID resolveAuthenticatedUserId(
-        String authenticatedEmail
-) {
-
-    return profileRepository
-            .findByUserEmail(
-                    authenticatedEmail
-            )
-            .map(
-                    profile ->
-                            profile
-                                    .getUser()
-                                    .getId()
-            )
-            .orElseThrow(
-                    () ->
-                            new EntityNotFoundException(
-                                    "Authenticated profile not found"
-                            )
-            );
-}
     /*
      * ============================================================
      * DEFAULT PAGINATION
@@ -526,7 +611,9 @@ private UUID resolveAuthenticatedUserId(
      */
 
     private BrowseProfilesPageResponse mapPage(
-            Page<Profile> profilePage
+            Page<Profile> profilePage,
+            Profile currentProfile,
+            boolean includeCompatibility
     ) {
 
         List<BrowseProfileResponse> profiles =
@@ -534,7 +621,12 @@ private UUID resolveAuthenticatedUserId(
                         .getContent()
                         .stream()
                         .map(
-                                this::map
+                                profile ->
+                                        map(
+                                                profile,
+                                                currentProfile,
+                                                includeCompatibility
+                                        )
                         )
                         .toList();
 
@@ -595,7 +687,9 @@ private UUID resolveAuthenticatedUserId(
      */
 
     private BrowseProfileResponse map(
-            Profile profile
+            Profile profile,
+            Profile currentProfile,
+            boolean includeCompatibility
     ) {
 
         UUID userId =
@@ -686,13 +780,40 @@ private UUID resolveAuthenticatedUserId(
                         != IdentityDocumentType.AADHAAR;
 
         /*
-         * Existing compatibility flag.
+         * Existing verification compatibility flag.
          *
          * Church verification intentionally remains independent.
          */
         boolean verifiedProfile =
                 mobileVerified
                         && identityVerified;
+
+        /*
+         * ========================================================
+         * COMPATIBILITY SCORE
+         * ========================================================
+         *
+         * Compatibility is calculated only when the authenticated
+         * member owns the COMPATIBILITY_SCORE entitlement.
+         *
+         * FREE / SILVER
+         * --------------------------------------------------------
+         * All compatibility response fields remain null.
+         *
+         * GOLD / PLATINUM
+         * --------------------------------------------------------
+         * Mutual profile preferences are evaluated and the score
+         * breakdown is included in the public profile response.
+         */
+
+        CompatibilityScoreResponse compatibility =
+                includeCompatibility
+                        ? compatibilityScoreService
+                                .calculate(
+                                        currentProfile,
+                                        profile
+                                )
+                        : null;
 
         return BrowseProfileResponse
                 .builder()
@@ -703,6 +824,38 @@ private UUID resolveAuthenticatedUserId(
 
                 .userId(
                         userId
+                )
+
+                /*
+                 * Compatibility
+                 */
+
+                .compatibilityScore(
+                        compatibility == null
+                                ? null
+                                : compatibility
+                                        .getScore()
+                )
+
+                .compatibilityAgeScore(
+                        compatibility == null
+                                ? null
+                                : compatibility
+                                        .getAgeScore()
+                )
+
+                .compatibilityDenominationScore(
+                        compatibility == null
+                                ? null
+                                : compatibility
+                                        .getDenominationScore()
+                )
+
+                .compatibilityEducationScore(
+                        compatibility == null
+                                ? null
+                                : compatibility
+                                        .getEducationScore()
                 )
 
                 .fullName(

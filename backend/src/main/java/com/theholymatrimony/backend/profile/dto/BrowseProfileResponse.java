@@ -3,6 +3,8 @@ package com.theholymatrimony.backend.profile.dto;
 import lombok.Builder;
 import lombok.Data;
 
+
+
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -12,6 +14,14 @@ public class BrowseProfileResponse {
 
     private UUID id;
     private UUID userId;
+
+private Integer compatibilityScore;
+
+private Integer compatibilityAgeScore;
+
+private Integer compatibilityDenominationScore;
+
+private Integer compatibilityEducationScore;
 
     private String fullName;
 

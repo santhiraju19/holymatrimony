@@ -65,10 +65,19 @@ export interface BrowseProfile {
    */
   idVerified: boolean;
 
-  /*
+    /*
    * Existing compatibility flag.
    */
   verifiedProfile: boolean;
+
+  // =====================================================
+  // Compatibility Score
+  // =====================================================
+
+  compatibilityScore: number | null;
+  compatibilityAgeScore: number | null;
+  compatibilityDenominationScore: number | null;
+  compatibilityEducationScore: number | null;
 
   primaryPhotoId: string | null;
   primaryPhotoUrl: string | null;
