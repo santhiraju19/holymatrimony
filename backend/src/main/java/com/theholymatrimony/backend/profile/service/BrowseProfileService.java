@@ -696,6 +696,13 @@ public class BrowseProfileService {
                 profile
                         .getUser()
                         .getId();
+                        boolean highlightedProfile =
+        membershipEntitlementService
+                .hasFeature(
+                        userId,
+                        MembershipFeature
+                                .HIGHLIGHTED_PROFILE
+                );
 
         ProfilePhoto primaryPhoto =
                 profilePhotoRepository
@@ -825,6 +832,9 @@ public class BrowseProfileService {
                 .userId(
                         userId
                 )
+.highlightedProfile(
+        highlightedProfile
+)
 
                 /*
                  * Compatibility

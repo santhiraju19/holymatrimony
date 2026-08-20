@@ -6,6 +6,7 @@ export type BrowseSortOption =
 export interface BrowseProfile {
   id: string;
   userId: string;
+  highlightedProfile: boolean;
 
   fullName: string;
 

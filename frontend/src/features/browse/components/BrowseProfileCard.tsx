@@ -11,6 +11,7 @@ import {
   GraduationCap,
   MapPin,
   Sparkles,
+  Star,
   UserRound,
 } from "lucide-react";
 
@@ -67,6 +68,11 @@ export default function BrowseProfileCard({
       100
     );
 
+  const highlightedProfile =
+    Boolean(
+      profile.highlightedProfile
+    );
+
   const hasTrustCredentials =
     Boolean(
       profile.aadhaarVerified ||
@@ -74,11 +80,6 @@ export default function BrowseProfileCard({
         profile.churchVerified
     );
 
-  /*
-   * A null score means the backend intentionally
-   * did not expose Compatibility Score for the
-   * authenticated member's membership tier.
-   */
   const hasCompatibility =
     profile.compatibilityScore !==
       null &&
@@ -97,16 +98,51 @@ export default function BrowseProfileCard({
         )
       : null;
 
+  const cardClassName = [
+    "group relative flex h-full flex-col overflow-hidden rounded-[24px] border bg-white transition-all duration-300 ease-out hover:-translate-y-1",
+
+    highlightedProfile
+      ? "border-amber-300/90 shadow-[0_14px_38px_rgba(212,175,55,0.18)] hover:border-amber-400 hover:shadow-[0_24px_58px_rgba(212,175,55,0.28)]"
+      : "border-slate-200/80 shadow-[0_8px_28px_rgba(15,23,42,0.055)] hover:border-blue-200/80 hover:shadow-[0_20px_48px_rgba(15,23,42,0.12)]",
+  ].join(" ");
+
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-[0_8px_28px_rgba(15,23,42,0.055)] transition-all duration-300 ease-out hover:-translate-y-1 hover:border-blue-200/80 hover:shadow-[0_20px_48px_rgba(15,23,42,0.12)]">
+    <article
+      className={
+        cardClassName
+      }
+    >
+      {/* =====================================================
+          Premium Highlight Frame
+          ===================================================== */}
+
+      {highlightedProfile && (
+        <>
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-30 rounded-[24px] ring-1 ring-inset ring-amber-300/50"
+          />
+
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-16 -top-16 z-0 h-40 w-40 rounded-full bg-amber-200/25 blur-3xl"
+          />
+        </>
+      )}
 
       {/* =====================================================
-          Premium Accent
+          Top Accent
           ===================================================== */}
 
       <div
         aria-hidden="true"
-        className="absolute inset-x-12 top-0 z-30 h-[2px] bg-gradient-to-r from-transparent via-[#D4AF37]/70 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        className={[
+          "absolute inset-x-10 top-0 z-40 h-[2px] bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent transition-opacity duration-300",
+
+          highlightedProfile
+            ? "opacity-100"
+            : "opacity-0 group-hover:opacity-100",
+        ].join(" ")}
       />
 
       {/* =====================================================
@@ -148,10 +184,39 @@ export default function BrowseProfileCard({
             className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/30 to-transparent"
           />
 
-          {/* Trust Badges */}
+          {/* =================================================
+              Highlighted Badge
+              ================================================= */}
+
+          {highlightedProfile && (
+            <div className="absolute left-3 top-3 z-30">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/60 bg-gradient-to-r from-[#0B2D5C]/95 to-blue-800/95 px-3 py-1.5 text-white shadow-lg backdrop-blur-xl">
+                <Star
+                  size={12}
+                  className="fill-[#F7D66D] text-[#F7D66D]"
+                />
+
+                <span className="text-[10px] font-black uppercase tracking-[0.08em]">
+                  Highlighted
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* =================================================
+              Trust Badges
+              ================================================= */}
 
           {hasTrustCredentials && (
-            <div className="absolute left-3 top-3 z-20 max-w-[calc(100%-3.5rem)]">
+            <div
+              className={[
+                "absolute left-3 z-20 max-w-[calc(100%-3.5rem)]",
+
+                highlightedProfile
+                  ? "top-12"
+                  : "top-3",
+              ].join(" ")}
+            >
               <ProfileTrustBadges
                 profile={profile}
                 compact
@@ -160,7 +225,9 @@ export default function BrowseProfileCard({
             </div>
           )}
 
-          {/* Open Profile */}
+          {/* =================================================
+              Open Profile
+              ================================================= */}
 
           <span className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-xl border border-white/20 bg-black/25 text-white shadow-sm backdrop-blur-xl transition-all duration-300 group-hover:bg-white group-hover:text-[#0B2D5C]">
             <ArrowUpRight
@@ -169,7 +236,9 @@ export default function BrowseProfileCard({
             />
           </span>
 
-          {/* Compatibility Badge */}
+          {/* =================================================
+              Compatibility Badge
+              ================================================= */}
 
           {compatibilityScore !== null && (
             <div className="absolute right-3 top-14 z-20">
@@ -187,7 +256,9 @@ export default function BrowseProfileCard({
             </div>
           )}
 
-          {/* Profile Identity */}
+          {/* =================================================
+              Profile Identity
+              ================================================= */}
 
           <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-4 pt-16">
             <div className="flex items-end justify-between gap-3">
@@ -224,14 +295,41 @@ export default function BrowseProfileCard({
           Profile Information
           ===================================================== */}
 
-      <div className="flex flex-1 flex-col">
+      <div
+        className={[
+          "relative flex flex-1 flex-col",
+
+          highlightedProfile
+            ? "bg-gradient-to-b from-amber-50/30 via-white to-white"
+            : "",
+        ].join(" ")}
+      >
         <Link
           href={`/browse/${profile.id}`}
           className="block flex-1"
         >
           <div className="space-y-4 px-4 pb-4 pt-4">
 
-            {/* Core Details */}
+            {/* =================================================
+                Highlight Summary
+                ================================================= */}
+
+            {highlightedProfile && (
+              <div className="flex items-center gap-2 rounded-xl border border-amber-100 bg-gradient-to-r from-amber-50/90 via-white to-yellow-50/70 px-3 py-2.5">
+                <Sparkles
+                  size={14}
+                  className="shrink-0 text-amber-600"
+                />
+
+                <p className="text-[11px] font-extrabold text-[#0B2D5C]">
+                  Premium highlighted profile
+                </p>
+              </div>
+            )}
+
+            {/* =================================================
+                Core Details
+                ================================================= */}
 
             <div className="space-y-2.5">
               <ProfileDetail
@@ -304,7 +402,9 @@ export default function BrowseProfileCard({
               />
             )}
 
-            {/* Profile Completion */}
+            {/* =================================================
+                Profile Completion
+                ================================================= */}
 
             <div className="rounded-2xl border border-slate-100 bg-gradient-to-r from-slate-50 via-white to-blue-50/50 px-3.5 py-3">
               <div className="mb-2 flex items-center justify-between gap-3">
@@ -317,6 +417,7 @@ export default function BrowseProfileCard({
                 <span
                   className={[
                     "rounded-full px-2 py-0.5 text-[11px] font-black",
+
                     completionPercentage >=
                     90
                       ? "bg-emerald-50 text-emerald-700"
@@ -349,7 +450,15 @@ export default function BrowseProfileCard({
             Actions
             ===================================================== */}
 
-        <div className="mt-auto border-t border-slate-100 bg-gradient-to-r from-white via-white to-blue-50/35 p-3.5">
+        <div
+          className={[
+            "mt-auto border-t p-3.5",
+
+            highlightedProfile
+              ? "border-amber-100 bg-gradient-to-r from-amber-50/50 via-white to-blue-50/35"
+              : "border-slate-100 bg-gradient-to-r from-white via-white to-blue-50/35",
+          ].join(" ")}
+        >
           <div className="grid gap-2.5">
             <InterestButton
               receiverProfileId={
@@ -483,6 +592,7 @@ function CompatibilityItem({
       <span
         className={[
           "text-[10px] font-extrabold",
+
           matched
             ? "text-slate-600"
             : "text-slate-400",

@@ -15,13 +15,12 @@ public class BrowseProfileResponse {
     private UUID id;
     private UUID userId;
 
-private Integer compatibilityScore;
+    private Boolean highlightedProfile;
 
-private Integer compatibilityAgeScore;
-
-private Integer compatibilityDenominationScore;
-
-private Integer compatibilityEducationScore;
+    private Integer compatibilityScore;
+    private Integer compatibilityAgeScore;
+    private Integer compatibilityDenominationScore;
+    private Integer compatibilityEducationScore;
 
     private String fullName;
 
