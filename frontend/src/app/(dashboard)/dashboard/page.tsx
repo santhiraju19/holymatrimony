@@ -36,6 +36,7 @@ import {
 import DashboardProfileCard from "@/features/profile/components/DashboardProfileCard";
 
 import CurrentMembershipCard from "@/features/membership/components/CurrentMembershipCard";
+import ProfileBoostCard from "@/features/profile-boost/components/ProfileBoostCard";
 
 import PaymentHistoryCard from "@/features/membership/components/PaymentHistoryCard";
 
@@ -378,11 +379,14 @@ export default function DashboardPage() {
           Profile + Membership
           ===================================================== */}
 
-      <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)]">
-        <DashboardProfileCard />
+    <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)]">
+  <DashboardProfileCard />
 
-        <CurrentMembershipCard />
-      </section>
+  <div className="space-y-4">
+    <CurrentMembershipCard />
+    <ProfileBoostCard />
+  </div>
+</section>
 
       {/* =====================================================
           Activity + Account Support
