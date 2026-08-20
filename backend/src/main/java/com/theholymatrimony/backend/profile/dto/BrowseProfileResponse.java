@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.List;
 
 @Data
 @Builder
@@ -160,4 +161,11 @@ public class BrowseProfileResponse {
     private UUID primaryPhotoId;
 
     private String primaryPhotoUrl;
+    /*
+ * All member-facing profile photos.
+ *
+ * Primary photo is returned first followed by the
+ * remaining photos in member-defined display order.
+ */
+private List<BrowseProfilePhotoResponse> photos;
 }

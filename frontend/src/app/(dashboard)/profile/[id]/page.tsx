@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -13,22 +12,22 @@ import {
   GraduationCap,
   Loader2,
   MapPin,
-  UserRound,
 } from "lucide-react";
 
 import Card from "@/components/ui/Card";
 
-import InterestButton from "@/features/interests/components/InterestButton";
+import ProfilePhotoGallery from "@/features/browse/components/details/ProfilePhotoGallery";
 import ProfileContactButton from "@/features/browse/components/details/ProfileContactButton";
+
 import {
   getBrowseProfileById,
 } from "@/features/browse/api/browseApi";
+
 import type {
   BrowseProfile,
 } from "@/features/browse/types";
-import {
-  resolveBrowsePhotoUrl,
-} from "@/features/browse/utils/photoUrl";
+
+import InterestButton from "@/features/interests/components/InterestButton";
 
 import {
   getApiErrorMessage,
@@ -44,16 +43,27 @@ export default function MemberProfilePage() {
       ? params.id
       : "";
 
-  const [profile, setProfile] =
+  const [
+    profile,
+    setProfile,
+  ] =
     useState<BrowseProfile | null>(
       null
     );
 
-  const [loading, setLoading] =
+  const [
+    loading,
+    setLoading,
+  ] =
     useState(true);
 
-  const [error, setError] =
-    useState<string | null>(null);
+  const [
+    error,
+    setError,
+  ] =
+    useState<string | null>(
+      null
+    );
 
   useEffect(() => {
     let active = true;
@@ -63,7 +73,9 @@ export default function MemberProfilePage() {
         setError(
           "A valid profile ID is required."
         );
+
         setLoading(false);
+
         return;
       }
 
@@ -79,9 +91,12 @@ export default function MemberProfilePage() {
         if (active) {
           setProfile(result);
         }
-      } catch (caughtError: unknown) {
+      } catch (
+        caughtError: unknown
+      ) {
         if (active) {
           setProfile(null);
+
           setError(
             getApiErrorMessage(
               caughtError,
@@ -101,7 +116,15 @@ export default function MemberProfilePage() {
     return () => {
       active = false;
     };
-  }, [profileId]);
+  }, [
+    profileId,
+  ]);
+
+  /*
+   * ============================================================
+   * LOADING
+   * ============================================================
+   */
 
   if (loading) {
     return (
@@ -120,7 +143,16 @@ export default function MemberProfilePage() {
     );
   }
 
-  if (error || !profile) {
+  /*
+   * ============================================================
+   * ERROR
+   * ============================================================
+   */
+
+  if (
+    error ||
+    !profile
+  ) {
     return (
       <div className="mx-auto max-w-3xl">
         <Card>
@@ -137,7 +169,10 @@ export default function MemberProfilePage() {
             href="/search"
             className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#0B2D5C] px-5 py-3 font-semibold text-white transition hover:bg-[#123C73]"
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft
+              size={18}
+            />
+
             Back to profiles
           </Link>
         </Card>
@@ -145,20 +180,23 @@ export default function MemberProfilePage() {
     );
   }
 
+  /*
+   * ============================================================
+   * PROFILE DATA
+   * ============================================================
+   */
+
   const displayName =
     profile.fullName?.trim() ||
     "Holy Matrimony Member";
-
-  const photoUrl =
-    resolveBrowsePhotoUrl(
-      profile.primaryPhotoUrl
-    );
 
   const location =
     buildLocation(profile);
 
   const churchDetails =
-    buildChurchDetails(profile);
+    buildChurchDetails(
+      profile
+    );
 
   const completionPercentage =
     Math.min(
@@ -170,49 +208,95 @@ export default function MemberProfilePage() {
       100
     );
 
+  const photos =
+    profile.photos ?? [];
+
+  /*
+   * ============================================================
+   * PAGE
+   * ============================================================
+   */
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 pb-10">
+
+      {/* =====================================================
+          Back
+          ===================================================== */}
+
       <Link
         href="/search"
         className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition hover:text-blue-900"
       >
-        <ArrowLeft size={18} />
+        <ArrowLeft
+          size={18}
+        />
+
         Back to profiles
       </Link>
 
       <div className="grid gap-8 lg:grid-cols-[380px_minmax(0,1fr)]">
+
+        {/* ===================================================
+            LEFT COLUMN
+            =================================================== */}
+
         <div className="space-y-5">
+
+          {/* =================================================
+              Photo Gallery
+              ================================================= */}
+
           <Card className="overflow-hidden p-0">
-            <div className="relative aspect-[4/5] overflow-hidden bg-slate-100">
-              {photoUrl ? (
-                <Image
-                  src={photoUrl}
-                  alt={`${displayName} profile photo`}
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 380px"
-                  className="object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-                  <UserRound
-                    size={96}
-                    strokeWidth={1.3}
-                    className="text-blue-300"
-                  />
-                </div>
-              )}
+            <div className="relative min-h-[460px] overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-slate-100">
+
+              <ProfilePhotoGallery
+                photos={photos}
+                primaryPhotoUrl={
+                  profile.primaryPhotoUrl
+                }
+                displayName={
+                  displayName
+                }
+              />
 
               {profile.profileCompleted && (
-                <div className="absolute right-4 top-4 flex items-center gap-2 rounded-full bg-white/95 px-3 py-2 text-sm font-semibold text-blue-700 shadow">
+                <div
+                  className="
+                    pointer-events-none
+                    absolute
+                    right-4
+                    top-4
+                    z-40
+                    flex
+                    items-center
+                    gap-2
+                    rounded-full
+                    border
+                    border-white/80
+                    bg-white/95
+                    px-3
+                    py-2
+                    text-sm
+                    font-semibold
+                    text-blue-700
+                    shadow-lg
+                    backdrop-blur
+                  "
+                >
                   <CheckCircle2
                     size={18}
                   />
+
                   Completed
                 </div>
               )}
             </div>
           </Card>
+
+          {/* =================================================
+              Profile Completion
+              ================================================= */}
 
           <Card>
             <div className="mb-3 flex items-center justify-between">
@@ -221,7 +305,10 @@ export default function MemberProfilePage() {
               </span>
 
               <span className="font-bold text-blue-700">
-                {completionPercentage}%
+                {
+                  completionPercentage
+                }
+                %
               </span>
             </div>
 
@@ -235,29 +322,52 @@ export default function MemberProfilePage() {
             </div>
           </Card>
 
+          {/* =================================================
+              Actions
+              ================================================= */}
+
           <InterestButton
             receiverProfileId={
               profile.id
             }
-            memberName={displayName}
+            memberName={
+              displayName
+            }
             message={`Hello ${displayName}, I am interested in connecting with you through Holy Matrimony.`}
           />
 
           <ProfileContactButton
-            profileId={profile.id}
+            profileId={
+              profile.id
+            }
           />
         </div>
 
+        {/* ===================================================
+            RIGHT COLUMN
+            =================================================== */}
+
         <div className="space-y-6">
+
+          {/* =================================================
+              Basic Information
+              ================================================= */}
+
           <Card>
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-black tracking-tight text-[#0B2D5C] sm:text-4xl">
-                  {displayName}
+                  {
+                    displayName
+                  }
                 </h1>
 
                 <p className="mt-2 text-lg text-slate-500">
-                  {buildHeadline(profile)}
+                  {
+                    buildHeadline(
+                      profile
+                    )
+                  }
                 </p>
               </div>
 
@@ -266,12 +376,14 @@ export default function MemberProfilePage() {
                   <CheckCircle2
                     size={17}
                   />
+
                   Completed profile
                 </span>
               )}
             </div>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
+
               <Info
                 label="Age"
                 value={
@@ -336,17 +448,31 @@ export default function MemberProfilePage() {
                   location ||
                   "Not specified"
                 }
+                icon={
+                  <MapPin
+                    size={15}
+                  />
+                }
               />
             </div>
           </Card>
 
+          {/* =================================================
+              Church & Faith
+              ================================================= */}
+
           <Card>
             <SectionHeading
-              icon={<Church size={21} />}
+              icon={
+                <Church
+                  size={21}
+                />
+              }
               title="Church and Faith"
             />
 
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
+
               <Info
                 label="Church"
                 value={
@@ -374,7 +500,8 @@ export default function MemberProfilePage() {
               <Info
                 label="Baptized"
                 value={
-                  profile.baptized === true
+                  profile.baptized ===
+                  true
                     ? "Yes"
                     : profile.baptized ===
                         false
@@ -384,6 +511,10 @@ export default function MemberProfilePage() {
               />
             </div>
           </Card>
+
+          {/* =================================================
+              About
+              ================================================= */}
 
           <Card>
             <SectionHeading
@@ -401,15 +532,22 @@ export default function MemberProfilePage() {
             </p>
           </Card>
 
+          {/* =================================================
+              Profile Summary
+              ================================================= */}
+
           <Card>
             <SectionHeading
               icon={
-                <GraduationCap size={21} />
+                <GraduationCap
+                  size={21}
+                />
               }
               title="Profile Summary"
             />
 
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
+
               <Info
                 label="Education"
                 value={
@@ -446,6 +584,12 @@ export default function MemberProfilePage() {
   );
 }
 
+/*
+ * ============================================================
+ * SECTION HEADING
+ * ============================================================
+ */
+
 function SectionHeading({
   icon,
   title,
@@ -466,12 +610,20 @@ function SectionHeading({
   );
 }
 
+/*
+ * ============================================================
+ * INFO CARD
+ * ============================================================
+ */
+
 function Info({
   label,
   value,
+  icon,
 }: {
   label: string;
   value: string;
+  icon?: React.ReactNode;
 }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
@@ -479,12 +631,26 @@ function Info({
         {label}
       </div>
 
-      <div className="mt-1 font-semibold text-[#0B2D5C]">
-        {value}
+      <div className="mt-1 flex items-center gap-2 font-semibold text-[#0B2D5C]">
+        {icon && (
+          <span className="shrink-0 text-blue-600">
+            {icon}
+          </span>
+        )}
+
+        <span>
+          {value}
+        </span>
       </div>
     </div>
   );
 }
+
+/*
+ * ============================================================
+ * HELPERS
+ * ============================================================
+ */
 
 function buildLocation(
   profile: BrowseProfile
@@ -495,7 +661,9 @@ function buildLocation(
     profile.country?.trim(),
   ]
     .filter(
-      (value): value is string =>
+      (
+        value
+      ): value is string =>
         Boolean(value)
     )
     .join(", ");
@@ -509,7 +677,9 @@ function buildChurchDetails(
     profile.denomination?.trim(),
   ]
     .filter(
-      (value): value is string =>
+      (
+        value
+      ): value is string =>
         Boolean(value)
     )
     .join(" • ");
@@ -520,14 +690,17 @@ function buildHeadline(
 ): string {
   const items = [
     profile.profession?.trim(),
+
     profile.age &&
     profile.age > 0
       ? `${profile.age} years`
       : "",
+
     profile.city?.trim(),
   ].filter(Boolean);
 
-  return items.length > 0
+  return items.length >
+    0
     ? items.join(" • ")
     : "Holy Matrimony member";
 }

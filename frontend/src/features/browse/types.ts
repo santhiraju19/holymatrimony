@@ -3,6 +3,13 @@ export type BrowseSortOption =
   | "NEWEST"
   | "TRUST_VERIFIED";
 
+  export interface BrowseProfilePhoto {
+  id: string;
+  imageUrl: string;
+  primaryPhoto: boolean;
+  displayOrder: number;
+}
+
 export interface BrowseProfile {
   id: string;
   userId: string;
@@ -84,6 +91,7 @@ export interface BrowseProfile {
 
   primaryPhotoId: string | null;
   primaryPhotoUrl: string | null;
+  photos: BrowseProfilePhoto[];
 }
 
 export interface BrowseProfilesResult {

@@ -16,14 +16,11 @@ import PremiumVerifiedBadge from "../PremiumVerifiedBadge";
 import ProfileTrustBadges from "../ProfileTrustBadges";
 
 import ProfileContactButton from "./ProfileContactButton";
+import ProfilePhotoGallery from "./ProfilePhotoGallery";
 
 import type {
   BrowseProfile,
 } from "../../types";
-
-import {
-  resolveBrowsePhotoUrl,
-} from "../../utils/photoUrl";
 
 interface ProfileDetailsHeaderProps {
   profile: BrowseProfile;
@@ -77,11 +74,6 @@ function buildLocation(
 export default function ProfileDetailsHeader({
   profile,
 }: ProfileDetailsHeaderProps) {
-  const photoUrl =
-    resolveBrowsePhotoUrl(
-      profile.primaryPhotoUrl
-    );
-
   const displayName =
     profile.fullName?.trim() ||
     "Holy Matrimony Member";
@@ -109,38 +101,35 @@ export default function ProfileDetailsHeader({
       100
     );
 
+  const photos =
+    profile.photos ?? [];
+
   return (
     <section className="overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.07)]">
       <div className="grid lg:grid-cols-[310px_minmax(0,1fr)]">
 
         {/* =====================================================
-            Compact Profile Photo
+            Profile Photo Gallery
             ===================================================== */}
 
         <div className="relative min-h-[310px] overflow-hidden bg-gradient-to-br from-blue-100 via-indigo-50 to-slate-100 sm:min-h-[340px] lg:min-h-[360px]">
 
-          {photoUrl ? (
-            <img
-              src={photoUrl}
-              alt={`${displayName} profile photo`}
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full min-h-[310px] items-center justify-center">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white bg-white/90 text-2xl font-black text-blue-700 shadow-xl backdrop-blur">
-                {getInitials(
-                  displayName
-                )}
-              </div>
-            </div>
-          )}
+          <ProfilePhotoGallery
+            photos={photos}
+            primaryPhotoUrl={
+              profile.primaryPhotoUrl
+            }
+            displayName={
+              displayName
+            }
+          />
 
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#020817]/80 via-transparent to-black/25" />
-
-          {/* Platinum Premium Badge */}
+          {/* ===================================================
+              Platinum Premium Badge
+              =================================================== */}
 
           {profile.verifiedPremiumBadge && (
-            <div className="absolute bottom-4 left-4 z-20 lg:bottom-auto lg:left-auto lg:right-4 lg:top-4">
+            <div className="absolute bottom-4 left-4 z-30 lg:bottom-auto lg:left-auto lg:right-4 lg:top-4">
               <PremiumVerifiedBadge
                 compact
                 overlay
@@ -148,10 +137,12 @@ export default function ProfileDetailsHeader({
             </div>
           )}
 
-          {/* Trust badges on photo */}
+          {/* ===================================================
+              Trust Badges
+              =================================================== */}
 
           {hasTrustBadge && (
-            <div className="absolute left-3 right-3 top-3 z-10">
+            <div className="absolute left-3 right-3 top-3 z-20">
               <ProfileTrustBadges
                 profile={profile}
                 compact
@@ -160,9 +151,12 @@ export default function ProfileDetailsHeader({
             </div>
           )}
 
-          {/* Identity on photo for mobile */}
+          {/* ===================================================
+              Mobile Identity Overlay
+              =================================================== */}
 
-          <div className="absolute inset-x-0 bottom-0 p-4 lg:hidden">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/75 via-black/30 to-transparent p-4 pt-16 lg:hidden">
+
             <h1 className="truncate text-2xl font-black tracking-[-0.03em] text-white">
               {displayName}
             </h1>
@@ -188,6 +182,10 @@ export default function ProfileDetailsHeader({
 
           <div className="relative z-10">
 
+            {/* =================================================
+                Back
+                ================================================= */}
+
             <Link
               href="/browse"
               className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-bold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"
@@ -199,7 +197,9 @@ export default function ProfileDetailsHeader({
               Back to profiles
             </Link>
 
-            {/* Desktop identity */}
+            {/* =================================================
+                Desktop Identity
+                ================================================= */}
 
             <div className="mt-4 hidden lg:block">
 
@@ -222,7 +222,6 @@ export default function ProfileDetailsHeader({
                     {completion}% Complete
                   </span>
                 )}
-
               </div>
 
               {summary && (
@@ -230,10 +229,11 @@ export default function ProfileDetailsHeader({
                   {summary}
                 </p>
               )}
-
             </div>
 
-            {/* Location */}
+            {/* =================================================
+                Location
+                ================================================= */}
 
             {location && (
               <div className="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600">
@@ -244,11 +244,12 @@ export default function ProfileDetailsHeader({
                 />
 
                 {location}
-
               </div>
             )}
 
-            {/* Desktop trust badges */}
+            {/* =================================================
+                Desktop Trust Badges
+                ================================================= */}
 
             {hasTrustBadge && (
               <div className="mt-4 hidden lg:block">
@@ -258,7 +259,9 @@ export default function ProfileDetailsHeader({
               </div>
             )}
 
-            {/* About */}
+            {/* =================================================
+                About
+                ================================================= */}
 
             {profile.aboutMe && (
               <div className="mt-5 rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 via-white to-blue-50/30 p-4">
@@ -273,18 +276,13 @@ export default function ProfileDetailsHeader({
                   <h2 className="text-sm font-black text-[#0B2D5C]">
                     About
                   </h2>
-
                 </div>
 
                 <p className="mt-2 line-clamp-4 whitespace-pre-line text-sm leading-6 text-slate-600">
-                  {
-                    profile.aboutMe
-                  }
+                  {profile.aboutMe}
                 </p>
-
               </div>
             )}
-
           </div>
 
           {/* ===================================================
@@ -313,7 +311,6 @@ export default function ProfileDetailsHeader({
                   displayName
                 }
               />
-
             </div>
 
             {/* =================================================
@@ -327,11 +324,8 @@ export default function ProfileDetailsHeader({
                   profile.id
                 }
               />
-
             </div>
-
           </div>
-
         </div>
       </div>
 

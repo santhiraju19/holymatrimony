@@ -2,6 +2,7 @@ package com.theholymatrimony.backend.profile.service;
 
 import com.theholymatrimony.backend.compatibility.dto.CompatibilityScoreResponse;
 import com.theholymatrimony.backend.compatibility.service.CompatibilityScoreService;
+import com.theholymatrimony.backend.profile.dto.BrowseProfilePhotoResponse;
 
 import com.theholymatrimony.backend.membership.entitlement.MembershipEntitlementService;
 import com.theholymatrimony.backend.membership.entitlement.MembershipFeature;
@@ -45,6 +46,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.Comparator;
 
 @Service
 @RequiredArgsConstructor
@@ -798,6 +800,50 @@ public class BrowseProfileService {
                                 null
                         );
 
+                        List<ProfilePhoto> profilePhotos =
+        profilePhotoRepository
+                .findAllByUserIdOrderByDisplayOrderAsc(
+                        userId
+                );
+
+List<BrowseProfilePhotoResponse> photos =
+        profilePhotos
+                .stream()
+                .sorted(
+                        Comparator
+                                .comparing(
+                                        (ProfilePhoto photo) ->
+                                                !Boolean.TRUE.equals(
+                                                        photo.getPrimaryPhoto()
+                                                )
+                                )
+                                .thenComparing(
+                                        photo ->
+                                                photo.getDisplayOrder() == null
+                                                        ? Integer.MAX_VALUE
+                                                        : photo.getDisplayOrder()
+                                )
+                )
+                .map(
+                        photo ->
+                                BrowseProfilePhotoResponse
+                                        .builder()
+                                        .id(photo.getId())
+                                        .imageUrl(
+                                                photo.getImageUrl()
+                                        )
+                                        .primaryPhoto(
+                                                Boolean.TRUE.equals(
+                                                        photo.getPrimaryPhoto()
+                                                )
+                                        )
+                                        .displayOrder(
+                                                photo.getDisplayOrder()
+                                        )
+                                        .build()
+                )
+                .toList();
+
         /*
          * --------------------------------------------------------
          * Mobile Verification
@@ -1114,6 +1160,8 @@ public class BrowseProfileService {
                                 : primaryPhoto
                                         .getImageUrl()
                 )
+
+                .photos(photos)
 
                 .build();
     }
