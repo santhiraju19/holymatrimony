@@ -8,6 +8,7 @@ export interface BrowseProfile {
   userId: string;
   highlightedProfile: boolean;
   verifiedPremiumBadge: boolean;
+  boostedProfile: boolean;
 
   fullName: string;
 

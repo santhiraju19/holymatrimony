@@ -10,6 +10,7 @@ import {
   Church,
   GraduationCap,
   MapPin,
+  Rocket,
   Sparkles,
   Star,
   UserRound,
@@ -74,6 +75,11 @@ export default function BrowseProfileCard({
       profile.highlightedProfile
     );
 
+  const boostedProfile =
+    Boolean(
+      profile.boostedProfile
+    );
+
   const hasTrustCredentials =
     Boolean(
       profile.aadhaarVerified ||
@@ -102,9 +108,11 @@ export default function BrowseProfileCard({
   const cardClassName = [
     "group relative flex h-full flex-col overflow-hidden rounded-[24px] border bg-white transition-all duration-300 ease-out hover:-translate-y-1",
 
-    highlightedProfile
-      ? "border-amber-300/90 shadow-[0_14px_38px_rgba(212,175,55,0.18)] hover:border-amber-400 hover:shadow-[0_24px_58px_rgba(212,175,55,0.28)]"
-      : "border-slate-200/80 shadow-[0_8px_28px_rgba(15,23,42,0.055)] hover:border-blue-200/80 hover:shadow-[0_20px_48px_rgba(15,23,42,0.12)]",
+    boostedProfile
+      ? "border-violet-300/90 shadow-[0_16px_42px_rgba(124,58,237,0.18)] hover:border-violet-400 hover:shadow-[0_24px_60px_rgba(124,58,237,0.25)]"
+      : highlightedProfile
+        ? "border-amber-300/90 shadow-[0_14px_38px_rgba(212,175,55,0.18)] hover:border-amber-400 hover:shadow-[0_24px_58px_rgba(212,175,55,0.28)]"
+        : "border-slate-200/80 shadow-[0_8px_28px_rgba(15,23,42,0.055)] hover:border-blue-200/80 hover:shadow-[0_20px_48px_rgba(15,23,42,0.12)]",
   ].join(" ");
 
   return (
@@ -114,19 +122,32 @@ export default function BrowseProfileCard({
       }
     >
       {/* =====================================================
-          Premium Highlight Frame
+          Premium / Boost Frame
           ===================================================== */}
 
-      {highlightedProfile && (
+      {(highlightedProfile ||
+        boostedProfile) && (
         <>
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 z-30 rounded-[24px] ring-1 ring-inset ring-amber-300/50"
+            className={[
+              "pointer-events-none absolute inset-0 z-30 rounded-[24px] ring-1 ring-inset",
+
+              boostedProfile
+                ? "ring-violet-300/60"
+                : "ring-amber-300/50",
+            ].join(" ")}
           />
 
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -right-16 -top-16 z-0 h-40 w-40 rounded-full bg-amber-200/25 blur-3xl"
+            className={[
+              "pointer-events-none absolute -right-16 -top-16 z-0 h-40 w-40 rounded-full blur-3xl",
+
+              boostedProfile
+                ? "bg-violet-200/30"
+                : "bg-amber-200/25",
+            ].join(" ")}
           />
         </>
       )}
@@ -138,11 +159,13 @@ export default function BrowseProfileCard({
       <div
         aria-hidden="true"
         className={[
-          "absolute inset-x-10 top-0 z-40 h-[2px] bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent transition-opacity duration-300",
+          "absolute inset-x-10 top-0 z-40 h-[2px] bg-gradient-to-r from-transparent to-transparent transition-opacity duration-300",
 
-          highlightedProfile
-            ? "opacity-100"
-            : "opacity-0 group-hover:opacity-100",
+          boostedProfile
+            ? "via-violet-500 opacity-100"
+            : highlightedProfile
+              ? "via-[#D4AF37] opacity-100"
+              : "via-[#D4AF37] opacity-0 group-hover:opacity-100",
         ].join(" ")}
       />
 
@@ -186,10 +209,24 @@ export default function BrowseProfileCard({
           />
 
           {/* =================================================
-              Highlighted Badge
+              Primary Promotion Badge
               ================================================= */}
 
-          {highlightedProfile && (
+          {boostedProfile ? (
+            <div className="absolute left-3 top-3 z-30">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-violet-200/60 bg-gradient-to-r from-violet-700/95 to-indigo-700/95 px-3 py-1.5 text-white shadow-lg backdrop-blur-xl">
+                <Rocket
+                  size={12}
+                  strokeWidth={2.6}
+                  className="text-violet-100"
+                />
+
+                <span className="text-[10px] font-black uppercase tracking-[0.08em]">
+                  Boosted
+                </span>
+              </div>
+            </div>
+          ) : highlightedProfile ? (
             <div className="absolute left-3 top-3 z-30">
               <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/60 bg-gradient-to-r from-[#0B2D5C]/95 to-blue-800/95 px-3 py-1.5 text-white shadow-lg backdrop-blur-xl">
                 <Star
@@ -202,7 +239,7 @@ export default function BrowseProfileCard({
                 </span>
               </div>
             </div>
-          )}
+          ) : null}
 
           {/* =================================================
               Trust Badges
@@ -213,6 +250,7 @@ export default function BrowseProfileCard({
               className={[
                 "absolute left-3 z-20 max-w-[calc(100%-3.5rem)]",
 
+                boostedProfile ||
                 highlightedProfile
                   ? "top-12"
                   : "top-3",
@@ -300,9 +338,11 @@ export default function BrowseProfileCard({
         className={[
           "relative flex flex-1 flex-col",
 
-          highlightedProfile
-            ? "bg-gradient-to-b from-amber-50/30 via-white to-white"
-            : "",
+          boostedProfile
+            ? "bg-gradient-to-b from-violet-50/35 via-white to-white"
+            : highlightedProfile
+              ? "bg-gradient-to-b from-amber-50/30 via-white to-white"
+              : "",
         ].join(" ")}
       >
         <Link
@@ -322,10 +362,21 @@ export default function BrowseProfileCard({
             )}
 
             {/* =================================================
-                Highlight Summary
+                Boost / Highlight Summary
                 ================================================= */}
 
-            {highlightedProfile && (
+            {boostedProfile ? (
+              <div className="flex items-center gap-2 rounded-xl border border-violet-100 bg-gradient-to-r from-violet-50/90 via-white to-indigo-50/70 px-3 py-2.5">
+                <Rocket
+                  size={14}
+                  className="shrink-0 text-violet-600"
+                />
+
+                <p className="text-[11px] font-extrabold text-[#0B2D5C]">
+                  Profile boosted for higher visibility
+                </p>
+              </div>
+            ) : highlightedProfile ? (
               <div className="flex items-center gap-2 rounded-xl border border-amber-100 bg-gradient-to-r from-amber-50/90 via-white to-yellow-50/70 px-3 py-2.5">
                 <Sparkles
                   size={14}
@@ -336,7 +387,7 @@ export default function BrowseProfileCard({
                   Premium highlighted profile
                 </p>
               </div>
-            )}
+            ) : null}
 
             {/* =================================================
                 Core Details
@@ -465,9 +516,11 @@ export default function BrowseProfileCard({
           className={[
             "mt-auto border-t p-3.5",
 
-            highlightedProfile
-              ? "border-amber-100 bg-gradient-to-r from-amber-50/50 via-white to-blue-50/35"
-              : "border-slate-100 bg-gradient-to-r from-white via-white to-blue-50/35",
+            boostedProfile
+              ? "border-violet-100 bg-gradient-to-r from-violet-50/45 via-white to-blue-50/35"
+              : highlightedProfile
+                ? "border-amber-100 bg-gradient-to-r from-amber-50/50 via-white to-blue-50/35"
+                : "border-slate-100 bg-gradient-to-r from-white via-white to-blue-50/35",
           ].join(" ")}
         >
           <div className="grid gap-2.5">

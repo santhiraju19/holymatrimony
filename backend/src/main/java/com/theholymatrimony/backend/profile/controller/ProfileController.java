@@ -2,9 +2,11 @@ package com.theholymatrimony.backend.profile.controller;
 
 import com.theholymatrimony.backend.common.response.ApiResponse;
 
+import com.theholymatrimony.backend.profile.dto.ProfileBoostResponse;
 import com.theholymatrimony.backend.profile.dto.ProfileRequest;
 import com.theholymatrimony.backend.profile.dto.ProfileResponse;
 
+import com.theholymatrimony.backend.profile.service.ProfileBoostService;
 import com.theholymatrimony.backend.profile.service.ProfileService;
 
 import jakarta.validation.Valid;
@@ -27,6 +29,9 @@ public class ProfileController {
 
     private final ProfileService
             profileService;
+
+    private final ProfileBoostService
+            profileBoostService;
 
     /*
      * ---------------------------------------------------------
@@ -96,6 +101,7 @@ public class ProfileController {
      * PENDING
      * APPROVED
      */
+
     @PostMapping(
             "/verification/submit"
     )
@@ -112,6 +118,53 @@ public class ProfileController {
 
         return ApiResponse.success(
                 "Profile submitted for verification successfully.",
+                response
+        );
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * Profile Boost Status
+     * ---------------------------------------------------------
+     */
+
+    @GetMapping("/boost")
+    public ApiResponse<ProfileBoostResponse>
+    getProfileBoostStatus(
+            Authentication authentication
+    ) {
+
+        ProfileBoostResponse response =
+                profileBoostService
+                        .getStatus(
+                                authentication.getName()
+                        );
+
+        return ApiResponse.success(
+                response
+        );
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * Activate Profile Boost
+     * ---------------------------------------------------------
+     */
+
+    @PostMapping("/boost")
+    public ApiResponse<ProfileBoostResponse>
+    activateProfileBoost(
+            Authentication authentication
+    ) {
+
+        ProfileBoostResponse response =
+                profileBoostService
+                        .activate(
+                                authentication.getName()
+                        );
+
+        return ApiResponse.success(
+                "Profile boost activated successfully.",
                 response
         );
     }

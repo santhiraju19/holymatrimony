@@ -226,6 +226,18 @@ public class Profile {
     )
     private String verificationReason;
 
+// =========================================================
+// Profile Boost
+// =========================================================
+
+@Column(name = "boost_started_at")
+private LocalDateTime boostStartedAt;
+
+@Column(name = "boost_expires_at")
+private LocalDateTime boostExpiresAt;
+
+
+
     // =========================================================
     // Audit
     // =========================================================

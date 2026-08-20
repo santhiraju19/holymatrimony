@@ -63,7 +63,7 @@ public final class ProfileSpecification {
 
             /*
              * =====================================================
-             * Public profile rules
+             * Public Profile Rules
              * =====================================================
              */
 
@@ -93,16 +93,6 @@ public final class ProfileSpecification {
              * =====================================================
              * Optional Search Filters
              * =====================================================
-             *
-             * Do not return early when request is null.
-             *
-             * A missing request means:
-             *
-             * - no optional filters
-             * - RECOMMENDED ordering
-             *
-             * This allows Platinum Top Search Placement to work
-             * even when the user has not selected any filters.
              */
 
             if (request != null) {
@@ -143,7 +133,7 @@ public final class ProfileSpecification {
 
                 /*
                  * =================================================
-                 * Basic information
+                 * Basic Information
                  * =================================================
                  */
 
@@ -163,7 +153,7 @@ public final class ProfileSpecification {
 
                 /*
                  * =================================================
-                 * Church information
+                 * Church Information
                  * =================================================
                  */
 
@@ -213,11 +203,6 @@ public final class ProfileSpecification {
                         root.get("highestEducation"),
                         request.getHighestEducation()
                 );
-
-                /*
-                 * Profession remains contains-based so older
-                 * free-text profile values remain searchable.
-                 */
 
                 addCaseInsensitiveContains(
                         predicates,
@@ -305,7 +290,7 @@ public final class ProfileSpecification {
              * Result Ordering
              * =====================================================
              *
-             * Don't add ORDER BY to Spring Data's COUNT query.
+             * Never add ORDER BY to Spring Data's COUNT query.
              */
 
             if (!isCountQuery(query)) {
@@ -313,9 +298,13 @@ public final class ProfileSpecification {
                 /*
                  * TRUST_VERIFIED
                  *
-                 * Trust remains the primary ranking signal.
-                 * Platinum placement is only a tie-breaker
-                 * within the same trust level.
+                 * Trust remains the strongest signal.
+                 *
+                 * Within the same trust level:
+                 *
+                 * 1. Active Profile Boost
+                 * 2. Platinum Top Search Placement
+                 * 3. Newest
                  */
 
                 if (
@@ -333,10 +322,9 @@ public final class ProfileSpecification {
                 /*
                  * RECOMMENDED
                  *
-                 * Active Platinum members receive Top Search
-                 * Placement before normal profiles.
-                 *
-                 * No explicit sort is also treated as RECOMMENDED.
+                 * 1. Active Profile Boost
+                 * 2. Platinum Top Search Placement
+                 * 3. Newest
                  */
 
                 } else if (
@@ -363,17 +351,17 @@ public final class ProfileSpecification {
 
     /*
      * ============================================================
-     * RECOMMENDED / TOP SEARCH PLACEMENT
+     * RECOMMENDED RANKING
      * ============================================================
      *
-     * Platinum TOP_SEARCH_PLACEMENT is implemented here at the
-     * database-query level so ranking happens before pagination.
+     * Profile Boost is temporary and receives the strongest
+     * Recommended visibility signal.
      *
      * Ranking:
      *
-     * 1. Active, unexpired Platinum profiles
-     * 2. Everyone else
-     * 3. Newest within each group
+     * 1. Active Profile Boost
+     * 2. Active Platinum Top Search Placement
+     * 3. Newest
      */
 
     private static void applyRecommendedOrdering(
@@ -381,6 +369,39 @@ public final class ProfileSpecification {
             CriteriaQuery<?> query,
             CriteriaBuilder criteriaBuilder
     ) {
+
+        LocalDateTime now =
+                LocalDateTime.now();
+
+        /*
+         * --------------------------------------------------------
+         * Active Profile Boost
+         * --------------------------------------------------------
+         */
+
+        Predicate activeBoost =
+                activeProfileBoost(
+                        profileRoot,
+                        criteriaBuilder,
+                        now
+                );
+
+        Expression<Integer> boostScore =
+                criteriaBuilder
+                        .<Integer>selectCase()
+                        .when(
+                                activeBoost,
+                                1
+                        )
+                        .otherwise(
+                                0
+                        );
+
+        /*
+         * --------------------------------------------------------
+         * Platinum Top Search Placement
+         * --------------------------------------------------------
+         */
 
         Predicate topSearchPlacement =
                 activePlatinumMembershipExists(
@@ -400,7 +421,18 @@ public final class ProfileSpecification {
                                 0
                         );
 
+        /*
+         * --------------------------------------------------------
+         * Final Recommended Ordering
+         * --------------------------------------------------------
+         */
+
         query.orderBy(
+
+                criteriaBuilder.desc(
+                        boostScore
+                ),
+
                 criteriaBuilder.desc(
                         placementScore
                 ),
@@ -415,10 +447,10 @@ public final class ProfileSpecification {
 
     /*
      * ============================================================
-     * TRUST RANKING
+     * TRUST VERIFIED RANKING
      * ============================================================
      *
-     * Ranking:
+     * Trust hierarchy:
      *
      * Aadhaar + Church = 500
      * ID + Church      = 400
@@ -427,10 +459,11 @@ public final class ProfileSpecification {
      * Church           = 100
      * Unverified       = 0
      *
-     * Within each trust level:
+     * Within the same trust level:
      *
-     * 1. Platinum Top Search Placement
-     * 2. Newest profile
+     * 1. Active Profile Boost
+     * 2. Platinum Top Search Placement
+     * 3. Newest
      */
 
     private static void applyTrustVerifiedOrdering(
@@ -463,13 +496,15 @@ public final class ProfileSpecification {
                         false
                 );
 
+        /*
+         * --------------------------------------------------------
+         * Trust Score
+         * --------------------------------------------------------
+         */
+
         Expression<Integer> trustScore =
                 criteriaBuilder
                         .<Integer>selectCase()
-
-                        /*
-                         * Strongest public trust combination.
-                         */
 
                         .when(
                                 criteriaBuilder.and(
@@ -479,10 +514,6 @@ public final class ProfileSpecification {
                                 500
                         )
 
-                        /*
-                         * Non-Aadhaar government ID + Church.
-                         */
-
                         .when(
                                 criteriaBuilder.and(
                                         idVerified,
@@ -491,27 +522,15 @@ public final class ProfileSpecification {
                                 400
                         )
 
-                        /*
-                         * Aadhaar only.
-                         */
-
                         .when(
                                 aadhaarVerified,
                                 300
                         )
 
-                        /*
-                         * Other approved government ID.
-                         */
-
                         .when(
                                 idVerified,
                                 200
                         )
-
-                        /*
-                         * Church only.
-                         */
 
                         .when(
                                 churchVerified,
@@ -522,11 +541,37 @@ public final class ProfileSpecification {
                                 0
                         );
 
+        LocalDateTime now =
+                LocalDateTime.now();
+
         /*
-         * Platinum must never override the trust hierarchy.
-         *
-         * It only receives priority among profiles with the
-         * same trust score.
+         * --------------------------------------------------------
+         * Active Boost
+         * --------------------------------------------------------
+         */
+
+        Predicate activeBoost =
+                activeProfileBoost(
+                        profileRoot,
+                        criteriaBuilder,
+                        now
+                );
+
+        Expression<Integer> boostScore =
+                criteriaBuilder
+                        .<Integer>selectCase()
+                        .when(
+                                activeBoost,
+                                1
+                        )
+                        .otherwise(
+                                0
+                        );
+
+        /*
+         * --------------------------------------------------------
+         * Platinum Top Search Placement
+         * --------------------------------------------------------
          */
 
         Predicate topSearchPlacement =
@@ -547,30 +592,27 @@ public final class ProfileSpecification {
                                 0
                         );
 
-        query.orderBy(
+        /*
+         * --------------------------------------------------------
+         * Final Trust Ordering
+         * --------------------------------------------------------
+         *
+         * Payment/boost must never override the trust hierarchy.
+         */
 
-                /*
-                 * Primary:
-                 * public trust level.
-                 */
+        query.orderBy(
 
                 criteriaBuilder.desc(
                         trustScore
                 ),
 
-                /*
-                 * Secondary:
-                 * Platinum Top Search Placement.
-                 */
+                criteriaBuilder.desc(
+                        boostScore
+                ),
 
                 criteriaBuilder.desc(
                         placementScore
                 ),
-
-                /*
-                 * Final tie-break:
-                 * newest profile.
-                 */
 
                 criteriaBuilder.desc(
                         profileRoot.get(
@@ -582,11 +624,40 @@ public final class ProfileSpecification {
 
     /*
      * ============================================================
+     * ACTIVE PROFILE BOOST
+     * ============================================================
+     */
+
+    private static Predicate activeProfileBoost(
+            Root<Profile> profileRoot,
+            CriteriaBuilder criteriaBuilder,
+            LocalDateTime now
+    ) {
+
+        return criteriaBuilder.and(
+
+                criteriaBuilder.isNotNull(
+                        profileRoot.get(
+                                "boostExpiresAt"
+                        )
+                ),
+
+                criteriaBuilder.greaterThan(
+                        profileRoot
+                                .<LocalDateTime>get(
+                                        "boostExpiresAt"
+                                ),
+                        now
+                )
+        );
+    }
+
+    /*
+     * ============================================================
      * ACTIVE PLATINUM MEMBERSHIP
      * ============================================================
      *
-     * Matches the effective-membership semantics used by
-     * MembershipEntitlementService:
+     * Matches effective membership behavior:
      *
      * - plan must be PLATINUM
      * - status must be ACTIVE
@@ -621,10 +692,6 @@ public final class ProfileSpecification {
         subquery.where(
                 criteriaBuilder.and(
 
-                        /*
-                         * Same candidate user.
-                         */
-
                         criteriaBuilder.equal(
                                 membershipRoot
                                         .get("user")
@@ -634,29 +701,17 @@ public final class ProfileSpecification {
                                         .get("id")
                         ),
 
-                        /*
-                         * Platinum only.
-                         */
-
                         criteriaBuilder.equal(
                                 membershipRoot
                                         .get("plan"),
                                 MembershipPlan.PLATINUM
                         ),
 
-                        /*
-                         * Must still be ACTIVE.
-                         */
-
                         criteriaBuilder.equal(
                                 membershipRoot
                                         .get("status"),
                                 MembershipStatus.ACTIVE
                         ),
-
-                        /*
-                         * Must not be expired.
-                         */
 
                         criteriaBuilder.greaterThan(
                                 membershipRoot
@@ -684,7 +739,7 @@ public final class ProfileSpecification {
     ) {
 
         /*
-         * No explicit sort is the default RECOMMENDED mode.
+         * Missing explicit sort is RECOMMENDED.
          */
 
         if (

@@ -16,6 +16,8 @@ public enum MembershipFeature {
 
     HIGHLIGHTED_PROFILE,
 
+    PROFILE_BOOST,
+
     WHO_VIEWED_ME,
 
     COMPATIBILITY_SCORE,

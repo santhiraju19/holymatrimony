@@ -62,6 +62,8 @@ public class MembershipFeatureRequiredException
 
             case HIGHLIGHTED_PROFILE ->
                     "Upgrade your membership to highlight your profile.";
+                    case PROFILE_BOOST ->
+        "Profile Boost requires an eligible Gold or Platinum membership.";
 
             case PRIORITY_SUPPORT ->
                     "Upgrade your membership to access priority support.";

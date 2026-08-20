@@ -41,6 +41,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -105,6 +106,7 @@ public class BrowseProfileService {
          * to calculate mutual compatibility with every
          * candidate on the requested page.
          */
+
         Profile currentProfile =
                 resolveAuthenticatedProfile(
                         authenticatedEmail
@@ -120,20 +122,20 @@ public class BrowseProfileService {
                                         .COMPATIBILITY_SCORE
                         );
 
-       Pageable pageable =
-        createRecommendedPageable(
-                page,
-                size
-        );
+        Pageable pageable =
+                createRecommendedPageable(
+                        page,
+                        size
+                );
 
-    Page<Profile> profilePage =
-        profileRepository.findAll(
-                ProfileSpecification.search(
-                        null,
-                        authenticatedEmail
-                ),
-                pageable
-        );
+        Page<Profile> profilePage =
+                profileRepository.findAll(
+                        ProfileSpecification.search(
+                                null,
+                                authenticatedEmail
+                        ),
+                        pageable
+                );
 
         return mapPage(
                 profilePage,
@@ -249,6 +251,7 @@ public class BrowseProfileService {
          * Record the profile visit before returning
          * the public profile response.
          */
+
         profileViewService.recordView(
                 authenticatedEmail,
                 profile
@@ -404,37 +407,50 @@ public class BrowseProfileService {
 
     /*
      * ============================================================
-     * DEFAULT PAGINATION
+     * RECOMMENDED PAGINATION
+     * ============================================================
+     *
+     * Ordering is supplied by ProfileSpecification.
+     *
+     * This allows boosted profiles / membership priority /
+     * recommendation rules to be controlled centrally by the
+     * Criteria query.
      * ============================================================
      */
 
     private Pageable createRecommendedPageable(
-        int page,
-        int size
-) {
+            int page,
+            int size
+    ) {
 
-    int safePage =
-            Math.max(
-                    page,
-                    0
-            );
+        int safePage =
+                Math.max(
+                        page,
+                        0
+                );
 
-    int requestedSize =
-            size <= 0
-                    ? DEFAULT_PAGE_SIZE
-                    : size;
+        int requestedSize =
+                size <= 0
+                        ? DEFAULT_PAGE_SIZE
+                        : size;
 
-    int safeSize =
-            Math.min(
-                    requestedSize,
-                    MAXIMUM_PAGE_SIZE
-            );
+        int safeSize =
+                Math.min(
+                        requestedSize,
+                        MAXIMUM_PAGE_SIZE
+                );
 
-    return PageRequest.of(
-            safePage,
-            safeSize
-    );
-}
+        return PageRequest.of(
+                safePage,
+                safeSize
+        );
+    }
+
+    /*
+     * ============================================================
+     * DEFAULT PAGINATION
+     * ============================================================
+     */
 
     private Pageable createPageable(
             int page,
@@ -505,35 +521,33 @@ public class BrowseProfileService {
                         );
 
         /*
-         * TRUST_VERIFIED ordering is supplied directly by
-         * ProfileSpecification.
+         * TRUST_VERIFIED and RECOMMENDED ordering is supplied
+         * directly by ProfileSpecification.
          *
-         * The Pageable must therefore remain unsorted so
-         * Spring Data does not override the Criteria ORDER BY.
+         * Pageable must therefore remain unsorted so Spring Data
+         * does not override the Criteria ORDER BY.
          */
-     if (
-        SORT_TRUST_VERIFIED.equals(
-                sort
-        )
-                || SORT_RECOMMENDED.equals(
+
+        if (
+                SORT_TRUST_VERIFIED.equals(
                         sort
                 )
-                || sort == null
-) {
+                        || SORT_RECOMMENDED.equals(
+                                sort
+                        )
+                        || sort == null
+        ) {
 
-    return PageRequest.of(
-            safePage,
-            safeSize
-    );
-}
+            return PageRequest.of(
+                    safePage,
+                    safeSize
+            );
+        }
 
         /*
-         * RECOMMENDED / NEWEST / unspecified currently use
-         * newest-first ordering.
-         *
-         * RECOMMENDED can later evolve into matchmaking
-         * relevance ranking without changing the API contract.
+         * NEWEST uses explicit newest-first ordering.
          */
+
         return PageRequest.of(
                 safePage,
                 safeSize,
@@ -600,6 +614,7 @@ public class BrowseProfileService {
          * exclusive under the current one-document-per-user
          * identity verification model.
          */
+
         if (
                 Boolean.TRUE.equals(
                         request.getAadhaarVerified()
@@ -730,21 +745,49 @@ public class BrowseProfileService {
                 profile
                         .getUser()
                         .getId();
-                        boolean highlightedProfile =
-        membershipEntitlementService
-                .hasFeature(
-                        userId,
-                        MembershipFeature
-                                .HIGHLIGHTED_PROFILE
-                );
 
-boolean verifiedPremiumBadge =
-        membershipEntitlementService
-                .hasFeature(
-                        userId,
-                        MembershipFeature
-                                .VERIFIED_PREMIUM_BADGE
-                );
+        /*
+         * ========================================================
+         * MEMBERSHIP PROFILE FEATURES
+         * ========================================================
+         */
+
+        boolean highlightedProfile =
+                membershipEntitlementService
+                        .hasFeature(
+                                userId,
+                                MembershipFeature
+                                        .HIGHLIGHTED_PROFILE
+                        );
+
+        boolean verifiedPremiumBadge =
+                membershipEntitlementService
+                        .hasFeature(
+                                userId,
+                                MembershipFeature
+                                        .VERIFIED_PREMIUM_BADGE
+                        );
+
+        /*
+         * ========================================================
+         * PROFILE BOOST
+         * ========================================================
+         *
+         * A profile is considered actively boosted only when
+         * boostExpiresAt exists and is still in the future.
+         *
+         * This prevents expired boosts from continuing to display
+         * the Boosted badge even if the database still contains
+         * the historical boost timestamps.
+         */
+
+        boolean boostedProfile =
+                profile.getBoostExpiresAt() != null
+                        && profile
+                                .getBoostExpiresAt()
+                                .isAfter(
+                                        LocalDateTime.now()
+                                );
 
         ProfilePhoto primaryPhoto =
                 profilePhotoRepository
@@ -791,8 +834,7 @@ boolean verifiedPremiumBadge =
                         VerificationType.IDENTITY
                 );
 
-        IdentityVerificationDocument
-                identityDocument =
+        IdentityVerificationDocument identityDocument =
                 identityVerified
                         ? identityVerificationDocumentRepository
                                 .findByUserId(
@@ -806,6 +848,7 @@ boolean verifiedPremiumBadge =
         /*
          * Aadhaar gets its own public verification badge.
          */
+
         boolean aadhaarVerified =
                 identityDocument != null
                         && identityDocument
@@ -815,13 +858,8 @@ boolean verifiedPremiumBadge =
         /*
          * Any approved non-Aadhaar identity document uses the
          * generic ID Verified badge.
-         *
-         * Examples:
-         *
-         * PASSPORT
-         * DRIVING_LICENCE
-         * VOTER_ID
          */
+
         boolean idVerified =
                 identityDocument != null
                         && identityDocument
@@ -833,6 +871,7 @@ boolean verifiedPremiumBadge =
          *
          * Church verification intentionally remains independent.
          */
+
         boolean verifiedProfile =
                 mobileVerified
                         && identityVerified;
@@ -841,18 +880,6 @@ boolean verifiedPremiumBadge =
          * ========================================================
          * COMPATIBILITY SCORE
          * ========================================================
-         *
-         * Compatibility is calculated only when the authenticated
-         * member owns the COMPATIBILITY_SCORE entitlement.
-         *
-         * FREE / SILVER
-         * --------------------------------------------------------
-         * All compatibility response fields remain null.
-         *
-         * GOLD / PLATINUM
-         * --------------------------------------------------------
-         * Mutual profile preferences are evaluated and the score
-         * breakdown is included in the public profile response.
          */
 
         CompatibilityScoreResponse compatibility =
@@ -874,13 +901,26 @@ boolean verifiedPremiumBadge =
                 .userId(
                         userId
                 )
-.highlightedProfile(
-        highlightedProfile
-)
 
-.verifiedPremiumBadge(
-        verifiedPremiumBadge
-)
+                /*
+                 * Membership / Premium Presentation
+                 */
+
+                .highlightedProfile(
+                        highlightedProfile
+                )
+
+                .verifiedPremiumBadge(
+                        verifiedPremiumBadge
+                )
+
+                /*
+                 * Profile Boost
+                 */
+
+                .boostedProfile(
+                        boostedProfile
+                )
 
                 /*
                  * Compatibility
@@ -914,6 +954,10 @@ boolean verifiedPremiumBadge =
                                         .getEducationScore()
                 )
 
+                /*
+                 * Basic Profile
+                 */
+
                 .fullName(
                         profile
                                 .getUser()
@@ -940,6 +984,10 @@ boolean verifiedPremiumBadge =
                                 .getMaritalStatus()
                 )
 
+                /*
+                 * Church
+                 */
+
                 .denomination(
                         profile
                                 .getDenomination()
@@ -954,6 +1002,10 @@ boolean verifiedPremiumBadge =
                         profile
                                 .getBaptized()
                 )
+
+                /*
+                 * Education / Profession
+                 */
 
                 .highestEducation(
                         profile
@@ -975,6 +1027,10 @@ boolean verifiedPremiumBadge =
                                 .getAnnualIncome()
                 )
 
+                /*
+                 * Location
+                 */
+
                 .city(
                         profile
                                 .getCity()
@@ -990,10 +1046,18 @@ boolean verifiedPremiumBadge =
                                 .getCountry()
                 )
 
+                /*
+                 * About
+                 */
+
                 .aboutMe(
                         profile
                                 .getAboutMe()
                 )
+
+                /*
+                 * Completion
+                 */
 
                 .completionPercentage(
                         profile
