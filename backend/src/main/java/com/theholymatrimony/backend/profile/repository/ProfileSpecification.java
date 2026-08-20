@@ -1,5 +1,9 @@
 package com.theholymatrimony.backend.profile.repository;
 
+import com.theholymatrimony.backend.payments.entity.Membership;
+import com.theholymatrimony.backend.payments.enums.MembershipPlan;
+import com.theholymatrimony.backend.payments.enums.MembershipStatus;
+
 import com.theholymatrimony.backend.profile.dto.SearchProfileRequest;
 import com.theholymatrimony.backend.profile.entity.Profile;
 
@@ -20,17 +24,28 @@ import jakarta.persistence.criteria.Subquery;
 
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDateTime;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 public final class ProfileSpecification {
 
+    private static final String SORT_RECOMMENDED =
+            "RECOMMENDED";
+
     private static final String SORT_TRUST_VERIFIED =
             "TRUST_VERIFIED";
 
     private ProfileSpecification() {
     }
+
+    /*
+     * ============================================================
+     * PROFILE SEARCH
+     * ============================================================
+     */
 
     public static Specification<Profile> search(
             SearchProfileRequest request,
@@ -75,241 +90,267 @@ public final class ProfileSpecification {
             );
 
             /*
-             * A null request means no optional search filters.
-             */
-            if (request == null) {
-
-                return criteriaBuilder.and(
-                        predicates.toArray(
-                                new Predicate[0]
-                        )
-                );
-            }
-
-            /*
              * =====================================================
-             * Age
-             * =====================================================
-             */
-
-            if (
-                    request.getAgeFrom()
-                            != null
-            ) {
-
-                predicates.add(
-                        criteriaBuilder
-                                .greaterThanOrEqualTo(
-                                        root.get("age"),
-                                        request.getAgeFrom()
-                                )
-                );
-            }
-
-            if (
-                    request.getAgeTo()
-                            != null
-            ) {
-
-                predicates.add(
-                        criteriaBuilder
-                                .lessThanOrEqualTo(
-                                        root.get("age"),
-                                        request.getAgeTo()
-                                )
-                );
-            }
-
-            /*
-             * =====================================================
-             * Basic information
-             * =====================================================
-             */
-
-            addCaseInsensitiveEquals(
-                    predicates,
-                    criteriaBuilder,
-                    root.get("gender"),
-                    request.getGender()
-            );
-
-            addCaseInsensitiveEquals(
-                    predicates,
-                    criteriaBuilder,
-                    root.get("maritalStatus"),
-                    request.getMaritalStatus()
-            );
-
-            /*
-             * =====================================================
-             * Church information
-             * =====================================================
-             */
-
-            addCaseInsensitiveEquals(
-                    predicates,
-                    criteriaBuilder,
-                    root.get("denomination"),
-                    request.getDenomination()
-            );
-
-            /*
-             * =====================================================
-             * Location
-             * =====================================================
-             */
-
-            addCaseInsensitiveEquals(
-                    predicates,
-                    criteriaBuilder,
-                    root.get("country"),
-                    request.getCountry()
-            );
-
-            addCaseInsensitiveEquals(
-                    predicates,
-                    criteriaBuilder,
-                    root.get("state"),
-                    request.getState()
-            );
-
-            addCaseInsensitiveEquals(
-                    predicates,
-                    criteriaBuilder,
-                    root.get("city"),
-                    request.getCity()
-            );
-
-            /*
-             * =====================================================
-             * Education & Career
-             * =====================================================
-             */
-
-            addCaseInsensitiveEquals(
-                    predicates,
-                    criteriaBuilder,
-                    root.get("highestEducation"),
-                    request.getHighestEducation()
-            );
-
-            /*
-             * Profession remains contains-based so older
-             * free-text profile values remain searchable.
-             */
-            addCaseInsensitiveContains(
-                    predicates,
-                    criteriaBuilder,
-                    root.get("profession"),
-                    request.getProfession()
-            );
-
-            /*
-             * =====================================================
-             * Baptism
-             * =====================================================
-             */
-
-            if (
-                    request.getBaptized()
-                            != null
-            ) {
-
-                predicates.add(
-                        criteriaBuilder.equal(
-                                root.get("baptized"),
-                                request.getBaptized()
-                        )
-                );
-            }
-
-            /*
-             * =====================================================
-             * Verification Filters
-             * =====================================================
-             */
-
-            if (
-                    Boolean.TRUE.equals(
-                            request.getChurchVerified()
-                    )
-            ) {
-
-                predicates.add(
-                        approvedVerificationExists(
-                                root,
-                                query,
-                                criteriaBuilder,
-                                VerificationType.CHURCH
-                        )
-                );
-            }
-
-            if (
-                    Boolean.TRUE.equals(
-                            request.getAadhaarVerified()
-                    )
-            ) {
-
-                predicates.add(
-                        approvedIdentityDocumentExists(
-                                root,
-                                query,
-                                criteriaBuilder,
-                                true
-                        )
-                );
-            }
-
-            if (
-                    Boolean.TRUE.equals(
-                            request.getIdVerified()
-                    )
-            ) {
-
-                predicates.add(
-                        approvedIdentityDocumentExists(
-                                root,
-                                query,
-                                criteriaBuilder,
-                                false
-                        )
-                );
-            }
-
-            /*
-             * =====================================================
-             * Trust Verified Ranking
+             * Optional Search Filters
              * =====================================================
              *
-             * Ranking:
+             * Do not return early when request is null.
              *
-             * Aadhaar + Church = 500
-             * ID + Church      = 400
-             * Aadhaar          = 300
-             * ID               = 200
-             * Church           = 100
-             * Unverified       = 0
+             * A missing request means:
              *
-             * Important:
+             * - no optional filters
+             * - RECOMMENDED ordering
+             *
+             * This allows Platinum Top Search Placement to work
+             * even when the user has not selected any filters.
+             */
+
+            if (request != null) {
+
+                /*
+                 * =================================================
+                 * Age
+                 * =================================================
+                 */
+
+                if (
+                        request.getAgeFrom()
+                                != null
+                ) {
+
+                    predicates.add(
+                            criteriaBuilder
+                                    .greaterThanOrEqualTo(
+                                            root.get("age"),
+                                            request.getAgeFrom()
+                                    )
+                    );
+                }
+
+                if (
+                        request.getAgeTo()
+                                != null
+                ) {
+
+                    predicates.add(
+                            criteriaBuilder
+                                    .lessThanOrEqualTo(
+                                            root.get("age"),
+                                            request.getAgeTo()
+                                    )
+                    );
+                }
+
+                /*
+                 * =================================================
+                 * Basic information
+                 * =================================================
+                 */
+
+                addCaseInsensitiveEquals(
+                        predicates,
+                        criteriaBuilder,
+                        root.get("gender"),
+                        request.getGender()
+                );
+
+                addCaseInsensitiveEquals(
+                        predicates,
+                        criteriaBuilder,
+                        root.get("maritalStatus"),
+                        request.getMaritalStatus()
+                );
+
+                /*
+                 * =================================================
+                 * Church information
+                 * =================================================
+                 */
+
+                addCaseInsensitiveEquals(
+                        predicates,
+                        criteriaBuilder,
+                        root.get("denomination"),
+                        request.getDenomination()
+                );
+
+                /*
+                 * =================================================
+                 * Location
+                 * =================================================
+                 */
+
+                addCaseInsensitiveEquals(
+                        predicates,
+                        criteriaBuilder,
+                        root.get("country"),
+                        request.getCountry()
+                );
+
+                addCaseInsensitiveEquals(
+                        predicates,
+                        criteriaBuilder,
+                        root.get("state"),
+                        request.getState()
+                );
+
+                addCaseInsensitiveEquals(
+                        predicates,
+                        criteriaBuilder,
+                        root.get("city"),
+                        request.getCity()
+                );
+
+                /*
+                 * =================================================
+                 * Education & Career
+                 * =================================================
+                 */
+
+                addCaseInsensitiveEquals(
+                        predicates,
+                        criteriaBuilder,
+                        root.get("highestEducation"),
+                        request.getHighestEducation()
+                );
+
+                /*
+                 * Profession remains contains-based so older
+                 * free-text profile values remain searchable.
+                 */
+
+                addCaseInsensitiveContains(
+                        predicates,
+                        criteriaBuilder,
+                        root.get("profession"),
+                        request.getProfession()
+                );
+
+                /*
+                 * =================================================
+                 * Baptism
+                 * =================================================
+                 */
+
+                if (
+                        request.getBaptized()
+                                != null
+                ) {
+
+                    predicates.add(
+                            criteriaBuilder.equal(
+                                    root.get("baptized"),
+                                    request.getBaptized()
+                            )
+                    );
+                }
+
+                /*
+                 * =================================================
+                 * Verification Filters
+                 * =================================================
+                 */
+
+                if (
+                        Boolean.TRUE.equals(
+                                request.getChurchVerified()
+                        )
+                ) {
+
+                    predicates.add(
+                            approvedVerificationExists(
+                                    root,
+                                    query,
+                                    criteriaBuilder,
+                                    VerificationType.CHURCH
+                            )
+                    );
+                }
+
+                if (
+                        Boolean.TRUE.equals(
+                                request.getAadhaarVerified()
+                        )
+                ) {
+
+                    predicates.add(
+                            approvedIdentityDocumentExists(
+                                    root,
+                                    query,
+                                    criteriaBuilder,
+                                    true
+                            )
+                    );
+                }
+
+                if (
+                        Boolean.TRUE.equals(
+                                request.getIdVerified()
+                        )
+                ) {
+
+                    predicates.add(
+                            approvedIdentityDocumentExists(
+                                    root,
+                                    query,
+                                    criteriaBuilder,
+                                    false
+                            )
+                    );
+                }
+            }
+
+            /*
+             * =====================================================
+             * Result Ordering
+             * =====================================================
              *
              * Don't add ORDER BY to Spring Data's COUNT query.
              */
 
-            if (
-                    isTrustVerifiedSort(
-                            request
-                    )
-                            && !isCountQuery(
-                                    query
-                            )
-            ) {
+            if (!isCountQuery(query)) {
 
-                applyTrustVerifiedOrdering(
-                        root,
-                        query,
-                        criteriaBuilder
-                );
+                /*
+                 * TRUST_VERIFIED
+                 *
+                 * Trust remains the primary ranking signal.
+                 * Platinum placement is only a tie-breaker
+                 * within the same trust level.
+                 */
+
+                if (
+                        isTrustVerifiedSort(
+                                request
+                        )
+                ) {
+
+                    applyTrustVerifiedOrdering(
+                            root,
+                            query,
+                            criteriaBuilder
+                    );
+
+                /*
+                 * RECOMMENDED
+                 *
+                 * Active Platinum members receive Top Search
+                 * Placement before normal profiles.
+                 *
+                 * No explicit sort is also treated as RECOMMENDED.
+                 */
+
+                } else if (
+                        isRecommendedSort(
+                                request
+                        )
+                ) {
+
+                    applyRecommendedOrdering(
+                            root,
+                            query,
+                            criteriaBuilder
+                    );
+                }
             }
 
             return criteriaBuilder.and(
@@ -322,8 +363,74 @@ public final class ProfileSpecification {
 
     /*
      * ============================================================
+     * RECOMMENDED / TOP SEARCH PLACEMENT
+     * ============================================================
+     *
+     * Platinum TOP_SEARCH_PLACEMENT is implemented here at the
+     * database-query level so ranking happens before pagination.
+     *
+     * Ranking:
+     *
+     * 1. Active, unexpired Platinum profiles
+     * 2. Everyone else
+     * 3. Newest within each group
+     */
+
+    private static void applyRecommendedOrdering(
+            Root<Profile> profileRoot,
+            CriteriaQuery<?> query,
+            CriteriaBuilder criteriaBuilder
+    ) {
+
+        Predicate topSearchPlacement =
+                activePlatinumMembershipExists(
+                        profileRoot,
+                        query,
+                        criteriaBuilder
+                );
+
+        Expression<Integer> placementScore =
+                criteriaBuilder
+                        .<Integer>selectCase()
+                        .when(
+                                topSearchPlacement,
+                                1
+                        )
+                        .otherwise(
+                                0
+                        );
+
+        query.orderBy(
+                criteriaBuilder.desc(
+                        placementScore
+                ),
+
+                criteriaBuilder.desc(
+                        profileRoot.get(
+                                "createdAt"
+                        )
+                )
+        );
+    }
+
+    /*
+     * ============================================================
      * TRUST RANKING
      * ============================================================
+     *
+     * Ranking:
+     *
+     * Aadhaar + Church = 500
+     * ID + Church      = 400
+     * Aadhaar          = 300
+     * ID               = 200
+     * Church           = 100
+     * Unverified       = 0
+     *
+     * Within each trust level:
+     *
+     * 1. Platinum Top Search Placement
+     * 2. Newest profile
      */
 
     private static void applyTrustVerifiedOrdering(
@@ -363,6 +470,7 @@ public final class ProfileSpecification {
                         /*
                          * Strongest public trust combination.
                          */
+
                         .when(
                                 criteriaBuilder.and(
                                         aadhaarVerified,
@@ -374,6 +482,7 @@ public final class ProfileSpecification {
                         /*
                          * Non-Aadhaar government ID + Church.
                          */
+
                         .when(
                                 criteriaBuilder.and(
                                         idVerified,
@@ -385,6 +494,7 @@ public final class ProfileSpecification {
                         /*
                          * Aadhaar only.
                          */
+
                         .when(
                                 aadhaarVerified,
                                 300
@@ -393,6 +503,7 @@ public final class ProfileSpecification {
                         /*
                          * Other approved government ID.
                          */
+
                         .when(
                                 idVerified,
                                 200
@@ -401,6 +512,7 @@ public final class ProfileSpecification {
                         /*
                          * Church only.
                          */
+
                         .when(
                                 churchVerified,
                                 100
@@ -410,20 +522,188 @@ public final class ProfileSpecification {
                                 0
                         );
 
+        /*
+         * Platinum must never override the trust hierarchy.
+         *
+         * It only receives priority among profiles with the
+         * same trust score.
+         */
+
+        Predicate topSearchPlacement =
+                activePlatinumMembershipExists(
+                        profileRoot,
+                        query,
+                        criteriaBuilder
+                );
+
+        Expression<Integer> placementScore =
+                criteriaBuilder
+                        .<Integer>selectCase()
+                        .when(
+                                topSearchPlacement,
+                                1
+                        )
+                        .otherwise(
+                                0
+                        );
+
         query.orderBy(
+
+                /*
+                 * Primary:
+                 * public trust level.
+                 */
+
                 criteriaBuilder.desc(
                         trustScore
                 ),
 
                 /*
-                 * Within the same trust level,
-                 * newest profiles appear first.
+                 * Secondary:
+                 * Platinum Top Search Placement.
                  */
+
+                criteriaBuilder.desc(
+                        placementScore
+                ),
+
+                /*
+                 * Final tie-break:
+                 * newest profile.
+                 */
+
                 criteriaBuilder.desc(
                         profileRoot.get(
                                 "createdAt"
                         )
                 )
+        );
+    }
+
+    /*
+     * ============================================================
+     * ACTIVE PLATINUM MEMBERSHIP
+     * ============================================================
+     *
+     * Matches the effective-membership semantics used by
+     * MembershipEntitlementService:
+     *
+     * - plan must be PLATINUM
+     * - status must be ACTIVE
+     * - expiry must be in the future
+     */
+
+    private static Predicate activePlatinumMembershipExists(
+            Root<Profile> profileRoot,
+            CriteriaQuery<?> query,
+            CriteriaBuilder criteriaBuilder
+    ) {
+
+        Subquery<Integer> subquery =
+                query.subquery(
+                        Integer.class
+                );
+
+        Root<Membership> membershipRoot =
+                subquery.from(
+                        Membership.class
+                );
+
+        subquery.select(
+                criteriaBuilder.literal(
+                        1
+                )
+        );
+
+        LocalDateTime now =
+                LocalDateTime.now();
+
+        subquery.where(
+                criteriaBuilder.and(
+
+                        /*
+                         * Same candidate user.
+                         */
+
+                        criteriaBuilder.equal(
+                                membershipRoot
+                                        .get("user")
+                                        .get("id"),
+                                profileRoot
+                                        .get("user")
+                                        .get("id")
+                        ),
+
+                        /*
+                         * Platinum only.
+                         */
+
+                        criteriaBuilder.equal(
+                                membershipRoot
+                                        .get("plan"),
+                                MembershipPlan.PLATINUM
+                        ),
+
+                        /*
+                         * Must still be ACTIVE.
+                         */
+
+                        criteriaBuilder.equal(
+                                membershipRoot
+                                        .get("status"),
+                                MembershipStatus.ACTIVE
+                        ),
+
+                        /*
+                         * Must not be expired.
+                         */
+
+                        criteriaBuilder.greaterThan(
+                                membershipRoot
+                                        .<LocalDateTime>get(
+                                                "expiryDate"
+                                        ),
+                                now
+                        )
+                )
+        );
+
+        return criteriaBuilder.exists(
+                subquery
+        );
+    }
+
+    /*
+     * ============================================================
+     * SORT HELPERS
+     * ============================================================
+     */
+
+    private static boolean isRecommendedSort(
+            SearchProfileRequest request
+    ) {
+
+        /*
+         * No explicit sort is the default RECOMMENDED mode.
+         */
+
+        if (
+                request == null
+                        || !hasText(
+                                request.getSort()
+                        )
+        ) {
+
+            return true;
+        }
+
+        return SORT_RECOMMENDED.equals(
+                request
+                        .getSort()
+                        .trim()
+                        .toUpperCase(
+                                Locale.ROOT
+                        )
         );
     }
 
@@ -437,6 +717,7 @@ public final class ProfileSpecification {
                                 request.getSort()
                         )
         ) {
+
             return false;
         }
 
@@ -492,6 +773,7 @@ public final class ProfileSpecification {
 
         subquery.where(
                 criteriaBuilder.and(
+
                         criteriaBuilder.equal(
                                 verificationRoot
                                         .get("user")
@@ -561,6 +843,7 @@ public final class ProfileSpecification {
 
         Predicate approvedIdentity =
                 criteriaBuilder.and(
+
                         criteriaBuilder.equal(
                                 documentRoot
                                         .get("verification")

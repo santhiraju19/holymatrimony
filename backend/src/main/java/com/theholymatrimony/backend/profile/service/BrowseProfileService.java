@@ -120,18 +120,20 @@ public class BrowseProfileService {
                                         .COMPATIBILITY_SCORE
                         );
 
-        Pageable pageable =
-                createPageable(
-                        page,
-                        size
-                );
+       Pageable pageable =
+        createRecommendedPageable(
+                page,
+                size
+        );
 
-        Page<Profile> profilePage =
-                profileRepository
-                        .findByProfileCompletedTrueAndUserEmailNot(
-                                authenticatedEmail,
-                                pageable
-                        );
+    Page<Profile> profilePage =
+        profileRepository.findAll(
+                ProfileSpecification.search(
+                        null,
+                        authenticatedEmail
+                ),
+                pageable
+        );
 
         return mapPage(
                 profilePage,
@@ -406,6 +408,34 @@ public class BrowseProfileService {
      * ============================================================
      */
 
+    private Pageable createRecommendedPageable(
+        int page,
+        int size
+) {
+
+    int safePage =
+            Math.max(
+                    page,
+                    0
+            );
+
+    int requestedSize =
+            size <= 0
+                    ? DEFAULT_PAGE_SIZE
+                    : size;
+
+    int safeSize =
+            Math.min(
+                    requestedSize,
+                    MAXIMUM_PAGE_SIZE
+            );
+
+    return PageRequest.of(
+            safePage,
+            safeSize
+    );
+}
+
     private Pageable createPageable(
             int page,
             int size
@@ -481,17 +511,21 @@ public class BrowseProfileService {
          * The Pageable must therefore remain unsorted so
          * Spring Data does not override the Criteria ORDER BY.
          */
-        if (
-                SORT_TRUST_VERIFIED.equals(
+     if (
+        SORT_TRUST_VERIFIED.equals(
+                sort
+        )
+                || SORT_RECOMMENDED.equals(
                         sort
                 )
-        ) {
+                || sort == null
+) {
 
-            return PageRequest.of(
-                    safePage,
-                    safeSize
-            );
-        }
+    return PageRequest.of(
+            safePage,
+            safeSize
+    );
+}
 
         /*
          * RECOMMENDED / NEWEST / unspecified currently use
