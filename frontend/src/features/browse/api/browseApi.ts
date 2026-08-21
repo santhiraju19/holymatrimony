@@ -21,7 +21,9 @@ function unwrapApiResponse<T>(
     typeof response === "object" &&
     "data" in response
   ) {
-    return (response as ApiEnvelope<T>).data;
+    return (
+      response as ApiEnvelope<T>
+    ).data;
   }
 
   return response as T;
@@ -29,9 +31,13 @@ function unwrapApiResponse<T>(
 
 function cleanParams<
   T extends Record<string, unknown>
->(params: T): Partial<T> {
+>(
+  params: T
+): Partial<T> {
   return Object.fromEntries(
-    Object.entries(params).filter(
+    Object.entries(
+      params
+    ).filter(
       ([, value]) =>
         value !== undefined &&
         value !== null &&
@@ -40,63 +46,189 @@ function cleanParams<
   ) as Partial<T>;
 }
 
+/*
+ * ============================================================
+ * Browse Profiles
+ * ============================================================
+ *
+ * Normal browse does not invoke Advanced Search entitlement.
+ */
+
 export async function getBrowseProfiles(
   params: BrowsePaginationParams = {}
 ): Promise<BrowseProfilesResult> {
-  const response = await api.get<
-    ApiEnvelope<BrowseProfilesResult> | BrowseProfilesResult
-  >("/profiles", {
-    params: cleanParams({
-      page: params.page ?? 0,
-      size: params.size ?? 12,
-    }),
-  });
+  const response =
+    await api.get<
+      | ApiEnvelope<BrowseProfilesResult>
+      | BrowseProfilesResult
+    >(
+      "/profiles",
+      {
+        params: cleanParams({
+          page:
+            params.page ?? 0,
 
-  return unwrapApiResponse(response.data);
+          size:
+            params.size ?? 12,
+        }),
+      }
+    );
+
+  return unwrapApiResponse(
+    response.data
+  );
 }
+
+/*
+ * ============================================================
+ * Advanced Search
+ * ============================================================
+ */
 
 export async function searchBrowseProfiles(
   params: BrowseSearchParams
 ): Promise<BrowseProfilesResult> {
-  const response = await api.get<
-    ApiEnvelope<BrowseProfilesResult> | BrowseProfilesResult
-  >("/profiles/search", {
-    params: cleanParams({
-      page: params.page ?? 0,
-      size: params.size ?? 12,
+  const response =
+    await api.get<
+      | ApiEnvelope<BrowseProfilesResult>
+      | BrowseProfilesResult
+    >(
+      "/profiles/search",
+      {
+        params: cleanParams({
+          /*
+           * Pagination
+           */
+          page:
+            params.page ?? 0,
 
-      ageFrom: params.ageFrom,
-      ageTo: params.ageTo,
+          size:
+            params.size ?? 12,
 
-      gender: params.gender,
-      denomination: params.denomination,
-      maritalStatus: params.maritalStatus,
+          /*
+           * Match Basics
+           */
+          ageFrom:
+            params.ageFrom,
 
-      country: params.country,
-      state: params.state,
-      city: params.city,
+          ageTo:
+            params.ageTo,
 
-      highestEducation:
-        params.highestEducation,
+          heightFrom:
+            params.heightFrom,
 
-      profession: params.profession,
-      baptized: params.baptized,
-    }),
-  });
+          heightTo:
+            params.heightTo,
 
-  return unwrapApiResponse(response.data);
+          gender:
+            params.gender,
+
+          maritalStatus:
+            params.maritalStatus,
+
+          /*
+           * Faith & Background
+           */
+          religion:
+            params.religion,
+
+          denomination:
+            params.denomination,
+
+          community:
+            params.community,
+
+          motherTongue:
+            params.motherTongue,
+
+          baptized:
+            params.baptized,
+
+          /*
+           * Education & Career
+           */
+          highestEducation:
+            params.highestEducation,
+
+          profession:
+            params.profession,
+
+          /*
+           * Location
+           */
+          country:
+            params.country,
+
+          state:
+            params.state,
+
+          city:
+            params.city,
+
+          /*
+           * Lifestyle
+           */
+          diet:
+            params.diet,
+
+          smoking:
+            params.smoking,
+
+          drinking:
+            params.drinking,
+
+          /*
+           * Trust Verification
+           */
+          aadhaarVerified:
+            params.aadhaarVerified,
+
+          idVerified:
+            params.idVerified,
+
+          churchVerified:
+            params.churchVerified,
+
+          /*
+           * Result Ordering
+           */
+          sort:
+            params.sort,
+        }),
+      }
+    );
+
+  return unwrapApiResponse(
+    response.data
+  );
 }
+
+/*
+ * ============================================================
+ * Single Public Profile
+ * ============================================================
+ */
 
 export async function getBrowseProfileById(
   profileId: string
 ): Promise<BrowseProfile> {
-  if (!profileId.trim()) {
-    throw new Error("Profile ID is required.");
+  if (
+    !profileId.trim()
+  ) {
+    throw new Error(
+      "Profile ID is required."
+    );
   }
 
-  const response = await api.get<
-    ApiEnvelope<BrowseProfile> | BrowseProfile
-  >(`/profiles/${profileId}`);
+  const response =
+    await api.get<
+      | ApiEnvelope<BrowseProfile>
+      | BrowseProfile
+    >(
+      `/profiles/${profileId}`
+    );
 
-  return unwrapApiResponse(response.data);
+  return unwrapApiResponse(
+    response.data
+  );
 }

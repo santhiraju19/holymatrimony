@@ -9,11 +9,14 @@ import {
   CheckCircle2,
   Church,
   GraduationCap,
+  Languages,
   MapPin,
   Rocket,
+  Ruler,
   Sparkles,
   Star,
   UserRound,
+  UsersRound,
 } from "lucide-react";
 
 import PremiumVerifiedBadge from "@/features/browse/components/PremiumVerifiedBadge";
@@ -50,13 +53,23 @@ export default function BrowseProfileCard({
       profile
     );
 
-  const churchDetails =
-    buildChurchDetails(
+  const faithDetails =
+    buildFaithDetails(
       profile
     );
 
   const basicDetails =
     buildBasicDetails(
+      profile
+    );
+
+  const languageCommunityDetails =
+    buildLanguageCommunityDetails(
+      profile
+    );
+
+  const educationDetails =
+    buildEducationDetails(
       profile
     );
 
@@ -288,8 +301,7 @@ export default function BrowseProfileCard({
                 />
 
                 <span className="text-xs font-black">
-                  {compatibilityScore}%
-                  Match
+                  {compatibilityScore}% Match
                 </span>
               </div>
             </div>
@@ -309,6 +321,12 @@ export default function BrowseProfileCard({
                 {basicDetails && (
                   <p className="mt-1 truncate text-xs font-semibold text-white/85 sm:text-sm">
                     {basicDetails}
+                  </p>
+                )}
+
+                {languageCommunityDetails && (
+                  <p className="mt-1 truncate text-[11px] font-semibold text-white/75">
+                    {languageCommunityDetails}
                   </p>
                 )}
               </div>
@@ -390,6 +408,67 @@ export default function BrowseProfileCard({
             ) : null}
 
             {/* =================================================
+                V25 Match Snapshot
+                ================================================= */}
+
+            <div className="grid grid-cols-2 gap-2">
+              <SnapshotItem
+                icon={
+                  <Ruler
+                    size={14}
+                  />
+                }
+                label="Height"
+                value={
+                  profile.heightCm
+                    ? formatHeight(
+                        profile.heightCm
+                      )
+                    : "Not specified"
+                }
+              />
+
+              <SnapshotItem
+                icon={
+                  <Church
+                    size={14}
+                  />
+                }
+                label="Religion"
+                value={
+                  profile.religion?.trim() ||
+                  "Not specified"
+                }
+              />
+
+              <SnapshotItem
+                icon={
+                  <UsersRound
+                    size={14}
+                  />
+                }
+                label="Community"
+                value={
+                  profile.community?.trim() ||
+                  "No preference"
+                }
+              />
+
+              <SnapshotItem
+                icon={
+                  <Languages
+                    size={14}
+                  />
+                }
+                label="Mother Tongue"
+                value={
+                  profile.motherTongue?.trim() ||
+                  "Not specified"
+                }
+              />
+            </div>
+
+            {/* =================================================
                 Core Details
                 ================================================= */}
 
@@ -413,7 +492,7 @@ export default function BrowseProfileCard({
                   />
                 }
                 value={
-                  profile.highestEducation?.trim() ||
+                  educationDetails ||
                   "Education not specified"
                 }
               />
@@ -425,8 +504,8 @@ export default function BrowseProfileCard({
                   />
                 }
                 value={
-                  churchDetails ||
-                  "Church information not specified"
+                  faithDetails ||
+                  "Faith information not specified"
                 }
               />
 
@@ -550,6 +629,38 @@ export default function BrowseProfileCard({
         </div>
       </div>
     </article>
+  );
+}
+
+/*
+ * ============================================================
+ * V25 Snapshot Item
+ * ============================================================
+ */
+
+function SnapshotItem({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="min-w-0 rounded-xl border border-slate-100 bg-gradient-to-br from-slate-50/80 via-white to-blue-50/40 px-2.5 py-2.5">
+      <div className="flex items-center gap-1.5 text-[#0B2D5C]">
+        {icon}
+
+        <span className="truncate text-[9px] font-black uppercase tracking-[0.08em] text-slate-400">
+          {label}
+        </span>
+      </div>
+
+      <p className="mt-1 truncate text-[11px] font-extrabold text-slate-700">
+        {value}
+      </p>
+    </div>
   );
 }
 
@@ -696,6 +807,46 @@ function ProfileDetail({
 
 /*
  * ============================================================
+ * Height Formatting
+ * ============================================================
+ */
+
+function formatHeight(
+  centimeters: number
+): string {
+  if (
+    !Number.isFinite(
+      centimeters
+    ) ||
+    centimeters <= 0
+  ) {
+    return "";
+  }
+
+  const totalInches =
+    centimeters / 2.54;
+
+  let feet =
+    Math.floor(
+      totalInches / 12
+    );
+
+  let inches =
+    Math.round(
+      totalInches -
+        feet * 12
+    );
+
+  if (inches === 12) {
+    feet += 1;
+    inches = 0;
+  }
+
+  return `${feet}' ${inches}"`;
+}
+
+/*
+ * ============================================================
  * Basic Profile Summary
  * ============================================================
  */
@@ -708,7 +859,11 @@ function buildBasicDetails(
       ? `${profile.age} yrs`
       : null,
 
-    profile.gender?.trim(),
+    profile.heightCm
+      ? formatHeight(
+          profile.heightCm
+        )
+      : null,
 
     profile.maritalStatus?.trim(),
   ]
@@ -718,29 +873,77 @@ function buildBasicDetails(
 
 /*
  * ============================================================
- * Church Summary
+ * Community / Language Summary
  * ============================================================
  */
 
-function buildChurchDetails(
+function buildLanguageCommunityDetails(
   profile: BrowseProfile
 ): string {
-  const churchName =
-    profile.churchName?.trim();
+  return [
+    profile.religion?.trim(),
+    profile.community?.trim(),
+    profile.motherTongue?.trim(),
+  ]
+    .filter(Boolean)
+    .join(" • ");
+}
 
+/*
+ * ============================================================
+ * Faith Summary
+ * ============================================================
+ */
+
+function buildFaithDetails(
+  profile: BrowseProfile
+): string {
   const denomination =
     profile.denomination?.trim();
 
+  const churchName =
+    profile.churchName?.trim();
+
   if (
-    churchName &&
-    denomination
+    denomination &&
+    churchName
   ) {
-    return `${churchName} • ${denomination}`;
+    return `${denomination} • ${churchName}`;
   }
 
   return (
-    churchName ||
     denomination ||
+    churchName ||
+    profile.religion?.trim() ||
+    ""
+  );
+}
+
+/*
+ * ============================================================
+ * Education Summary
+ * ============================================================
+ */
+
+function buildEducationDetails(
+  profile: BrowseProfile
+): string {
+  const education =
+    profile.highestEducation?.trim();
+
+  const field =
+    profile.educationField?.trim();
+
+  if (
+    education &&
+    field
+  ) {
+    return `${education} • ${field}`;
+  }
+
+  return (
+    education ||
+    field ||
     ""
   );
 }

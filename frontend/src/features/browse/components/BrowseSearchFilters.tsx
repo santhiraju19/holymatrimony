@@ -9,16 +9,22 @@ import {
   BadgeCheck,
   BriefcaseBusiness,
   Church,
+  Cigarette,
   Fingerprint,
   GraduationCap,
   HeartHandshake,
+  Languages,
   MapPin,
+  Ruler,
   RotateCcw,
   Search,
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
   UserRound,
+  UsersRound,
+  Utensils,
+  Wine,
 } from "lucide-react";
 
 import Button from "@/components/ui/button";
@@ -27,8 +33,15 @@ import Select from "@/components/ui/select";
 
 import {
   DENOMINATIONS,
+  DIET_OPTIONS,
+  DRINKING_OPTIONS,
   EDUCATION_OPTIONS,
+  HEIGHT_OPTIONS,
+  MARITAL_STATUS_OPTIONS,
+  MOTHER_TONGUE_OPTIONS,
   PROFESSION_GROUPS,
+  RELIGION_OPTIONS,
+  SMOKING_OPTIONS,
 } from "@/features/profile/data/profileOptions";
 
 import {
@@ -75,6 +88,7 @@ const SORT_OPTIONS: Array<{
       />
     ),
   },
+
   {
     value: "NEWEST",
     title: "Newest",
@@ -85,6 +99,7 @@ const SORT_OPTIONS: Array<{
       />
     ),
   },
+
   {
     value: "TRUST_VERIFIED",
     title: "Trust Verified",
@@ -261,7 +276,7 @@ export default function BrowseSearchFilters({
               </h2>
 
               <p className="mt-0.5 text-[11px] text-slate-500 sm:text-xs">
-                Use only the filters that matter to you.
+                Use only the preferences that matter to you.
               </p>
             </div>
           </div>
@@ -286,7 +301,7 @@ export default function BrowseSearchFilters({
       >
 
         {/* =====================================================
-            Compact Profile Ordering
+            Sort
             ===================================================== */}
 
         <CompactSection
@@ -384,14 +399,15 @@ export default function BrowseSearchFilters({
         </CompactSection>
 
         {/* =====================================================
-            Profile Details
+            Match Basics
             ===================================================== */}
 
         <CompactSection
-          eyebrow="Match preferences"
-          title="Profile Details"
+          eyebrow="Match basics"
+          title="Age, Height & Status"
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
             <Input
               label="Age From"
               type="number"
@@ -402,10 +418,10 @@ export default function BrowseSearchFilters({
                 filters.ageFrom
               }
               placeholder="Any age"
-              disabled={loading}
-              onChange={(
-                event
-              ) =>
+              disabled={
+                loading
+              }
+              onChange={(event) =>
                 onChange(
                   "ageFrom",
                   event.target.value
@@ -423,10 +439,10 @@ export default function BrowseSearchFilters({
                 filters.ageTo
               }
               placeholder="Any age"
-              disabled={loading}
-              onChange={(
-                event
-              ) =>
+              disabled={
+                loading
+              }
+              onChange={(event) =>
                 onChange(
                   "ageTo",
                   event.target.value
@@ -435,19 +451,103 @@ export default function BrowseSearchFilters({
             />
 
             <Select
+              label="Height From"
+              value={
+                filters.heightFrom
+              }
+              disabled={
+                loading
+              }
+              leftIcon={
+                <Ruler
+                  size={16}
+                />
+              }
+              onChange={(event) =>
+                onChange(
+                  "heightFrom",
+                  event.target.value
+                )
+              }
+            >
+              <option value="">
+                Any height
+              </option>
+
+              {HEIGHT_OPTIONS.map(
+                (height) => (
+                  <option
+                    key={
+                      height.value
+                    }
+                    value={
+                      height.value
+                    }
+                  >
+                    {
+                      height.label
+                    }
+                  </option>
+                )
+              )}
+            </Select>
+
+            <Select
+              label="Height To"
+              value={
+                filters.heightTo
+              }
+              disabled={
+                loading
+              }
+              leftIcon={
+                <Ruler
+                  size={16}
+                />
+              }
+              onChange={(event) =>
+                onChange(
+                  "heightTo",
+                  event.target.value
+                )
+              }
+            >
+              <option value="">
+                Any height
+              </option>
+
+              {HEIGHT_OPTIONS.map(
+                (height) => (
+                  <option
+                    key={
+                      height.value
+                    }
+                    value={
+                      height.value
+                    }
+                  >
+                    {
+                      height.label
+                    }
+                  </option>
+                )
+              )}
+            </Select>
+
+            <Select
               label="Gender"
               value={
                 filters.gender
               }
-              disabled={loading}
+              disabled={
+                loading
+              }
               leftIcon={
                 <UserRound
                   size={16}
                 />
               }
-              onChange={(
-                event
-              ) =>
+              onChange={(event) =>
                 onChange(
                   "gender",
                   event.target.value
@@ -472,15 +572,15 @@ export default function BrowseSearchFilters({
               value={
                 filters.maritalStatus
               }
-              disabled={loading}
+              disabled={
+                loading
+              }
               leftIcon={
                 <HeartHandshake
                   size={16}
                 />
               }
-              onChange={(
-                event
-              ) =>
+              onChange={(event) =>
                 onChange(
                   "maritalStatus",
                   event.target.value
@@ -491,21 +591,76 @@ export default function BrowseSearchFilters({
                 Any marital status
               </option>
 
-              <option value="Never Married">
-                Never Married
+              {MARITAL_STATUS_OPTIONS.map(
+                (status) => (
+                  <option
+                    key={
+                      status
+                    }
+                    value={
+                      status
+                    }
+                  >
+                    {status}
+                  </option>
+                )
+              )}
+            </Select>
+          </div>
+        </CompactSection>
+
+        {/* =====================================================
+            Faith & Community
+            ===================================================== */}
+
+        <CompactSection
+          eyebrow="Faith & background"
+          title="Faith & Community"
+        >
+          <div className="mb-3 rounded-xl border border-amber-100 bg-amber-50/50 px-3 py-2 text-[10px] leading-5 text-amber-900 sm:text-[11px]">
+            Religion and community are separate filters. For example, you can search for Christianity with Reddy, Kamma or another community background.
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
+            <Select
+              label="Religion"
+              value={
+                filters.religion
+              }
+              disabled={
+                loading
+              }
+              leftIcon={
+                <Church
+                  size={16}
+                />
+              }
+              onChange={(event) =>
+                onChange(
+                  "religion",
+                  event.target.value
+                )
+              }
+            >
+              <option value="">
+                Any religion
               </option>
 
-              <option value="Divorced">
-                Divorced
-              </option>
-
-              <option value="Widowed">
-                Widowed
-              </option>
-
-              <option value="Separated">
-                Separated
-              </option>
+              {RELIGION_OPTIONS.map(
+                (religion) => (
+                  <option
+                    key={
+                      religion
+                    }
+                    value={
+                      religion
+                    }
+                  >
+                    {religion}
+                  </option>
+                )
+              )}
             </Select>
 
             <Select
@@ -513,15 +668,15 @@ export default function BrowseSearchFilters({
               value={
                 filters.denomination
               }
-              disabled={loading}
+              disabled={
+                loading
+              }
               leftIcon={
                 <Church
                   size={16}
                 />
               }
-              onChange={(
-                event
-              ) =>
+              onChange={(event) =>
                 onChange(
                   "denomination",
                   event.target.value
@@ -533,9 +688,7 @@ export default function BrowseSearchFilters({
               </option>
 
               {DENOMINATIONS.map(
-                (
-                  denomination
-                ) => (
+                (denomination) => (
                   <option
                     key={
                       denomination
@@ -552,20 +705,127 @@ export default function BrowseSearchFilters({
               )}
             </Select>
 
+            <Input
+              label="Community / Caste"
+              value={
+                filters.community
+              }
+              placeholder="Example: Reddy"
+              disabled={
+                loading
+              }
+              leftIcon={
+                <UsersRound
+                  size={16}
+                />
+              }
+              onChange={(event) =>
+                onChange(
+                  "community",
+                  event.target.value
+                )
+              }
+            />
+
+            <Select
+              label="Mother Tongue"
+              value={
+                filters.motherTongue
+              }
+              disabled={
+                loading
+              }
+              leftIcon={
+                <Languages
+                  size={16}
+                />
+              }
+              onChange={(event) =>
+                onChange(
+                  "motherTongue",
+                  event.target.value
+                )
+              }
+            >
+              <option value="">
+                Any mother tongue
+              </option>
+
+              {MOTHER_TONGUE_OPTIONS.map(
+                (language) => (
+                  <option
+                    key={
+                      language
+                    }
+                    value={
+                      language
+                    }
+                  >
+                    {language}
+                  </option>
+                )
+              )}
+            </Select>
+
+            <Select
+              label="Baptized"
+              value={
+                filters.baptized
+              }
+              disabled={
+                loading
+              }
+              leftIcon={
+                <BadgeCheck
+                  size={16}
+                />
+              }
+              onChange={(event) =>
+                onChange(
+                  "baptized",
+                  event.target.value
+                )
+              }
+            >
+              <option value="">
+                Any status
+              </option>
+
+              <option value="true">
+                Yes
+              </option>
+
+              <option value="false">
+                No
+              </option>
+            </Select>
+          </div>
+        </CompactSection>
+
+        {/* =====================================================
+            Education & Career
+            ===================================================== */}
+
+        <CompactSection
+          eyebrow="Education & career"
+          title="Education & Profession"
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+
             <Select
               label="Education"
               value={
                 filters.highestEducation
               }
-              disabled={loading}
+              disabled={
+                loading
+              }
               leftIcon={
                 <GraduationCap
                   size={16}
                 />
               }
-              onChange={(
-                event
-              ) =>
+              onChange={(event) =>
                 onChange(
                   "highestEducation",
                   event.target.value
@@ -577,9 +837,7 @@ export default function BrowseSearchFilters({
               </option>
 
               {EDUCATION_OPTIONS.map(
-                (
-                  education
-                ) => (
+                (education) => (
                   <option
                     key={
                       education
@@ -588,9 +846,7 @@ export default function BrowseSearchFilters({
                       education
                     }
                   >
-                    {
-                      education
-                    }
+                    {education}
                   </option>
                 )
               )}
@@ -601,15 +857,15 @@ export default function BrowseSearchFilters({
               value={
                 filters.profession
               }
-              disabled={loading}
+              disabled={
+                loading
+              }
               leftIcon={
                 <BriefcaseBusiness
                   size={16}
                 />
               }
-              onChange={(
-                event
-              ) =>
+              onChange={(event) =>
                 onChange(
                   "profession",
                   event.target.value
@@ -631,9 +887,7 @@ export default function BrowseSearchFilters({
                     }
                   >
                     {group.professions.map(
-                      (
-                        profession
-                      ) => (
+                      (profession) => (
                         <option
                           key={
                             profession
@@ -652,54 +906,33 @@ export default function BrowseSearchFilters({
                 )
               )}
             </Select>
+          </div>
+        </CompactSection>
 
-            <Select
-              label="Baptized"
-              value={
-                filters.baptized
-              }
-              disabled={loading}
-              leftIcon={
-                <BadgeCheck
-                  size={16}
-                />
-              }
-              onChange={(
-                event
-              ) =>
-                onChange(
-                  "baptized",
-                  event.target.value
-                )
-              }
-            >
-              <option value="">
-                Any status
-              </option>
+        {/* =====================================================
+            Location
+            ===================================================== */}
 
-              <option value="true">
-                Yes
-              </option>
-
-              <option value="false">
-                No
-              </option>
-            </Select>
+        <CompactSection
+          eyebrow="Location"
+          title="Preferred Location"
+        >
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 
             <Select
               label="Country"
               value={
                 filters.country
               }
-              disabled={loading}
+              disabled={
+                loading
+              }
               leftIcon={
                 <MapPin
                   size={16}
                 />
               }
-              onChange={(
-                event
-              ) =>
+              onChange={(event) =>
                 handleCountryChange(
                   event.target.value
                 )
@@ -754,9 +987,7 @@ export default function BrowseSearchFilters({
                   size={16}
                 />
               }
-              onChange={(
-                event
-              ) =>
+              onChange={(event) =>
                 handleStateChange(
                   event.target.value
                 )
@@ -812,9 +1043,7 @@ export default function BrowseSearchFilters({
                   size={16}
                 />
               }
-              onChange={(
-                event
-              ) =>
+              onChange={(event) =>
                 onChange(
                   "city",
                   event.target.value
@@ -859,12 +1088,145 @@ export default function BrowseSearchFilters({
         </CompactSection>
 
         {/* =====================================================
-            Compact Verification Credentials
+            Lifestyle
+            ===================================================== */}
+
+        <CompactSection
+          eyebrow="Lifestyle"
+          title="Lifestyle Preferences"
+        >
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+
+            <Select
+              label="Diet"
+              value={
+                filters.diet
+              }
+              disabled={
+                loading
+              }
+              leftIcon={
+                <Utensils
+                  size={16}
+                />
+              }
+              onChange={(event) =>
+                onChange(
+                  "diet",
+                  event.target.value
+                )
+              }
+            >
+              <option value="">
+                Any diet
+              </option>
+
+              {DIET_OPTIONS.map(
+                (option) => (
+                  <option
+                    key={
+                      option
+                    }
+                    value={
+                      option
+                    }
+                  >
+                    {option}
+                  </option>
+                )
+              )}
+            </Select>
+
+            <Select
+              label="Smoking"
+              value={
+                filters.smoking
+              }
+              disabled={
+                loading
+              }
+              leftIcon={
+                <Cigarette
+                  size={16}
+                />
+              }
+              onChange={(event) =>
+                onChange(
+                  "smoking",
+                  event.target.value
+                )
+              }
+            >
+              <option value="">
+                Any preference
+              </option>
+
+              {SMOKING_OPTIONS.map(
+                (option) => (
+                  <option
+                    key={
+                      option
+                    }
+                    value={
+                      option
+                    }
+                  >
+                    {option}
+                  </option>
+                )
+              )}
+            </Select>
+
+            <Select
+              label="Drinking"
+              value={
+                filters.drinking
+              }
+              disabled={
+                loading
+              }
+              leftIcon={
+                <Wine
+                  size={16}
+                />
+              }
+              onChange={(event) =>
+                onChange(
+                  "drinking",
+                  event.target.value
+                )
+              }
+            >
+              <option value="">
+                Any preference
+              </option>
+
+              {DRINKING_OPTIONS.map(
+                (option) => (
+                  <option
+                    key={
+                      option
+                    }
+                    value={
+                      option
+                    }
+                  >
+                    {option}
+                  </option>
+                )
+              )}
+            </Select>
+          </div>
+        </CompactSection>
+
+        {/* =====================================================
+            Verification
             ===================================================== */}
 
         <div className="overflow-hidden rounded-[18px] border border-amber-200/70 bg-gradient-to-r from-amber-50/65 via-white to-blue-50/45 shadow-sm">
           <div className="px-4 py-3.5">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+
               <div className="flex items-center gap-3">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-yellow-500 text-[#0B2D5C] shadow-sm">
                   <BadgeCheck
@@ -896,7 +1258,9 @@ export default function BrowseSearchFilters({
                     filters.aadhaarVerified ===
                     "true"
                   }
-                  disabled={loading}
+                  disabled={
+                    loading
+                  }
                   title="Aadhaar Verified"
                   icon={
                     <ShieldCheck
@@ -914,7 +1278,9 @@ export default function BrowseSearchFilters({
                     filters.idVerified ===
                     "true"
                   }
-                  disabled={loading}
+                  disabled={
+                    loading
+                  }
                   title="ID Verified"
                   icon={
                     <Fingerprint
@@ -932,7 +1298,9 @@ export default function BrowseSearchFilters({
                     filters.churchVerified ===
                     "true"
                   }
-                  disabled={loading}
+                  disabled={
+                    loading
+                  }
                   title="Church Verified"
                   icon={
                     <Church
@@ -964,7 +1332,9 @@ export default function BrowseSearchFilters({
               type="button"
               variant="outline"
               size="sm"
-              disabled={loading}
+              disabled={
+                loading
+              }
               leftIcon={
                 <RotateCcw
                   size={15}
@@ -980,7 +1350,9 @@ export default function BrowseSearchFilters({
             <Button
               type="submit"
               size="sm"
-              loading={loading}
+              loading={
+                loading
+              }
               leftIcon={
                 <Search
                   size={15}
@@ -1074,9 +1446,15 @@ function CompactVerificationToggle({
   return (
     <button
       type="button"
-      disabled={disabled}
-      aria-pressed={active}
-      onClick={onClick}
+      disabled={
+        disabled
+      }
+      aria-pressed={
+        active
+      }
+      onClick={
+        onClick
+      }
       className={[
         "flex h-[46px] min-w-0 items-center gap-2 rounded-xl border px-2.5 text-left",
         "transition-all duration-200",

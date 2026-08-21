@@ -4,8 +4,8 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
-import java.util.UUID;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -24,9 +24,6 @@ public class BrowseProfileResponse {
 
     private Boolean verifiedPremiumBadge;
 
-    /*
-     * Active temporary Profile Boost.
-     */
     private Boolean boostedProfile;
 
     /*
@@ -61,6 +58,38 @@ public class BrowseProfileResponse {
 
     /*
      * ============================================================
+     * Personal Information
+     * ============================================================
+     */
+
+    private Integer heightCm;
+
+    private Integer weightKg;
+
+    private String complexion;
+
+    private String bodyType;
+
+    private String motherTongue;
+
+    private String religion;
+
+    private String community;
+
+    private String subCommunity;
+
+    private String faithBackground;
+
+    private String physicalStatus;
+
+    private String diet;
+
+    private String smoking;
+
+    private String drinking;
+
+    /*
+     * ============================================================
      * Church
      * ============================================================
      */
@@ -68,6 +97,8 @@ public class BrowseProfileResponse {
     private String denomination;
 
     private String churchName;
+
+    private String pastorName;
 
     private Boolean baptized;
 
@@ -79,11 +110,23 @@ public class BrowseProfileResponse {
 
     private String highestEducation;
 
+    private String educationField;
+
     private String profession;
 
     private String company;
 
     private String annualIncome;
+
+    /*
+     * ============================================================
+     * Family
+     * ============================================================
+     */
+
+    private String familyType;
+
+    private String familyValues;
 
     /*
      * ============================================================
@@ -125,31 +168,12 @@ public class BrowseProfileResponse {
 
     private Boolean churchVerified;
 
-    /*
-     * Any approved identity document.
-     *
-     * Kept for compatibility with existing
-     * verification/profile UI.
-     */
     private Boolean identityVerified;
 
-    /*
-     * Approved Aadhaar document.
-     */
     private Boolean aadhaarVerified;
 
-    /*
-     * Approved non-Aadhaar government identity document:
-     *
-     * Passport
-     * Driving Licence
-     * Voter ID
-     */
     private Boolean idVerified;
 
-    /*
-     * Existing profile verification compatibility flag.
-     */
     private Boolean verifiedProfile;
 
     /*
@@ -161,11 +185,13 @@ public class BrowseProfileResponse {
     private UUID primaryPhotoId;
 
     private String primaryPhotoUrl;
+
     /*
- * All member-facing profile photos.
- *
- * Primary photo is returned first followed by the
- * remaining photos in member-defined display order.
- */
-private List<BrowseProfilePhotoResponse> photos;
+     * All member-facing profile photos.
+     *
+     * Primary photo is returned first followed by the
+     * remaining photos in member-defined display order.
+     */
+
+    private List<BrowseProfilePhotoResponse> photos;
 }

@@ -7,15 +7,55 @@ import lombok.Setter;
 @Setter
 public class SearchProfileRequest {
 
+    /*
+     * ============================================================
+     * Match Basics
+     * ============================================================
+     */
+
     private Integer ageFrom;
 
     private Integer ageTo;
 
+    private Integer heightFrom;
+
+    private Integer heightTo;
+
     private String gender;
+
+    private String maritalStatus;
+
+    /*
+     * ============================================================
+     * Faith & Background
+     * ============================================================
+     */
+
+    private String religion;
 
     private String denomination;
 
-    private String maritalStatus;
+    private String community;
+
+    private String motherTongue;
+
+    private Boolean baptized;
+
+    /*
+     * ============================================================
+     * Education & Career
+     * ============================================================
+     */
+
+    private String highestEducation;
+
+    private String profession;
+
+    /*
+     * ============================================================
+     * Location
+     * ============================================================
+     */
 
     private String country;
 
@@ -23,16 +63,22 @@ public class SearchProfileRequest {
 
     private String city;
 
-    private String highestEducation;
+    /*
+     * ============================================================
+     * Lifestyle
+     * ============================================================
+     */
 
-    private String profession;
+    private String diet;
 
-    private Boolean baptized;
+    private String smoking;
+
+    private String drinking;
 
     /*
-     * =====================================================
+     * ============================================================
      * Trust Verification Filters
-     * =====================================================
+     * ============================================================
      */
 
     private Boolean aadhaarVerified;
@@ -42,19 +88,15 @@ public class SearchProfileRequest {
     private Boolean churchVerified;
 
     /*
-     * =====================================================
+     * ============================================================
      * Result Ordering
-     * =====================================================
+     * ============================================================
      *
      * Supported values:
      *
      * RECOMMENDED
      * NEWEST
      * TRUST_VERIFIED
-     *
-     * RECOMMENDED currently follows newest-first ordering.
-     * This gives us a stable API contract for introducing
-     * matchmaking relevance ranking later.
      */
 
     private String sort;

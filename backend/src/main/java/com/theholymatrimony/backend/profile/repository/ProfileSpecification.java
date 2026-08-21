@@ -133,6 +133,40 @@ public final class ProfileSpecification {
 
                 /*
                  * =================================================
+                 * Height
+                 * =================================================
+                 */
+
+                if (
+                        request.getHeightFrom()
+                                != null
+                ) {
+
+                    predicates.add(
+                            criteriaBuilder
+                                    .greaterThanOrEqualTo(
+                                            root.get("heightCm"),
+                                            request.getHeightFrom()
+                                    )
+                    );
+                }
+
+                if (
+                        request.getHeightTo()
+                                != null
+                ) {
+
+                    predicates.add(
+                            criteriaBuilder
+                                    .lessThanOrEqualTo(
+                                            root.get("heightCm"),
+                                            request.getHeightTo()
+                                    )
+                    );
+                }
+
+                /*
+                 * =================================================
                  * Basic Information
                  * =================================================
                  */
@@ -149,6 +183,33 @@ public final class ProfileSpecification {
                         criteriaBuilder,
                         root.get("maritalStatus"),
                         request.getMaritalStatus()
+                );
+
+                /*
+                 * =================================================
+                 * Religion / Community / Language
+                 * =================================================
+                 */
+
+                addCaseInsensitiveEquals(
+                        predicates,
+                        criteriaBuilder,
+                        root.get("religion"),
+                        request.getReligion()
+                );
+
+                addCaseInsensitiveEquals(
+                        predicates,
+                        criteriaBuilder,
+                        root.get("community"),
+                        request.getCommunity()
+                );
+
+                addCaseInsensitiveEquals(
+                        predicates,
+                        criteriaBuilder,
+                        root.get("motherTongue"),
+                        request.getMotherTongue()
                 );
 
                 /*
@@ -229,6 +290,33 @@ public final class ProfileSpecification {
                             )
                     );
                 }
+
+                /*
+                 * =================================================
+                 * Lifestyle
+                 * =================================================
+                 */
+
+                addCaseInsensitiveEquals(
+                        predicates,
+                        criteriaBuilder,
+                        root.get("diet"),
+                        request.getDiet()
+                );
+
+                addCaseInsensitiveEquals(
+                        predicates,
+                        criteriaBuilder,
+                        root.get("smoking"),
+                        request.getSmoking()
+                );
+
+                addCaseInsensitiveEquals(
+                        predicates,
+                        criteriaBuilder,
+                        root.get("drinking"),
+                        request.getDrinking()
+                );
 
                 /*
                  * =================================================

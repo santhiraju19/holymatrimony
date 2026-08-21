@@ -3,7 +3,7 @@ export type BrowseSortOption =
   | "NEWEST"
   | "TRUST_VERIFIED";
 
-  export interface BrowseProfilePhoto {
+export interface BrowseProfilePhoto {
   id: string;
   imageUrl: string;
   primaryPhoto: boolean;
@@ -13,9 +13,14 @@ export type BrowseSortOption =
 export interface BrowseProfile {
   id: string;
   userId: string;
+
   highlightedProfile: boolean;
   verifiedPremiumBadge: boolean;
   boostedProfile: boolean;
+
+  // =====================================================
+  // Basic
+  // =====================================================
 
   fullName: string;
 
@@ -24,20 +29,76 @@ export interface BrowseProfile {
   age: number | null;
   maritalStatus: string | null;
 
+  // =====================================================
+  // Personal Information
+  // =====================================================
+
+  heightCm: number | null;
+  weightKg: number | null;
+
+  complexion: string | null;
+  bodyType: string | null;
+
+  motherTongue: string | null;
+
+  religion: string | null;
+
+  community: string | null;
+  subCommunity: string | null;
+
+  faithBackground: string | null;
+  physicalStatus: string | null;
+
+  diet: string | null;
+  smoking: string | null;
+  drinking: string | null;
+
+  // =====================================================
+  // Church
+  // =====================================================
+
   denomination: string | null;
   churchName: string | null;
+  pastorName: string | null;
+
   baptized: boolean | null;
 
+  // =====================================================
+  // Education / Career
+  // =====================================================
+
   highestEducation: string | null;
+  educationField: string | null;
+
   profession: string | null;
   company: string | null;
+
   annualIncome: string | null;
+
+  // =====================================================
+  // Family
+  // =====================================================
+
+  familyType: string | null;
+  familyValues: string | null;
+
+  // =====================================================
+  // Location
+  // =====================================================
 
   city: string | null;
   state: string | null;
   country: string | null;
 
+  // =====================================================
+  // About
+  // =====================================================
+
   aboutMe: string | null;
+
+  // =====================================================
+  // Completion
+  // =====================================================
 
   completionPercentage: number | null;
   profileCompleted: boolean;
@@ -47,41 +108,16 @@ export interface BrowseProfile {
   // =====================================================
 
   mobileVerified: boolean;
-
-  /*
-   * Approved church verification.
-   */
   churchVerified: boolean;
-
-  /*
-   * Any approved identity document.
-   *
-   * Kept for compatibility with the existing
-   * verification/profile UI.
-   */
   identityVerified: boolean;
 
-  /*
-   * Approved Aadhaar identity document.
-   */
   aadhaarVerified: boolean;
-
-  /*
-   * Approved non-Aadhaar identity document:
-   *
-   * Passport
-   * Driving Licence
-   * Voter ID
-   */
   idVerified: boolean;
 
-    /*
-   * Existing compatibility flag.
-   */
   verifiedProfile: boolean;
 
   // =====================================================
-  // Compatibility Score
+  // Compatibility
   // =====================================================
 
   compatibilityScore: number | null;
@@ -89,8 +125,13 @@ export interface BrowseProfile {
   compatibilityDenominationScore: number | null;
   compatibilityEducationScore: number | null;
 
+  // =====================================================
+  // Photos
+  // =====================================================
+
   primaryPhotoId: string | null;
   primaryPhotoUrl: string | null;
+
   photos: BrowseProfilePhoto[];
 }
 
@@ -116,28 +157,65 @@ export interface BrowsePaginationParams {
 }
 
 export interface BrowseSearchFilters {
+  // =====================================================
+  // Match Basics
+  // =====================================================
+
   ageFrom: string;
   ageTo: string;
 
+  heightFrom: string;
+  heightTo: string;
+
   gender: string;
-  denomination: string;
   maritalStatus: string;
+
+  // =====================================================
+  // Faith & Background
+  // =====================================================
+
+  religion: string;
+  denomination: string;
+  community: string;
+  motherTongue: string;
+
+  baptized: string;
+
+  // =====================================================
+  // Education / Career
+  // =====================================================
+
+  highestEducation: string;
+  profession: string;
+
+  // =====================================================
+  // Location
+  // =====================================================
 
   country: string;
   state: string;
   city: string;
 
-  highestEducation: string;
-  profession: string;
+  // =====================================================
+  // Lifestyle
+  // =====================================================
 
-  baptized: string;
+  diet: string;
+  smoking: string;
+  drinking: string;
 
-  // Trust filters
+  // =====================================================
+  // Trust
+  // =====================================================
+
   aadhaarVerified: string;
   idVerified: string;
   churchVerified: string;
 
-  // Result ordering
+  // =====================================================
+  // Sort
+  // =====================================================
+
   sort: BrowseSortOption;
 }
 
@@ -146,18 +224,29 @@ export interface BrowseSearchParams
   ageFrom?: number;
   ageTo?: number;
 
+  heightFrom?: number;
+  heightTo?: number;
+
   gender?: string;
-  denomination?: string;
   maritalStatus?: string;
+
+  religion?: string;
+  denomination?: string;
+  community?: string;
+  motherTongue?: string;
+
+  baptized?: boolean;
+
+  highestEducation?: string;
+  profession?: string;
 
   country?: string;
   state?: string;
   city?: string;
 
-  highestEducation?: string;
-  profession?: string;
-
-  baptized?: boolean;
+  diet?: string;
+  smoking?: string;
+  drinking?: string;
 
   aadhaarVerified?: boolean;
   idVerified?: boolean;
@@ -166,61 +255,73 @@ export interface BrowseSearchParams
   sort?: BrowseSortOption;
 }
 
-export const EMPTY_BROWSE_SEARCH_FILTERS: BrowseSearchFilters = {
-  ageFrom: "",
-  ageTo: "",
+export const EMPTY_BROWSE_SEARCH_FILTERS: BrowseSearchFilters =
+  {
+    ageFrom: "",
+    ageTo: "",
 
-  gender: "",
-  denomination: "",
-  maritalStatus: "",
+    heightFrom: "",
+    heightTo: "",
 
-  country: "",
-  state: "",
-  city: "",
+    gender: "",
+    maritalStatus: "",
 
-  highestEducation: "",
-  profession: "",
+    religion: "",
+    denomination: "",
+    community: "",
+    motherTongue: "",
 
-  baptized: "",
+    baptized: "",
 
-  aadhaarVerified: "",
-  idVerified: "",
-  churchVerified: "",
+    highestEducation: "",
+    profession: "",
 
-  sort: "RECOMMENDED",
-};
+    country: "",
+    state: "",
+    city: "",
+
+    diet: "",
+    smoking: "",
+    drinking: "",
+
+    aadhaarVerified: "",
+    idVerified: "",
+    churchVerified: "",
+
+    sort: "RECOMMENDED",
+  };
 
 export function hasActiveBrowseFilters(
   filters: BrowseSearchFilters
 ): boolean {
   return (
-    filters.ageFrom.trim().length >
+    filters.ageFrom.trim().length > 0 ||
+    filters.ageTo.trim().length > 0 ||
+    filters.heightFrom.trim().length >
       0 ||
-    filters.ageTo.trim().length >
+    filters.heightTo.trim().length > 0 ||
+    filters.gender.trim().length > 0 ||
+    filters.maritalStatus.trim().length >
       0 ||
-    filters.gender.trim().length >
+    filters.religion.trim().length > 0 ||
+    filters.denomination.trim().length >
       0 ||
-    filters.denomination.trim()
-      .length > 0 ||
-    filters.maritalStatus.trim()
-      .length > 0 ||
-    filters.country.trim().length >
+    filters.community.trim().length > 0 ||
+    filters.motherTongue.trim().length >
       0 ||
-    filters.state.trim().length >
+    filters.baptized.trim().length > 0 ||
+    filters.highestEducation.trim().length >
       0 ||
-    filters.city.trim().length >
-      0 ||
-    filters.highestEducation
-      .trim().length > 0 ||
-    filters.profession.trim()
-      .length > 0 ||
-    filters.baptized.trim().length >
-      0 ||
-    filters.aadhaarVerified ===
-      "true" ||
+    filters.profession.trim().length > 0 ||
+    filters.country.trim().length > 0 ||
+    filters.state.trim().length > 0 ||
+    filters.city.trim().length > 0 ||
+    filters.diet.trim().length > 0 ||
+    filters.smoking.trim().length > 0 ||
+    filters.drinking.trim().length > 0 ||
+    filters.aadhaarVerified === "true" ||
     filters.idVerified === "true" ||
-    filters.churchVerified ===
-      "true" ||
+    filters.churchVerified === "true" ||
     filters.sort !== "RECOMMENDED"
   );
 }
@@ -241,6 +342,12 @@ export function buildBrowseSearchParams(
   const ageTo =
     Number(filters.ageTo);
 
+  const heightFrom =
+    Number(filters.heightFrom);
+
+  const heightTo =
+    Number(filters.heightTo);
+
   if (
     filters.ageFrom.trim() &&
     Number.isInteger(ageFrom)
@@ -258,10 +365,40 @@ export function buildBrowseSearchParams(
   }
 
   if (
+    filters.heightFrom.trim() &&
+    Number.isInteger(heightFrom)
+  ) {
+    params.heightFrom =
+      heightFrom;
+  }
+
+  if (
+    filters.heightTo.trim() &&
+    Number.isInteger(heightTo)
+  ) {
+    params.heightTo =
+      heightTo;
+  }
+
+  if (
     filters.gender.trim()
   ) {
     params.gender =
       filters.gender.trim();
+  }
+
+  if (
+    filters.maritalStatus.trim()
+  ) {
+    params.maritalStatus =
+      filters.maritalStatus.trim();
+  }
+
+  if (
+    filters.religion.trim()
+  ) {
+    params.religion =
+      filters.religion.trim();
   }
 
   if (
@@ -272,10 +409,47 @@ export function buildBrowseSearchParams(
   }
 
   if (
-    filters.maritalStatus.trim()
+    filters.community.trim()
   ) {
-    params.maritalStatus =
-      filters.maritalStatus.trim();
+    params.community =
+      filters.community.trim();
+  }
+
+  if (
+    filters.motherTongue.trim()
+  ) {
+    params.motherTongue =
+      filters.motherTongue.trim();
+  }
+
+  if (
+    filters.baptized ===
+    "true"
+  ) {
+    params.baptized =
+      true;
+  }
+
+  if (
+    filters.baptized ===
+    "false"
+  ) {
+    params.baptized =
+      false;
+  }
+
+  if (
+    filters.highestEducation.trim()
+  ) {
+    params.highestEducation =
+      filters.highestEducation.trim();
+  }
+
+  if (
+    filters.profession.trim()
+  ) {
+    params.profession =
+      filters.profession.trim();
   }
 
   if (
@@ -300,38 +474,25 @@ export function buildBrowseSearchParams(
   }
 
   if (
-    filters.highestEducation.trim()
+    filters.diet.trim()
   ) {
-    params.highestEducation =
-      filters.highestEducation.trim();
+    params.diet =
+      filters.diet.trim();
   }
 
   if (
-    filters.profession.trim()
+    filters.smoking.trim()
   ) {
-    params.profession =
-      filters.profession.trim();
+    params.smoking =
+      filters.smoking.trim();
   }
 
   if (
-    filters.baptized ===
-    "true"
+    filters.drinking.trim()
   ) {
-    params.baptized =
-      true;
+    params.drinking =
+      filters.drinking.trim();
   }
-
-  if (
-    filters.baptized ===
-    "false"
-  ) {
-    params.baptized =
-      false;
-  }
-
-  // =====================================================
-  // Verification Filters
-  // =====================================================
 
   if (
     filters.aadhaarVerified ===
