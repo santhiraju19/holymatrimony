@@ -38,6 +38,7 @@ export default function ProfilePhotoGallery({
         photos
           .map((photo) => ({
             ...photo,
+
             resolvedUrl:
               resolveBrowsePhotoUrl(
                 photo.imageUrl
@@ -88,11 +89,16 @@ export default function ProfilePhotoGallery({
       return [
         {
           id: "primary",
+
           imageUrl:
             primaryPhotoUrl ?? "",
+
           primaryPhoto: true,
+
           displayOrder: 0,
-          resolvedUrl: fallback,
+
+          resolvedUrl:
+            fallback,
         },
       ];
     }, [
@@ -207,6 +213,14 @@ export default function ProfilePhotoGallery({
     );
   }
 
+  function preventImageAction(
+    event:
+      | React.MouseEvent
+      | React.DragEvent
+  ) {
+    event.preventDefault();
+  }
+
   if (
     normalizedPhotos.length ===
     0
@@ -237,14 +251,29 @@ export default function ProfilePhotoGallery({
 
   return (
     <>
-      <div className="relative h-full min-h-[310px] overflow-hidden bg-slate-100">
+      {/* =====================================================
+          Main profile photo
+          ===================================================== */}
 
+      <div
+        className="relative h-full min-h-[310px] overflow-hidden bg-slate-100"
+        onContextMenu={
+          preventImageAction
+        }
+      >
         <img
           src={
             activePhoto.resolvedUrl
           }
           alt={`${displayName} profile photo ${activeIndex + 1}`}
-          className="absolute inset-0 h-full w-full object-cover"
+          draggable={false}
+          onDragStart={
+            preventImageAction
+          }
+          onContextMenu={
+            preventImageAction
+          }
+          className="absolute inset-0 h-full w-full select-none object-cover"
         />
 
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10" />
@@ -267,7 +296,9 @@ export default function ProfilePhotoGallery({
 
             <button
               type="button"
-              onClick={next}
+              onClick={
+                next
+              }
               aria-label="Next photo"
               className="absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/30 text-white backdrop-blur transition hover:bg-black/50"
             >
@@ -306,9 +337,18 @@ export default function ProfilePhotoGallery({
         )}
       </div>
 
+      {/* =====================================================
+          Thumbnail gallery
+          ===================================================== */}
+
       {normalizedPhotos.length >
         1 && (
-        <div className="flex gap-2 overflow-x-auto border-t border-slate-200 bg-white p-2">
+        <div
+          className="flex gap-2 overflow-x-auto border-t border-slate-200 bg-white p-2"
+          onContextMenu={
+            preventImageAction
+          }
+        >
           {normalizedPhotos.map(
             (
               photo,
@@ -338,7 +378,16 @@ export default function ProfilePhotoGallery({
                     photo.resolvedUrl
                   }
                   alt=""
-                  className="h-full w-full object-cover"
+                  draggable={
+                    false
+                  }
+                  onDragStart={
+                    preventImageAction
+                  }
+                  onContextMenu={
+                    preventImageAction
+                  }
+                  className="h-full w-full select-none object-cover"
                 />
 
                 {photo.primaryPhoto && (
@@ -352,8 +401,17 @@ export default function ProfilePhotoGallery({
         </div>
       )}
 
+      {/* =====================================================
+          Protected lightbox
+          ===================================================== */}
+
       {lightboxOpen && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/95 p-4">
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/95 p-4"
+          onContextMenu={
+            preventImageAction
+          }
+        >
           <button
             type="button"
             onClick={() =>
@@ -385,7 +443,9 @@ export default function ProfilePhotoGallery({
 
               <button
                 type="button"
-                onClick={next}
+                onClick={
+                  next
+                }
                 aria-label="Next photo"
                 className="absolute right-3 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition hover:bg-white/20 sm:right-6"
               >
@@ -401,7 +461,14 @@ export default function ProfilePhotoGallery({
               activePhoto.resolvedUrl
             }
             alt={`${displayName} profile photo ${activeIndex + 1}`}
-            className="max-h-[90vh] max-w-[92vw] object-contain shadow-2xl"
+            draggable={false}
+            onDragStart={
+              preventImageAction
+            }
+            onContextMenu={
+              preventImageAction
+            }
+            className="max-h-[90vh] max-w-[92vw] select-none object-contain shadow-2xl"
           />
 
           <div className="absolute bottom-5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">

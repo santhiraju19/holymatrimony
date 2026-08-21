@@ -11,9 +11,15 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
 
+import java.awt.AlphaComposite;
 import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+
+import java.awt.geom.AffineTransform;
+
 import java.awt.image.BufferedImage;
 
 import java.io.IOException;
@@ -22,7 +28,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 
 import java.util.Iterator;
 import java.util.Locale;
@@ -32,12 +37,17 @@ import java.util.UUID;
 @Service
 public class PhotoStorageService {
 
+    /*
+     * ============================================================
+     * UPLOAD RULES
+     * ============================================================
+     */
+
     private static final Set<String>
             ALLOWED_TYPES =
             Set.of(
                     "image/jpeg",
-                    "image/png",
-                    "image/webp"
+                    "image/png"
             );
 
     private static final long
@@ -51,6 +61,28 @@ public class PhotoStorageService {
     private static final float
             JPEG_QUALITY =
             0.82f;
+
+    /*
+     * ============================================================
+     * WATERMARK
+     * ============================================================
+     */
+
+    private static final String
+            WATERMARK_PRIMARY =
+            "HOLY MATRIMONY";
+
+    private static final String
+            WATERMARK_SECONDARY =
+            "theholymatrimony.com";
+
+    private static final float
+            CENTER_WATERMARK_ALPHA =
+            0.14f;
+
+    private static final float
+            CORNER_WATERMARK_ALPHA =
+            0.72f;
 
     private final Path storageDirectory;
 
@@ -93,7 +125,7 @@ public class PhotoStorageService {
 
     /*
      * ============================================================
-     * Store Photo
+     * STORE PHOTO
      * ============================================================
      */
 
@@ -101,9 +133,7 @@ public class PhotoStorageService {
             MultipartFile file
     ) {
 
-        validate(
-                file
-        );
+        validate(file);
 
         String originalFileName =
                 StringUtils.cleanPath(
@@ -112,38 +142,19 @@ public class PhotoStorageService {
                                 : file.getOriginalFilename()
                 );
 
-        String contentType =
-                file.getContentType()
-                        .toLowerCase(
-                                Locale.ROOT
-                        );
-
         /*
-         * WebP is already a compressed web format.
+         * Every accepted upload follows the same secure pipeline:
          *
-         * Standard Java ImageIO does not provide reliable WebP
-         * support without an additional codec, so preserve WebP
-         * uploads as-is.
+         * 1. Decode image
+         * 2. Remove embedded metadata by re-rendering
+         * 3. Resize when necessary
+         * 4. Convert to RGB
+         * 5. Apply permanent Holy Matrimony watermark
+         * 6. Encode as JPEG
+         * 7. Store using a random UUID filename
          */
 
-        if (
-                "image/webp".equals(
-                        contentType
-                )
-        ) {
-
-            return storeWebp(
-                    file,
-                    originalFileName
-            );
-        }
-
-        /*
-         * JPEG and PNG uploads are decoded, resized when necessary,
-         * and normalized to compressed JPEG.
-         */
-
-        return storeOptimizedJpeg(
+        return storeProtectedJpeg(
                 file,
                 originalFileName
         );
@@ -151,11 +162,11 @@ public class PhotoStorageService {
 
     /*
      * ============================================================
-     * Optimized JPEG Storage
+     * PROTECTED JPEG STORAGE
      * ============================================================
      */
 
-    private StoredPhoto storeOptimizedJpeg(
+    private StoredPhoto storeProtectedJpeg(
             MultipartFile file,
             String originalFileName
     ) {
@@ -194,6 +205,11 @@ public class PhotoStorageService {
                         sourceImage
                 );
 
+        BufferedImage protectedImage =
+                applyWatermark(
+                        optimizedImage
+                );
+
         String storedFileName =
                 UUID.randomUUID()
                         + ".jpg";
@@ -204,7 +220,7 @@ public class PhotoStorageService {
                 );
 
         writeJpeg(
-                optimizedImage,
+                protectedImage,
                 targetPath
         );
 
@@ -242,54 +258,7 @@ public class PhotoStorageService {
 
     /*
      * ============================================================
-     * WebP Storage
-     * ============================================================
-     */
-
-    private StoredPhoto storeWebp(
-            MultipartFile file,
-            String originalFileName
-    ) {
-
-        String storedFileName =
-                UUID.randomUUID()
-                        + ".webp";
-
-        Path targetPath =
-                resolveTargetPath(
-                        storedFileName
-                );
-
-        try {
-
-            Files.copy(
-                    file.getInputStream(),
-                    targetPath,
-                    StandardCopyOption.REPLACE_EXISTING
-            );
-
-        } catch (IOException exception) {
-
-            throw new IllegalStateException(
-                    "Could not store profile photo",
-                    exception
-            );
-        }
-
-        return new StoredPhoto(
-                originalFileName,
-                storedFileName,
-                buildPublicUrl(
-                        storedFileName
-                ),
-                "image/webp",
-                file.getSize()
-        );
-    }
-
-    /*
-     * ============================================================
-     * Resize
+     * RESIZE + METADATA STRIPPING
      * ============================================================
      */
 
@@ -361,19 +330,24 @@ public class PhotoStorageService {
 
         try {
 
-            graphics.setRenderingHint(
-                    RenderingHints.KEY_INTERPOLATION,
-                    RenderingHints.VALUE_INTERPOLATION_BICUBIC
+            configureHighQualityGraphics(
+                    graphics
             );
 
-            graphics.setRenderingHint(
-                    RenderingHints.KEY_RENDERING,
-                    RenderingHints.VALUE_RENDER_QUALITY
+            /*
+             * White background prevents transparent PNG areas
+             * from becoming black after conversion to JPEG.
+             */
+
+            graphics.setColor(
+                    Color.WHITE
             );
 
-            graphics.setRenderingHint(
-                    RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON
+            graphics.fillRect(
+                    0,
+                    0,
+                    targetWidth,
+                    targetHeight
             );
 
             graphics.drawImage(
@@ -395,21 +369,13 @@ public class PhotoStorageService {
 
     /*
      * ============================================================
-     * Convert To RGB
+     * CONVERT TO RGB
      * ============================================================
      */
 
     private BufferedImage convertToRgb(
             BufferedImage source
     ) {
-
-        if (
-                source.getType() ==
-                        BufferedImage.TYPE_INT_RGB
-        ) {
-
-            return source;
-        }
 
         BufferedImage rgbImage =
                 new BufferedImage(
@@ -422,6 +388,21 @@ public class PhotoStorageService {
                 rgbImage.createGraphics();
 
         try {
+
+            configureHighQualityGraphics(
+                    graphics
+            );
+
+            graphics.setColor(
+                    Color.WHITE
+            );
+
+            graphics.fillRect(
+                    0,
+                    0,
+                    source.getWidth(),
+                    source.getHeight()
+            );
 
             graphics.drawImage(
                     source,
@@ -440,7 +421,413 @@ public class PhotoStorageService {
 
     /*
      * ============================================================
-     * JPEG Writer
+     * WATERMARK
+     * ============================================================
+     */
+
+    private BufferedImage applyWatermark(
+            BufferedImage source
+    ) {
+
+        BufferedImage protectedImage =
+                new BufferedImage(
+                        source.getWidth(),
+                        source.getHeight(),
+                        BufferedImage.TYPE_INT_RGB
+                );
+
+        Graphics2D graphics =
+                protectedImage.createGraphics();
+
+        try {
+
+            configureHighQualityGraphics(
+                    graphics
+            );
+
+            graphics.drawImage(
+                    source,
+                    0,
+                    0,
+                    null
+            );
+
+            drawCenterWatermark(
+                    graphics,
+                    protectedImage.getWidth(),
+                    protectedImage.getHeight()
+            );
+
+            drawCornerWatermark(
+                    graphics,
+                    protectedImage.getWidth(),
+                    protectedImage.getHeight()
+            );
+
+        } finally {
+
+            graphics.dispose();
+        }
+
+        return protectedImage;
+    }
+
+    /*
+     * Large translucent watermark across the central area.
+     *
+     * This makes simple cropping substantially less useful while
+     * keeping the member's photograph clearly visible.
+     */
+
+    private void drawCenterWatermark(
+            Graphics2D graphics,
+            int imageWidth,
+            int imageHeight
+    ) {
+
+        int minimumDimension =
+                Math.min(
+                        imageWidth,
+                        imageHeight
+                );
+
+        int fontSize =
+                Math.max(
+                        28,
+                        Math.min(
+                                86,
+                                minimumDimension /
+                                        10
+                        )
+                );
+
+        Font watermarkFont =
+                new Font(
+                        Font.SANS_SERIF,
+                        Font.BOLD,
+                        fontSize
+                );
+
+        graphics.setFont(
+                watermarkFont
+        );
+
+        graphics.setComposite(
+                AlphaComposite.getInstance(
+                        AlphaComposite.SRC_OVER,
+                        CENTER_WATERMARK_ALPHA
+                )
+        );
+
+        graphics.setColor(
+                Color.WHITE
+        );
+
+        FontMetrics metrics =
+                graphics.getFontMetrics(
+                        watermarkFont
+                );
+
+        int textWidth =
+                metrics.stringWidth(
+                        WATERMARK_PRIMARY
+                );
+
+        AffineTransform originalTransform =
+                graphics.getTransform();
+
+        try {
+
+            graphics.rotate(
+                    Math.toRadians(
+                            -24
+                    ),
+                    imageWidth /
+                            2.0,
+                    imageHeight /
+                            2.0
+            );
+
+            int x =
+                    (
+                            imageWidth -
+                                    textWidth
+                    ) /
+                            2;
+
+            int y =
+                    imageHeight /
+                            2;
+
+            /*
+             * Dark shadow improves visibility on bright photos.
+             */
+
+            graphics.setColor(
+                    Color.BLACK
+            );
+
+            graphics.drawString(
+                    WATERMARK_PRIMARY,
+                    x + 2,
+                    y + 2
+            );
+
+            graphics.setColor(
+                    Color.WHITE
+            );
+
+            graphics.drawString(
+                    WATERMARK_PRIMARY,
+                    x,
+                    y
+            );
+
+        } finally {
+
+            graphics.setTransform(
+                    originalTransform
+            );
+        }
+    }
+
+    /*
+     * Branded footer watermark.
+     */
+
+    private void drawCornerWatermark(
+            Graphics2D graphics,
+            int imageWidth,
+            int imageHeight
+    ) {
+
+        int minimumDimension =
+                Math.min(
+                        imageWidth,
+                        imageHeight
+                );
+
+        int primaryFontSize =
+                Math.max(
+                        15,
+                        Math.min(
+                                28,
+                                minimumDimension /
+                                        32
+                        )
+                );
+
+        int secondaryFontSize =
+                Math.max(
+                        11,
+                        Math.min(
+                                20,
+                                minimumDimension /
+                                        44
+                        )
+                );
+
+        int padding =
+                Math.max(
+                        16,
+                        minimumDimension /
+                                40
+                );
+
+        Font primaryFont =
+                new Font(
+                        Font.SANS_SERIF,
+                        Font.BOLD,
+                        primaryFontSize
+                );
+
+        Font secondaryFont =
+                new Font(
+                        Font.SANS_SERIF,
+                        Font.PLAIN,
+                        secondaryFontSize
+                );
+
+        graphics.setComposite(
+                AlphaComposite.getInstance(
+                        AlphaComposite.SRC_OVER,
+                        CORNER_WATERMARK_ALPHA
+                )
+        );
+
+        graphics.setFont(
+                primaryFont
+        );
+
+        FontMetrics primaryMetrics =
+                graphics.getFontMetrics(
+                        primaryFont
+                );
+
+        graphics.setFont(
+                secondaryFont
+        );
+
+        FontMetrics secondaryMetrics =
+                graphics.getFontMetrics(
+                        secondaryFont
+                );
+
+        int primaryWidth =
+                primaryMetrics.stringWidth(
+                        WATERMARK_PRIMARY
+                );
+
+        int secondaryWidth =
+                secondaryMetrics.stringWidth(
+                        WATERMARK_SECONDARY
+                );
+
+        int blockWidth =
+                Math.max(
+                        primaryWidth,
+                        secondaryWidth
+                );
+
+        int blockHeight =
+                primaryMetrics.getHeight()
+                        +
+                        secondaryMetrics.getHeight()
+                        +
+                        10;
+
+        int blockX =
+                imageWidth -
+                        blockWidth -
+                        (
+                                padding *
+                                        2
+                        );
+
+        int blockY =
+                imageHeight -
+                        blockHeight -
+                        padding;
+
+        blockX =
+                Math.max(
+                        padding,
+                        blockX
+                );
+
+        blockY =
+                Math.max(
+                        padding,
+                        blockY
+                );
+
+        /*
+         * Semi-transparent dark panel.
+         */
+
+        graphics.setColor(
+                new Color(
+                        0,
+                        0,
+                        0,
+                        130
+                )
+        );
+
+        graphics.fillRoundRect(
+                blockX,
+                blockY,
+                blockWidth +
+                        padding,
+                blockHeight,
+                18,
+                18
+        );
+
+        int textX =
+                blockX +
+                        (
+                                padding /
+                                        2
+                        );
+
+        int primaryBaseline =
+                blockY +
+                        primaryMetrics.getAscent()
+                        +
+                        6;
+
+        graphics.setFont(
+                primaryFont
+        );
+
+        graphics.setColor(
+                Color.WHITE
+        );
+
+        graphics.drawString(
+                WATERMARK_PRIMARY,
+                textX,
+                primaryBaseline
+        );
+
+        int secondaryBaseline =
+                primaryBaseline +
+                        secondaryMetrics.getHeight();
+
+        graphics.setFont(
+                secondaryFont
+        );
+
+        graphics.setColor(
+                new Color(
+                        235,
+                        210,
+                        120
+                )
+        );
+
+        graphics.drawString(
+                WATERMARK_SECONDARY,
+                textX,
+                secondaryBaseline
+        );
+    }
+
+    /*
+     * ============================================================
+     * GRAPHICS QUALITY
+     * ============================================================
+     */
+
+    private void configureHighQualityGraphics(
+            Graphics2D graphics
+    ) {
+
+        graphics.setRenderingHint(
+                RenderingHints.KEY_INTERPOLATION,
+                RenderingHints.VALUE_INTERPOLATION_BICUBIC
+        );
+
+        graphics.setRenderingHint(
+                RenderingHints.KEY_RENDERING,
+                RenderingHints.VALUE_RENDER_QUALITY
+        );
+
+        graphics.setRenderingHint(
+                RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_ON
+        );
+
+        graphics.setRenderingHint(
+                RenderingHints.KEY_TEXT_ANTIALIASING,
+                RenderingHints.VALUE_TEXT_ANTIALIAS_ON
+        );
+    }
+
+    /*
+     * ============================================================
+     * JPEG WRITER
      * ============================================================
      */
 
@@ -495,6 +882,13 @@ public class PhotoStorageService {
                 );
             }
 
+            /*
+             * No source metadata object is supplied.
+             *
+             * This intentionally strips EXIF/GPS/camera metadata
+             * from the member-facing image.
+             */
+
             writer.write(
                     null,
                     new IIOImage(
@@ -512,7 +906,7 @@ public class PhotoStorageService {
             );
 
             throw new IllegalStateException(
-                    "Could not store optimized profile photo.",
+                    "Could not store protected profile photo.",
                     exception
             );
 
@@ -524,7 +918,7 @@ public class PhotoStorageService {
 
     /*
      * ============================================================
-     * Delete
+     * DELETE
      * ============================================================
      */
 
@@ -563,7 +957,7 @@ public class PhotoStorageService {
 
     /*
      * ============================================================
-     * Validation
+     * VALIDATION
      * ============================================================
      */
 
@@ -596,7 +990,7 @@ public class PhotoStorageService {
         ) {
 
             throw new IllegalArgumentException(
-                    "Only JPEG, PNG and WebP images are allowed"
+                    "Only JPEG and PNG profile photos are allowed"
             );
         }
 
@@ -613,7 +1007,7 @@ public class PhotoStorageService {
 
     /*
      * ============================================================
-     * Path Helpers
+     * PATH HELPERS
      * ============================================================
      */
 
@@ -667,7 +1061,8 @@ public class PhotoStorageService {
             normalized =
                     normalized.substring(
                             0,
-                            normalized.length() - 1
+                            normalized.length() -
+                                    1
                     );
         }
 
@@ -679,8 +1074,10 @@ public class PhotoStorageService {
     ) {
 
         return publicUrlPrefix
-                + "/"
-                + storedFileName;
+                +
+                "/"
+                +
+                storedFileName;
     }
 
     private void deleteQuietly(
@@ -703,7 +1100,7 @@ public class PhotoStorageService {
 
     /*
      * ============================================================
-     * Result
+     * RESULT
      * ============================================================
      */
 

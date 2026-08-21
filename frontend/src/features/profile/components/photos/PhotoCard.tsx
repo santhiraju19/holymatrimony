@@ -1,6 +1,10 @@
 "use client";
 
-import { Eye, Star, Trash2 } from "lucide-react";
+import {
+  Eye,
+  Star,
+  Trash2,
+} from "lucide-react";
 
 interface PhotoCardProps {
   preview: string;
@@ -19,15 +23,32 @@ export default function PhotoCard({
 }: PhotoCardProps) {
   return (
     <div className="group overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-      <div className="relative aspect-[4/5] overflow-hidden bg-slate-100">
+      <div
+        className="relative aspect-[4/5] overflow-hidden bg-slate-100"
+        onContextMenu={(event) =>
+          event.preventDefault()
+        }
+      >
         <img
           src={preview}
           alt="Profile Photo"
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          draggable={false}
+          onDragStart={(event) =>
+            event.preventDefault()
+          }
+          onContextMenu={(event) =>
+            event.preventDefault()
+          }
+          className="absolute inset-0 h-full w-full select-none object-cover transition-transform duration-300 group-hover:scale-105"
           loading="lazy"
           onError={(event) => {
-            console.error("Failed to load profile photo:", preview);
-            event.currentTarget.style.display = "none";
+            console.error(
+              "Failed to load profile photo:",
+              preview
+            );
+
+            event.currentTarget.style.display =
+              "none";
           }}
         />
 
@@ -60,8 +81,14 @@ export default function PhotoCard({
               : "bg-[#0B2D5C] text-white hover:bg-[#17407a]"
           }`}
         >
-          <Star size={16} className="mr-1 inline" />
-          {isPrimary ? "Primary" : "Make Primary"}
+          <Star
+            size={16}
+            className="mr-1 inline"
+          />
+
+          {isPrimary
+            ? "Primary"
+            : "Make Primary"}
         </button>
 
         <button

@@ -50,13 +50,19 @@ interface PhotoUploadProps {
 }
 
 const MAX_PHOTOS = 6;
+
 const MAX_FILE_SIZE =
   10 * 1024 * 1024;
 
+/*
+ * The secured backend photo pipeline accepts JPEG and PNG.
+ *
+ * WebP is intentionally excluded so frontend validation
+ * matches backend validation exactly.
+ */
 const ALLOWED_FILE_TYPES = [
   "image/jpeg",
   "image/png",
-  "image/webp",
 ];
 
 function mapApiPhoto(
@@ -64,11 +70,14 @@ function mapApiPhoto(
 ): PhotoItem {
   return {
     id: photo.id,
+
     preview: resolvePhotoUrl(
       photo.imageUrl
     ),
+
     isPrimary:
       photo.primaryPhoto,
+
     displayOrder:
       photo.displayOrder,
   };
@@ -169,8 +178,10 @@ export default function PhotoUpload({
 
             photoInfo: {
               ...currentProfile.photoInfo,
+
               photos:
                 sortedPhotos,
+
               primaryPhoto:
                 primaryPhotoId,
             },
@@ -236,7 +247,7 @@ export default function PhotoUpload({
         file.type
       )
     ) {
-      return `${file.name}: only JPEG, PNG and WebP images are allowed.`;
+      return `${file.name}: only JPEG and PNG images are allowed.`;
     }
 
     if (
@@ -541,7 +552,6 @@ export default function PhotoUpload({
 
   return (
     <div className="space-y-4">
-
       {/* =====================================================
           Main Card
           ===================================================== */}
@@ -578,8 +588,6 @@ export default function PhotoUpload({
         </div>
 
         <div className="p-4 sm:p-5">
-          {/* Photo rules */}
-
           <div className="grid gap-2.5 sm:grid-cols-3">
             <InfoTile
               icon={
@@ -628,8 +636,6 @@ export default function PhotoUpload({
               }
             />
           </div>
-
-          {/* Status */}
 
           {loading && (
             <StatusPanel
@@ -702,8 +708,6 @@ export default function PhotoUpload({
               {error}
             </StatusPanel>
           )}
-
-          {/* Upload */}
 
           {!loading &&
             photos.length <
