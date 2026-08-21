@@ -8,6 +8,8 @@ import com.theholymatrimony.backend.verification.entity.MemberVerification;
 import com.theholymatrimony.backend.verification.enums.VerificationStatus;
 import com.theholymatrimony.backend.verification.enums.VerificationType;
 import com.theholymatrimony.backend.verification.repository.MemberVerificationRepository;
+import com.theholymatrimony.backend.membership.entitlement.MembershipEntitlementService;
+import com.theholymatrimony.backend.membership.entitlement.MembershipFeature;
 
 import jakarta.persistence.EntityNotFoundException;
 
@@ -43,6 +45,9 @@ public class ChurchProofService {
     private final ChurchProofStorageService
             storageService;
 
+            private final MembershipEntitlementService
+        membershipEntitlementService;
+
     /*
      * ============================================================
      * SUBMIT CHURCH VERIFICATION
@@ -76,6 +81,13 @@ public class ChurchProofService {
         validateChurchProfile(
                 user
         );
+
+        boolean priorityVerification =
+        membershipEntitlementService
+                .hasFeature(
+                        user.getId(),
+                        MembershipFeature.PRIORITY_CHURCH_VERIFICATION
+                );
 
         String normalizedPastorName =
                 normalize(
@@ -227,6 +239,10 @@ public class ChurchProofService {
             submission.setMembershipId(
                     normalizedMembershipId
             );
+
+            submission.setPriorityVerification(
+        priorityVerification
+);
 
             /*
              * If a new document was supplied, replace the existing

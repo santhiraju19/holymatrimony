@@ -60,9 +60,11 @@ export interface AdminMemberVerification {
    * ============================================================
    */
 
-  hasChurchSubmission: boolean;
+hasChurchSubmission: boolean;
 
-  churchVerificationMethod?:
+priorityChurchVerification: boolean;
+
+churchVerificationMethod?:
     | ChurchVerificationMethod
     | null;
 

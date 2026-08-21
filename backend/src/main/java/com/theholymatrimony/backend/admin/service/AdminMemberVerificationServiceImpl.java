@@ -557,10 +557,14 @@ public class AdminMemberVerificationServiceImpl
                             .isBlank();
 
             builder
-                    .churchVerificationMethod(
-                            churchSubmission
-                                    .getVerificationMethod()
-                    )
+        .priorityChurchVerification(
+                churchSubmission
+                        .isPriorityVerification()
+        )
+        .churchVerificationMethod(
+                churchSubmission
+                        .getVerificationMethod()
+        )
                     .churchPastorName(
                             churchSubmission
                                     .getPastorName()

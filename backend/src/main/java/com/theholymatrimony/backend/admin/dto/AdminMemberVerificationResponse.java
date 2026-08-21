@@ -65,6 +65,9 @@ public class AdminMemberVerificationResponse {
 
     private boolean hasChurchSubmission;
 
+private boolean priorityChurchVerification;
+
+
     private ChurchVerificationMethod churchVerificationMethod;
 
     private String churchPastorName;

@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   Church,
+  Crown,
   Eye,
   FileText,
   Loader2,
@@ -736,6 +737,12 @@ export default function AdminVerificationDetailPage() {
       .verificationType ===
     "CHURCH";
 
+  const isPriorityChurchVerification =
+    isChurch &&
+    verification
+      .priorityChurchVerification ===
+      true;
+
   const churchMethod =
     verification
       .churchVerificationMethod;
@@ -818,18 +825,36 @@ export default function AdminVerificationDetailPage() {
 
             </div>
 
-            <span
-              className={`inline-flex w-fit items-center rounded-full border px-4 py-2 text-xs font-black ${getStatusClasses(
-                verification.verificationStatus
-              )}`}
-            >
-              {verification
-                .verificationStatus
-                .replaceAll(
-                  "_",
-                  " "
-                )}
-            </span>
+            <div className="flex flex-col items-start gap-2 sm:items-end">
+
+              <span
+                className={`inline-flex w-fit items-center rounded-full border px-4 py-2 text-xs font-black ${getStatusClasses(
+                  verification.verificationStatus
+                )}`}
+              >
+                {verification
+                  .verificationStatus
+                  .replaceAll(
+                    "_",
+                    " "
+                  )}
+              </span>
+
+              {isPriorityChurchVerification && (
+
+                <span className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-100 px-4 py-2 text-xs font-black text-amber-900 shadow-sm">
+
+                  <Crown
+                    size={15}
+                  />
+
+                  Priority Church Verification
+
+                </span>
+
+              )}
+
+            </div>
 
           </div>
 
@@ -1065,6 +1090,20 @@ export default function AdminVerificationDetailPage() {
                 <h2 className="text-lg font-black text-[#0B2D5C]">
                   Church Verification Submission
                 </h2>
+
+                {isPriorityChurchVerification && (
+
+                  <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black text-amber-800">
+
+                    <Crown
+                      size={13}
+                    />
+
+                    Platinum Priority Review
+
+                  </div>
+
+                )}
 
                 <p className="mt-1 text-sm text-slate-500">
                   Review how the member has chosen to verify their church affiliation.

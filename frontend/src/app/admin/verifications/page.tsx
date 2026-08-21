@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import {
+  Crown,
   Eye,
   Loader2,
   Search,
@@ -32,8 +33,7 @@ function formatDate(
     return "—";
   }
 
-  const date =
-    new Date(value);
+  const date = new Date(value);
 
   if (
     Number.isNaN(
@@ -62,6 +62,33 @@ function statusClasses(
     default:
       return "bg-slate-100 text-slate-600";
   }
+}
+
+function formatVerificationType(
+  type: VerificationType
+): string {
+  switch (type) {
+    case "MOBILE":
+      return "Mobile";
+
+    case "CHURCH":
+      return "Church";
+
+    case "IDENTITY":
+      return "Identity";
+
+    default:
+      return type;
+  }
+}
+
+function isPriorityChurchVerification(
+  verification: AdminMemberVerification
+): boolean {
+  return (
+    verification.verificationType === "CHURCH" &&
+    verification.priorityChurchVerification === true
+  );
 }
 
 export default function AdminVerificationsPage() {
@@ -126,8 +153,7 @@ export default function AdminVerificationsPage() {
           loadError
         ) {
           setError(
-            loadError instanceof
-              Error
+            loadError instanceof Error
               ? loadError.message
               : "Unable to load verification requests."
           );
@@ -164,8 +190,7 @@ export default function AdminVerificationsPage() {
             </h1>
 
             <p className="mt-2 text-sm text-blue-100">
-              Review church and identity
-              verification requests.
+              Review church and identity verification requests.
             </p>
           </div>
         </div>
@@ -258,8 +283,7 @@ export default function AdminVerificationsPage() {
             className="animate-spin text-[#0B2D5C]"
           />
         </div>
-      ) : verifications.length ===
-        0 ? (
+      ) : verifications.length === 0 ? (
         <div className="rounded-3xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
           <ShieldCheck
             size={30}
@@ -293,6 +317,10 @@ export default function AdminVerificationsPage() {
                   </th>
 
                   <th className="px-5 py-4 text-left text-xs font-black uppercase tracking-wide text-slate-500">
+                    Priority
+                  </th>
+
+                  <th className="px-5 py-4 text-left text-xs font-black uppercase tracking-wide text-slate-500">
                     Submitted
                   </th>
 
@@ -304,68 +332,109 @@ export default function AdminVerificationsPage() {
 
               <tbody className="divide-y divide-slate-100">
                 {verifications.map(
-                  (verification) => (
-                    <tr
-                      key={
-                        verification.id
-                      }
-                      className="hover:bg-slate-50"
-                    >
-                      <td className="px-5 py-4">
-                        <p className="font-bold text-slate-900">
-                          {
-                            verification.fullName
-                          }
-                        </p>
+                  (verification) => {
+                    const priority =
+                      isPriorityChurchVerification(
+                        verification
+                      );
 
-                        <p className="mt-1 text-xs text-slate-500">
-                          {
-                            verification.email
-                          }
-                        </p>
-                      </td>
-
-                      <td className="px-5 py-4 text-sm font-bold text-[#0B2D5C]">
-                        {
-                          verification.verificationType
+                    return (
+                      <tr
+                        key={
+                          verification.id
                         }
-                      </td>
+                        className={
+                          priority
+                            ? "bg-amber-50/40 hover:bg-amber-50/70"
+                            : "hover:bg-slate-50"
+                        }
+                      >
+                        <td className="px-5 py-4">
+                          <p className="font-bold text-slate-900">
+                            {
+                              verification.fullName
+                            }
+                          </p>
 
-                      <td className="px-5 py-4">
-                        <span
-                          className={[
-                            "inline-flex rounded-full px-3 py-1 text-xs font-black",
-                            statusClasses(
-                              verification.verificationStatus
-                            ),
-                          ].join(
-                            " "
-                          )}
-                        >
+                          <p className="mt-1 text-xs text-slate-500">
+                            {
+                              verification.email
+                            }
+                          </p>
+                        </td>
+
+                        <td className="px-5 py-4 text-sm font-bold text-[#0B2D5C]">
                           {
-                            verification.verificationStatus
+                            formatVerificationType(
+                              verification.verificationType
+                            )
                           }
-                        </span>
-                      </td>
+                        </td>
 
-                      <td className="px-5 py-4 text-sm text-slate-500">
-                        {formatDate(
-                          verification.submittedAt
-                        )}
-                      </td>
+                        <td className="px-5 py-4">
+                          <span
+                            className={[
+                              "inline-flex rounded-full px-3 py-1 text-xs font-black",
+                              statusClasses(
+                                verification.verificationStatus
+                              ),
+                            ].join(
+                              " "
+                            )}
+                          >
+                            {
+                              verification.verificationStatus
+                            }
+                          </span>
+                        </td>
 
-                      <td className="px-5 py-4 text-right">
-                        <Link
-                          href={`/admin/verifications/${verification.id}`}
-                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-[#0B2D5C] transition hover:border-[#0B2D5C] hover:bg-blue-50"
-                        >
-                          <Eye size={15} />
+                        <td className="px-5 py-4">
+                          {priority ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-xs font-black text-amber-800 shadow-sm">
+                              <Crown
+                                size={14}
+                              />
 
-                          Review
-                        </Link>
-                      </td>
-                    </tr>
-                  )
+                              Priority
+                            </span>
+                          ) : verification.verificationType ===
+                            "CHURCH" ? (
+                            <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">
+                              Standard
+                            </span>
+                          ) : (
+                            <span className="text-sm text-slate-400">
+                              —
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-5 py-4 text-sm text-slate-500">
+                          {formatDate(
+                            verification.submittedAt
+                          )}
+                        </td>
+
+                        <td className="px-5 py-4 text-right">
+                          <Link
+                            href={`/admin/verifications/${verification.id}`}
+                            className={[
+                              "inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold transition",
+                              priority
+                                ? "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                                : "border-slate-200 text-[#0B2D5C] hover:border-[#0B2D5C] hover:bg-blue-50",
+                            ].join(
+                              " "
+                            )}
+                          >
+                            <Eye size={15} />
+
+                            Review
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  }
                 )}
               </tbody>
             </table>

@@ -107,15 +107,29 @@ public class ChurchVerificationSubmission {
             name = "membership_id",
             length = 150
     )
-    private String membershipId;
+  private String membershipId;
 
-    /*
-     * ============================================================
-     * Optional Supporting Document
-     * ============================================================
-     *
-     * Required only when verificationMethod == DOCUMENT.
-     */
+/*
+ * ============================================================
+ * Membership Priority
+ * ============================================================
+ *
+ * Captures whether this church verification submission
+ * qualified for priority review at submission time.
+ */
+
+@Builder.Default
+@Column(
+        name = "priority_verification",
+        nullable = false
+)
+private boolean priorityVerification = false;
+
+/*
+ * ============================================================
+ * Optional Supporting Document
+ * ============================================================
+ */
 
     @Column(
             name = "original_file_name",
