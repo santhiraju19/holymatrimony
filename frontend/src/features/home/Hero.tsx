@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
+  BadgeCheck,
   Church,
   HeartHandshake,
   ShieldCheck,
@@ -13,19 +14,25 @@ import {
 
 const featureCards = [
   {
-    label: "Verified Profiles",
-    icon: ShieldCheck,
+    label: "Trust Verification",
+    description: "Mobile & identity checks",
+    icon: BadgeCheck,
     iconClassName: "text-emerald-600",
+    bgClassName: "bg-emerald-50",
   },
   {
-    label: "Trusted Churches",
+    label: "Church Verification",
+    description: "Faith-based trust layer",
     icon: Church,
     iconClassName: "text-blue-600",
+    bgClassName: "bg-blue-50",
   },
   {
     label: "Privacy Protected",
-    icon: HeartHandshake,
-    iconClassName: "text-pink-600",
+    description: "Designed for safer connections",
+    icon: ShieldCheck,
+    iconClassName: "text-violet-600",
+    bgClassName: "bg-violet-50",
   },
 ];
 
@@ -37,13 +44,11 @@ export default function Hero() {
         className="absolute inset-0 overflow-hidden"
       >
         <div className="absolute -left-32 top-0 h-96 w-96 rounded-full bg-blue-300/20 blur-3xl" />
-
         <div className="absolute right-0 top-40 h-[500px] w-[500px] rounded-full bg-pink-300/20 blur-3xl" />
-
         <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-cyan-300/20 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl items-center gap-12 px-4 py-14 sm:px-6 sm:py-16 lg:min-h-[92vh] lg:grid-cols-2 lg:gap-16 lg:py-20">
+      <div className="relative mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl items-center gap-12 px-4 pb-24 pt-14 sm:px-6 sm:pb-28 sm:pt-16 lg:min-h-[92vh] lg:grid-cols-2 lg:gap-16 lg:pb-32 lg:pt-20">
         <motion.div
           initial={{
             opacity: 0,
@@ -72,9 +77,10 @@ export default function Hero() {
               delay: 0.15,
               duration: 0.6,
             }}
-            className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-700 shadow-sm sm:text-sm"
+            className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-700 shadow-sm sm:text-sm"
           >
-            India&apos;s Trusted Christian Matrimony
+            <HeartHandshake size={16} />
+            Faith • Family • Forever
           </motion.span>
 
           <motion.h1
@@ -93,13 +99,13 @@ export default function Hero() {
             }}
             className="mt-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl lg:text-6xl"
           >
-            Find the
+            Find a Life Partner
 
             <span className="block bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Christian Life Partner
+              Who Shares Your Faith
             </span>
 
-            God Has Prepared For You
+            and Family Values
           </motion.h1>
 
           <motion.p
@@ -117,10 +123,9 @@ export default function Hero() {
             }}
             className="mt-6 max-w-xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8"
           >
-            Connect with verified Christian families across India.
-            Experience secure, church-based matchmaking designed to
-            help you build a Christ-centered marriage filled with
-            faith, love, privacy, and trust.
+            A Christian matrimony platform built for meaningful
+            connections, with detailed profiles, partner preferences,
+            trust verification and church-based verification.
           </motion.p>
 
           <motion.div
@@ -167,7 +172,7 @@ export default function Hero() {
               delay: 0.8,
               duration: 0.8,
             }}
-            className="mt-10 grid gap-4 sm:grid-cols-3 lg:mt-12"
+            className="mt-10 grid gap-3 sm:grid-cols-3 lg:mt-12"
           >
             {featureCards.map((item) => {
               const Icon = item.icon;
@@ -176,21 +181,29 @@ export default function Hero() {
                 <motion.div
                   key={item.label}
                   whileHover={{
-                    y: -5,
+                    y: -4,
                   }}
                   transition={{
                     duration: 0.2,
                   }}
-                  className="flex min-h-20 items-center gap-3 rounded-2xl border border-white/70 bg-white/90 p-4 shadow-md backdrop-blur-sm"
+                  className="rounded-2xl border border-white/80 bg-white/90 p-4 shadow-md backdrop-blur-sm"
                 >
-                  <Icon
-                    className={item.iconClassName}
-                    size={28}
-                  />
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl ${item.bgClassName}`}
+                  >
+                    <Icon
+                      className={item.iconClassName}
+                      size={21}
+                    />
+                  </div>
 
-                  <span className="text-sm font-semibold text-slate-700">
+                  <p className="mt-3 text-sm font-bold text-slate-800">
                     {item.label}
-                  </span>
+                  </p>
+
+                  <p className="mt-1 text-[11px] leading-4 text-slate-500">
+                    {item.description}
+                  </p>
                 </motion.div>
               );
             })}
@@ -217,7 +230,7 @@ export default function Hero() {
             <motion.div
               className="absolute inset-0"
               animate={{
-                scale: [1, 1.05, 1],
+                scale: [1, 1.04, 1],
               }}
               transition={{
                 duration: 12,
@@ -235,7 +248,28 @@ export default function Hero() {
               />
             </motion.div>
 
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/25 via-transparent to-white/5" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/30 via-transparent to-white/5" />
+
+            <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-7">
+              <div className="max-w-sm rounded-2xl border border-white/40 bg-white/90 p-4 shadow-2xl backdrop-blur-xl sm:p-5">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                    <HeartHandshake size={23} />
+                  </div>
+
+                  <div>
+                    <p className="font-bold text-slate-900">
+                      Meaningful Matches
+                    </p>
+
+                    <p className="mt-1 text-xs leading-5 text-slate-600">
+                      Discover people based on faith, community,
+                      education, lifestyle and partner preferences.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <motion.div
@@ -247,15 +281,24 @@ export default function Hero() {
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            className="absolute left-3 top-4 rounded-2xl border border-white/60 bg-white/90 px-4 py-3 shadow-2xl backdrop-blur-md sm:-left-5 sm:top-12 sm:px-5 sm:py-4 lg:-left-8 lg:top-14"
+            className="absolute -left-2 top-6 rounded-2xl border border-white/70 bg-white/95 px-4 py-3 shadow-xl backdrop-blur-md sm:-left-6 sm:top-12"
           >
-            <p className="text-xl font-bold text-blue-600 sm:text-2xl lg:text-3xl">
-              20,000+
-            </p>
+            <div className="flex items-center gap-2">
+              <BadgeCheck
+                size={20}
+                className="text-emerald-600"
+              />
 
-            <p className="text-xs text-slate-500 sm:text-sm">
-              Verified Members
-            </p>
+              <div>
+                <p className="text-xs font-bold text-slate-800">
+                  Trust Verification
+                </p>
+
+                <p className="text-[10px] text-slate-500">
+                  Built into profiles
+                </p>
+              </div>
+            </div>
           </motion.div>
 
           <motion.div
@@ -267,35 +310,24 @@ export default function Hero() {
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            className="absolute bottom-4 right-3 rounded-2xl border border-white/60 bg-white/90 px-4 py-3 shadow-2xl backdrop-blur-md sm:-right-5 sm:bottom-10 sm:px-5 sm:py-4 lg:-right-8 lg:bottom-12"
+            className="absolute -right-2 top-28 rounded-2xl border border-white/70 bg-white/95 px-4 py-3 shadow-xl backdrop-blur-md sm:-right-6 sm:top-36"
           >
-            <p className="text-xl font-bold text-emerald-600 sm:text-2xl lg:text-3xl">
-              350+
-            </p>
+            <div className="flex items-center gap-2">
+              <Church
+                size={20}
+                className="text-blue-600"
+              />
 
-            <p className="text-xs text-slate-500 sm:text-sm">
-              Partner Churches
-            </p>
-          </motion.div>
+              <div>
+                <p className="text-xs font-bold text-slate-800">
+                  Church Verification
+                </p>
 
-          <motion.div
-            animate={{
-              y: [-5, 5, -5],
-            }}
-            transition={{
-              duration: 4.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            className="absolute left-1/2 top-3 -translate-x-1/2 whitespace-nowrap rounded-2xl border border-white/60 bg-white/90 px-4 py-3 shadow-2xl backdrop-blur-md sm:top-5 sm:px-5 sm:py-4"
-          >
-            <p className="text-xl font-bold text-pink-600 sm:text-2xl lg:text-3xl">
-              98%
-            </p>
-
-            <p className="text-xs text-slate-500 sm:text-sm">
-              Customer Satisfaction
-            </p>
+                <p className="text-[10px] text-slate-500">
+                  Additional trust layer
+                </p>
+              </div>
+            </div>
           </motion.div>
         </motion.div>
       </div>

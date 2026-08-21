@@ -30,6 +30,14 @@ import type {
 interface UseBrowseProfilesOptions {
   initialPage?: number;
   pageSize?: number;
+
+  /*
+   * Optional initial filters.
+   *
+   * Used by homepage Quick Search so /search can start
+   * directly with the selected criteria.
+   */
+  initialFilters?: Partial<BrowseSearchFilters>;
 }
 
 interface UseBrowseProfilesReturn {
@@ -83,16 +91,25 @@ interface UseBrowseProfilesReturn {
 
 function createEmptyFilters():
 BrowseSearchFilters {
-
   return {
     ...EMPTY_BROWSE_SEARCH_FILTERS,
+  };
+}
+
+function createInitialFilters(
+  initialFilters:
+    | Partial<BrowseSearchFilters>
+    | undefined
+): BrowseSearchFilters {
+  return {
+    ...EMPTY_BROWSE_SEARCH_FILTERS,
+    ...(initialFilters ?? {}),
   };
 }
 
 export default function useBrowseProfiles(
   options: UseBrowseProfilesOptions = {}
 ): UseBrowseProfilesReturn {
-
   const initialPage =
     options.initialPage ??
     0;
@@ -101,13 +118,11 @@ export default function useBrowseProfiles(
     options.pageSize ??
     12;
 
-  const [
-    profiles,
-    setProfiles,
-  ] =
-    useState<
-      BrowseProfile[]
-    >([]);
+  /*
+   * ============================================================
+   * INITIAL FILTER STATE
+   * ============================================================
+   */
 
   const [
     filters,
@@ -115,8 +130,10 @@ export default function useBrowseProfiles(
   ] =
     useState<
       BrowseSearchFilters
-    >(
-      createEmptyFilters
+    >(() =>
+      createInitialFilters(
+        options.initialFilters
+      )
     );
 
   const [
@@ -125,9 +142,25 @@ export default function useBrowseProfiles(
   ] =
     useState<
       BrowseSearchFilters
-    >(
-      createEmptyFilters
+    >(() =>
+      createInitialFilters(
+        options.initialFilters
+      )
     );
+
+  /*
+   * ============================================================
+   * RESULT STATE
+   * ============================================================
+   */
+
+  const [
+    profiles,
+    setProfiles,
+  ] =
+    useState<
+      BrowseProfile[]
+    >([]);
 
   const [
     page,
@@ -211,7 +244,6 @@ export default function useBrowseProfiles(
         result:
           BrowseProfilesResult
       ): void => {
-
         setProfiles(
           result.profiles ??
             []
@@ -264,7 +296,6 @@ export default function useBrowseProfiles(
   const clearResults =
     useCallback(
       (): void => {
-
         setProfiles([]);
 
         setTotalElements(0);
@@ -307,13 +338,11 @@ export default function useBrowseProfiles(
         activeFilters:
           BrowseSearchFilters
       ): Promise<void> => {
-
         setLoading(true);
 
         setError(null);
 
         try {
-
           const hasFilters =
             hasActiveBrowseFilters(
               activeFilters
@@ -344,12 +373,10 @@ export default function useBrowseProfiles(
           applyResult(
             result
           );
-
         } catch (
           caughtError:
             unknown
         ) {
-
           clearResults();
 
           /*
@@ -370,6 +397,7 @@ export default function useBrowseProfiles(
            *
            * "Upgrade your membership to access advanced search."
            */
+
           const message =
             getApiErrorMessage(
               caughtError,
@@ -379,9 +407,7 @@ export default function useBrowseProfiles(
           setError(
             message
           );
-
         } finally {
-
           setLoading(false);
         }
       },
@@ -400,12 +426,10 @@ export default function useBrowseProfiles(
 
   useEffect(
     () => {
-
       void loadProfiles(
         page,
         appliedFilters
       );
-
     },
     [
       page,
@@ -429,7 +453,6 @@ export default function useBrowseProfiles(
         value:
           string
       ): void => {
-
         setFilters(
           (
             currentFilters
@@ -453,7 +476,6 @@ export default function useBrowseProfiles(
   const applyFilters =
     useCallback(
       (): void => {
-
         const nextFilters = {
           ...filters,
         };
@@ -462,7 +484,6 @@ export default function useBrowseProfiles(
           page ===
           0
         ) {
-
           setAppliedFilters(
             nextFilters
           );
@@ -491,7 +512,6 @@ export default function useBrowseProfiles(
   const resetFilters =
     useCallback(
       (): void => {
-
         const emptyFilters =
           createEmptyFilters();
 
@@ -507,7 +527,6 @@ export default function useBrowseProfiles(
           page ===
           0
         ) {
-
           setAppliedFilters({
             ...emptyFilters,
           });
@@ -535,7 +554,6 @@ export default function useBrowseProfiles(
   const nextPage =
     useCallback(
       (): void => {
-
         if (
           loading ||
           !hasNext
@@ -560,7 +578,6 @@ export default function useBrowseProfiles(
   const previousPage =
     useCallback(
       (): void => {
-
         if (
           loading ||
           !hasPrevious
@@ -591,7 +608,6 @@ export default function useBrowseProfiles(
         targetPage:
           number
       ): void => {
-
         if (
           loading
         ) {
@@ -633,7 +649,6 @@ export default function useBrowseProfiles(
   const refresh =
     useCallback(
       async (): Promise<void> => {
-
         await loadProfiles(
           page,
           appliedFilters

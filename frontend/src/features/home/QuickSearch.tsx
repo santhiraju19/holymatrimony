@@ -1,122 +1,437 @@
 "use client";
 
+import {
+  FormEvent,
+  ReactNode,
+  useState,
+} from "react";
+
+import { useRouter } from "next/navigation";
+
 import { motion } from "framer-motion";
-import { Search } from "lucide-react";
+
+import {
+  ChevronRight,
+  Search,
+  SlidersHorizontal,
+} from "lucide-react";
+
+import {
+  DENOMINATIONS,
+  RELIGION_OPTIONS,
+} from "@/features/profile/data/profileOptions";
+
+const AGE_OPTIONS = Array.from(
+  {
+    length: 53,
+  },
+  (_, index) =>
+    String(index + 18)
+);
 
 export default function QuickSearch() {
+  const router = useRouter();
+
+  const [
+    ageFrom,
+    setAgeFrom,
+  ] = useState("21");
+
+  const [
+    ageTo,
+    setAgeTo,
+  ] = useState("35");
+
+  const [
+    religion,
+    setReligion,
+  ] = useState("Christianity");
+
+  const [
+    denomination,
+    setDenomination,
+  ] = useState("");
+
+  const [
+    location,
+    setLocation,
+  ] = useState("");
+
+  function handleSubmit(
+    event: FormEvent<HTMLFormElement>
+  ): void {
+    event.preventDefault();
+
+    const params =
+      new URLSearchParams();
+
+    if (
+      ageFrom.trim()
+    ) {
+      params.set(
+        "ageFrom",
+        ageFrom.trim()
+      );
+    }
+
+    if (
+      ageTo.trim()
+    ) {
+      params.set(
+        "ageTo",
+        ageTo.trim()
+      );
+    }
+
+    if (
+      religion.trim()
+    ) {
+      params.set(
+        "religion",
+        religion.trim()
+      );
+    }
+
+    if (
+      denomination.trim()
+    ) {
+      params.set(
+        "denomination",
+        denomination.trim()
+      );
+    }
+
+    if (
+      location.trim()
+    ) {
+      params.set(
+        "location",
+        location.trim()
+      );
+    }
+
+    const query =
+      params.toString();
+
+    router.push(
+      query
+        ? `/search?${query}`
+        : "/search"
+    );
+  }
+
+  function handleAdvancedSearch(): void {
+    router.push(
+      "/search"
+    );
+  }
+
   return (
-    <section className="relative -mt-12 z-20">
-      <div className="mx-auto max-w-7xl px-6">
-
+    <section className="relative z-20 -mt-12 pb-8 sm:-mt-16">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <motion.div
-          initial={{ opacity: 0, y: 35 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: .7 }}
-          className="rounded-[32px] border border-white/30 bg-white/90 backdrop-blur-xl shadow-2xl p-8"
+          initial={{
+            opacity: 0,
+            y: 35,
+          }}
+          whileInView={{
+            opacity: 1,
+            y: 0,
+          }}
+          viewport={{
+            once: true,
+          }}
+          transition={{
+            duration: 0.7,
+          }}
+          className="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.14)]"
         >
+          {/* =====================================================
+              Header
+              ===================================================== */}
 
-          <div className="mb-8 text-center">
+          <div className="border-b border-slate-100 bg-gradient-to-r from-blue-50/80 via-white to-amber-50/50 px-5 py-5 sm:px-7">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Search
+                    size={17}
+                    className="text-blue-600"
+                  />
 
-            <h2 className="text-3xl font-bold text-slate-900">
-              Find Your Life Partner
-            </h2>
+                  <p className="text-xs font-black uppercase tracking-[0.12em] text-blue-600">
+                    Quick Search
+                  </p>
+                </div>
 
-            <p className="mt-2 text-slate-600">
-              Search thousands of verified Christian profiles.
-            </p>
+                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                  Start Your Partner Search
+                </h2>
 
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
-
-            {/* Age */}
-
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Age
-              </label>
-
-              <select className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-600">
-                <option>18 - 25</option>
-                <option>26 - 30</option>
-                <option>31 - 35</option>
-                <option>36 - 40</option>
-                <option>40+</option>
-              </select>
-            </div>
-
-            {/* Denomination */}
-
-            <div>
-
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Denomination
-              </label>
-
-              <select className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-600">
-
-                <option>Any</option>
-                <option>CSI</option>
-                <option>Catholic</option>
-                <option>Baptist</option>
-                <option>Pentecostal</option>
-                <option>Lutheran</option>
-
-              </select>
-
-            </div>
-
-            {/* Location */}
-
-            <div>
-
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Location
-              </label>
-
-              <input
-                type="text"
-                placeholder="City / State"
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-600"
-              />
-
-            </div>
-
-            {/* Profession */}
-
-            <div>
-
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Profession
-              </label>
-
-              <input
-                type="text"
-                placeholder="Engineer, Doctor..."
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-600"
-              />
-
-            </div>
-
-            {/* Search Button */}
-
-            <div className="flex items-end">
+                <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">
+                  Choose a few important preferences now.
+                  You can refine your results further with
+                  Advanced Search.
+                </p>
+              </div>
 
               <button
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 font-semibold text-white transition hover:scale-105"
+                type="button"
+                onClick={
+                  handleAdvancedSearch
+                }
+                className="inline-flex w-fit items-center gap-1.5 text-sm font-bold text-blue-700 transition hover:text-blue-900"
               >
-                <Search size={18} />
-                Search
+                Advanced Search
+
+                <ChevronRight
+                  size={16}
+                />
               </button>
-
             </div>
-
           </div>
 
-        </motion.div>
+          {/* =====================================================
+              Search Form
+              ===================================================== */}
 
+          <form
+            onSubmit={
+              handleSubmit
+            }
+            className="p-5 sm:p-7"
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+
+              {/* Age From */}
+
+              <Field
+                label="Age From"
+              >
+                <select
+                  value={
+                    ageFrom
+                  }
+                  onChange={(event) =>
+                    setAgeFrom(
+                      event.target.value
+                    )
+                  }
+                  className={
+                    inputClassName
+                  }
+                >
+                  {AGE_OPTIONS.map(
+                    (age) => (
+                      <option
+                        key={
+                          age
+                        }
+                        value={
+                          age
+                        }
+                      >
+                        {age}
+                      </option>
+                    )
+                  )}
+                </select>
+              </Field>
+
+              {/* Age To */}
+
+              <Field
+                label="Age To"
+              >
+                <select
+                  value={
+                    ageTo
+                  }
+                  onChange={(event) =>
+                    setAgeTo(
+                      event.target.value
+                    )
+                  }
+                  className={
+                    inputClassName
+                  }
+                >
+                  {AGE_OPTIONS.map(
+                    (age) => (
+                      <option
+                        key={
+                          age
+                        }
+                        value={
+                          age
+                        }
+                      >
+                        {age}
+                      </option>
+                    )
+                  )}
+                </select>
+              </Field>
+
+              {/* Religion */}
+
+              <Field
+                label="Religion"
+              >
+                <select
+                  value={
+                    religion
+                  }
+                  onChange={(event) =>
+                    setReligion(
+                      event.target.value
+                    )
+                  }
+                  className={
+                    inputClassName
+                  }
+                >
+                  <option value="">
+                    Any Religion
+                  </option>
+
+                  {RELIGION_OPTIONS.map(
+                    (option) => (
+                      <option
+                        key={
+                          option
+                        }
+                        value={
+                          option
+                        }
+                      >
+                        {option}
+                      </option>
+                    )
+                  )}
+                </select>
+              </Field>
+
+              {/* Denomination */}
+
+              <Field
+                label="Denomination"
+              >
+                <select
+                  value={
+                    denomination
+                  }
+                  onChange={(event) =>
+                    setDenomination(
+                      event.target.value
+                    )
+                  }
+                  className={
+                    inputClassName
+                  }
+                >
+                  <option value="">
+                    Any Denomination
+                  </option>
+
+                  {DENOMINATIONS.map(
+                    (option) => (
+                      <option
+                        key={
+                          option
+                        }
+                        value={
+                          option
+                        }
+                      >
+                        {option}
+                      </option>
+                    )
+                  )}
+                </select>
+              </Field>
+
+              {/* Location */}
+
+              <Field
+                label="Location"
+              >
+                <input
+                  value={
+                    location
+                  }
+                  onChange={(event) =>
+                    setLocation(
+                      event.target.value
+                    )
+                  }
+                  type="text"
+                  placeholder="City or state"
+                  className={
+                    inputClassName
+                  }
+                />
+              </Field>
+
+              {/* Search */}
+
+              <div className="flex items-end">
+                <button
+                  type="submit"
+                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/15 transition hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+                >
+                  <Search
+                    size={17}
+                  />
+
+                  Search
+                </button>
+              </div>
+            </div>
+
+            {/* =================================================
+                Advanced Search Hint
+                ================================================= */}
+
+            <div className="mt-5 flex items-start gap-2 rounded-xl border border-slate-100 bg-slate-50/80 px-3.5 py-3">
+              <SlidersHorizontal
+                size={15}
+                className="mt-0.5 shrink-0 text-slate-400"
+              />
+
+              <p className="text-[11px] leading-5 text-slate-500">
+                Advanced Search includes community,
+                mother tongue, marital status, height,
+                education, profession, lifestyle and
+                verification filters.
+              </p>
+            </div>
+          </form>
+        </motion.div>
       </div>
     </section>
+  );
+}
+
+const inputClassName =
+  "min-h-12 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-50";
+
+interface FieldProps {
+  label: string;
+  children: ReactNode;
+}
+
+function Field({
+  label,
+  children,
+}: FieldProps) {
+  return (
+    <div>
+      <label className="mb-2 block text-xs font-bold text-slate-600">
+        {label}
+      </label>
+
+      {children}
+    </div>
   );
 }
