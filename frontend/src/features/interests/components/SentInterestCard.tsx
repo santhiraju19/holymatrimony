@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import InterestTrustBadges from "./InterestTrustBadges";
 
 import {
   ArrowUpRight,
@@ -146,17 +147,23 @@ export default function SentInterestCard({
                   {displayName}
                 </h2>
 
-                <p className="mt-0.5 text-xs font-medium text-slate-500 sm:text-sm">
-                  {[
-                    receiver?.age
-                      ? `${receiver.age} years`
-                      : null,
-                    receiver?.gender,
-                  ]
-                    .filter(Boolean)
-                    .join(" • ") ||
-                    "Profile details unavailable"}
-                </p>
+               <p className="mt-0.5 text-xs font-medium text-slate-500 sm:text-sm">
+  {[
+    receiver?.age
+      ? `${receiver.age} years`
+      : null,
+    receiver?.gender,
+  ]
+    .filter(Boolean)
+    .join(" • ") ||
+    "Profile details unavailable"}
+</p>
+
+<InterestTrustBadges
+  mobileVerified={receiver?.mobileVerified}
+  identityVerified={receiver?.identityVerified}
+  churchVerified={receiver?.churchVerified}
+/>
               </div>
 
               {profileHref && (

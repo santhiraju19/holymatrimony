@@ -18,6 +18,10 @@ import com.theholymatrimony.backend.profile.entity.ProfilePhoto;
 import com.theholymatrimony.backend.profile.repository.ProfilePhotoRepository;
 import com.theholymatrimony.backend.profile.repository.ProfileRepository;
 import com.theholymatrimony.backend.communication.service.CommunicationService;
+import com.theholymatrimony.backend.verification.enums.VerificationStatus;
+import com.theholymatrimony.backend.verification.enums.VerificationType;
+import com.theholymatrimony.backend.verification.repository.MemberVerificationRepository;
+
 
 import jakarta.persistence.EntityNotFoundException;
 
@@ -44,6 +48,7 @@ public class InterestService {
     private final ProfilePhotoRepository profilePhotoRepository;
     private final CommunicationService communicationService;
     private final MembershipEntitlementService membershipEntitlementService;
+    private final MemberVerificationRepository memberVerificationRepository;
 
     /*
      * ============================================================
@@ -832,79 +837,112 @@ return mapInterest(
      * ============================================================
      */
 
-    private InterestUserResponse mapUser(
-            User user,
-            Profile profile
-    ) {
-        if (user == null) {
-            return null;
-        }
-
-        ProfilePhoto primaryPhoto =
-                profilePhotoRepository
-                        .findFirstByUserIdAndPrimaryPhotoTrue(
-                                user.getId()
-                        )
-                        .orElse(null);
-
-        return InterestUserResponse
-                .builder()
-                .userId(
-                        user.getId()
-                )
-                .profileId(
-                        profile == null
-                                ? null
-                                : profile.getId()
-                )
-                .fullName(
-                        user.getFullName()
-                )
-                .gender(
-                        profile == null
-                                ? null
-                                : profile.getGender()
-                )
-                .age(
-                        profile == null
-                                ? null
-                                : profile.getAge()
-                )
-                .denomination(
-                        profile == null
-                                ? null
-                                : profile.getDenomination()
-                )
-                .profession(
-                        profile == null
-                                ? null
-                                : profile.getProfession()
-                )
-                .city(
-                        profile == null
-                                ? null
-                                : profile.getCity()
-                )
-                .state(
-                        profile == null
-                                ? null
-                                : profile.getState()
-                )
-                .country(
-                        profile == null
-                                ? null
-                                : profile.getCountry()
-                )
-                .primaryPhotoId(
-                        primaryPhoto == null
-                                ? null
-                                : primaryPhoto.getId()
-                )
-                .primaryPhotoUrl(
-                        primaryPhoto == null
-                                ? null
-                                : primaryPhoto.getImageUrl()
-                )
-                .build();
+   private InterestUserResponse mapUser(
+        User user,
+        Profile profile
+) {
+    if (user == null) {
+        return null;
     }
+
+    ProfilePhoto primaryPhoto =
+            profilePhotoRepository
+                    .findFirstByUserIdAndPrimaryPhotoTrue(
+                            user.getId()
+                    )
+                    .orElse(null);
+
+    boolean mobileVerified =
+            memberVerificationRepository
+                    .existsByUserIdAndVerificationTypeAndVerificationStatus(
+                            user.getId(),
+                            VerificationType.MOBILE,
+                            VerificationStatus.APPROVED
+                    );
+
+    boolean churchVerified =
+            memberVerificationRepository
+                    .existsByUserIdAndVerificationTypeAndVerificationStatus(
+                            user.getId(),
+                            VerificationType.CHURCH,
+                            VerificationStatus.APPROVED
+                    );
+
+    boolean identityVerified =
+            memberVerificationRepository
+                    .existsByUserIdAndVerificationTypeAndVerificationStatus(
+                            user.getId(),
+                            VerificationType.IDENTITY,
+                            VerificationStatus.APPROVED
+                    );
+
+    return InterestUserResponse
+            .builder()
+            .userId(
+                    user.getId()
+            )
+            .profileId(
+                    profile == null
+                            ? null
+                            : profile.getId()
+            )
+            .fullName(
+                    user.getFullName()
+            )
+            .gender(
+                    profile == null
+                            ? null
+                            : profile.getGender()
+            )
+            .age(
+                    profile == null
+                            ? null
+                            : profile.getAge()
+            )
+            .denomination(
+                    profile == null
+                            ? null
+                            : profile.getDenomination()
+            )
+            .profession(
+                    profile == null
+                            ? null
+                            : profile.getProfession()
+            )
+            .city(
+                    profile == null
+                            ? null
+                            : profile.getCity()
+            )
+            .state(
+                    profile == null
+                            ? null
+                            : profile.getState()
+            )
+            .country(
+                    profile == null
+                            ? null
+                            : profile.getCountry()
+            )
+            .primaryPhotoId(
+                    primaryPhoto == null
+                            ? null
+                            : primaryPhoto.getId()
+            )
+            .primaryPhotoUrl(
+                    primaryPhoto == null
+                            ? null
+                            : primaryPhoto.getImageUrl()
+            )
+            .mobileVerified(
+                    mobileVerified
+            )
+            .churchVerified(
+                    churchVerified
+            )
+            .identityVerified(
+                    identityVerified
+            )
+            .build();
+}
 }

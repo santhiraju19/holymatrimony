@@ -16,6 +16,9 @@ export interface InterestMember {
   country: string | null;
   primaryPhotoId: string | null;
   primaryPhotoUrl: string | null;
+  mobileVerified: boolean;
+churchVerified: boolean;
+identityVerified: boolean;
 }
 
 export interface Interest {

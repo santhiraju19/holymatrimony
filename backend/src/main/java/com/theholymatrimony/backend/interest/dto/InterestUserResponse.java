@@ -1,4 +1,3 @@
-
 package com.theholymatrimony.backend.interest.dto;
 
 import lombok.AllArgsConstructor;
@@ -37,4 +36,13 @@ public class InterestUserResponse {
     private UUID primaryPhotoId;
 
     private String primaryPhotoUrl;
+
+    /*
+     * Trust verification badges
+     */
+    private boolean mobileVerified;
+
+    private boolean churchVerified;
+
+    private boolean identityVerified;
 }
