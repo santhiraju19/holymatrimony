@@ -4,8 +4,37 @@ export interface CompletionResult {
   percentage: number;
   completed: string[];
   pending: string[];
+  completedFields: number;
+  totalFields: number;
 }
 
+function hasText(
+  value?: string | null
+): boolean {
+  return Boolean(
+    value?.trim()
+  );
+}
+
+/*
+ * This completion rule intentionally mirrors
+ * backend ProfileService.calculateCompletion().
+ *
+ * Photos and optional/sensitive fields are excluded.
+ *
+ * Core field count:
+ *
+ * Basic                 4
+ * Personal              4
+ * Current Location      3
+ * About                 1
+ * Church                4
+ * Education & Career    4
+ * Family                4
+ * Partner Preferences   6
+ *
+ * Total                30
+ */
 export function calculateProfileCompletion(
   profile: ProfileState
 ): CompletionResult {
@@ -14,52 +43,216 @@ export function calculateProfileCompletion(
 
   const sections = [
     {
-      label: "Basic Information",
-      valid:
-        profile.basicInfo.fullName.trim() !== "" &&
-        profile.basicInfo.mobile.trim() !== "" &&
-        profile.basicInfo.gender.trim() !== "" &&
-        profile.basicInfo.dateOfBirth.trim() !== "",
+      label: "Basic & Personal Information",
+
+      checks: [
+        hasText(
+          profile.basicInfo.mobile
+        ),
+
+        hasText(
+          profile.basicInfo.dateOfBirth
+        ),
+
+        hasText(
+          profile.basicInfo.gender
+        ),
+
+        hasText(
+          profile.basicInfo.maritalStatus
+        ),
+
+        hasText(
+          profile.basicInfo.heightCm
+        ),
+
+        hasText(
+          profile.basicInfo.motherTongue
+        ),
+
+        hasText(
+          profile.basicInfo.religion
+        ),
+
+        hasText(
+          profile.churchInfo.denomination
+        ),
+      ],
     },
+
+    {
+      label: "Current Location & About",
+
+      checks: [
+        hasText(
+          profile.locationInfo.city
+        ),
+
+        hasText(
+          profile.locationInfo.state
+        ),
+
+        hasText(
+          profile.locationInfo.country
+        ),
+
+        hasText(
+          profile.aboutInfo.aboutMe
+        ),
+      ],
+    },
+
     {
       label: "Church Information",
-      valid:
-        profile.churchInfo.churchName.trim() !== "" &&
-        profile.churchInfo.denomination.trim() !== "",
+
+      checks: [
+        hasText(
+          profile.churchInfo.churchName
+        ),
+
+        hasText(
+          profile.churchInfo.pastorName
+        ),
+
+        /*
+         * "true" and "false" are both valid answers.
+         * Only blank means unanswered.
+         */
+        hasText(
+          profile.churchInfo.baptized
+        ),
+
+        hasText(
+          profile.churchInfo.churchAddress
+        ),
+      ],
     },
+
     {
-      label: "Education",
-      valid:
-        profile.educationInfo.highestEducation.trim() !== "" &&
-        profile.educationInfo.profession.trim() !== "",
+      label: "Education & Career",
+
+      checks: [
+        hasText(
+          profile.educationInfo.highestEducation
+        ),
+
+        hasText(
+          profile.educationInfo.educationField
+        ),
+
+        hasText(
+          profile.educationInfo.profession
+        ),
+
+        hasText(
+          profile.educationInfo.annualIncome
+        ),
+      ],
     },
+
     {
-      label: "Family",
-      valid:
-        profile.familyInfo.fatherName.trim() !== "" &&
-        profile.familyInfo.motherName.trim() !== "",
+      label: "Family Information",
+
+      checks: [
+        hasText(
+          profile.familyInfo.fatherName
+        ),
+
+        hasText(
+          profile.familyInfo.motherName
+        ),
+
+        hasText(
+          profile.familyInfo.familyLocation
+        ),
+
+        hasText(
+          profile.familyInfo.familyType
+        ),
+      ],
     },
+
     {
       label: "Partner Preferences",
-      valid:
-        profile.preferenceInfo.preferredAgeFrom.trim() !== "" &&
-        profile.preferenceInfo.preferredAgeTo.trim() !== "",
-    },
-    {
-      label: "Photos",
-      valid: profile.photoInfo.photos.length > 0,
+
+      checks: [
+        hasText(
+          profile.preferenceInfo.preferredAgeFrom
+        ),
+
+        hasText(
+          profile.preferenceInfo.preferredAgeTo
+        ),
+
+        hasText(
+          profile.preferenceInfo.preferredHeightFromCm
+        ),
+
+        hasText(
+          profile.preferenceInfo.preferredHeightToCm
+        ),
+
+        hasText(
+          profile.preferenceInfo.preferredReligion
+        ),
+
+        hasText(
+          profile.preferenceInfo.preferredEducation
+        ),
+      ],
     },
   ];
 
-  sections.forEach((section) => {
-    section.valid
-      ? completed.push(section.label)
-      : pending.push(section.label);
-  });
+  let completedFields = 0;
+  let totalFields = 0;
+
+  sections.forEach(
+    (section) => {
+      totalFields +=
+        section.checks.length;
+
+      const sectionCompleted =
+        section.checks.filter(
+          Boolean
+        ).length;
+
+      completedFields +=
+        sectionCompleted;
+
+      if (
+        sectionCompleted ===
+        section.checks.length
+      ) {
+        completed.push(
+          section.label
+        );
+      } else {
+        pending.push(
+          section.label
+        );
+      }
+    }
+  );
+
+  const percentage =
+    totalFields === 0
+      ? 0
+      : Math.min(
+          100,
+          Math.floor(
+            (
+              completedFields /
+              totalFields
+            ) *
+              100
+          )
+        );
 
   return {
-    percentage: Math.round((completed.length / sections.length) * 100),
+    percentage,
     completed,
     pending,
+    completedFields,
+    totalFields,
   };
 }

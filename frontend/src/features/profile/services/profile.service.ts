@@ -28,6 +28,21 @@ export interface ProfilePayload {
   age?: number;
   maritalStatus?: string;
 
+  heightCm?: number;
+  weightKg?: number;
+  complexion?: string;
+  bodyType?: string;
+  motherTongue?: string;
+  religion?: string;
+  community?: string;
+  subCommunity?: string;
+  faithBackground?: string;
+  physicalStatus?: string;
+
+  diet?: string;
+  smoking?: string;
+  drinking?: string;
+
   denomination?: string;
   churchName?: string;
   pastorName?: string;
@@ -36,6 +51,7 @@ export interface ProfilePayload {
   churchAddress?: string;
 
   highestEducation?: string;
+  educationField?: string;
   profession?: string;
   company?: string;
   annualIncome?: string;
@@ -44,11 +60,36 @@ export interface ProfilePayload {
   motherName?: string;
   siblings?: string;
   familyLocation?: string;
+  familyType?: string;
+  familyValues?: string;
 
   preferredAgeFrom?: number;
   preferredAgeTo?: number;
+
+  preferredHeightFromCm?: number;
+  preferredHeightToCm?: number;
+
+  preferredReligion?: string;
   preferredDenomination?: string;
+  preferredMaritalStatus?: string;
+
+  preferredCommunity?: string;
+  communityNoBar?: boolean;
+
+  preferredMotherTongue?: string;
+
   preferredEducation?: string;
+  preferredProfession?: string;
+
+  preferredCountry?: string;
+  preferredState?: string;
+  preferredCity?: string;
+
+  preferredDiet?: string;
+  preferredSmoking?: string;
+  preferredDrinking?: string;
+
+  preferredFaithCommitment?: string;
 
   city?: string;
   state?: string;

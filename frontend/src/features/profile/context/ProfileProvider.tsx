@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, {
@@ -14,6 +13,7 @@ import {
 } from "./ProfileContext";
 
 import { ProfileState } from "../types";
+
 import { useProfileRecovery } from "../hooks/useProfileRecovery";
 
 import profileService, {
@@ -27,8 +27,7 @@ interface Props {
 function mapApiToState(
   api: ProfilePayload
 ): ProfileState {
- const photos: ProfileState["photoInfo"]["photos"] = [];
-  
+  const photos: ProfileState["photoInfo"]["photos"] = [];
 
   return {
     basicInfo: {
@@ -39,62 +38,190 @@ function mapApiToState(
       age: api.age?.toString() ?? "",
       maritalStatus: api.maritalStatus ?? "",
       email: api.email ?? "",
+
+      heightCm:
+        api.heightCm?.toString() ?? "",
+
+      weightKg:
+        api.weightKg?.toString() ?? "",
+
+      complexion:
+        api.complexion ?? "",
+
+      bodyType:
+        api.bodyType ?? "",
+
+      motherTongue:
+        api.motherTongue ?? "",
+
+      religion:
+        api.religion ?? "",
+
+      community:
+        api.community ?? "",
+
+      subCommunity:
+        api.subCommunity ?? "",
+
+      faithBackground:
+        api.faithBackground ?? "",
+
+      physicalStatus:
+        api.physicalStatus ?? "",
+
+      diet:
+        api.diet ?? "",
+
+      smoking:
+        api.smoking ?? "",
+
+      drinking:
+        api.drinking ?? "",
     },
 
     churchInfo: {
-      denomination: api.denomination ?? "",
-      churchName: api.churchName ?? "",
-      pastorName: api.pastorName ?? "",
+      denomination:
+        api.denomination ?? "",
+
+      churchName:
+        api.churchName ?? "",
+
+      pastorName:
+        api.pastorName ?? "",
+
       baptized:
-        api.baptized === undefined
+        api.baptized === undefined ||
+        api.baptized === null
           ? ""
           : String(api.baptized),
-      membershipId: api.membershipId ?? "",
-      churchAddress: api.churchAddress ?? "",
+
+      membershipId:
+        api.membershipId ?? "",
+
+      churchAddress:
+        api.churchAddress ?? "",
     },
 
     educationInfo: {
       highestEducation:
         api.highestEducation ?? "",
-      profession: api.profession ?? "",
-      company: api.company ?? "",
-      annualIncome: api.annualIncome ?? "",
+
+      educationField:
+        api.educationField ?? "",
+
+      profession:
+        api.profession ?? "",
+
+      company:
+        api.company ?? "",
+
+      annualIncome:
+        api.annualIncome ?? "",
     },
 
     familyInfo: {
-      fatherName: api.fatherName ?? "",
-      motherName: api.motherName ?? "",
-      siblings: api.siblings ?? "",
+      fatherName:
+        api.fatherName ?? "",
+
+      motherName:
+        api.motherName ?? "",
+
+      siblings:
+        api.siblings ?? "",
+
       familyLocation:
         api.familyLocation ?? "",
+
+      familyType:
+        api.familyType ?? "",
+
+      familyValues:
+        api.familyValues ?? "",
     },
 
     preferenceInfo: {
       preferredAgeFrom:
         api.preferredAgeFrom?.toString() ?? "",
+
       preferredAgeTo:
         api.preferredAgeTo?.toString() ?? "",
+
+      preferredHeightFromCm:
+        api.preferredHeightFromCm?.toString() ?? "",
+
+      preferredHeightToCm:
+        api.preferredHeightToCm?.toString() ?? "",
+
+      preferredReligion:
+        api.preferredReligion ?? "",
+
       preferredDenomination:
         api.preferredDenomination ?? "",
+
+      preferredMaritalStatus:
+        api.preferredMaritalStatus ?? "",
+
+      preferredCommunity:
+        api.preferredCommunity ?? "",
+
+      communityNoBar:
+        api.communityNoBar ?? true,
+
+      preferredMotherTongue:
+        api.preferredMotherTongue ?? "",
+
       preferredEducation:
         api.preferredEducation ?? "",
+
+      preferredProfession:
+        api.preferredProfession ?? "",
+
+      preferredCountry:
+        api.preferredCountry ?? "",
+
+      preferredState:
+        api.preferredState ?? "",
+
+      preferredCity:
+        api.preferredCity ?? "",
+
+      preferredDiet:
+        api.preferredDiet ?? "",
+
+      preferredSmoking:
+        api.preferredSmoking ?? "",
+
+      preferredDrinking:
+        api.preferredDrinking ?? "",
+
+      preferredFaithCommitment:
+        api.preferredFaithCommitment ?? "",
     },
 
     locationInfo: {
-      city: api.city ?? "",
-      state: api.state ?? "",
-      country: api.country ?? "",
+      city:
+        api.city ?? "",
+
+      state:
+        api.state ?? "",
+
+      country:
+        api.country ?? "",
     },
 
     aboutInfo: {
-      aboutMe: api.aboutMe ?? "",
+      aboutMe:
+        api.aboutMe ?? "",
     },
 
     photoInfo: {
       photos,
+
       primaryPhoto:
-        photos.find((photo) => photo.isPrimary)
-          ?.preview ?? "",
+        photos.find(
+          (photo) =>
+            photo.isPrimary
+        )?.preview ?? "",
     },
   };
 }
@@ -111,12 +238,30 @@ function mapStateToApi(
     ...profile.locationInfo,
     ...profile.aboutInfo,
 
-    age: profile.basicInfo.age
-      ? Number(profile.basicInfo.age)
-      : undefined,
+    age:
+      profile.basicInfo.age
+        ? Number(
+            profile.basicInfo.age
+          )
+        : undefined,
+
+    heightCm:
+      profile.basicInfo.heightCm
+        ? Number(
+            profile.basicInfo.heightCm
+          )
+        : undefined,
+
+    weightKg:
+      profile.basicInfo.weightKg
+        ? Number(
+            profile.basicInfo.weightKg
+          )
+        : undefined,
 
     preferredAgeFrom:
-      profile.preferenceInfo.preferredAgeFrom
+      profile.preferenceInfo
+        .preferredAgeFrom
         ? Number(
             profile.preferenceInfo
               .preferredAgeFrom
@@ -124,12 +269,35 @@ function mapStateToApi(
         : undefined,
 
     preferredAgeTo:
-      profile.preferenceInfo.preferredAgeTo
+      profile.preferenceInfo
+        .preferredAgeTo
         ? Number(
             profile.preferenceInfo
               .preferredAgeTo
           )
         : undefined,
+
+    preferredHeightFromCm:
+      profile.preferenceInfo
+        .preferredHeightFromCm
+        ? Number(
+            profile.preferenceInfo
+              .preferredHeightFromCm
+          )
+        : undefined,
+
+    preferredHeightToCm:
+      profile.preferenceInfo
+        .preferredHeightToCm
+        ? Number(
+            profile.preferenceInfo
+              .preferredHeightToCm
+          )
+        : undefined,
+
+    communityNoBar:
+      profile.preferenceInfo
+        .communityNoBar,
 
     baptized:
       profile.churchInfo.baptized === ""
@@ -142,23 +310,40 @@ function mapStateToApi(
 export default function ProfileProvider({
   children,
 }: Props) {
-  const [profile, setProfile] =
-    useState<ProfileState>(initialProfile);
+  const [
+    profile,
+    setProfile,
+  ] =
+    useState<ProfileState>(
+      initialProfile
+    );
 
-  const [loading, setLoading] =
+  const [
+    loading,
+    setLoading,
+  ] =
     useState(true);
 
-  const [saving, setSaving] =
+  const [
+    saving,
+    setSaving,
+  ] =
     useState(false);
 
-  const [error, setError] =
-    useState<string | null>(null);
+  const [
+    error,
+    setError,
+  ] =
+    useState<string | null>(
+      null
+    );
 
   const {
     restoreDraft,
     removeDraft,
     saveStatus,
-  } = useProfileRecovery(profile);
+  } =
+    useProfileRecovery(profile);
 
   const refreshProfile =
     useCallback(async () => {
@@ -170,7 +355,10 @@ export default function ProfileProvider({
           await profileService.getProfile();
 
         if (data) {
-          setProfile(mapApiToState(data));
+          setProfile(
+            mapApiToState(data)
+          );
+
           return;
         }
 
@@ -178,7 +366,8 @@ export default function ProfileProvider({
          * A missing backend profile is valid for
          * a newly registered user.
          */
-        const draft = restoreDraft();
+        const draft =
+          restoreDraft();
 
         if (draft) {
           setProfile(draft);
@@ -189,7 +378,8 @@ export default function ProfileProvider({
           err
         );
 
-        const draft = restoreDraft();
+        const draft =
+          restoreDraft();
 
         if (draft) {
           setProfile(draft);
@@ -204,56 +394,68 @@ export default function ProfileProvider({
     }, [restoreDraft]);
 
   const saveProfile =
-    useCallback(async (): Promise<boolean> => {
-      if (saving) {
-        return false;
-      }
+    useCallback(
+      async (): Promise<boolean> => {
+        if (saving) {
+          return false;
+        }
 
-      setSaving(true);
-      setError(null);
+        setSaving(true);
+        setError(null);
 
-      try {
-        const savedProfile =
-          await profileService.updateProfile(
-            mapStateToApi(profile)
+        try {
+          const savedProfile =
+            await profileService.updateProfile(
+              mapStateToApi(
+                profile
+              )
+            );
+
+          /*
+           * Keep the backend as the source of truth,
+           * but preserve current photo state when the
+           * profile response does not include photos.
+           */
+          const mappedProfile =
+            mapApiToState(
+              savedProfile
+            );
+
+          setProfile(
+            (
+              currentProfile
+            ) => ({
+              ...mappedProfile,
+
+              photoInfo:
+                currentProfile.photoInfo,
+            })
           );
 
-        /*
-         * Keep the backend as the source of truth,
-         * but preserve the current photos when the
-         * profile update response does not include them.
-         */
-        const mappedProfile =
-          mapApiToState(savedProfile);
+          removeDraft();
 
-        setProfile((currentProfile) => ({
-          ...mappedProfile,
+          return true;
+        } catch (err) {
+          console.error(
+            "Unable to save profile:",
+            err
+          );
 
-          photoInfo: currentProfile.photoInfo,
-        }));
+          setError(
+            "Unable to save your profile. Please check your connection and try again."
+          );
 
-        removeDraft();
-
-        return true;
-      } catch (err) {
-        console.error(
-          "Unable to save profile:",
-          err
-        );
-
-        setError(
-          "Unable to save your profile. Please check your connection and try again."
-        );
-
-        return false;
-      } finally {
-        setSaving(false);
-      }
-    }, [
-      profile,
-      removeDraft,
-      saving,
-    ]);
+          return false;
+        } finally {
+          setSaving(false);
+        }
+      },
+      [
+        profile,
+        removeDraft,
+        saving,
+      ]
+    );
 
   useEffect(() => {
     void refreshProfile();
@@ -275,7 +477,8 @@ export default function ProfileProvider({
         refreshProfile,
         saveProfile,
 
-        clearSavedDraft: removeDraft,
+        clearSavedDraft:
+          removeDraft,
       }}
     >
       {children}

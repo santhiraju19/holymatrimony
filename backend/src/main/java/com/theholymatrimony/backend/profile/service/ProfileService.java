@@ -2,14 +2,10 @@ package com.theholymatrimony.backend.profile.service;
 
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.auth.repository.UserRepository;
-
 import com.theholymatrimony.backend.profile.dto.ProfileRequest;
 import com.theholymatrimony.backend.profile.dto.ProfileResponse;
-
 import com.theholymatrimony.backend.profile.entity.Profile;
-
 import com.theholymatrimony.backend.profile.enums.ProfileVerificationStatus;
-
 import com.theholymatrimony.backend.profile.repository.ProfileRepository;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -27,21 +23,21 @@ public class ProfileService {
     private static final int PROFILE_COMPLETION_THRESHOLD = 100;
 
     /*
-     * Number of required profile-information fields.
+     * Core profile fields used for profile completion.
      *
-     * Photos are intentionally excluded.
+     * Optional/sensitive preference fields are intentionally
+     * excluded so members are never forced to disclose them.
+     *
+     * Photos are also excluded.
      */
-    private static final int REQUIRED_PROFILE_FIELDS = 25;
+    private static final int REQUIRED_PROFILE_FIELDS = 30;
 
     private final ProfileRepository profileRepository;
-
     private final UserRepository userRepository;
 
-    /*
-     * =========================================================
-     * Get current user's profile
-     * =========================================================
-     */
+    // =========================================================
+    // Get current user's profile
+    // =========================================================
 
     @Transactional(readOnly = true)
     public ProfileResponse getMyProfile(
@@ -50,28 +46,20 @@ public class ProfileService {
 
         Profile profile =
                 profileRepository
-                        .findByUserEmail(
-                                email
-                        )
+                        .findByUserEmail(email)
                         .orElse(null);
 
         if (profile == null) {
             profile =
-                    createEmptyProfile(
-                            email
-                    );
+                    createEmptyProfile(email);
         }
 
-        return map(
-                profile
-        );
+        return map(profile);
     }
 
-    /*
-     * =========================================================
-     * Save / update current user's profile
-     * =========================================================
-     */
+    // =========================================================
+    // Save / update current user's profile
+    // =========================================================
 
     public ProfileResponse saveProfile(
             String email,
@@ -80,21 +68,14 @@ public class ProfileService {
 
         Profile profile =
                 profileRepository
-                        .findByUserEmail(
-                                email
-                        )
+                        .findByUserEmail(email)
                         .orElseGet(
-                                () ->
-                                        createEmptyProfile(
-                                                email
-                                        )
+                                () -> createEmptyProfile(email)
                         );
 
-        /*
-         * =====================================================
-         * Basic Information
-         * =====================================================
-         */
+        // =====================================================
+        // Basic Information
+        // =====================================================
 
         profile.setMobile(
                 request.getMobile()
@@ -116,11 +97,65 @@ public class ProfileService {
                 request.getMaritalStatus()
         );
 
-        /*
-         * =====================================================
-         * Church Information
-         * =====================================================
-         */
+        // =====================================================
+        // Personal Information
+        // =====================================================
+
+        profile.setHeightCm(
+                request.getHeightCm()
+        );
+
+        profile.setWeightKg(
+                request.getWeightKg()
+        );
+
+        profile.setComplexion(
+                request.getComplexion()
+        );
+
+        profile.setBodyType(
+                request.getBodyType()
+        );
+
+        profile.setMotherTongue(
+                request.getMotherTongue()
+        );
+
+        profile.setReligion(
+                request.getReligion()
+        );
+
+        profile.setCommunity(
+                request.getCommunity()
+        );
+
+        profile.setSubCommunity(
+                request.getSubCommunity()
+        );
+
+        profile.setFaithBackground(
+                request.getFaithBackground()
+        );
+
+        profile.setPhysicalStatus(
+                request.getPhysicalStatus()
+        );
+
+        profile.setDiet(
+                request.getDiet()
+        );
+
+        profile.setSmoking(
+                request.getSmoking()
+        );
+
+        profile.setDrinking(
+                request.getDrinking()
+        );
+
+        // =====================================================
+        // Church Information
+        // =====================================================
 
         profile.setDenomination(
                 request.getDenomination()
@@ -146,14 +181,16 @@ public class ProfileService {
                 request.getChurchAddress()
         );
 
-        /*
-         * =====================================================
-         * Education & Career
-         * =====================================================
-         */
+        // =====================================================
+        // Education & Career
+        // =====================================================
 
         profile.setHighestEducation(
                 request.getHighestEducation()
+        );
+
+        profile.setEducationField(
+                request.getEducationField()
         );
 
         profile.setProfession(
@@ -168,11 +205,9 @@ public class ProfileService {
                 request.getAnnualIncome()
         );
 
-        /*
-         * =====================================================
-         * Family Information
-         * =====================================================
-         */
+        // =====================================================
+        // Family Information
+        // =====================================================
 
         profile.setFatherName(
                 request.getFatherName()
@@ -190,11 +225,17 @@ public class ProfileService {
                 request.getFamilyLocation()
         );
 
-        /*
-         * =====================================================
-         * Partner Preferences
-         * =====================================================
-         */
+        profile.setFamilyType(
+                request.getFamilyType()
+        );
+
+        profile.setFamilyValues(
+                request.getFamilyValues()
+        );
+
+        // =====================================================
+        // Partner Preferences
+        // =====================================================
 
         profile.setPreferredAgeFrom(
                 request.getPreferredAgeFrom()
@@ -204,19 +245,87 @@ public class ProfileService {
                 request.getPreferredAgeTo()
         );
 
+        profile.setPreferredHeightFromCm(
+                request.getPreferredHeightFromCm()
+        );
+
+        profile.setPreferredHeightToCm(
+                request.getPreferredHeightToCm()
+        );
+
+        profile.setPreferredReligion(
+                request.getPreferredReligion()
+        );
+
         profile.setPreferredDenomination(
                 request.getPreferredDenomination()
+        );
+
+        profile.setPreferredMaritalStatus(
+                request.getPreferredMaritalStatus()
+        );
+
+        profile.setPreferredCommunity(
+                request.getPreferredCommunity()
+        );
+
+        /*
+         * Existing members and older frontend clients may not
+         * send communityNoBar yet.
+         *
+         * Preserve the existing value when it is omitted.
+         */
+        if (request.getCommunityNoBar() != null) {
+            profile.setCommunityNoBar(
+                    request.getCommunityNoBar()
+            );
+        } else if (profile.getCommunityNoBar() == null) {
+            profile.setCommunityNoBar(true);
+        }
+
+        profile.setPreferredMotherTongue(
+                request.getPreferredMotherTongue()
         );
 
         profile.setPreferredEducation(
                 request.getPreferredEducation()
         );
 
-        /*
-         * =====================================================
-         * Current Location
-         * =====================================================
-         */
+        profile.setPreferredProfession(
+                request.getPreferredProfession()
+        );
+
+        profile.setPreferredCountry(
+                request.getPreferredCountry()
+        );
+
+        profile.setPreferredState(
+                request.getPreferredState()
+        );
+
+        profile.setPreferredCity(
+                request.getPreferredCity()
+        );
+
+        profile.setPreferredDiet(
+                request.getPreferredDiet()
+        );
+
+        profile.setPreferredSmoking(
+                request.getPreferredSmoking()
+        );
+
+        profile.setPreferredDrinking(
+                request.getPreferredDrinking()
+        );
+
+        profile.setPreferredFaithCommitment(
+                request.getPreferredFaithCommitment()
+        );
+
+        // =====================================================
+        // Current Location
+        // =====================================================
 
         profile.setCity(
                 request.getCity()
@@ -230,32 +339,20 @@ public class ProfileService {
                 request.getCountry()
         );
 
-        /*
-         * =====================================================
-         * About
-         * =====================================================
-         */
+        // =====================================================
+        // About
+        // =====================================================
 
         profile.setAboutMe(
                 request.getAboutMe()
         );
 
-        /*
-         * =====================================================
-         * Profile completion
-         * =====================================================
-         *
-         * The backend is the source of truth.
-         *
-         * Every profile-information field is required.
-         *
-         * Photos are NOT included in this calculation.
-         */
+        // =====================================================
+        // Profile completion
+        // =====================================================
 
         int completionPercentage =
-                calculateCompletion(
-                        profile
-                );
+                calculateCompletion(profile);
 
         profile.setCompletionPercentage(
                 completionPercentage
@@ -267,31 +364,14 @@ public class ProfileService {
         );
 
         Profile savedProfile =
-                profileRepository
-                        .save(
-                                profile
-                        );
+                profileRepository.save(profile);
 
-        return map(
-                savedProfile
-        );
+        return map(savedProfile);
     }
 
-    /*
-     * =========================================================
-     * Submit profile for administrator verification
-     * =========================================================
-     *
-     * Allowed:
-     *
-     * NOT_SUBMITTED -> PENDING
-     * REJECTED      -> PENDING
-     *
-     * Not allowed:
-     *
-     * PENDING
-     * APPROVED
-     */
+    // =========================================================
+    // Submit profile for administrator verification
+    // =========================================================
 
     public ProfileResponse submitForVerification(
             String email
@@ -299,9 +379,7 @@ public class ProfileService {
 
         Profile profile =
                 profileRepository
-                        .findByUserEmail(
-                                email
-                        )
+                        .findByUserEmail(email)
                         .orElseThrow(
                                 () ->
                                         new IllegalStateException(
@@ -310,16 +388,11 @@ public class ProfileService {
                         );
 
         /*
-         * Recalculate before verification.
-         *
-         * This prevents an old/stale completion percentage
-         * from incorrectly allowing profile verification.
+         * Recalculate before verification so an old completion
+         * percentage can never incorrectly allow submission.
          */
-
         int completionPercentage =
-                calculateCompletion(
-                        profile
-                );
+                calculateCompletion(profile);
 
         profile.setCompletionPercentage(
                 completionPercentage
@@ -330,13 +403,6 @@ public class ProfileService {
                         >= PROFILE_COMPLETION_THRESHOLD
         );
 
-        /*
-         * Every required profile-information field
-         * must be completed.
-         *
-         * Photos remain optional.
-         */
-
         if (
                 !Boolean.TRUE.equals(
                         profile.getProfileCompleted()
@@ -346,12 +412,10 @@ public class ProfileService {
                         < PROFILE_COMPLETION_THRESHOLD
         ) {
 
-            profileRepository.save(
-                    profile
-            );
+            profileRepository.save(profile);
 
             throw new IllegalStateException(
-                    "Please complete all required profile information before submitting for verification. Profile photos are optional."
+                    "Please complete all required profile information before submitting for verification. Profile photos and optional personal fields are not required."
             );
         }
 
@@ -359,10 +423,6 @@ public class ProfileService {
                 profile.getVerificationStatus() == null
                         ? ProfileVerificationStatus.NOT_SUBMITTED
                         : profile.getVerificationStatus();
-
-        /*
-         * Already waiting for administrator review.
-         */
 
         if (
                 status ==
@@ -373,10 +433,6 @@ public class ProfileService {
                     "Your profile has already been submitted and is waiting for verification."
             );
         }
-
-        /*
-         * Already approved.
-         */
 
         if (
                 status ==
@@ -394,25 +450,17 @@ public class ProfileService {
          * NOT_SUBMITTED -> PENDING
          * REJECTED      -> PENDING
          */
-
         profile.submitForVerification();
 
         Profile savedProfile =
-                profileRepository
-                        .save(
-                                profile
-                        );
+                profileRepository.save(profile);
 
-        return map(
-                savedProfile
-        );
+        return map(savedProfile);
     }
 
-    /*
-     * =========================================================
-     * Create empty profile
-     * =========================================================
-     */
+    // =========================================================
+    // Create empty profile
+    // =========================================================
 
     private Profile createEmptyProfile(
             String email
@@ -420,9 +468,7 @@ public class ProfileService {
 
         User user =
                 userRepository
-                        .findByEmail(
-                                email
-                        )
+                        .findByEmail(email)
                         .orElseThrow(
                                 () ->
                                         new EntityNotFoundException(
@@ -434,314 +480,221 @@ public class ProfileService {
         Profile profile =
                 Profile
                         .builder()
-                        .user(
-                                user
-                        )
-                        .completionPercentage(
-                                0
-                        )
-                        .profileCompleted(
-                                false
-                        )
+                        .user(user)
+                        .completionPercentage(0)
+                        .profileCompleted(false)
+                        .communityNoBar(true)
                         .verificationStatus(
                                 ProfileVerificationStatus.NOT_SUBMITTED
                         )
                         .build();
 
-        return profileRepository
-                .save(
-                        profile
-                );
+        return profileRepository.save(profile);
     }
 
-    /*
-     * =========================================================
-     * Profile completion
-     * =========================================================
-     *
-     * FINAL HOLY MATRIMONY RULE
-     *
-     * Every profile-information field below is required.
-     *
-     * Photos are optional and therefore intentionally
-     * excluded from this calculation.
-     *
-     * 26 required fields = 100%.
-     */
+    // =========================================================
+    // Profile completion
+    // =========================================================
 
+    /*
+     * Profile completion intentionally measures the core
+     * information needed to create a useful matrimonial
+     * profile.
+     *
+     * Optional/sensitive information such as:
+     *
+     * - weight
+     * - complexion
+     * - body type
+     * - community
+     * - sub-community
+     * - faith background
+     * - physical status
+     * - diet
+     * - smoking
+     * - drinking
+     * - membership ID
+     * - most partner lifestyle preferences
+     *
+     * does NOT prevent a member from reaching 100%.
+     */
     private int calculateCompletion(
             Profile profile
     ) {
 
         int completed = 0;
 
-        /*
-         * =====================================================
-         * Basic Information
-         * =====================================================
-         */
+        // =====================================================
+        // Basic — 4
+        // =====================================================
 
-        if (
-                hasText(
-                        profile.getMobile()
-                )
-        ) {
+        if (hasText(profile.getMobile())) {
             completed++;
         }
 
-        if (
-                profile.getDateOfBirth()
-                        != null
-        ) {
+        if (profile.getDateOfBirth() != null) {
             completed++;
         }
 
-        if (
-                hasText(
-                        profile.getGender()
-                )
-        ) {
+        if (hasText(profile.getGender())) {
             completed++;
         }
 
-        if (
-                hasText(
-                        profile.getMaritalStatus()
-                )
-        ) {
+        if (hasText(profile.getMaritalStatus())) {
             completed++;
         }
 
-        /*
-         * =====================================================
-         * Current Location
-         * =====================================================
-         */
+        // =====================================================
+        // Personal — 4
+        // =====================================================
 
-        if (
-                hasText(
-                        profile.getCity()
-                )
-        ) {
+        if (profile.getHeightCm() != null) {
             completed++;
         }
 
-        if (
-                hasText(
-                        profile.getState()
-                )
-        ) {
+        if (hasText(profile.getMotherTongue())) {
             completed++;
         }
 
-        if (
-                hasText(
-                        profile.getCountry()
-                )
-        ) {
+        if (hasText(profile.getReligion())) {
             completed++;
         }
 
-        /*
-         * =====================================================
-         * About Me
-         * =====================================================
-         */
+        if (hasText(profile.getDenomination())) {
+            completed++;
+        }
 
-        if (
-                hasText(
-                        profile.getAboutMe()
-                )
-        ) {
+        // =====================================================
+        // Location — 3
+        // =====================================================
+
+        if (hasText(profile.getCity())) {
+            completed++;
+        }
+
+        if (hasText(profile.getState())) {
+            completed++;
+        }
+
+        if (hasText(profile.getCountry())) {
+            completed++;
+        }
+
+        // =====================================================
+        // About — 1
+        // =====================================================
+
+        if (hasText(profile.getAboutMe())) {
+            completed++;
+        }
+
+        // =====================================================
+        // Church — 4
+        // =====================================================
+
+        if (hasText(profile.getChurchName())) {
+            completed++;
+        }
+
+        if (hasText(profile.getPastorName())) {
             completed++;
         }
 
         /*
-         * =====================================================
-         * Church Information
-         * =====================================================
-         */
-
-        if (
-                hasText(
-                        profile.getDenomination()
-                )
-        ) {
-            completed++;
-        }
-
-        if (
-                hasText(
-                        profile.getChurchName()
-                )
-        ) {
-            completed++;
-        }
-
-        if (
-                hasText(
-                        profile.getPastorName()
-                )
-        ) {
-            completed++;
-        }
-
-        /*
-         * Both:
-         *
-         * true  = baptized
-         * false = not baptized
-         *
-         * are valid completed answers.
-         *
+         * Both true and false are valid answers.
          * Only null means unanswered.
          */
-
-        if (
-                profile.getBaptized()
-                        != null
-        ) {
+        if (profile.getBaptized() != null) {
             completed++;
         }
 
-      
-
-        if (
-                hasText(
-                        profile.getChurchAddress()
-                )
-        ) {
+        if (hasText(profile.getChurchAddress())) {
             completed++;
         }
 
-        /*
-         * =====================================================
-         * Education & Career
-         * =====================================================
-         */
+        // =====================================================
+        // Education & Career — 4
+        // =====================================================
 
-        if (
-                hasText(
-                        profile.getHighestEducation()
-                )
-        ) {
+        if (hasText(profile.getHighestEducation())) {
             completed++;
         }
 
-        if (
-                hasText(
-                        profile.getProfession()
-                )
-        ) {
+        if (hasText(profile.getEducationField())) {
             completed++;
         }
 
-        if (
-                hasText(
-                        profile.getCompany()
-                )
-        ) {
+        if (hasText(profile.getProfession())) {
             completed++;
         }
 
-        if (
-                hasText(
-                        profile.getAnnualIncome()
-                )
-        ) {
+        if (hasText(profile.getAnnualIncome())) {
             completed++;
         }
 
-        /*
-         * =====================================================
-         * Family Information
-         * =====================================================
-         */
+        // =====================================================
+        // Family — 4
+        // =====================================================
 
-        if (
-                hasText(
-                        profile.getFatherName()
-                )
-        ) {
+        if (hasText(profile.getFatherName())) {
             completed++;
         }
 
-        if (
-                hasText(
-                        profile.getMotherName()
-                )
-        ) {
+        if (hasText(profile.getMotherName())) {
             completed++;
         }
 
-        if (
-                hasText(
-                        profile.getSiblings()
-                )
-        ) {
+        if (hasText(profile.getFamilyLocation())) {
             completed++;
         }
 
-        if (
-                hasText(
-                        profile.getFamilyLocation()
-                )
-        ) {
+        if (hasText(profile.getFamilyType())) {
+            completed++;
+        }
+
+        // =====================================================
+        // Core Partner Preferences — 6
+        // =====================================================
+
+        if (profile.getPreferredAgeFrom() != null) {
+            completed++;
+        }
+
+        if (profile.getPreferredAgeTo() != null) {
+            completed++;
+        }
+
+        if (profile.getPreferredHeightFromCm() != null) {
+            completed++;
+        }
+
+        if (profile.getPreferredHeightToCm() != null) {
+            completed++;
+        }
+
+        if (hasText(profile.getPreferredReligion())) {
+            completed++;
+        }
+
+        if (hasText(profile.getPreferredEducation())) {
             completed++;
         }
 
         /*
-         * =====================================================
-         * Partner Preferences
-         * =====================================================
+         * REQUIRED_PROFILE_FIELDS is deliberately kept in one
+         * constant so future profile expansion cannot silently
+         * change the completion denominator.
          */
-
-        if (
-                profile.getPreferredAgeFrom()
-                        != null
-        ) {
-            completed++;
-        }
-
-        if (
-                profile.getPreferredAgeTo()
-                        != null
-        ) {
-            completed++;
-        }
-
-        if (
-                hasText(
-                        profile.getPreferredDenomination()
-                )
-        ) {
-            completed++;
-        }
-
-        if (
-                hasText(
-                        profile.getPreferredEducation()
-                )
-        ) {
-            completed++;
-        }
-
-        /*
-         * Integer division is okay here because
-         * profileCompleted becomes true only when
-         * all 26 required fields are present.
-         */
-
-        return (
-                completed * 100
-        ) / REQUIRED_PROFILE_FIELDS;
+        return Math.min(
+                100,
+                (completed * 100)
+                        / REQUIRED_PROFILE_FIELDS
+        );
     }
 
-    /*
-     * =========================================================
-     * String helper
-     * =========================================================
-     */
+    // =========================================================
+    // String helper
+    // =========================================================
 
     private boolean hasText(
             String value
@@ -752,11 +705,9 @@ public class ProfileService {
                 !value.isBlank();
     }
 
-    /*
-     * =========================================================
-     * DTO mapping
-     * =========================================================
-     */
+    // =========================================================
+    // DTO mapping
+    // =========================================================
 
     private ProfileResponse map(
             Profile profile
@@ -776,9 +727,7 @@ public class ProfileService {
                         user.getId()
                 )
 
-                /*
-                 * ===== User =====
-                 */
+                // ===== User =====
 
                 .fullName(
                         user.getFullName()
@@ -788,9 +737,7 @@ public class ProfileService {
                         user.getEmail()
                 )
 
-                /*
-                 * ===== Basic =====
-                 */
+                // ===== Basic =====
 
                 .mobile(
                         profile.getMobile()
@@ -812,9 +759,61 @@ public class ProfileService {
                         profile.getMaritalStatus()
                 )
 
-                /*
-                 * ===== Church =====
-                 */
+                // ===== Personal =====
+
+                .heightCm(
+                        profile.getHeightCm()
+                )
+
+                .weightKg(
+                        profile.getWeightKg()
+                )
+
+                .complexion(
+                        profile.getComplexion()
+                )
+
+                .bodyType(
+                        profile.getBodyType()
+                )
+
+                .motherTongue(
+                        profile.getMotherTongue()
+                )
+
+                .religion(
+                        profile.getReligion()
+                )
+
+                .community(
+                        profile.getCommunity()
+                )
+
+                .subCommunity(
+                        profile.getSubCommunity()
+                )
+
+                .faithBackground(
+                        profile.getFaithBackground()
+                )
+
+                .physicalStatus(
+                        profile.getPhysicalStatus()
+                )
+
+                .diet(
+                        profile.getDiet()
+                )
+
+                .smoking(
+                        profile.getSmoking()
+                )
+
+                .drinking(
+                        profile.getDrinking()
+                )
+
+                // ===== Church =====
 
                 .denomination(
                         profile.getDenomination()
@@ -840,12 +839,14 @@ public class ProfileService {
                         profile.getChurchAddress()
                 )
 
-                /*
-                 * ===== Education =====
-                 */
+                // ===== Education =====
 
                 .highestEducation(
                         profile.getHighestEducation()
+                )
+
+                .educationField(
+                        profile.getEducationField()
                 )
 
                 .profession(
@@ -860,9 +861,7 @@ public class ProfileService {
                         profile.getAnnualIncome()
                 )
 
-                /*
-                 * ===== Family =====
-                 */
+                // ===== Family =====
 
                 .fatherName(
                         profile.getFatherName()
@@ -880,9 +879,15 @@ public class ProfileService {
                         profile.getFamilyLocation()
                 )
 
-                /*
-                 * ===== Preferences =====
-                 */
+                .familyType(
+                        profile.getFamilyType()
+                )
+
+                .familyValues(
+                        profile.getFamilyValues()
+                )
+
+                // ===== Preferences =====
 
                 .preferredAgeFrom(
                         profile.getPreferredAgeFrom()
@@ -892,17 +897,77 @@ public class ProfileService {
                         profile.getPreferredAgeTo()
                 )
 
+                .preferredHeightFromCm(
+                        profile.getPreferredHeightFromCm()
+                )
+
+                .preferredHeightToCm(
+                        profile.getPreferredHeightToCm()
+                )
+
+                .preferredReligion(
+                        profile.getPreferredReligion()
+                )
+
                 .preferredDenomination(
                         profile.getPreferredDenomination()
+                )
+
+                .preferredMaritalStatus(
+                        profile.getPreferredMaritalStatus()
+                )
+
+                .preferredCommunity(
+                        profile.getPreferredCommunity()
+                )
+
+                .communityNoBar(
+                        Boolean.TRUE.equals(
+                                profile.getCommunityNoBar()
+                        )
+                )
+
+                .preferredMotherTongue(
+                        profile.getPreferredMotherTongue()
                 )
 
                 .preferredEducation(
                         profile.getPreferredEducation()
                 )
 
-                /*
-                 * ===== Current Location =====
-                 */
+                .preferredProfession(
+                        profile.getPreferredProfession()
+                )
+
+                .preferredCountry(
+                        profile.getPreferredCountry()
+                )
+
+                .preferredState(
+                        profile.getPreferredState()
+                )
+
+                .preferredCity(
+                        profile.getPreferredCity()
+                )
+
+                .preferredDiet(
+                        profile.getPreferredDiet()
+                )
+
+                .preferredSmoking(
+                        profile.getPreferredSmoking()
+                )
+
+                .preferredDrinking(
+                        profile.getPreferredDrinking()
+                )
+
+                .preferredFaithCommitment(
+                        profile.getPreferredFaithCommitment()
+                )
+
+                // ===== Current Location =====
 
                 .city(
                         profile.getCity()
@@ -916,17 +981,13 @@ public class ProfileService {
                         profile.getCountry()
                 )
 
-                /*
-                 * ===== About =====
-                 */
+                // ===== About =====
 
                 .aboutMe(
                         profile.getAboutMe()
                 )
 
-                /*
-                 * ===== Completion =====
-                 */
+                // ===== Completion =====
 
                 .completionPercentage(
                         profile.getCompletionPercentage()
@@ -938,9 +999,7 @@ public class ProfileService {
                         )
                 )
 
-                /*
-                 * ===== Verification =====
-                 */
+                // ===== Verification =====
 
                 .verificationStatus(
                         profile.getVerificationStatus() == null

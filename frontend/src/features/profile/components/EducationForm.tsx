@@ -1,10 +1,9 @@
 "use client";
 
-import {
-  useState,
-} from "react";
+import { useState } from "react";
 
 import {
+  BookOpen,
   Briefcase,
   Building2,
   GraduationCap,
@@ -45,18 +44,13 @@ export default function EducationForm({
   onNext,
   onBack,
 }: EducationFormProps) {
-  const { educationInfo } =
-    useProfile();
+  const { educationInfo } = useProfile();
 
   const { updateSection } =
     useProfileUpdater();
 
-  const [
-    errors,
-    setErrors,
-  ] = useState<
-    FieldErrors<EducationInfo>
-  >({});
+  const [errors, setErrors] =
+    useState<FieldErrors<EducationInfo>>({});
 
   function updateEducationInfo(
     field: keyof EducationInfo,
@@ -89,9 +83,7 @@ export default function EducationForm({
         educationInfo
       );
 
-    setErrors(
-      validationErrors
-    );
+    setErrors(validationErrors);
 
     if (
       hasValidationErrors(
@@ -99,7 +91,6 @@ export default function EducationForm({
       )
     ) {
       focusFirstInvalidField();
-
       return;
     }
 
@@ -108,13 +99,11 @@ export default function EducationForm({
 
   return (
     <Card className="overflow-hidden p-0">
-      {/* Compact Step Header */}
+      {/* Header */}
       <div className="border-b border-slate-100 bg-gradient-to-r from-emerald-50/75 via-white to-blue-50/60 px-4 py-3.5 sm:px-5">
         <div className="flex items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0B2D5C] to-emerald-700 text-white shadow-sm">
-            <GraduationCap
-              size={17}
-            />
+            <GraduationCap size={17} />
           </div>
 
           <div className="min-w-0">
@@ -127,13 +116,15 @@ export default function EducationForm({
             </h2>
 
             <p className="mt-0.5 max-w-2xl text-[11px] leading-5 text-slate-500 sm:text-xs">
-              Add your education and professional information to improve match recommendations.
+              Add your education and professional information
+              to improve match recommendations.
             </p>
           </div>
         </div>
       </div>
 
       <div className="p-4 sm:p-5">
+        {/* Required Fields Notice */}
         <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2.5 text-[11px] leading-5 text-blue-800">
           <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-blue-100 font-black text-blue-700">
             *
@@ -150,15 +141,14 @@ export default function EducationForm({
 
         <SectionHeading
           icon={
-            <GraduationCap
-              size={15}
-            />
+            <GraduationCap size={15} />
           }
           title="Education & Profession"
           description="Share your academic background and current career."
         />
 
         <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-2">
+          {/* Highest Education */}
           <FormField
             label="Highest Education"
             required
@@ -197,16 +187,10 @@ export default function EducationForm({
                 {EDUCATION_OPTIONS.map(
                   (education) => (
                     <option
-                      key={
-                        education
-                      }
-                      value={
-                        education
-                      }
+                      key={education}
+                      value={education}
                     >
-                      {
-                        education
-                      }
+                      {education}
                     </option>
                   )
                 )}
@@ -214,6 +198,41 @@ export default function EducationForm({
             </IconField>
           </FormField>
 
+          {/* Field of Study */}
+          <FormField
+            label="Field of Study / Specialization"
+            required
+            htmlFor="education-field"
+            error={
+              errors.educationField
+            }
+          >
+            <IconField
+              icon={
+                <BookOpen size={16} />
+              }
+            >
+              <Input
+                id="education-field"
+                value={
+                  educationInfo.educationField
+                }
+                error={
+                  errors.educationField
+                }
+                placeholder="For example: Computer Science"
+                className="pl-10"
+                onChange={(event) =>
+                  updateEducationInfo(
+                    "educationField",
+                    event.target.value
+                  )
+                }
+              />
+            </IconField>
+          </FormField>
+
+          {/* Profession */}
           <FormField
             label="Profession"
             required
@@ -224,9 +243,7 @@ export default function EducationForm({
           >
             <IconField
               icon={
-                <Briefcase
-                  size={16}
-                />
+                <Briefcase size={16} />
               }
             >
               <Select
@@ -252,28 +269,16 @@ export default function EducationForm({
                 {PROFESSION_GROUPS.map(
                   (group) => (
                     <optgroup
-                      key={
-                        group.label
-                      }
-                      label={
-                        group.label
-                      }
+                      key={group.label}
+                      label={group.label}
                     >
                       {group.professions.map(
-                        (
-                          profession
-                        ) => (
+                        (profession) => (
                           <option
-                            key={
-                              profession
-                            }
-                            value={
-                              profession
-                            }
+                            key={profession}
+                            value={profession}
                           >
-                            {
-                              profession
-                            }
+                            {profession}
                           </option>
                         )
                       )}
@@ -284,6 +289,7 @@ export default function EducationForm({
             </IconField>
           </FormField>
 
+          {/* Company */}
           <FormField
             label="Company / Organization"
             htmlFor="company"
@@ -294,9 +300,7 @@ export default function EducationForm({
           >
             <IconField
               icon={
-                <Building2
-                  size={16}
-                />
+                <Building2 size={16} />
               }
             >
               <Input
@@ -319,13 +323,14 @@ export default function EducationForm({
             </IconField>
           </FormField>
 
+          {/* Annual Income */}
           <FormField
             label="Annual Income"
+            required
             htmlFor="annual-income"
             error={
               errors.annualIncome
             }
-            helperText="Optional"
           >
             <IconField
               icon={
@@ -355,6 +360,7 @@ export default function EducationForm({
           </FormField>
         </div>
 
+        {/* Navigation */}
         <div className="mt-6 flex flex-col-reverse gap-2.5 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
           <Button
             type="button"
@@ -362,9 +368,7 @@ export default function EducationForm({
             size="sm"
             fullWidth
             className="sm:w-auto"
-            onClick={
-              onBack
-            }
+            onClick={onBack}
           >
             Back
           </Button>

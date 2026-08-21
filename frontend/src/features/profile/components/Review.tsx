@@ -18,7 +18,13 @@ import {
 import Button from "@/components/ui/button";
 import Card from "@/components/ui/Card";
 
-import { useProfile } from "@/features/profile/context/useProfile";
+import {
+  useProfile,
+} from "@/features/profile/context/useProfile";
+
+import {
+  calculateProfileCompletion,
+} from "@/features/profile/utils/profileCompletion";
 
 interface ReviewProps {
   onBack: () => void;
@@ -28,7 +34,11 @@ interface ReviewProps {
 
 interface SummaryItemProps {
   label: string;
-  value?: string | number | null;
+
+  value?:
+    | string
+    | number
+    | null;
 }
 
 interface ReviewSectionProps {
@@ -40,7 +50,10 @@ interface ReviewSectionProps {
 }
 
 function displayValue(
-  value?: string | number | null
+  value?:
+    | string
+    | number
+    | null
 ): string {
   if (
     value === undefined ||
@@ -51,6 +64,97 @@ function displayValue(
   }
 
   return String(value);
+}
+
+function hasText(
+  value?: string | null
+): boolean {
+  return Boolean(
+    value?.trim()
+  );
+}
+
+function formatHeight(
+  value?: string
+): string {
+  if (!value?.trim()) {
+    return "";
+  }
+
+  const cm =
+    Number(value);
+
+  if (
+    !Number.isFinite(cm)
+  ) {
+    return value;
+  }
+
+  const totalInches =
+    cm / 2.54;
+
+  let feet =
+    Math.floor(
+      totalInches / 12
+    );
+
+  let inches =
+    Math.round(
+      totalInches -
+        feet * 12
+    );
+
+  if (inches === 12) {
+    feet += 1;
+    inches = 0;
+  }
+
+  return `${feet}' ${inches}" (${cm} cm)`;
+}
+
+function formatFaithBackground(
+  value?: string
+): string {
+  switch (value) {
+    case "CHRISTIAN_BY_BIRTH":
+      return "Christian by birth";
+
+    case "CONVERTED_TO_CHRISTIANITY":
+      return "Converted to Christianity";
+
+    case "CHRISTIAN_FAMILY_BACKGROUND":
+      return "Christian family background";
+
+    case "PREFER_NOT_TO_SAY":
+      return "Prefer not to say";
+
+    default:
+      return value ?? "";
+  }
+}
+
+function formatFaithCommitment(
+  value?: string
+): string {
+  switch (value) {
+    case "ANY":
+      return "Any";
+
+    case "PRACTICING_CHRISTIAN":
+      return "Practicing Christian";
+
+    case "REGULAR_CHURCH_ATTENDEE":
+      return "Regular church attendee";
+
+    case "BAPTIZED_CHRISTIAN":
+      return "Baptized Christian";
+
+    case "CHURCH_VERIFIED_PREFERRED":
+      return "Church verified preferred";
+
+    default:
+      return value ?? "";
+  }
 }
 
 function SummaryItem({
@@ -71,12 +175,15 @@ function SummaryItem({
       <p
         className={[
           "mt-1 break-words text-sm font-semibold sm:text-base",
+
           hasValue
             ? "text-slate-800"
             : "italic text-slate-400",
         ].join(" ")}
       >
-        {displayValue(value)}
+        {displayValue(
+          value
+        )}
       </p>
     </div>
   );
@@ -111,15 +218,20 @@ function ReviewSection({
         <div
           className={[
             "inline-flex w-fit shrink-0 items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold",
+
             complete
               ? "bg-emerald-100 text-emerald-700"
               : "bg-amber-100 text-amber-700",
           ].join(" ")}
         >
           {complete ? (
-            <CheckCircle2 size={15} />
+            <CheckCircle2
+              size={15}
+            />
           ) : (
-            <Sparkles size={15} />
+            <Sparkles
+              size={15}
+            />
           )}
 
           {complete
@@ -132,14 +244,6 @@ function ReviewSection({
         {children}
       </div>
     </Card>
-  );
-}
-
-function hasText(
-  value?: string | null
-): boolean {
-  return Boolean(
-    value?.trim()
   );
 }
 
@@ -161,13 +265,43 @@ export default function Review({
 
   /*
    * =========================================================
-   * Section completion
+   * Completion
    * =========================================================
    *
-   * FINAL RULE:
-   *
-   * Every profile-information field is required.
-   * Photos are the only optional profile item.
+   * Uses the same 30-field model as ProfileService.
+   * Optional fields and photos do not block 100%.
+   */
+
+  const completion =
+    calculateProfileCompletion({
+      basicInfo,
+      churchInfo,
+      educationInfo,
+      familyInfo,
+      preferenceInfo,
+      locationInfo,
+      aboutInfo,
+      photoInfo,
+    });
+
+  const {
+    percentage:
+      completionPercentage,
+
+    completedFields,
+
+    totalFields:
+      totalRequiredFields,
+  } = completion;
+
+  const profileInformationComplete =
+    completedFields ===
+    totalRequiredFields;
+
+  /*
+   * =========================================================
+   * Section status
+   * =========================================================
    */
 
   const basicComplete =
@@ -184,13 +318,22 @@ export default function Review({
       basicInfo.maritalStatus
     ) &&
     hasText(
-      locationInfo.city
+      basicInfo.heightCm
+    ) &&
+    hasText(
+      basicInfo.motherTongue
+    ) &&
+    hasText(
+      basicInfo.religion
+    ) &&
+    hasText(
+      locationInfo.country
     ) &&
     hasText(
       locationInfo.state
     ) &&
     hasText(
-      locationInfo.country
+      locationInfo.city
     ) &&
     hasText(
       aboutInfo.aboutMe
@@ -209,7 +352,6 @@ export default function Review({
     hasText(
       churchInfo.baptized
     ) &&
-  
     hasText(
       churchInfo.churchAddress
     );
@@ -219,10 +361,10 @@ export default function Review({
       educationInfo.highestEducation
     ) &&
     hasText(
-      educationInfo.profession
+      educationInfo.educationField
     ) &&
     hasText(
-      educationInfo.company
+      educationInfo.profession
     ) &&
     hasText(
       educationInfo.annualIncome
@@ -236,10 +378,10 @@ export default function Review({
       familyInfo.motherName
     ) &&
     hasText(
-      familyInfo.siblings
+      familyInfo.familyLocation
     ) &&
     hasText(
-      familyInfo.familyLocation
+      familyInfo.familyType
     );
 
   const preferenceComplete =
@@ -250,137 +392,17 @@ export default function Review({
       preferenceInfo.preferredAgeTo
     ) &&
     hasText(
-      preferenceInfo.preferredDenomination
+      preferenceInfo.preferredHeightFromCm
+    ) &&
+    hasText(
+      preferenceInfo.preferredHeightToCm
+    ) &&
+    hasText(
+      preferenceInfo.preferredReligion
     ) &&
     hasText(
       preferenceInfo.preferredEducation
     );
-
-  /*
-   * =========================================================
-   * Exact 26-field completion
-   * =========================================================
-   *
-   * This intentionally mirrors the backend
-   * ProfileService completion rule.
-   *
-   * Photos are excluded.
-   */
-
-  const requiredFields = [
-    // Basic
-    hasText(
-      basicInfo.mobile
-    ),
-    hasText(
-      basicInfo.dateOfBirth
-    ),
-    hasText(
-      basicInfo.gender
-    ),
-    hasText(
-      basicInfo.maritalStatus
-    ),
-
-    // Current location
-    hasText(
-      locationInfo.city
-    ),
-    hasText(
-      locationInfo.state
-    ),
-    hasText(
-      locationInfo.country
-    ),
-
-    // About
-    hasText(
-      aboutInfo.aboutMe
-    ),
-
-    // Church
-    hasText(
-      churchInfo.denomination
-    ),
-    hasText(
-      churchInfo.churchName
-    ),
-    hasText(
-      churchInfo.pastorName
-    ),
-    hasText(
-      churchInfo.baptized
-    ),
-    hasText(
-      churchInfo.membershipId
-    ),
-    hasText(
-      churchInfo.churchAddress
-    ),
-
-    // Education
-    hasText(
-      educationInfo.highestEducation
-    ),
-    hasText(
-      educationInfo.profession
-    ),
-    hasText(
-      educationInfo.company
-    ),
-    hasText(
-      educationInfo.annualIncome
-    ),
-
-    // Family
-    hasText(
-      familyInfo.fatherName
-    ),
-    hasText(
-      familyInfo.motherName
-    ),
-    hasText(
-      familyInfo.siblings
-    ),
-    hasText(
-      familyInfo.familyLocation
-    ),
-
-    // Preferences
-    hasText(
-      preferenceInfo.preferredAgeFrom
-    ),
-    hasText(
-      preferenceInfo.preferredAgeTo
-    ),
-    hasText(
-      preferenceInfo.preferredDenomination
-    ),
-    hasText(
-      preferenceInfo.preferredEducation
-    ),
-  ];
-
-  const completedFields =
-    requiredFields.filter(
-      Boolean
-    ).length;
-
-  const totalRequiredFields =
-    requiredFields.length;
-
-  const completionPercentage =
-    Math.floor(
-      (
-        completedFields /
-        totalRequiredFields
-      ) *
-        100
-    );
-
-  const profileInformationComplete =
-    completedFields ===
-    totalRequiredFields;
 
   const primaryPhoto =
     photoInfo.photos.find(
@@ -398,8 +420,9 @@ export default function Review({
 
   return (
     <div className="space-y-4 sm:space-y-5">
+
       {/* =====================================================
-          Review completion summary
+          Completion Summary
           ===================================================== */}
 
       <Card className="overflow-hidden p-0">
@@ -417,15 +440,11 @@ export default function Review({
               </p>
 
               <h2 className="mt-1 text-xl font-bold tracking-tight text-[#0B2D5C] sm:text-2xl">
-                Review Your
-                Profile
+                Review Your Profile
               </h2>
 
               <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">
-                Review all of your
-                information before
-                saving your Holy
-                Matrimony profile.
+                Review your information before saving your Holy Matrimony profile.
               </p>
             </div>
           </div>
@@ -437,8 +456,7 @@ export default function Review({
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className="text-sm font-semibold text-slate-500">
-                    Required profile
-                    information
+                    Core profile information
                   </p>
 
                   <p className="mt-1 text-xl font-bold text-[#0B2D5C] sm:text-2xl">
@@ -464,12 +482,11 @@ export default function Review({
                 <div
                   className={[
                     "h-full rounded-full transition-all duration-500",
+
                     profileInformationComplete
                       ? "bg-gradient-to-r from-emerald-500 to-emerald-600"
                       : "bg-gradient-to-r from-[#0B2D5C] to-blue-500",
-                  ].join(
-                    " "
-                  )}
+                  ].join(" ")}
                   style={{
                     width: `${completionPercentage}%`,
                   }}
@@ -484,24 +501,12 @@ export default function Review({
                   />
 
                   <span>
-                    All required
-                    profile
-                    information is
-                    complete. Photos
-                    are optional and
-                    may be added
-                    later.
+                    All required profile information is complete. Optional personal details and photos can still be added or changed later.
                   </span>
                 </div>
               ) : (
                 <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
-                  Complete all
-                  required profile
-                  information to
-                  reach 100% and
-                  become eligible
-                  for profile
-                  verification.
+                  Complete the remaining required fields to reach 100% profile completion.
                 </div>
               )}
             </div>
@@ -509,12 +514,11 @@ export default function Review({
             <div
               className={[
                 "flex h-20 w-20 items-center justify-center rounded-full border-[6px] text-lg font-bold shadow-inner",
+
                 profileInformationComplete
                   ? "border-emerald-100 bg-emerald-50 text-emerald-700"
                   : "border-amber-100 bg-amber-50 text-amber-700",
-              ].join(
-                " "
-              )}
+              ].join(" ")}
             >
               {
                 completionPercentage
@@ -526,12 +530,12 @@ export default function Review({
       </Card>
 
       {/* =====================================================
-          Basic Information
+          Personal Information
           ===================================================== */}
 
       <ReviewSection
-        title="Basic Information"
-        description="Your personal details, current location and profile introduction."
+        title="Personal Information"
+        description="Personal, physical, faith, community and lifestyle details."
         icon={
           <UserRound
             size={22}
@@ -591,6 +595,103 @@ export default function Review({
         />
 
         <SummaryItem
+          label="Height"
+          value={
+            formatHeight(
+              basicInfo.heightCm
+            )
+          }
+        />
+
+        <SummaryItem
+          label="Weight"
+          value={
+            basicInfo.weightKg
+              ? `${basicInfo.weightKg} kg`
+              : ""
+          }
+        />
+
+        <SummaryItem
+          label="Complexion / Skin Tone"
+          value={
+            basicInfo.complexion
+          }
+        />
+
+        <SummaryItem
+          label="Body Type"
+          value={
+            basicInfo.bodyType
+          }
+        />
+
+        <SummaryItem
+          label="Physical Status"
+          value={
+            basicInfo.physicalStatus
+          }
+        />
+
+        <SummaryItem
+          label="Mother Tongue"
+          value={
+            basicInfo.motherTongue
+          }
+        />
+
+        <SummaryItem
+          label="Religion"
+          value={
+            basicInfo.religion
+          }
+        />
+
+        <SummaryItem
+          label="Community / Caste"
+          value={
+            basicInfo.community
+          }
+        />
+
+        <SummaryItem
+          label="Sub-community"
+          value={
+            basicInfo.subCommunity
+          }
+        />
+
+        <SummaryItem
+          label="Faith Background"
+          value={
+            formatFaithBackground(
+              basicInfo.faithBackground
+            )
+          }
+        />
+
+        <SummaryItem
+          label="Diet"
+          value={
+            basicInfo.diet
+          }
+        />
+
+        <SummaryItem
+          label="Smoking"
+          value={
+            basicInfo.smoking
+          }
+        />
+
+        <SummaryItem
+          label="Drinking"
+          value={
+            basicInfo.drinking
+          }
+        />
+
+        <SummaryItem
           label="Current Country"
           value={
             locationInfo.country
@@ -622,12 +723,12 @@ export default function Review({
       </ReviewSection>
 
       {/* =====================================================
-          Church Information
+          Church
           ===================================================== */}
 
       <ReviewSection
         title="Church Information"
-        description="Your church membership and spiritual background."
+        description="Your denomination, church and ministry information."
         icon={
           <Church
             size={22}
@@ -690,12 +791,12 @@ export default function Review({
       </ReviewSection>
 
       {/* =====================================================
-          Education & Career
+          Education
           ===================================================== */}
 
       <ReviewSection
         title="Education & Career"
-        description="Your education, profession and employment information."
+        description="Education, specialization and professional information."
         icon={
           <BriefcaseBusiness
             size={22}
@@ -709,6 +810,13 @@ export default function Review({
           label="Highest Education"
           value={
             educationInfo.highestEducation
+          }
+        />
+
+        <SummaryItem
+          label="Field of Study"
+          value={
+            educationInfo.educationField
           }
         />
 
@@ -740,7 +848,7 @@ export default function Review({
 
       <ReviewSection
         title="Family Details"
-        description="Your family information and family home location."
+        description="Family background, structure, values and location."
         icon={
           <UsersRound
             size={22}
@@ -772,6 +880,20 @@ export default function Review({
         />
 
         <SummaryItem
+          label="Family Type"
+          value={
+            familyInfo.familyType
+          }
+        />
+
+        <SummaryItem
+          label="Family Values"
+          value={
+            familyInfo.familyValues
+          }
+        />
+
+        <SummaryItem
           label="Family Location"
           value={
             familyInfo.familyLocation
@@ -785,7 +907,7 @@ export default function Review({
 
       <ReviewSection
         title="Partner Preferences"
-        description="The preferences used to help find compatible matches."
+        description="Preferences used to rank compatible profiles."
         icon={
           <Heart
             size={22}
@@ -808,9 +930,55 @@ export default function Review({
         />
 
         <SummaryItem
+          label="Preferred Height"
+          value={
+            preferenceInfo
+              .preferredHeightFromCm &&
+            preferenceInfo
+              .preferredHeightToCm
+              ? `${formatHeight(
+                  preferenceInfo.preferredHeightFromCm
+                )} – ${formatHeight(
+                  preferenceInfo.preferredHeightToCm
+                )}`
+              : ""
+          }
+        />
+
+        <SummaryItem
+          label="Preferred Religion"
+          value={
+            preferenceInfo.preferredReligion
+          }
+        />
+
+        <SummaryItem
           label="Preferred Denomination"
           value={
             preferenceInfo.preferredDenomination
+          }
+        />
+
+        <SummaryItem
+          label="Preferred Marital Status"
+          value={
+            preferenceInfo.preferredMaritalStatus
+          }
+        />
+
+        <SummaryItem
+          label="Community Preference"
+          value={
+            preferenceInfo.communityNoBar
+              ? "Community No Bar"
+              : preferenceInfo.preferredCommunity
+          }
+        />
+
+        <SummaryItem
+          label="Preferred Mother Tongue"
+          value={
+            preferenceInfo.preferredMotherTongue
           }
         />
 
@@ -820,10 +988,68 @@ export default function Review({
             preferenceInfo.preferredEducation
           }
         />
+
+        <SummaryItem
+          label="Preferred Profession"
+          value={
+            preferenceInfo.preferredProfession
+          }
+        />
+
+        <SummaryItem
+          label="Preferred Country"
+          value={
+            preferenceInfo.preferredCountry
+          }
+        />
+
+        <SummaryItem
+          label="Preferred State"
+          value={
+            preferenceInfo.preferredState
+          }
+        />
+
+        <SummaryItem
+          label="Preferred City"
+          value={
+            preferenceInfo.preferredCity
+          }
+        />
+
+        <SummaryItem
+          label="Preferred Diet"
+          value={
+            preferenceInfo.preferredDiet
+          }
+        />
+
+        <SummaryItem
+          label="Preferred Smoking"
+          value={
+            preferenceInfo.preferredSmoking
+          }
+        />
+
+        <SummaryItem
+          label="Preferred Drinking"
+          value={
+            preferenceInfo.preferredDrinking
+          }
+        />
+
+        <SummaryItem
+          label="Faith Commitment"
+          value={
+            formatFaithCommitment(
+              preferenceInfo.preferredFaithCommitment
+            )
+          }
+        />
       </ReviewSection>
 
       {/* =====================================================
-          Photos — OPTIONAL
+          Photos
           ===================================================== */}
 
       <Card className="overflow-hidden p-0">
@@ -847,10 +1073,7 @@ export default function Review({
               </div>
 
               <p className="mt-1 text-sm text-slate-500">
-                Photos are not
-                required for
-                profile completion
-                or verification.
+                Photos improve profile visibility but do not affect profile completion.
               </p>
             </div>
           </div>
@@ -858,16 +1081,14 @@ export default function Review({
           <div
             className={[
               "inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold",
-              photoInfo.photos
-                .length > 0
+
+              photoInfo.photos.length > 0
                 ? "bg-emerald-100 text-emerald-700"
                 : "bg-slate-100 text-slate-600",
-            ].join(
-              " "
-            )}
+            ].join(" ")}
           >
-            {photoInfo.photos
-              .length > 0 ? (
+            {photoInfo.photos.length >
+            0 ? (
               <CheckCircle2
                 size={15}
               />
@@ -877,46 +1098,14 @@ export default function Review({
               />
             )}
 
-            {photoInfo.photos
-              .length > 0
+            {photoInfo.photos.length >
+            0
               ? `${photoInfo.photos.length} uploaded`
               : "Skipped for now"}
           </div>
         </div>
 
         <div className="p-4 sm:p-5">
-          {/* Recommendation */}
-
-          <div className="mb-4 rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50 to-amber-50 px-4 py-4">
-            <div className="flex items-start gap-3">
-              <Sparkles
-                size={20}
-                className="mt-0.5 shrink-0 text-[#B38B19]"
-              />
-
-              <div>
-                <p className="text-sm font-bold text-[#0B2D5C]">
-                  Photos are
-                  strongly
-                  recommended
-                </p>
-
-                <p className="mt-1 text-sm leading-6 text-slate-600">
-                  Adding clear,
-                  recent photos can
-                  help your profile
-                  attract more
-                  attention and
-                  relevant match
-                  interest. You can
-                  also upload or
-                  update photos
-                  later.
-                </p>
-              </div>
-            </div>
-          </div>
-
           {primaryPhoto ? (
             <div className="grid gap-4 sm:grid-cols-[105px_1fr] sm:items-center">
               <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-slate-100 shadow-md">
@@ -935,22 +1124,11 @@ export default function Review({
 
               <div>
                 <h4 className="font-bold text-[#0B2D5C]">
-                  Primary photo
-                  selected
+                  Primary photo selected
                 </h4>
 
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Your primary
-                  photo will appear
-                  first when other
-                  members view your
-                  profile.
-                </p>
-
-                <p className="mt-2 text-sm font-semibold text-emerald-700">
-                  Great — your
-                  profile includes
-                  a photo.
+                  This photo will appear first when other members view your profile.
                 </p>
               </div>
             </div>
@@ -966,17 +1144,7 @@ export default function Review({
               </h4>
 
               <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-                You can complete,
-                save and submit
-                your profile for
-                verification
-                without a photo.
-                We recommend adding
-                one later to
-                improve profile
-                visibility and help
-                potential matches
-                know you better.
+                You can save and complete your profile without a photo. Adding one later is strongly recommended.
               </p>
             </div>
           )}
@@ -984,12 +1152,13 @@ export default function Review({
       </Card>
 
       {/* =====================================================
-          Final readiness
+          Readiness
           ===================================================== */}
 
       <Card
         className={[
           "overflow-hidden p-4 sm:p-5",
+
           profileInformationComplete
             ? "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-amber-50"
             : "border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50",
@@ -1000,12 +1169,11 @@ export default function Review({
             <div
               className={[
                 "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-md",
+
                 profileInformationComplete
                   ? "bg-emerald-600"
                   : "bg-amber-500",
-              ].join(
-                " "
-              )}
+              ].join(" ")}
             >
               {profileInformationComplete ? (
                 <BookOpenCheck
@@ -1021,14 +1189,14 @@ export default function Review({
             <div>
               <h3 className="text-lg font-bold text-[#0B2D5C]">
                 {profileInformationComplete
-                  ? "Your profile information is complete"
+                  ? "Your core profile information is complete"
                   : "Your profile still needs information"}
               </h3>
 
               <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
                 {profileInformationComplete
-                  ? "All required profile information has been completed. Save your profile to keep the latest details. Photos remain optional."
-                  : "Please return to the relevant steps and complete all required profile information. Photos are the only optional profile item."}
+                  ? "All 30 core profile fields are complete. Optional community, lifestyle, appearance and photo information can still be changed anytime."
+                  : "Return to the relevant steps and complete the remaining required fields. Optional fields and photos do not prevent 100% completion."}
               </p>
             </div>
           </div>
@@ -1036,12 +1204,11 @@ export default function Review({
           <div
             className={[
               "inline-flex w-fit items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold shadow-sm ring-1",
+
               profileInformationComplete
                 ? "text-emerald-700 ring-emerald-200"
                 : "text-amber-700 ring-amber-200",
-            ].join(
-              " "
-            )}
+            ].join(" ")}
           >
             <ShieldCheck
               size={17}

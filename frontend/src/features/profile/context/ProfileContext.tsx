@@ -7,7 +7,9 @@ import {
   SetStateAction,
 } from "react";
 
-import { ProfileState } from "../types";
+import {
+  ProfileState,
+} from "../types";
 
 export interface ProfileContextType
   extends ProfileState {
@@ -26,10 +28,6 @@ export interface ProfileContextType
 
   refreshProfile: () => Promise<void>;
 
-  /*
-   * Returns true when the backend save succeeds.
-   * Returns false when the save fails.
-   */
   saveProfile: () => Promise<boolean>;
 
   clearSavedDraft: () => void;
@@ -44,6 +42,21 @@ export const initialProfile: ProfileState = {
     age: "",
     maritalStatus: "",
     email: "",
+
+    heightCm: "",
+    weightKg: "",
+    complexion: "",
+    bodyType: "",
+    motherTongue: "",
+    religion: "",
+    community: "",
+    subCommunity: "",
+    faithBackground: "",
+    physicalStatus: "",
+
+    diet: "",
+    smoking: "",
+    drinking: "",
   },
 
   churchInfo: {
@@ -57,6 +70,7 @@ export const initialProfile: ProfileState = {
 
   educationInfo: {
     highestEducation: "",
+    educationField: "",
     profession: "",
     company: "",
     annualIncome: "",
@@ -67,13 +81,38 @@ export const initialProfile: ProfileState = {
     motherName: "",
     siblings: "",
     familyLocation: "",
+    familyType: "",
+    familyValues: "",
   },
 
   preferenceInfo: {
     preferredAgeFrom: "",
     preferredAgeTo: "",
+
+    preferredHeightFromCm: "",
+    preferredHeightToCm: "",
+
+    preferredReligion: "",
     preferredDenomination: "",
+    preferredMaritalStatus: "",
+
+    preferredCommunity: "",
+    communityNoBar: true,
+
+    preferredMotherTongue: "",
+
     preferredEducation: "",
+    preferredProfession: "",
+
+    preferredCountry: "",
+    preferredState: "",
+    preferredCity: "",
+
+    preferredDiet: "",
+    preferredSmoking: "",
+    preferredDrinking: "",
+
+    preferredFaithCommitment: "",
   },
 
   locationInfo: {

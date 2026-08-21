@@ -5,10 +5,10 @@ import {
 } from "react";
 
 import {
-  Baby,
   HeartHandshake,
+  Home,
   MapPin,
-  UserRound,
+  Users,
   UsersRound,
 } from "lucide-react";
 
@@ -18,8 +18,14 @@ import FormField from "@/components/ui/FormField";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/select";
 
-import { useProfile } from "@/features/profile/context/useProfile";
-import { useProfileUpdater } from "@/features/profile/hooks/useProfileUpdater";
+import {
+  useProfile,
+} from "@/features/profile/context/useProfile";
+
+import {
+  FAMILY_TYPE_OPTIONS,
+  FAMILY_VALUES_OPTIONS,
+} from "@/features/profile/data/profileOptions";
 
 import {
   formatLocation,
@@ -49,18 +55,18 @@ export default function FamilyForm({
   onNext,
   onBack,
 }: FamilyFormProps) {
-  const { familyInfo } =
-    useProfile();
-
-  const { updateSection } =
-    useProfileUpdater();
+  const {
+    familyInfo,
+    setProfile,
+  } = useProfile();
 
   const [
     errors,
     setErrors,
-  ] = useState<FamilyFormErrors>(
-    {}
-  );
+  ] =
+    useState<FamilyFormErrors>(
+      {}
+    );
 
   const familyLocation =
     parseLocation(
@@ -113,11 +119,14 @@ export default function FamilyForm({
     field: keyof FamilyInfo,
     value: string
   ): void {
-    updateSection(
-      "familyInfo",
-      field,
-      value
-    );
+    setProfile((previous) => ({
+      ...previous,
+
+      familyInfo: {
+        ...previous.familyInfo,
+        [field]: value,
+      },
+    }));
 
     clearError(field);
   }
@@ -138,9 +147,7 @@ export default function FamilyForm({
     let nextCity =
       familyLocation.city;
 
-    if (
-      field === "state"
-    ) {
+    if (field === "state") {
       nextState = value;
       nextDistrict = "";
       nextCity = "";
@@ -173,9 +180,7 @@ export default function FamilyForm({
       );
     }
 
-    if (
-      field === "city"
-    ) {
+    if (field === "city") {
       nextCity = value;
 
       clearError(
@@ -219,8 +224,7 @@ export default function FamilyForm({
 
   return (
     <Card className="overflow-hidden p-0">
-      {/* Compact Step Header */}
-      <div className="border-b border-slate-100 bg-gradient-to-r from-rose-50/70 via-white to-amber-50/55 px-4 py-3.5 sm:px-5">
+      <div className="border-b border-slate-100 bg-gradient-to-r from-rose-50/75 via-white to-amber-50/55 px-4 py-3.5 sm:px-5">
         <div className="flex items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0B2D5C] to-rose-700 text-white shadow-sm">
             <UsersRound
@@ -234,28 +238,24 @@ export default function FamilyForm({
             </p>
 
             <h2 className="mt-0.5 text-base font-black tracking-[-0.02em] text-[#0B2D5C] sm:text-lg">
-              Family Details
+              Family Information
             </h2>
 
             <p className="mt-0.5 max-w-2xl text-[11px] leading-5 text-slate-500 sm:text-xs">
-              Share a few details about your family background and home location.
+              Share your family background, family structure and location.
             </p>
           </div>
         </div>
       </div>
 
       <div className="p-4 sm:p-5">
-        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2.5 text-[11px] leading-5 text-blue-800">
-          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-blue-100 font-black text-blue-700">
+        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-rose-100 bg-rose-50/60 px-3 py-2.5 text-[11px] leading-5 text-rose-800">
+          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-rose-100 font-black text-rose-700">
             *
           </span>
 
           <p>
-            Fields marked with a red{" "}
-            <span className="font-black text-red-500">
-              *
-            </span>{" "}
-            are required before continuing.
+            Parent names, family type and family location are required. Siblings and family values are optional.
           </p>
         </div>
 
@@ -265,7 +265,7 @@ export default function FamilyForm({
               size={15}
             />
           }
-          title="Family Background"
+          title="Family Details"
           description="Basic information about your immediate family."
         />
 
@@ -278,31 +278,23 @@ export default function FamilyForm({
               errors.fatherName
             }
           >
-            <IconField
-              icon={
-                <UserRound
-                  size={16}
-                />
+            <Input
+              id="father-name"
+              value={
+                familyInfo.fatherName
               }
-            >
-              <Input
-                id="father-name"
-                value={
-                  familyInfo.fatherName
-                }
-                error={
-                  errors.fatherName
-                }
-                placeholder="Enter father's name"
-                className="pl-10"
-                onChange={(event) =>
-                  updateFamilyInfo(
-                    "fatherName",
-                    event.target.value
-                  )
-                }
-              />
-            </IconField>
+              error={
+                errors.fatherName
+              }
+              maxLength={120}
+              placeholder="Enter father's name"
+              onChange={(event) =>
+                updateFamilyInfo(
+                  "fatherName",
+                  event.target.value
+                )
+              }
+            />
           </FormField>
 
           <FormField
@@ -313,31 +305,23 @@ export default function FamilyForm({
               errors.motherName
             }
           >
-            <IconField
-              icon={
-                <HeartHandshake
-                  size={16}
-                />
+            <Input
+              id="mother-name"
+              value={
+                familyInfo.motherName
               }
-            >
-              <Input
-                id="mother-name"
-                value={
-                  familyInfo.motherName
-                }
-                error={
-                  errors.motherName
-                }
-                placeholder="Enter mother's name"
-                className="pl-10"
-                onChange={(event) =>
-                  updateFamilyInfo(
-                    "motherName",
-                    event.target.value
-                  )
-                }
-              />
-            </IconField>
+              error={
+                errors.motherName
+              }
+              maxLength={120}
+              placeholder="Enter mother's name"
+              onChange={(event) =>
+                updateFamilyInfo(
+                  "motherName",
+                  event.target.value
+                )
+              }
+            />
           </FormField>
 
           <FormField
@@ -346,38 +330,144 @@ export default function FamilyForm({
             error={
               errors.siblings
             }
-            helperText="Optional. Enter 0 if you have no siblings."
+            helperText="Optional — enter 0 if none."
+          >
+            <IconField
+              icon={
+                <Users
+                  size={16}
+                />
+              }
+            >
+              <Input
+                id="siblings"
+                type="number"
+                min={0}
+                max={20}
+                inputMode="numeric"
+                value={
+                  familyInfo.siblings
+                }
+                error={
+                  errors.siblings
+                }
+                placeholder="Example: 2"
+                className="pl-10"
+                onChange={(event) =>
+                  updateFamilyInfo(
+                    "siblings",
+                    event.target.value
+                  )
+                }
+              />
+            </IconField>
+          </FormField>
+
+          <FormField
+            label="Family Type"
+            required
+            htmlFor="family-type"
+            error={
+              errors.familyType
+            }
+          >
+            <IconField
+              icon={
+                <Home
+                  size={16}
+                />
+              }
+            >
+              <Select
+                id="family-type"
+                value={
+                  familyInfo.familyType
+                }
+                error={
+                  errors.familyType
+                }
+                className="pl-10"
+                onChange={(event) =>
+                  updateFamilyInfo(
+                    "familyType",
+                    event.target.value
+                  )
+                }
+              >
+                <option value="">
+                  Select family type
+                </option>
+
+                {FAMILY_TYPE_OPTIONS.map(
+                  (option) => (
+                    <option
+                      key={
+                        option
+                      }
+                      value={
+                        option
+                      }
+                    >
+                      {option}
+                    </option>
+                  )
+                )}
+              </Select>
+            </IconField>
+          </FormField>
+
+          <FormField
+            label="Family Values"
+            htmlFor="family-values"
+            error={
+              errors.familyValues
+            }
+            helperText="Optional"
             className="md:col-span-2"
           >
             <div className="md:max-w-[calc(50%-0.5rem)]">
               <IconField
                 icon={
-                  <Baby
+                  <HeartHandshake
                     size={16}
                   />
                 }
               >
-                <Input
-                  id="siblings"
-                  type="number"
-                  min="0"
-                  max="20"
-                  inputMode="numeric"
+                <Select
+                  id="family-values"
                   value={
-                    familyInfo.siblings
+                    familyInfo.familyValues
                   }
                   error={
-                    errors.siblings
+                    errors.familyValues
                   }
-                  placeholder="For example: 2"
                   className="pl-10"
                   onChange={(event) =>
                     updateFamilyInfo(
-                      "siblings",
+                      "familyValues",
                       event.target.value
                     )
                   }
-                />
+                >
+                  <option value="">
+                    Select family values
+                  </option>
+
+                  {FAMILY_VALUES_OPTIONS.map(
+                    (option) => (
+                      <option
+                        key={
+                          option
+                        }
+                        value={
+                          option
+                        }
+                      >
+                        {option}
+                      </option>
+                    )
+                  )}
+                </Select>
               </IconField>
             </div>
           </FormField>
@@ -392,11 +482,11 @@ export default function FamilyForm({
             />
           }
           title="Family Location"
-          description="Select your family location in State → District → City order."
+          description="Where your family is primarily based."
           variant="green"
         />
 
-        <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-2">
+        <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-3">
           <FormField
             label="Family State"
             required
@@ -428,7 +518,7 @@ export default function FamilyForm({
                 (state) => (
                   <option
                     key={
-                      state.isoCode
+                      state.value
                     }
                     value={
                       state.value
@@ -512,62 +602,59 @@ export default function FamilyForm({
             error={
               errors.familyCity
             }
-            className="md:col-span-2"
           >
-            <div className="md:max-w-[calc(50%-0.5rem)]">
-              <Select
-                id="family-city"
-                value={
-                  familyLocation.city
-                }
-                error={
-                  errors.familyCity
-                }
-                disabled={
-                  !familyLocation.state
-                }
-                onChange={(event) =>
-                  updateFamilyLocation(
-                    "city",
-                    event.target.value
-                  )
-                }
-              >
-                <option value="">
-                  Select city
-                </option>
+            <Select
+              id="family-city"
+              value={
+                familyLocation.city
+              }
+              error={
+                errors.familyCity
+              }
+              disabled={
+                !familyLocation.state
+              }
+              onChange={(event) =>
+                updateFamilyLocation(
+                  "city",
+                  event.target.value
+                )
+              }
+            >
+              <option value="">
+                Select city
+              </option>
 
-                {familyLocation.city &&
-                  !selectedCityExists && (
-                    <option
-                      value={
-                        familyLocation.city
-                      }
-                    >
-                      {
-                        familyLocation.city
-                      }
-                    </option>
-                  )}
-
-                {cities.map(
-                  (city) => (
-                    <option
-                      key={
-                        city.value
-                      }
-                      value={
-                        city.value
-                      }
-                    >
-                      {
-                        city.label
-                      }
-                    </option>
-                  )
+              {familyLocation.city &&
+                !selectedCityExists && (
+                  <option
+                    value={
+                      familyLocation.city
+                    }
+                  >
+                    {
+                      familyLocation.city
+                    }
+                  </option>
                 )}
-              </Select>
-            </div>
+
+              {cities.map(
+                (city) => (
+                  <option
+                    key={
+                      city.value
+                    }
+                    value={
+                      city.value
+                    }
+                  >
+                    {
+                      city.label
+                    }
+                  </option>
+                )
+              )}
+            </Select>
           </FormField>
         </div>
 
@@ -622,14 +709,14 @@ function IconField({
 }
 
 type SectionHeadingVariant =
-  | "rose"
+  | "blue"
   | "green";
 
 function SectionHeading({
   icon,
   title,
   description,
-  variant = "rose",
+  variant = "blue",
 }: {
   icon: React.ReactNode;
   title: string;
@@ -640,8 +727,8 @@ function SectionHeading({
     SectionHeadingVariant,
     string
   > = {
-    rose:
-      "bg-rose-50 text-rose-700",
+    blue:
+      "bg-blue-50 text-[#0B2D5C]",
 
     green:
       "bg-emerald-50 text-emerald-700",

@@ -65,6 +65,92 @@ public class Profile {
     private String maritalStatus;
 
     // =========================================================
+    // Personal Information
+    // =========================================================
+
+    @Column(name = "height_cm")
+    private Integer heightCm;
+
+    @Column(name = "weight_kg")
+    private Integer weightKg;
+
+    @Column(length = 50)
+    private String complexion;
+
+    @Column(
+            name = "body_type",
+            length = 50
+    )
+    private String bodyType;
+
+    @Column(
+            name = "mother_tongue",
+            length = 80
+    )
+    private String motherTongue;
+
+    /*
+     * Current religion / faith identity.
+     *
+     * Kept separate from denomination and community because
+     * members may belong to a particular social/community
+     * background while currently following Christianity.
+     */
+    @Column(length = 80)
+    private String religion;
+
+    /*
+     * Community / caste background.
+     *
+     * Examples:
+     * Reddy
+     * Kamma
+     * Kapu
+     * Nair
+     * Dalit Christian
+     * Anglo Indian
+     *
+     * This remains optional.
+     */
+    @Column(length = 120)
+    private String community;
+
+    @Column(
+            name = "sub_community",
+            length = 120
+    )
+    private String subCommunity;
+
+    /*
+     * Examples:
+     *
+     * CHRISTIAN_BY_BIRTH
+     * CONVERTED_TO_CHRISTIANITY
+     * CHRISTIAN_FAMILY_BACKGROUND
+     * PREFER_NOT_TO_SAY
+     */
+    @Column(
+            name = "faith_background",
+            length = 80
+    )
+    private String faithBackground;
+
+    @Column(
+            name = "physical_status",
+            length = 80
+    )
+    private String physicalStatus;
+
+    @Column(length = 50)
+    private String diet;
+
+    @Column(length = 30)
+    private String smoking;
+
+    @Column(length = 30)
+    private String drinking;
+
+    // =========================================================
     // Church
     // =========================================================
 
@@ -92,6 +178,21 @@ public class Profile {
     @Column(length = 120)
     private String highestEducation;
 
+    /*
+     * Education specialization / field.
+     *
+     * Examples:
+     * Computer Science
+     * Medicine
+     * Commerce
+     * Mechanical Engineering
+     */
+    @Column(
+            name = "education_field",
+            length = 120
+    )
+    private String educationField;
+
     @Column(length = 120)
     private String profession;
 
@@ -117,19 +218,129 @@ public class Profile {
     @Column(length = 120)
     private String familyLocation;
 
+    @Column(
+            name = "family_type",
+            length = 50
+    )
+    private String familyType;
+
+    @Column(
+            name = "family_values",
+            length = 50
+    )
+    private String familyValues;
+
     // =========================================================
-    // Preferences
+    // Partner Preferences
     // =========================================================
 
     private Integer preferredAgeFrom;
 
     private Integer preferredAgeTo;
 
+    @Column(name = "preferred_height_from_cm")
+    private Integer preferredHeightFromCm;
+
+    @Column(name = "preferred_height_to_cm")
+    private Integer preferredHeightToCm;
+
+    @Column(
+            name = "preferred_religion",
+            length = 80
+    )
+    private String preferredReligion;
+
     @Column(length = 120)
     private String preferredDenomination;
 
+    @Column(
+            name = "preferred_marital_status",
+            length = 50
+    )
+    private String preferredMaritalStatus;
+
+    @Column(
+            name = "preferred_community",
+            length = 120
+    )
+    private String preferredCommunity;
+
+    /*
+     * When true, community matching should not restrict
+     * recommendations/search results.
+     */
+    @Builder.Default
+    @Column(
+            name = "community_no_bar",
+            nullable = false
+    )
+    private Boolean communityNoBar = true;
+
+    @Column(
+            name = "preferred_mother_tongue",
+            length = 80
+    )
+    private String preferredMotherTongue;
+
     @Column(length = 120)
     private String preferredEducation;
+
+    @Column(
+            name = "preferred_profession",
+            length = 120
+    )
+    private String preferredProfession;
+
+    @Column(
+            name = "preferred_country",
+            length = 120
+    )
+    private String preferredCountry;
+
+    @Column(
+            name = "preferred_state",
+            length = 120
+    )
+    private String preferredState;
+
+    @Column(
+            name = "preferred_city",
+            length = 120
+    )
+    private String preferredCity;
+
+    @Column(
+            name = "preferred_diet",
+            length = 50
+    )
+    private String preferredDiet;
+
+    @Column(
+            name = "preferred_smoking",
+            length = 30
+    )
+    private String preferredSmoking;
+
+    @Column(
+            name = "preferred_drinking",
+            length = 30
+    )
+    private String preferredDrinking;
+
+    /*
+     * Examples:
+     *
+     * ANY
+     * PRACTICING_CHRISTIAN
+     * REGULAR_CHURCH_ATTENDEE
+     * BAPTIZED_CHRISTIAN
+     * CHURCH_VERIFIED_PREFERRED
+     */
+    @Column(
+            name = "preferred_faith_commitment",
+            length = 80
+    )
+    private String preferredFaithCommitment;
 
     // =========================================================
     // Location
@@ -226,17 +437,15 @@ public class Profile {
     )
     private String verificationReason;
 
-// =========================================================
-// Profile Boost
-// =========================================================
+    // =========================================================
+    // Profile Boost
+    // =========================================================
 
-@Column(name = "boost_started_at")
-private LocalDateTime boostStartedAt;
+    @Column(name = "boost_started_at")
+    private LocalDateTime boostStartedAt;
 
-@Column(name = "boost_expires_at")
-private LocalDateTime boostExpiresAt;
-
-
+    @Column(name = "boost_expires_at")
+    private LocalDateTime boostExpiresAt;
 
     // =========================================================
     // Audit
@@ -272,6 +481,10 @@ private LocalDateTime boostExpiresAt;
             profileCompleted = false;
         }
 
+        if (communityNoBar == null) {
+            communityNoBar = true;
+        }
+
         if (verificationStatus == null) {
             verificationStatus =
                     ProfileVerificationStatus.NOT_SUBMITTED;
@@ -282,6 +495,10 @@ private LocalDateTime boostExpiresAt;
 
     @PreUpdate
     public void onUpdate() {
+
+        if (communityNoBar == null) {
+            communityNoBar = true;
+        }
 
         updatedAt =
                 LocalDateTime.now();

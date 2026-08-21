@@ -1,16 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import {
+  useState,
+} from "react";
 
 import {
+  Accessibility,
   CalendarDays,
+  Church,
+  Cigarette,
   Heart,
+  Languages,
   Mail,
   MapPin,
   MessageSquareText,
   Phone,
+  Ruler,
+  Scale,
+  Sparkles,
   User,
   Users,
+  UsersRound,
+  Utensils,
+  Wine,
 } from "lucide-react";
 
 import Button from "@/components/ui/button";
@@ -19,7 +31,23 @@ import FormField from "@/components/ui/FormField";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/select";
 
-import { useProfile } from "@/features/profile/context/useProfile";
+import {
+  useProfile,
+} from "@/features/profile/context/useProfile";
+
+import {
+  BODY_TYPE_OPTIONS,
+  COMPLEXION_OPTIONS,
+  DIET_OPTIONS,
+  DRINKING_OPTIONS,
+  FAITH_BACKGROUND_OPTIONS,
+  HEIGHT_OPTIONS,
+  MARITAL_STATUS_OPTIONS,
+  MOTHER_TONGUE_OPTIONS,
+  PHYSICAL_STATUS_OPTIONS,
+  RELIGION_OPTIONS,
+  SMOKING_OPTIONS,
+} from "@/features/profile/data/profileOptions";
 
 import {
   COUNTRIES,
@@ -378,7 +406,7 @@ export default function BasicInfoForm({
     <Card className="overflow-hidden p-0">
 
       {/* =====================================================
-          Compact Step Header
+          Header
           ===================================================== */}
 
       <div className="border-b border-slate-100 bg-gradient-to-r from-blue-50/80 via-white to-amber-50/55 px-4 py-3.5 sm:px-5">
@@ -395,11 +423,11 @@ export default function BasicInfoForm({
             </p>
 
             <h2 className="mt-0.5 text-base font-black tracking-[-0.02em] text-[#0B2D5C] sm:text-lg">
-              Basic Information
+              Personal Information
             </h2>
 
-            <p className="mt-0.5 max-w-2xl text-[11px] leading-5 text-slate-500 sm:text-xs">
-              Introduce yourself, share your location and tell potential matches a little about your life.
+            <p className="mt-0.5 max-w-3xl text-[11px] leading-5 text-slate-500 sm:text-xs">
+              Tell us about yourself, your faith and community background, lifestyle and current location.
             </p>
           </div>
         </div>
@@ -419,7 +447,7 @@ export default function BasicInfoForm({
             <span className="font-black text-red-500">
               *
             </span>{" "}
-            are required for profile completion and verification eligibility.
+            are required for profile completion. Community, appearance and lifestyle information is optional.
           </p>
         </div>
 
@@ -432,7 +460,7 @@ export default function BasicInfoForm({
             <User size={15} />
           }
           title="Personal Details"
-          description="Your personal and contact information."
+          description="Your identity and basic matrimonial information."
         />
 
         <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-2">
@@ -593,7 +621,7 @@ export default function BasicInfoForm({
             error={
               errors.age
             }
-            helperText="Calculated automatically."
+            helperText="Calculated automatically from date of birth."
           >
             <Input
               id="profile-age"
@@ -654,50 +682,708 @@ export default function BasicInfoForm({
             error={
               errors.maritalStatus
             }
-            className="md:col-span-2"
           >
-            <div className="relative md:max-w-[calc(50%-0.5rem)]">
-              <IconField
-                icon={
-                  <Heart
-                    size={16}
-                  />
+            <IconField
+              icon={
+                <Heart
+                  size={16}
+                />
+              }
+            >
+              <Select
+                id="profile-marital-status"
+                value={
+                  basicInfo.maritalStatus
+                }
+                error={
+                  errors.maritalStatus
+                }
+                className="pl-10"
+                onChange={(event) =>
+                  updateBasicInfo(
+                    "maritalStatus",
+                    event.target.value
+                  )
                 }
               >
-                <Select
-                  id="profile-marital-status"
-                  value={
-                    basicInfo.maritalStatus
-                  }
-                  error={
-                    errors.maritalStatus
-                  }
-                  className="pl-10"
-                  onChange={(event) =>
-                    updateBasicInfo(
-                      "maritalStatus",
-                      event.target.value
-                    )
-                  }
-                >
-                  <option value="">
-                    Select marital status
-                  </option>
+                <option value="">
+                  Select marital status
+                </option>
 
-                  <option value="Never Married">
-                    Never Married
-                  </option>
+                {MARITAL_STATUS_OPTIONS.map(
+                  (status) => (
+                    <option
+                      key={
+                        status
+                      }
+                      value={
+                        status
+                      }
+                    >
+                      {status}
+                    </option>
+                  )
+                )}
+              </Select>
+            </IconField>
+          </FormField>
+        </div>
 
-                  <option value="Divorced">
-                    Divorced
-                  </option>
+        {/* =====================================================
+            Physical Details
+            ===================================================== */}
 
-                  <option value="Widowed">
-                    Widowed
+        <SectionDivider />
+
+        <SectionHeading
+          icon={
+            <Ruler size={15} />
+          }
+          title="Physical Details"
+          description="Basic physical information commonly used in matrimonial profiles."
+          variant="purple"
+        />
+
+        <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-2 lg:grid-cols-3">
+
+          <FormField
+            label="Height"
+            required
+            htmlFor="profile-height"
+            error={
+              errors.heightCm
+            }
+          >
+            <IconField
+              icon={
+                <Ruler
+                  size={16}
+                />
+              }
+            >
+              <Select
+                id="profile-height"
+                value={
+                  basicInfo.heightCm
+                }
+                error={
+                  errors.heightCm
+                }
+                className="pl-10"
+                onChange={(event) =>
+                  updateBasicInfo(
+                    "heightCm",
+                    event.target.value
+                  )
+                }
+              >
+                <option value="">
+                  Select height
+                </option>
+
+                {HEIGHT_OPTIONS.map(
+                  (height) => (
+                    <option
+                      key={
+                        height.value
+                      }
+                      value={
+                        height.value
+                      }
+                    >
+                      {height.label}
+                    </option>
+                  )
+                )}
+              </Select>
+            </IconField>
+          </FormField>
+
+          <FormField
+            label="Weight"
+            htmlFor="profile-weight"
+            error={
+              errors.weightKg
+            }
+            helperText="Optional"
+          >
+            <IconField
+              icon={
+                <Scale
+                  size={16}
+                />
+              }
+            >
+              <Input
+                id="profile-weight"
+                type="number"
+                inputMode="numeric"
+                min={25}
+                max={300}
+                value={
+                  basicInfo.weightKg
+                }
+                error={
+                  errors.weightKg
+                }
+                placeholder="Weight in kg"
+                className="pl-10"
+                onChange={(event) =>
+                  updateBasicInfo(
+                    "weightKg",
+                    event.target.value
+                  )
+                }
+              />
+            </IconField>
+          </FormField>
+
+          <FormField
+            label="Complexion / Skin Tone"
+            htmlFor="profile-complexion"
+            error={
+              errors.complexion
+            }
+            helperText="Optional"
+          >
+            <Select
+              id="profile-complexion"
+              value={
+                basicInfo.complexion
+              }
+              error={
+                errors.complexion
+              }
+              onChange={(event) =>
+                updateBasicInfo(
+                  "complexion",
+                  event.target.value
+                )
+              }
+            >
+              <option value="">
+                Select complexion
+              </option>
+
+              {COMPLEXION_OPTIONS.map(
+                (option) => (
+                  <option
+                    key={
+                      option
+                    }
+                    value={
+                      option
+                    }
+                  >
+                    {option}
                   </option>
-                </Select>
-              </IconField>
-            </div>
+                )
+              )}
+            </Select>
+          </FormField>
+
+          <FormField
+            label="Body Type"
+            htmlFor="profile-body-type"
+            error={
+              errors.bodyType
+            }
+            helperText="Optional"
+          >
+            <Select
+              id="profile-body-type"
+              value={
+                basicInfo.bodyType
+              }
+              error={
+                errors.bodyType
+              }
+              onChange={(event) =>
+                updateBasicInfo(
+                  "bodyType",
+                  event.target.value
+                )
+              }
+            >
+              <option value="">
+                Select body type
+              </option>
+
+              {BODY_TYPE_OPTIONS.map(
+                (option) => (
+                  <option
+                    key={
+                      option
+                    }
+                    value={
+                      option
+                    }
+                  >
+                    {option}
+                  </option>
+                )
+              )}
+            </Select>
+          </FormField>
+
+          <FormField
+            label="Physical Status"
+            htmlFor="profile-physical-status"
+            error={
+              errors.physicalStatus
+            }
+            helperText="Optional"
+          >
+            <IconField
+              icon={
+                <Accessibility
+                  size={16}
+                />
+              }
+            >
+              <Select
+                id="profile-physical-status"
+                value={
+                  basicInfo.physicalStatus
+                }
+                error={
+                  errors.physicalStatus
+                }
+                className="pl-10"
+                onChange={(event) =>
+                  updateBasicInfo(
+                    "physicalStatus",
+                    event.target.value
+                  )
+                }
+              >
+                <option value="">
+                  Select physical status
+                </option>
+
+                {PHYSICAL_STATUS_OPTIONS.map(
+                  (option) => (
+                    <option
+                      key={
+                        option
+                      }
+                      value={
+                        option
+                      }
+                    >
+                      {option}
+                    </option>
+                  )
+                )}
+              </Select>
+            </IconField>
+          </FormField>
+
+          <FormField
+            label="Mother Tongue"
+            required
+            htmlFor="profile-mother-tongue"
+            error={
+              errors.motherTongue
+            }
+          >
+            <IconField
+              icon={
+                <Languages
+                  size={16}
+                />
+              }
+            >
+              <Select
+                id="profile-mother-tongue"
+                value={
+                  basicInfo.motherTongue
+                }
+                error={
+                  errors.motherTongue
+                }
+                className="pl-10"
+                onChange={(event) =>
+                  updateBasicInfo(
+                    "motherTongue",
+                    event.target.value
+                  )
+                }
+              >
+                <option value="">
+                  Select mother tongue
+                </option>
+
+                {MOTHER_TONGUE_OPTIONS.map(
+                  (option) => (
+                    <option
+                      key={
+                        option
+                      }
+                      value={
+                        option
+                      }
+                    >
+                      {option}
+                    </option>
+                  )
+                )}
+              </Select>
+            </IconField>
+          </FormField>
+        </div>
+
+        {/* =====================================================
+            Faith & Community
+            ===================================================== */}
+
+        <SectionDivider />
+
+        <SectionHeading
+          icon={
+            <Church size={15} />
+          }
+          title="Faith & Community"
+          description="Religion and community are stored separately so members can accurately represent both their current faith and family/community background."
+          variant="gold"
+        />
+
+        <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50/50 px-3.5 py-3 text-[11px] leading-5 text-amber-900">
+          <span className="font-black">
+            Example:
+          </span>{" "}
+          Religion: Christianity · Community: Reddy · Faith Background: Converted to Christianity.
+          Community information is optional.
+        </div>
+
+        <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-2">
+
+          <FormField
+            label="Religion"
+            required
+            htmlFor="profile-religion"
+            error={
+              errors.religion
+            }
+          >
+            <IconField
+              icon={
+                <Church
+                  size={16}
+                />
+              }
+            >
+              <Select
+                id="profile-religion"
+                value={
+                  basicInfo.religion
+                }
+                error={
+                  errors.religion
+                }
+                className="pl-10"
+                onChange={(event) =>
+                  updateBasicInfo(
+                    "religion",
+                    event.target.value
+                  )
+                }
+              >
+                <option value="">
+                  Select religion
+                </option>
+
+                {RELIGION_OPTIONS.map(
+                  (religion) => (
+                    <option
+                      key={
+                        religion
+                      }
+                      value={
+                        religion
+                      }
+                    >
+                      {religion}
+                    </option>
+                  )
+                )}
+              </Select>
+            </IconField>
+          </FormField>
+
+          <FormField
+            label="Community / Caste"
+            htmlFor="profile-community"
+            error={
+              errors.community
+            }
+            helperText="Optional — for example Reddy, Kamma, Kapu."
+          >
+            <IconField
+              icon={
+                <UsersRound
+                  size={16}
+                />
+              }
+            >
+              <Input
+                id="profile-community"
+                value={
+                  basicInfo.community
+                }
+                error={
+                  errors.community
+                }
+                maxLength={120}
+                placeholder="Enter community / caste"
+                className="pl-10"
+                onChange={(event) =>
+                  updateBasicInfo(
+                    "community",
+                    event.target.value
+                  )
+                }
+              />
+            </IconField>
+          </FormField>
+
+          <FormField
+            label="Sub-community / Sub-caste"
+            htmlFor="profile-sub-community"
+            error={
+              errors.subCommunity
+            }
+            helperText="Optional"
+          >
+            <Input
+              id="profile-sub-community"
+              value={
+                basicInfo.subCommunity
+              }
+              error={
+                errors.subCommunity
+              }
+              maxLength={120}
+              placeholder="Enter sub-community if applicable"
+              onChange={(event) =>
+                updateBasicInfo(
+                  "subCommunity",
+                  event.target.value
+                )
+              }
+            />
+          </FormField>
+
+          <FormField
+            label="Faith Background"
+            htmlFor="profile-faith-background"
+            error={
+              errors.faithBackground
+            }
+            helperText="Optional"
+          >
+            <IconField
+              icon={
+                <Sparkles
+                  size={16}
+                />
+              }
+            >
+              <Select
+                id="profile-faith-background"
+                value={
+                  basicInfo.faithBackground
+                }
+                error={
+                  errors.faithBackground
+                }
+                className="pl-10"
+                onChange={(event) =>
+                  updateBasicInfo(
+                    "faithBackground",
+                    event.target.value
+                  )
+                }
+              >
+                <option value="">
+                  Select faith background
+                </option>
+
+                {FAITH_BACKGROUND_OPTIONS.map(
+                  (option) => (
+                    <option
+                      key={
+                        option.value
+                      }
+                      value={
+                        option.value
+                      }
+                    >
+                      {option.label}
+                    </option>
+                  )
+                )}
+              </Select>
+            </IconField>
+          </FormField>
+        </div>
+
+        {/* =====================================================
+            Lifestyle
+            ===================================================== */}
+
+        <SectionDivider />
+
+        <SectionHeading
+          icon={
+            <Utensils size={15} />
+          }
+          title="Lifestyle"
+          description="Optional lifestyle information that may help members understand compatibility."
+          variant="green"
+        />
+
+        <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-3">
+
+          <FormField
+            label="Diet"
+            htmlFor="profile-diet"
+            helperText="Optional"
+          >
+            <IconField
+              icon={
+                <Utensils
+                  size={16}
+                />
+              }
+            >
+              <Select
+                id="profile-diet"
+                value={
+                  basicInfo.diet
+                }
+                className="pl-10"
+                onChange={(event) =>
+                  updateBasicInfo(
+                    "diet",
+                    event.target.value
+                  )
+                }
+              >
+                <option value="">
+                  Select diet
+                </option>
+
+                {DIET_OPTIONS.map(
+                  (option) => (
+                    <option
+                      key={
+                        option
+                      }
+                      value={
+                        option
+                      }
+                    >
+                      {option}
+                    </option>
+                  )
+                )}
+              </Select>
+            </IconField>
+          </FormField>
+
+          <FormField
+            label="Smoking"
+            htmlFor="profile-smoking"
+            helperText="Optional"
+          >
+            <IconField
+              icon={
+                <Cigarette
+                  size={16}
+                />
+              }
+            >
+              <Select
+                id="profile-smoking"
+                value={
+                  basicInfo.smoking
+                }
+                className="pl-10"
+                onChange={(event) =>
+                  updateBasicInfo(
+                    "smoking",
+                    event.target.value
+                  )
+                }
+              >
+                <option value="">
+                  Select smoking preference
+                </option>
+
+                {SMOKING_OPTIONS.map(
+                  (option) => (
+                    <option
+                      key={
+                        option
+                      }
+                      value={
+                        option
+                      }
+                    >
+                      {option}
+                    </option>
+                  )
+                )}
+              </Select>
+            </IconField>
+          </FormField>
+
+          <FormField
+            label="Drinking"
+            htmlFor="profile-drinking"
+            helperText="Optional"
+          >
+            <IconField
+              icon={
+                <Wine
+                  size={16}
+                />
+              }
+            >
+              <Select
+                id="profile-drinking"
+                value={
+                  basicInfo.drinking
+                }
+                className="pl-10"
+                onChange={(event) =>
+                  updateBasicInfo(
+                    "drinking",
+                    event.target.value
+                  )
+                }
+              >
+                <option value="">
+                  Select drinking preference
+                </option>
+
+                {DRINKING_OPTIONS.map(
+                  (option) => (
+                    <option
+                      key={
+                        option
+                      }
+                      value={
+                        option
+                      }
+                    >
+                      {option}
+                    </option>
+                  )
+                )}
+              </Select>
+            </IconField>
           </FormField>
         </div>
 
@@ -719,6 +1405,7 @@ export default function BasicInfoForm({
         />
 
         <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-3">
+
           <FormField
             label="Country"
             required
@@ -935,7 +1622,7 @@ export default function BasicInfoForm({
               }
               maxLength={2000}
               rows={5}
-              placeholder="For example: I am a family-oriented Christian who values faith, honesty and meaningful relationships..."
+              placeholder="For example: I am family-oriented, value faith, honesty and meaningful relationships, and enjoy spending time with family..."
               className={[
                 "w-full resize-y rounded-xl border bg-white px-3.5 py-3 text-sm leading-6 text-slate-900 outline-none transition",
                 "placeholder:text-slate-400",
@@ -1015,7 +1702,8 @@ function IconField({
 type SectionHeadingVariant =
   | "blue"
   | "green"
-  | "gold";
+  | "gold"
+  | "purple";
 
 function SectionHeading({
   icon,
@@ -1040,6 +1728,9 @@ function SectionHeading({
 
     gold:
       "bg-amber-50 text-[#B38B19]",
+
+    purple:
+      "bg-purple-50 text-purple-700",
   };
 
   return (
