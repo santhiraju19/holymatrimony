@@ -36,12 +36,22 @@ export interface DashboardNotificationLike {
 
 export interface RecommendedMatch {
   id: string;
+
   name: string;
-  age: number;
-  profession: string;
-  denomination: string;
-  location: string;
+
+  age: number | null;
+
+  profession: string | null;
+
+  denomination: string | null;
+
+  location: string | null;
+
   imageUrl?: string | null;
-  verified?: boolean;
-  churchVerified?: boolean;
+
+  compatibilityScore: number | null;
+
+  verified?: boolean | null;
+
+  churchVerified?: boolean | null;
 }

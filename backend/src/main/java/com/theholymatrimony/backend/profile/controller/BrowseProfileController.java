@@ -1,13 +1,18 @@
 package com.theholymatrimony.backend.profile.controller;
 
 import com.theholymatrimony.backend.common.response.ApiResponse;
+
 import com.theholymatrimony.backend.profile.dto.BrowseProfileResponse;
 import com.theholymatrimony.backend.profile.dto.BrowseProfilesPageResponse;
-import com.theholymatrimony.backend.profile.dto.SearchProfileRequest;
-import com.theholymatrimony.backend.profile.service.BrowseProfileService;
 import com.theholymatrimony.backend.profile.dto.ProfileContactResponse;
+import com.theholymatrimony.backend.profile.dto.SearchProfileRequest;
+
+import com.theholymatrimony.backend.profile.service.BrowseProfileService;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.security.core.Authentication;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +30,12 @@ public class BrowseProfileController {
     private final BrowseProfileService
             browseProfileService;
 
+    /*
+     * ============================================================
+     * BROWSE PROFILES
+     * ============================================================
+     */
+
     @GetMapping
     public ApiResponse<BrowseProfilesPageResponse>
     browseProfiles(
@@ -38,14 +49,23 @@ public class BrowseProfileController {
     ) {
 
         BrowseProfilesPageResponse response =
-                browseProfileService.browseProfiles(
-                        authentication.getName(),
-                        page,
-                        size
-                );
+                browseProfileService
+                        .browseProfiles(
+                                authentication.getName(),
+                                page,
+                                size
+                        );
 
-        return ApiResponse.success(response);
+        return ApiResponse.success(
+                response
+        );
     }
+
+    /*
+     * ============================================================
+     * SEARCH PROFILES
+     * ============================================================
+     */
 
     @GetMapping("/search")
     public ApiResponse<BrowseProfilesPageResponse>
@@ -63,19 +83,28 @@ public class BrowseProfileController {
     ) {
 
         BrowseProfilesPageResponse response =
-                browseProfileService.searchProfiles(
-                        authentication.getName(),
-                        request,
-                        page,
-                        size
-                );
+                browseProfileService
+                        .searchProfiles(
+                                authentication.getName(),
+                                request,
+                                page,
+                                size
+                        );
 
-        return ApiResponse.success(response);
+        return ApiResponse.success(
+                response
+        );
     }
 
+    /*
+     * ============================================================
+     * GET PUBLIC PROFILE
+     * ============================================================
+     */
+
     @GetMapping(
-    "/{profileId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}"
-)
+            "/{profileId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}"
+    )
     public ApiResponse<BrowseProfileResponse>
     getProfile(
             Authentication authentication,
@@ -85,34 +114,43 @@ public class BrowseProfileController {
     ) {
 
         BrowseProfileResponse response =
-                browseProfileService.getProfile(
-                        authentication.getName(),
-                        profileId
-                );
+                browseProfileService
+                        .getProfile(
+                                authentication.getName(),
+                                profileId
+                        );
 
-        return ApiResponse.success(response);
-
-        
+        return ApiResponse.success(
+                response
+        );
     }
 
-@GetMapping(
-        "/{profileId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/contact"
-)
-public ApiResponse<ProfileContactResponse>
-getProfileContact(
-        Authentication authentication,
+    /*
+     * ============================================================
+     * GET PROTECTED PROFILE CONTACT DETAILS
+     * ============================================================
+     */
 
-        @PathVariable
-        UUID profileId
-) {
+    @GetMapping(
+            "/{profileId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/contact"
+    )
+    public ApiResponse<ProfileContactResponse>
+    getProfileContact(
+            Authentication authentication,
 
-    ProfileContactResponse response =
-            browseProfileService.getProfileContact(
-                    authentication.getName(),
-                    profileId
-            );
+            @PathVariable
+            UUID profileId
+    ) {
 
-    return ApiResponse.success(response);
-}
+        ProfileContactResponse response =
+                browseProfileService
+                        .getProfileContact(
+                                authentication.getName(),
+                                profileId
+                        );
 
+        return ApiResponse.success(
+                response
+        );
+    }
 }
