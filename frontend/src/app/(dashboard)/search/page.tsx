@@ -2,16 +2,18 @@ import BrowseProfilesPage from "@/features/browse/components/BrowseProfilesPage"
 
 import type {
   BrowseSearchFilters,
+  BrowseSortOption,
 } from "@/features/browse/types";
 
 interface SearchPageProps {
-  searchParams: Promise<{
-    ageFrom?: string | string[];
-    ageTo?: string | string[];
-    religion?: string | string[];
-    denomination?: string | string[];
-    location?: string | string[];
-  }>;
+  searchParams: Promise<
+    Record<
+      string,
+      string |
+      string[] |
+      undefined
+    >
+  >;
 }
 
 function firstValue(
@@ -33,15 +35,33 @@ function firstValue(
   );
 }
 
+function sortValue(
+  value: string
+): BrowseSortOption {
+  if (
+    value === "NEWEST" ||
+    value === "TRUST_VERIFIED"
+  ) {
+    return value;
+  }
+
+  return "RECOMMENDED";
+}
+
 export default async function SearchPage({
   searchParams,
 }: SearchPageProps) {
   const params =
     await searchParams;
 
-  const location =
+  const homepageLocation =
     firstValue(
       params.location
+    );
+
+  const explicitCity =
+    firstValue(
+      params.city
     );
 
   const initialFilters:
@@ -57,6 +77,26 @@ export default async function SearchPage({
           params.ageTo
         ),
 
+      heightFrom:
+        firstValue(
+          params.heightFrom
+        ),
+
+      heightTo:
+        firstValue(
+          params.heightTo
+        ),
+
+      gender:
+        firstValue(
+          params.gender
+        ),
+
+      maritalStatus:
+        firstValue(
+          params.maritalStatus
+        ),
+
       religion:
         firstValue(
           params.religion
@@ -67,14 +107,81 @@ export default async function SearchPage({
           params.denomination
         ),
 
-      /*
-       * Homepage Quick Search uses a lightweight
-       * free-text Location field.
-       *
-       * For now it maps to City.
-       */
+      community:
+        firstValue(
+          params.community
+        ),
+
+      motherTongue:
+        firstValue(
+          params.motherTongue
+        ),
+
+      baptized:
+        firstValue(
+          params.baptized
+        ),
+
+      highestEducation:
+        firstValue(
+          params.highestEducation
+        ),
+
+      profession:
+        firstValue(
+          params.profession
+        ),
+
+      country:
+        firstValue(
+          params.country
+        ),
+
+      state:
+        firstValue(
+          params.state
+        ),
+
       city:
-        location,
+        explicitCity ||
+        homepageLocation,
+
+      diet:
+        firstValue(
+          params.diet
+        ),
+
+      smoking:
+        firstValue(
+          params.smoking
+        ),
+
+      drinking:
+        firstValue(
+          params.drinking
+        ),
+
+      aadhaarVerified:
+        firstValue(
+          params.aadhaarVerified
+        ),
+
+      idVerified:
+        firstValue(
+          params.idVerified
+        ),
+
+      churchVerified:
+        firstValue(
+          params.churchVerified
+        ),
+
+      sort:
+        sortValue(
+          firstValue(
+            params.sort
+          )
+        ),
     };
 
   return (

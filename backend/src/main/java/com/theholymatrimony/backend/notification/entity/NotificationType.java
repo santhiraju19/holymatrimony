@@ -20,5 +20,7 @@ public enum NotificationType {
 
     MEMBERSHIP_EXPIRING,
 
+    SAVED_SEARCH_MATCH,
+
     SYSTEM
 }

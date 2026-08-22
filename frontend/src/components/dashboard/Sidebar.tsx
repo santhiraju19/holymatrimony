@@ -19,6 +19,7 @@ import {
   Crown,
   Heart,
   Home,
+  ListFilter,
   Loader2,
   LockKeyhole,
   LogOut,
@@ -82,6 +83,14 @@ const menuItems: MenuItem[] = [
     href: "/search",
     icon: Search,
   },
+
+{
+  name: "Saved Searches",
+  description: "Reuse your match preferences",
+  href: "/saved-searches",
+  icon: ListFilter,
+},
+
   {
     name: "Interests",
     description: "Sent and received interests",

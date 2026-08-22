@@ -7,6 +7,7 @@ import {
 
 import {
   BadgeCheck,
+  BookmarkPlus,
   HeartHandshake,
   RefreshCw,
   Search,
@@ -16,6 +17,8 @@ import {
 } from "lucide-react";
 
 import Button from "@/components/ui/button";
+
+import SaveSearchModal from "@/features/saved-searches/components/SaveSearchModal";
 
 import AdvancedSearchUpgradeModal from "./AdvancedSearchUpgradeModal";
 import BrowseEmptyState from "./BrowseEmptyState";
@@ -30,6 +33,10 @@ import useBrowseProfiles from "../hooks/useBrowseProfiles";
 import type {
   BrowseSearchFilters as BrowseSearchFiltersType,
 } from "../types";
+
+import type {
+  SavedSearch,
+} from "@/features/saved-searches/types";
 
 const SKELETON_COUNT = 8;
 
@@ -73,6 +80,18 @@ export default function BrowseProfilesPage({
     setUpgradeModalOpen,
   ] = useState(false);
 
+  const [
+    saveSearchModalOpen,
+    setSaveSearchModalOpen,
+  ] = useState(false);
+
+  const [
+    lastSavedSearch,
+    setLastSavedSearch,
+  ] = useState<SavedSearch | null>(
+    null
+  );
+
   /*
    * ============================================================
    * ADVANCED SEARCH MEMBERSHIP HANDLING
@@ -110,6 +129,20 @@ export default function BrowseProfilesPage({
       membershipUpgradeRequired,
     ]
   );
+
+  /*
+   * ============================================================
+   * SAVED SEARCH
+   * ============================================================
+   */
+
+  function handleSavedSearch(
+    savedSearch: SavedSearch
+  ): void {
+    setLastSavedSearch(
+      savedSearch
+    );
+  }
 
   /*
    * ============================================================
@@ -301,25 +334,60 @@ export default function BrowseProfilesPage({
                           } found`}
                     </p>
                   )}
+
+                {lastSavedSearch && (
+                  <p className="mt-1 flex items-center gap-1.5 text-xs font-bold text-emerald-600">
+                    <BookmarkPlus
+                      size={12}
+                    />
+
+                    Saved as{" "}
+                    {lastSavedSearch.name}
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            loading={loading}
-            leftIcon={
-              <RefreshCw
-                size={15}
-              />
-            }
-            onClick={() =>
-              void refresh()
-            }
-          >
-            Refresh
-          </Button>
+          {/* =================================================
+              Search Actions
+              ================================================= */}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={
+                <BookmarkPlus
+                  size={15}
+                />
+              }
+              disabled={loading}
+              onClick={() =>
+                setSaveSearchModalOpen(
+                  true
+                )
+              }
+            >
+              Save Search
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              loading={loading}
+              leftIcon={
+                <RefreshCw
+                  size={15}
+                />
+              }
+              onClick={() =>
+                void refresh()
+              }
+            >
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* ===================================================
@@ -417,6 +485,25 @@ export default function BrowseProfilesPage({
           </>
         )}
       </section>
+
+      {/* =====================================================
+          Save Search Modal
+          ===================================================== */}
+
+      <SaveSearchModal
+        open={
+          saveSearchModalOpen
+        }
+        filters={filters}
+        onClose={() => {
+          setSaveSearchModalOpen(
+            false
+          );
+        }}
+        onSaved={
+          handleSavedSearch
+        }
+      />
 
       {/* =====================================================
           Advanced Search Upgrade Modal
