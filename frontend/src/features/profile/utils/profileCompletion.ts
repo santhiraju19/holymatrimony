@@ -20,7 +20,10 @@ function hasText(
  * This completion rule intentionally mirrors
  * backend ProfileService.calculateCompletion().
  *
- * Photos and optional/sensitive fields are excluded.
+ * Photos, Church Information and optional/sensitive
+ * fields are excluded.
+ *
+ * Denomination remains part of the core personal profile.
  *
  * Core field count:
  *
@@ -28,12 +31,11 @@ function hasText(
  * Personal              4
  * Current Location      3
  * About                 1
- * Church                4
  * Education & Career    4
  * Family                4
  * Partner Preferences   6
  *
- * Total                30
+ * Total                26
  */
 export function calculateProfileCompletion(
   profile: ProfileState
@@ -98,32 +100,6 @@ export function calculateProfileCompletion(
 
         hasText(
           profile.aboutInfo.aboutMe
-        ),
-      ],
-    },
-
-    {
-      label: "Church Information",
-
-      checks: [
-        hasText(
-          profile.churchInfo.churchName
-        ),
-
-        hasText(
-          profile.churchInfo.pastorName
-        ),
-
-        /*
-         * "true" and "false" are both valid answers.
-         * Only blank means unanswered.
-         */
-        hasText(
-          profile.churchInfo.baptized
-        ),
-
-        hasText(
-          profile.churchInfo.churchAddress
         ),
       ],
     },

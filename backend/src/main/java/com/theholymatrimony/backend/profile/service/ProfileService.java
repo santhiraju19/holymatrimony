@@ -30,7 +30,7 @@ public class ProfileService {
      *
      * Photos are also excluded.
      */
-    private static final int REQUIRED_PROFILE_FIELDS = 30;
+private static final int REQUIRED_PROFILE_FIELDS = 26;
 
     private final ProfileRepository profileRepository;
     private final UserRepository userRepository;
@@ -496,28 +496,38 @@ public class ProfileService {
     // Profile completion
     // =========================================================
 
-    /*
-     * Profile completion intentionally measures the core
-     * information needed to create a useful matrimonial
-     * profile.
-     *
-     * Optional/sensitive information such as:
-     *
-     * - weight
-     * - complexion
-     * - body type
-     * - community
-     * - sub-community
-     * - faith background
-     * - physical status
-     * - diet
-     * - smoking
-     * - drinking
-     * - membership ID
-     * - most partner lifestyle preferences
-     *
-     * does NOT prevent a member from reaching 100%.
-     */
+   /*
+ * Profile completion intentionally measures only the
+ * core information needed to create a useful matrimonial
+ * profile.
+ *
+ * Church information is optional and does not affect
+ * profile completion or eligibility to submit a profile
+ * for administrator verification.
+ *
+ * Denomination remains part of the core personal profile.
+ *
+ * Optional/sensitive information such as:
+ *
+ * - weight
+ * - complexion
+ * - body type
+ * - community
+ * - sub-community
+ * - faith background
+ * - physical status
+ * - diet
+ * - smoking
+ * - drinking
+ * - church name
+ * - pastor name
+ * - baptism status
+ * - church membership ID
+ * - church address
+ * - most partner lifestyle preferences
+ *
+ * does NOT prevent a member from reaching 100%.
+ */
     private int calculateCompletion(
             Profile profile
     ) {
@@ -588,29 +598,7 @@ public class ProfileService {
             completed++;
         }
 
-        // =====================================================
-        // Church — 4
-        // =====================================================
 
-        if (hasText(profile.getChurchName())) {
-            completed++;
-        }
-
-        if (hasText(profile.getPastorName())) {
-            completed++;
-        }
-
-        /*
-         * Both true and false are valid answers.
-         * Only null means unanswered.
-         */
-        if (profile.getBaptized() != null) {
-            completed++;
-        }
-
-        if (hasText(profile.getChurchAddress())) {
-            completed++;
-        }
 
         // =====================================================
         // Education & Career — 4

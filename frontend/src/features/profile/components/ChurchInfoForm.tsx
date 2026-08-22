@@ -1,13 +1,13 @@
 "use client";
 
-import {
-  useState,
-} from "react";
+import { useState } from "react";
 
 import {
   Church,
   Droplets,
+  Info,
   MapPin,
+  ShieldCheck,
   User,
 } from "lucide-react";
 
@@ -56,13 +56,8 @@ export default function ChurchInfoForm({
     setProfile,
   } = useProfile();
 
-  const [
-    errors,
-    setErrors,
-  ] =
-    useState<ChurchFormErrors>(
-      {}
-    );
+  const [errors, setErrors] =
+    useState<ChurchFormErrors>({});
 
   const churchLocation =
     parseLocation(
@@ -148,40 +143,23 @@ export default function ChurchInfoForm({
       nextDistrict = "";
       nextCity = "";
 
-      clearError(
-        "churchState"
-      );
-
-      clearError(
-        "churchDistrict"
-      );
-
-      clearError(
-        "churchCity"
-      );
+      clearError("churchState");
+      clearError("churchDistrict");
+      clearError("churchCity");
     }
 
-    if (
-      field === "district"
-    ) {
+    if (field === "district") {
       nextDistrict = value;
       nextCity = "";
 
-      clearError(
-        "churchDistrict"
-      );
-
-      clearError(
-        "churchCity"
-      );
+      clearError("churchDistrict");
+      clearError("churchCity");
     }
 
     if (field === "city") {
       nextCity = value;
 
-      clearError(
-        "churchCity"
-      );
+      clearError("churchCity");
     }
 
     updateChurchInfo(
@@ -222,49 +200,97 @@ export default function ChurchInfoForm({
     <Card className="overflow-hidden p-0">
 
       {/* =====================================================
-          Compact Step Header
+          Header
           ===================================================== */}
 
       <div className="border-b border-slate-100 bg-gradient-to-r from-indigo-50/75 via-white to-amber-50/55 px-4 py-3.5 sm:px-5">
         <div className="flex items-start gap-3">
+
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0B2D5C] to-indigo-700 text-white shadow-sm">
-            <Church
-              size={17}
-            />
+            <Church size={17} />
           </div>
 
           <div className="min-w-0">
+
             <p className="text-[9px] font-black uppercase tracking-[0.13em] text-[#B38B19]">
               Step 2 of 7
             </p>
 
-            <h2 className="mt-0.5 text-base font-black tracking-[-0.02em] text-[#0B2D5C] sm:text-lg">
-              Church Information
-            </h2>
+            <div className="mt-0.5 flex flex-wrap items-center gap-2">
+
+              <h2 className="text-base font-black tracking-[-0.02em] text-[#0B2D5C] sm:text-lg">
+                Church Information
+              </h2>
+
+              <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-500">
+                Optional
+              </span>
+
+            </div>
 
             <p className="mt-0.5 max-w-2xl text-[11px] leading-5 text-slate-500 sm:text-xs">
-              Share your church, denomination and spiritual background with prospective matches.
+              Share your church background if you wish.
+              These details can help prospective matches
+              understand your faith journey.
             </p>
+
           </div>
         </div>
       </div>
 
       <div className="p-4 sm:p-5">
 
-        {/* Required reminder */}
+        {/* =====================================================
+            Optional information notice
+            ===================================================== */}
 
-        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2.5 text-[11px] leading-5 text-blue-800">
-          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-blue-100 font-black text-blue-700">
-            *
-          </span>
+        <div className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50/60 px-3.5 py-3">
 
-          <p>
-            Fields marked with a red{" "}
-            <span className="font-black text-red-500">
-              *
+          <div className="flex items-start gap-2.5">
+
+            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+              <ShieldCheck size={15} />
+            </div>
+
+            <div>
+              <p className="text-[11px] font-black text-emerald-900 sm:text-xs">
+                Church details are optional
+              </p>
+
+              <p className="mt-0.5 text-[10px] leading-5 text-emerald-800 sm:text-[11px]">
+                You may continue without entering your
+                church name, pastor, baptism status,
+                membership ID or church location.
+                These fields do not affect profile completion
+                or your ability to submit your profile for
+                verification.
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* =====================================================
+            Denomination notice
+            ===================================================== */}
+
+        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2.5">
+
+          <Info
+            size={16}
+            className="mt-0.5 shrink-0 text-blue-600"
+          />
+
+          <p className="text-[10px] leading-5 text-blue-800 sm:text-[11px]">
+            <span className="font-black">
+              Denomination
             </span>{" "}
-            are required before continuing.
+            remains part of your core faith profile and is
+            required. All other information on this page is
+            optional.
           </p>
+
         </div>
 
         {/* =====================================================
@@ -273,49 +299,15 @@ export default function ChurchInfoForm({
 
         <SectionHeading
           icon={
-            <Church
-              size={15}
-            />
+            <Church size={15} />
           }
           title="Church Details"
-          description="Your denomination, church and ministry information."
+          description="Optional church and ministry information."
         />
 
         <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-2">
-          <FormField
-            label="Church Name"
-            required
-            htmlFor="church-name"
-            error={
-              errors.churchName
-            }
-          >
-            <IconField
-              icon={
-                <Church
-                  size={16}
-                />
-              }
-            >
-              <Input
-                id="church-name"
-                value={
-                  churchInfo.churchName
-                }
-                error={
-                  errors.churchName
-                }
-                placeholder="Enter church name"
-                className="pl-10"
-                onChange={(event) =>
-                  updateChurchInfo(
-                    "churchName",
-                    event.target.value
-                  )
-                }
-              />
-            </IconField>
-          </FormField>
+
+          {/* Denomination */}
 
           <FormField
             label="Denomination"
@@ -347,38 +339,73 @@ export default function ChurchInfoForm({
               {DENOMINATIONS.map(
                 (denomination) => (
                   <option
-                    key={
-                      denomination
-                    }
-                    value={
-                      denomination
-                    }
+                    key={denomination}
+                    value={denomination}
                   >
-                    {
-                      denomination
-                    }
+                    {denomination}
                   </option>
                 )
               )}
             </Select>
           </FormField>
 
+          {/* Church Name */}
+
+          <FormField
+            label="Church Name"
+            htmlFor="church-name"
+            helperText="Optional"
+            error={
+              errors.churchName
+            }
+          >
+            <IconField
+              icon={
+                <Church size={16} />
+              }
+            >
+              <Input
+                id="church-name"
+                value={
+                  churchInfo.churchName
+                }
+                error={
+                  errors.churchName
+                }
+                placeholder="Enter church name"
+                className="pl-10"
+                onChange={(event) =>
+                  updateChurchInfo(
+                    "churchName",
+                    event.target.value
+                  )
+                }
+              />
+            </IconField>
+          </FormField>
+
+          {/* Pastor */}
+
           <FormField
             label="Pastor Name"
             htmlFor="pastor-name"
             helperText="Optional"
+            error={
+              errors.pastorName
+            }
           >
             <IconField
               icon={
-                <User
-                  size={16}
-                />
+                <User size={16} />
               }
             >
               <Input
                 id="pastor-name"
                 value={
                   churchInfo.pastorName
+                }
+                error={
+                  errors.pastorName
                 }
                 placeholder="Enter pastor name"
                 className="pl-10"
@@ -392,15 +419,16 @@ export default function ChurchInfoForm({
             </IconField>
           </FormField>
 
+          {/* Baptized */}
+
           <FormField
             label="Baptized"
             htmlFor="church-baptized"
+            helperText="Optional"
           >
             <IconField
               icon={
-                <Droplets
-                  size={16}
-                />
+                <Droplets size={16} />
               }
             >
               <Select
@@ -417,7 +445,7 @@ export default function ChurchInfoForm({
                 }
               >
                 <option value="">
-                  Select
+                  Prefer not to answer
                 </option>
 
                 <option value="true">
@@ -431,21 +459,31 @@ export default function ChurchInfoForm({
                 <option value="rather-not-say">
                   Rather not say
                 </option>
+
               </Select>
             </IconField>
           </FormField>
+
+          {/* Membership */}
 
           <FormField
             label="Church Membership ID"
             htmlFor="church-membership-id"
             helperText="Optional"
+            error={
+              errors.membershipId
+            }
             className="md:col-span-2"
           >
             <div className="md:max-w-[calc(50%-0.5rem)]">
+
               <Input
                 id="church-membership-id"
                 value={
                   churchInfo.membershipId
+                }
+                error={
+                  errors.membershipId
                 }
                 placeholder="Enter membership ID"
                 onChange={(event) =>
@@ -455,8 +493,10 @@ export default function ChurchInfoForm({
                   )
                 }
               />
+
             </div>
           </FormField>
+
         </div>
 
         {/* =====================================================
@@ -467,20 +507,21 @@ export default function ChurchInfoForm({
 
         <SectionHeading
           icon={
-            <MapPin
-              size={15}
-            />
+            <MapPin size={15} />
           }
           title="Church Location"
-          description="Select the location in State → District → City order."
+          description="Optional — add your church location if you would like to share it."
           variant="green"
         />
 
         <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-2">
+
+          {/* State */}
+
           <FormField
             label="Church State"
-            required
             htmlFor="church-state"
+            helperText="Optional"
             error={
               errors.churchState
             }
@@ -507,26 +548,22 @@ export default function ChurchInfoForm({
               {INDIA_STATES.map(
                 (state) => (
                   <option
-                    key={
-                      state.isoCode
-                    }
-                    value={
-                      state.value
-                    }
+                    key={state.isoCode}
+                    value={state.value}
                   >
-                    {
-                      state.label
-                    }
+                    {state.label}
                   </option>
                 )
               )}
             </Select>
           </FormField>
 
+          {/* District */}
+
           <FormField
             label="Church District"
-            required
             htmlFor="church-district"
+            helperText="Optional"
             error={
               errors.churchDistrict
             }
@@ -569,32 +606,29 @@ export default function ChurchInfoForm({
               {districts.map(
                 (district) => (
                   <option
-                    key={
-                      district.value
-                    }
-                    value={
-                      district.value
-                    }
+                    key={district.value}
+                    value={district.value}
                   >
-                    {
-                      district.label
-                    }
+                    {district.label}
                   </option>
                 )
               )}
             </Select>
           </FormField>
 
+          {/* City */}
+
           <FormField
             label="Church City"
-            required
             htmlFor="church-city"
+            helperText="Optional"
             error={
               errors.churchCity
             }
             className="md:col-span-2"
           >
             <div className="md:max-w-[calc(50%-0.5rem)]">
+
               <Select
                 id="church-city"
                 value={
@@ -633,22 +667,19 @@ export default function ChurchInfoForm({
                 {cities.map(
                   (city) => (
                     <option
-                      key={
-                        city.value
-                      }
-                      value={
-                        city.value
-                      }
+                      key={city.value}
+                      value={city.value}
                     >
-                      {
-                        city.label
-                      }
+                      {city.label}
                     </option>
                   )
                 )}
+
               </Select>
+
             </div>
           </FormField>
+
         </div>
 
         {/* =====================================================
@@ -656,15 +687,14 @@ export default function ChurchInfoForm({
             ===================================================== */}
 
         <div className="mt-6 flex flex-col-reverse gap-2.5 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+
           <Button
             type="button"
             variant="secondary"
             size="sm"
             fullWidth
             className="sm:w-auto"
-            onClick={
-              onBack
-            }
+            onClick={onBack}
           >
             Back
           </Button>
@@ -675,14 +705,15 @@ export default function ChurchInfoForm({
             size="sm"
             fullWidth
             className="sm:min-w-[150px] sm:w-auto"
-            onClick={
-              handleContinue
-            }
+            onClick={handleContinue}
           >
             Save & Continue
           </Button>
+
         </div>
+
       </div>
+
     </Card>
   );
 }
@@ -696,11 +727,13 @@ function IconField({
 }) {
   return (
     <div className="relative">
+
       <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-slate-400">
         {icon}
       </span>
 
       {children}
+
     </div>
   );
 }
@@ -733,6 +766,7 @@ function SectionHeading({
 
   return (
     <div className="flex items-start gap-2.5">
+
       <div
         className={[
           "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
@@ -743,6 +777,7 @@ function SectionHeading({
       </div>
 
       <div className="min-w-0">
+
         <h3 className="text-sm font-black text-[#0B2D5C]">
           {title}
         </h3>
@@ -750,7 +785,9 @@ function SectionHeading({
         <p className="mt-0.5 text-[11px] leading-5 text-slate-500">
           {description}
         </p>
+
       </div>
+
     </div>
   );
 }

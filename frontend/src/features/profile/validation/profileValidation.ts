@@ -479,26 +479,19 @@ export function validateBasicInfo(
 
 export function validateChurchInfo(
   values: ChurchInfo,
-  location: LocationSelection
+  _location: LocationSelection
 ): ChurchFormErrors {
   const errors:
     ChurchFormErrors = {};
 
-  if (
-    isBlank(
-      values.churchName
-    )
-  ) {
-    errors.churchName =
-      "Please enter your church name.";
-  } else if (
-    values.churchName
-      .trim()
-      .length < 2
-  ) {
-    errors.churchName =
-      "Church name must contain at least 2 characters.";
-  }
+  /*
+   * Church Information is optional.
+   *
+   * Only denomination is part of the core profile.
+   * Church name, pastor name, baptism status,
+   * membership ID and church location must never
+   * block onboarding or profile submission.
+   */
 
   if (
     isBlank(
@@ -508,95 +501,6 @@ export function validateChurchInfo(
     errors.denomination =
       "Please select your denomination.";
   }
-
-  /*
-   * Pastor name is part of the backend
-   * profile-completion calculation.
-   */
-  if (
-    isBlank(
-      values.pastorName
-    )
-  ) {
-    errors.pastorName =
-      "Please enter your pastor's name.";
-  } else if (
-    values.pastorName
-      .trim()
-      .length < 2
-  ) {
-    errors.pastorName =
-      "Please enter a valid pastor name.";
-  }
-
-  /*
-   * Baptism answer is required.
-   *
-   * Both Yes and No are valid answers.
-   */
-  if (
-    isBlank(
-      values.baptized
-    )
-  ) {
-    errors.baptized =
-      "Please select your baptism status.";
-  }
-
-  /*
-   * Membership ID remains optional.
-   */
-
-  if (
-    values.membershipId
-      .trim()
-      .length > 60
-  ) {
-    errors.membershipId =
-      "Membership ID cannot exceed 60 characters.";
-  }
-
-  // =====================================================
-  // Church location
-  // =====================================================
-
-  if (
-    isBlank(
-      location.state
-    )
-  ) {
-    errors.churchState =
-      "Please select the church state.";
-  }
-
-  if (
-    !isBlank(
-      location.state
-    ) &&
-    isBlank(
-      location.district
-    )
-  ) {
-    errors.churchDistrict =
-      "Please select the church district.";
-  }
-
-  if (
-    !isBlank(
-      location.state
-    ) &&
-    isBlank(
-      location.city
-    )
-  ) {
-    errors.churchCity =
-      "Please select the church city.";
-  }
-
-  /*
-   * ChurchInfoForm serializes State/District/City
-   * into churchAddress.
-   */
 
   return errors;
 }
