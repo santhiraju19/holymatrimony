@@ -43,7 +43,7 @@ const navigationItems = [
     href: "/membership",
   },
   {
-    label: "Success Stories",
+    label: "Why Holy Matrimony",
     href: "/success-stories",
   },
   {
