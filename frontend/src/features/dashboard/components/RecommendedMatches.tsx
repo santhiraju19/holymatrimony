@@ -25,6 +25,10 @@ import {
   getToken,
 } from "@/lib/auth";
 
+import {
+  resolvePhotoUrl,
+} from "@/features/profile/services/photoService";
+
 import type {
   RecommendedMatch,
 } from "@/features/dashboard/types";
@@ -361,6 +365,11 @@ export default function RecommendedMatches({
                     match.compatibilityScore
                   );
 
+                const resolvedImageUrl =
+                  resolvePhotoUrl(
+                    match.imageUrl
+                  );
+
                 return (
                   <article
                     key={match.id}
@@ -371,11 +380,12 @@ export default function RecommendedMatches({
                       className="block"
                     >
                       <div className="relative flex aspect-[5/3] items-center justify-center overflow-hidden bg-gradient-to-br from-[#0B2D5C] via-blue-700 to-blue-400">
-                        {match.imageUrl ? (
+                        {resolvedImageUrl ? (
                           <Image
                             src={
-                              match.imageUrl
+                              resolvedImageUrl
                             }
+                            unoptimized
                             alt={
                               match.name
                             }
