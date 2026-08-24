@@ -10,6 +10,7 @@ import com.theholymatrimony.backend.profile.entity.Profile;
 import com.theholymatrimony.backend.profile.enums.ProfileVerificationStatus;
 import com.theholymatrimony.backend.profile.repository.ProfileRepository;
 
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class ProfileService {
 
     private final ProfileRepository profileRepository;
     private final UserRepository userRepository;
+    private final EntityManager entityManager;
 
     // =========================================================
     // Get current user's profile
@@ -360,7 +362,29 @@ public class ProfileService {
          */
         if (request.getPreferredLocations() != null) {
 
-            profile.getPreferredLocations().clear();
+            /*
+             * Remove existing structured locations first.
+             *
+             * profile_preferred_locations has a unique constraint
+             * on:
+             *
+             *     (profile_id, sort_order)
+             *
+             * With orphanRemoval=true, simply calling clear() and
+             * immediately adding new locations can cause Hibernate
+             * to INSERT the replacement sort_order=0 before the old
+             * sort_order=0 row has physically been deleted.
+             *
+             * Force a flush after clear() so the DELETE statements
+             * reach PostgreSQL before replacement rows reuse the
+             * same sort-order values.
+             */
+            if (!profile.getPreferredLocations().isEmpty()) {
+
+                profile.getPreferredLocations().clear();
+
+                entityManager.flush();
+            }
 
             int sortOrder = 0;
 
@@ -418,9 +442,12 @@ public class ProfileService {
             }
 
             /*
-             * Maintain legacy scalar columns from the first
-             * preferred location for compatibility with existing
-             * browse/search/matching code.
+             * Keep the legacy scalar fields synchronized with the
+             * first preferred location.
+             *
+             * Existing browse/search/recommendation code can keep
+             * using these fields until it is migrated to the new
+             * multi-location relationship.
              */
             if (profile.getPreferredLocations().isEmpty()) {
 
@@ -454,7 +481,8 @@ public class ProfileService {
         } else {
 
             /*
-             * Legacy-client compatibility.
+             * Backward compatibility for older clients that still
+             * send only the original scalar location fields.
              */
             profile.setPreferredCountry(
                     request.getPreferredCountry()
