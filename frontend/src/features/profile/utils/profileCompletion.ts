@@ -20,10 +20,17 @@ function hasText(
  * This completion rule intentionally mirrors
  * backend ProfileService.calculateCompletion().
  *
- * Photos, Church Information and optional/sensitive
- * fields are excluded.
+ * Core profile fields only are counted.
  *
- * Denomination remains part of the core personal profile.
+ * Excluded from completion:
+ *
+ * - Photos
+ * - Church Information
+ * - Partner Preferences
+ * - Optional / sensitive personal fields
+ *
+ * Denomination remains part of the member's
+ * core personal profile.
  *
  * Core field count:
  *
@@ -33,9 +40,8 @@ function hasText(
  * About                 1
  * Education & Career    4
  * Family                4
- * Partner Preferences   6
  *
- * Total                26
+ * Total                20
  */
 export function calculateProfileCompletion(
   profile: ProfileState
@@ -144,36 +150,6 @@ export function calculateProfileCompletion(
 
         hasText(
           profile.familyInfo.familyType
-        ),
-      ],
-    },
-
-    {
-      label: "Partner Preferences",
-
-      checks: [
-        hasText(
-          profile.preferenceInfo.preferredAgeFrom
-        ),
-
-        hasText(
-          profile.preferenceInfo.preferredAgeTo
-        ),
-
-        hasText(
-          profile.preferenceInfo.preferredHeightFromCm
-        ),
-
-        hasText(
-          profile.preferenceInfo.preferredHeightToCm
-        ),
-
-        hasText(
-          profile.preferenceInfo.preferredReligion
-        ),
-
-        hasText(
-          profile.preferenceInfo.preferredEducation
         ),
       ],
     },

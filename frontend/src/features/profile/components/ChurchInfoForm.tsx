@@ -5,7 +5,6 @@ import { useState } from "react";
 import {
   Church,
   Droplets,
-  Info,
   MapPin,
   ShieldCheck,
   User,
@@ -24,12 +23,10 @@ import {
 } from "@/features/profile/data/profileOptions";
 
 import {
-  formatLocation,
-  getCitiesForState,
-  getDistrictsForState,
-  INDIA_STATES,
-  parseLocation,
-} from "@/features/profile/data/indiaLocations";
+  COUNTRIES,
+  getCitiesForCountryState,
+  getStatesForCountry,
+} from "@/features/profile/data/worldLocations";
 
 import type {
   ChurchInfo,
@@ -59,33 +56,41 @@ export default function ChurchInfoForm({
   const [errors, setErrors] =
     useState<ChurchFormErrors>({});
 
-  const churchLocation =
-    parseLocation(
-      churchInfo.churchAddress
-    );
-
-  const districts =
-    getDistrictsForState(
-      churchLocation.state
-    );
+  const states =
+    churchInfo.churchCountry
+      ? getStatesForCountry(
+          churchInfo.churchCountry
+        )
+      : [];
 
   const cities =
-    getCitiesForState(
-      churchLocation.state
+    churchInfo.churchCountry &&
+    churchInfo.churchState
+      ? getCitiesForCountryState(
+          churchInfo.churchCountry,
+          churchInfo.churchState
+        )
+      : [];
+
+  const selectedCountryExists =
+    COUNTRIES.some(
+      (country) =>
+        country.value ===
+        churchInfo.churchCountry
     );
 
-  const selectedDistrictExists =
-    districts.some(
-      (district) =>
-        district.value ===
-        churchLocation.district
+  const selectedStateExists =
+    states.some(
+      (state) =>
+        state.value ===
+        churchInfo.churchState
     );
 
   const selectedCityExists =
     cities.some(
       (city) =>
         city.value ===
-        churchLocation.city
+        churchInfo.churchCity
     );
 
   function clearError(
@@ -119,64 +124,87 @@ export default function ChurchInfoForm({
       },
     }));
 
-    clearError(field);
+    clearError(
+      field as keyof ChurchFormErrors
+    );
   }
 
   function updateChurchLocation(
     field:
-      | "state"
-      | "district"
-      | "city",
+      | "churchCountry"
+      | "churchState"
+      | "churchDistrict"
+      | "churchCity",
     value: string
   ): void {
-    let nextState =
-      churchLocation.state;
+    setProfile((previous) => {
+      let nextChurchInfo: ChurchInfo = {
+        ...previous.churchInfo,
+        [field]: value,
+      };
 
-    let nextDistrict =
-      churchLocation.district;
+      if (field === "churchCountry") {
+        nextChurchInfo = {
+          ...previous.churchInfo,
+          churchCountry: value,
+          churchState: "",
+          churchDistrict: "",
+          churchCity: "",
+        };
+      }
 
-    let nextCity =
-      churchLocation.city;
+      if (field === "churchState") {
+        nextChurchInfo = {
+          ...previous.churchInfo,
+          churchState: value,
+          churchDistrict: "",
+          churchCity: "",
+        };
+      }
 
-    if (field === "state") {
-      nextState = value;
-      nextDistrict = "";
-      nextCity = "";
+      if (field === "churchDistrict") {
+        nextChurchInfo = {
+          ...previous.churchInfo,
+          churchDistrict: value,
+          churchCity: "",
+        };
+      }
 
+      return {
+        ...previous,
+        churchInfo: nextChurchInfo,
+      };
+    });
+
+    clearError(
+      field as keyof ChurchFormErrors
+    );
+
+    if (field === "churchCountry") {
       clearError("churchState");
       clearError("churchDistrict");
       clearError("churchCity");
     }
 
-    if (field === "district") {
-      nextDistrict = value;
-      nextCity = "";
-
+    if (field === "churchState") {
       clearError("churchDistrict");
       clearError("churchCity");
     }
 
-    if (field === "city") {
-      nextCity = value;
-
+    if (field === "churchDistrict") {
       clearError("churchCity");
     }
-
-    updateChurchInfo(
-      "churchAddress",
-      formatLocation(
-        nextCity,
-        nextDistrict,
-        nextState
-      )
-    );
   }
 
   function handleContinue(): void {
     const validationErrors =
       validateChurchInfo(
         churchInfo,
-        churchLocation
+        {
+          state: churchInfo.churchState,
+          district: churchInfo.churchDistrict,
+          city: churchInfo.churchCity,
+        }
       );
 
     setErrors(
@@ -189,7 +217,6 @@ export default function ChurchInfoForm({
       )
     ) {
       focusFirstInvalidField();
-
       return;
     }
 
@@ -229,9 +256,8 @@ export default function ChurchInfoForm({
             </div>
 
             <p className="mt-0.5 max-w-2xl text-[11px] leading-5 text-slate-500 sm:text-xs">
-              Share your church background if you wish.
-              These details can help prospective matches
-              understand your faith journey.
+              Share your church background if you wish. All
+              information on this page is optional.
             </p>
 
           </div>
@@ -241,7 +267,7 @@ export default function ChurchInfoForm({
       <div className="p-4 sm:p-5">
 
         {/* =====================================================
-            Optional information notice
+            Optional notice
             ===================================================== */}
 
         <div className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50/60 px-3.5 py-3">
@@ -253,43 +279,21 @@ export default function ChurchInfoForm({
             </div>
 
             <div>
+
               <p className="text-[11px] font-black text-emerald-900 sm:text-xs">
-                Church details are optional
+                Church information is completely optional
               </p>
 
               <p className="mt-0.5 text-[10px] leading-5 text-emerald-800 sm:text-[11px]">
-                You may continue without entering your
-                church name, pastor, baptism status,
-                membership ID or church location.
-                These fields do not affect profile completion
-                or your ability to submit your profile for
-                verification.
+                You may continue without entering a denomination,
+                church name, pastor, baptism status, membership ID
+                or church location. These fields do not block
+                profile completion or verification submission.
               </p>
+
             </div>
 
           </div>
-
-        </div>
-
-        {/* =====================================================
-            Denomination notice
-            ===================================================== */}
-
-        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2.5">
-
-          <Info
-            size={16}
-            className="mt-0.5 shrink-0 text-blue-600"
-          />
-
-          <p className="text-[10px] leading-5 text-blue-800 sm:text-[11px]">
-            <span className="font-black">
-              Denomination
-            </span>{" "}
-            remains part of your core faith profile and is
-            required. All other information on this page is
-            optional.
-          </p>
 
         </div>
 
@@ -307,12 +311,10 @@ export default function ChurchInfoForm({
 
         <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-2">
 
-          {/* Denomination */}
-
           <FormField
             label="Denomination"
-            required
             htmlFor="church-denomination"
+            helperText="Optional"
             error={
               errors.denomination
             }
@@ -349,8 +351,6 @@ export default function ChurchInfoForm({
             </Select>
           </FormField>
 
-          {/* Church Name */}
-
           <FormField
             label="Church Name"
             htmlFor="church-name"
@@ -384,8 +384,6 @@ export default function ChurchInfoForm({
             </IconField>
           </FormField>
 
-          {/* Pastor */}
-
           <FormField
             label="Pastor Name"
             htmlFor="pastor-name"
@@ -418,8 +416,6 @@ export default function ChurchInfoForm({
               />
             </IconField>
           </FormField>
-
-          {/* Baptized */}
 
           <FormField
             label="Baptized"
@@ -459,12 +455,9 @@ export default function ChurchInfoForm({
                 <option value="rather-not-say">
                   Rather not say
                 </option>
-
               </Select>
             </IconField>
           </FormField>
-
-          {/* Membership */}
 
           <FormField
             label="Church Membership ID"
@@ -476,7 +469,6 @@ export default function ChurchInfoForm({
             className="md:col-span-2"
           >
             <div className="md:max-w-[calc(50%-0.5rem)]">
-
               <Input
                 id="church-membership-id"
                 value={
@@ -493,7 +485,6 @@ export default function ChurchInfoForm({
                   )
                 }
               />
-
             </div>
           </FormField>
 
@@ -510,13 +501,56 @@ export default function ChurchInfoForm({
             <MapPin size={15} />
           }
           title="Church Location"
-          description="Optional — add your church location if you would like to share it."
+          description="Optional structured location for your church."
           variant="green"
         />
 
-        <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-2">
+        <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-2 lg:grid-cols-4">
 
-          {/* State */}
+          <FormField
+            label="Church Country"
+            htmlFor="church-country"
+            helperText="Optional"
+          >
+            <Select
+              id="church-country"
+              value={
+                churchInfo.churchCountry
+              }
+              onChange={(event) =>
+                updateChurchLocation(
+                  "churchCountry",
+                  event.target.value
+                )
+              }
+            >
+              <option value="">
+                Select country
+              </option>
+
+              {churchInfo.churchCountry &&
+                !selectedCountryExists && (
+                  <option
+                    value={
+                      churchInfo.churchCountry
+                    }
+                  >
+                    {churchInfo.churchCountry}
+                  </option>
+                )}
+
+              {COUNTRIES.map(
+                (country) => (
+                  <option
+                    key={country.isoCode}
+                    value={country.value}
+                  >
+                    {country.label}
+                  </option>
+                )
+              )}
+            </Select>
+          </FormField>
 
           <FormField
             label="Church State"
@@ -529,14 +563,17 @@ export default function ChurchInfoForm({
             <Select
               id="church-state"
               value={
-                churchLocation.state
+                churchInfo.churchState
               }
               error={
                 errors.churchState
               }
+              disabled={
+                !churchInfo.churchCountry
+              }
               onChange={(event) =>
                 updateChurchLocation(
-                  "state",
+                  "churchState",
                   event.target.value
                 )
               }
@@ -545,10 +582,21 @@ export default function ChurchInfoForm({
                 Select state
               </option>
 
-              {INDIA_STATES.map(
+              {churchInfo.churchState &&
+                !selectedStateExists && (
+                  <option
+                    value={
+                      churchInfo.churchState
+                    }
+                  >
+                    {churchInfo.churchState}
+                  </option>
+                )}
+
+              {states.map(
                 (state) => (
                   <option
-                    key={state.isoCode}
+                    key={`${churchInfo.churchCountry}-${state.isoCode}`}
                     value={state.value}
                   >
                     {state.label}
@@ -558,8 +606,6 @@ export default function ChurchInfoForm({
             </Select>
           </FormField>
 
-          {/* District */}
-
           <FormField
             label="Church District"
             htmlFor="church-district"
@@ -568,55 +614,31 @@ export default function ChurchInfoForm({
               errors.churchDistrict
             }
           >
-            <Select
+            <Input
               id="church-district"
               value={
-                churchLocation.district
+                churchInfo.churchDistrict
               }
               error={
                 errors.churchDistrict
               }
               disabled={
-                !churchLocation.state
+                !churchInfo.churchState
+              }
+              maxLength={120}
+              placeholder={
+                churchInfo.churchState
+                  ? "Enter district"
+                  : "Select state first"
               }
               onChange={(event) =>
                 updateChurchLocation(
-                  "district",
+                  "churchDistrict",
                   event.target.value
                 )
               }
-            >
-              <option value="">
-                Select district
-              </option>
-
-              {churchLocation.district &&
-                !selectedDistrictExists && (
-                  <option
-                    value={
-                      churchLocation.district
-                    }
-                  >
-                    {
-                      churchLocation.district
-                    }
-                  </option>
-                )}
-
-              {districts.map(
-                (district) => (
-                  <option
-                    key={district.value}
-                    value={district.value}
-                  >
-                    {district.label}
-                  </option>
-                )
-              )}
-            </Select>
+            />
           </FormField>
-
-          {/* City */}
 
           <FormField
             label="Church City"
@@ -625,59 +647,51 @@ export default function ChurchInfoForm({
             error={
               errors.churchCity
             }
-            className="md:col-span-2"
           >
-            <div className="md:max-w-[calc(50%-0.5rem)]">
+            <Select
+              id="church-city"
+              value={
+                churchInfo.churchCity
+              }
+              error={
+                errors.churchCity
+              }
+              disabled={
+                !churchInfo.churchState
+              }
+              onChange={(event) =>
+                updateChurchLocation(
+                  "churchCity",
+                  event.target.value
+                )
+              }
+            >
+              <option value="">
+                Select city
+              </option>
 
-              <Select
-                id="church-city"
-                value={
-                  churchLocation.city
-                }
-                error={
-                  errors.churchCity
-                }
-                disabled={
-                  !churchLocation.state
-                }
-                onChange={(event) =>
-                  updateChurchLocation(
-                    "city",
-                    event.target.value
-                  )
-                }
-              >
-                <option value="">
-                  Select city
-                </option>
-
-                {churchLocation.city &&
-                  !selectedCityExists && (
-                    <option
-                      value={
-                        churchLocation.city
-                      }
-                    >
-                      {
-                        churchLocation.city
-                      }
-                    </option>
-                  )}
-
-                {cities.map(
-                  (city) => (
-                    <option
-                      key={city.value}
-                      value={city.value}
-                    >
-                      {city.label}
-                    </option>
-                  )
+              {churchInfo.churchCity &&
+                !selectedCityExists && (
+                  <option
+                    value={
+                      churchInfo.churchCity
+                    }
+                  >
+                    {churchInfo.churchCity}
+                  </option>
                 )}
 
-              </Select>
-
-            </div>
+              {cities.map(
+                (city) => (
+                  <option
+                    key={city.value}
+                    value={city.value}
+                  >
+                    {city.label}
+                  </option>
+                )
+              )}
+            </Select>
           </FormField>
 
         </div>

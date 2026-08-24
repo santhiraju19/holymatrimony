@@ -13,7 +13,9 @@ import {
   Heart,
   Languages,
   MapPin,
+  Plus,
   Ruler,
+  Trash2,
   Sparkles,
   UsersRound,
   Utensils,
@@ -51,6 +53,7 @@ import {
 
 import type {
   PreferenceInfo,
+  PreferredLocation,
 } from "@/features/profile/types";
 
 import {
@@ -82,47 +85,6 @@ export default function PreferencesForm({
       FieldErrors<PreferenceInfo>
     >({});
 
-  const preferredStates =
-    preferenceInfo.preferredCountry &&
-    preferenceInfo.preferredCountry !==
-      "Any"
-      ? getStatesForCountry(
-          preferenceInfo.preferredCountry
-        )
-      : [];
-
-  const preferredCities =
-    preferenceInfo.preferredCountry &&
-    preferenceInfo.preferredCountry !==
-      "Any" &&
-    preferenceInfo.preferredState
-      ? getCitiesForCountryState(
-          preferenceInfo.preferredCountry,
-          preferenceInfo.preferredState
-        )
-      : [];
-
-  const selectedCountryExists =
-    COUNTRIES.some(
-      (country) =>
-        country.value ===
-        preferenceInfo.preferredCountry
-    );
-
-  const selectedStateExists =
-    preferredStates.some(
-      (state) =>
-        state.value ===
-        preferenceInfo.preferredState
-    );
-
-  const selectedCityExists =
-    preferredCities.some(
-      (city) =>
-        city.value ===
-        preferenceInfo.preferredCity
-    );
-
   function clearError(
     field: keyof PreferenceInfo
   ): void {
@@ -152,43 +114,8 @@ export default function PreferencesForm({
       } as PreferenceInfo;
 
       /*
-       * Changing preferred country resets dependent
-       * State and City selections.
-       */
-      if (
-        field ===
-        "preferredCountry"
-      ) {
-        nextPreferenceInfo = {
-          ...nextPreferenceInfo,
-          preferredCountry:
-            String(value),
-          preferredState: "",
-          preferredCity: "",
-        };
-      }
-
-      /*
-       * Changing preferred state resets City.
-       */
-      if (
-        field ===
-        "preferredState"
-      ) {
-        nextPreferenceInfo = {
-          ...nextPreferenceInfo,
-          preferredState:
-            String(value),
-          preferredCity: "",
-        };
-      }
-
-      /*
-       * Community No Bar means community should
-       * not restrict matching.
-       *
-       * Clear the stored preference to keep the
-       * meaning unambiguous.
+       * Community No Bar means community should not
+       * restrict matching.
        */
       if (
         field ===
@@ -219,28 +146,148 @@ export default function PreferencesForm({
         "preferredCommunity"
       );
     }
+  }
 
-    if (
-      field ===
-      "preferredCountry"
-    ) {
-      clearError(
-        "preferredState"
-      );
+  function syncLegacyPreferredLocation(
+    preferenceInfo: PreferenceInfo,
+    preferredLocations: PreferredLocation[]
+  ): PreferenceInfo {
+    const first =
+      preferredLocations[0];
 
-      clearError(
-        "preferredCity"
-      );
-    }
+    return {
+      ...preferenceInfo,
 
-    if (
-      field ===
-      "preferredState"
-    ) {
-      clearError(
-        "preferredCity"
-      );
-    }
+      preferredLocations,
+
+      /*
+       * Keep the legacy scalar fields synchronized with
+       * the first preferred location while older search /
+       * matching code still reads those columns.
+       */
+      preferredCountry:
+        first?.country ?? "",
+
+      preferredState:
+        first?.state ?? "",
+
+      preferredDistrict:
+        first?.district ?? "",
+
+      preferredCity:
+        first?.city ?? "",
+    };
+  }
+
+  function addPreferredLocation(): void {
+    setProfile((previous) => {
+      const preferredLocations = [
+        ...previous.preferenceInfo
+          .preferredLocations,
+
+        {
+          country: "",
+          state: "",
+          district: "",
+          city: "",
+        },
+      ];
+
+      return {
+        ...previous,
+
+        preferenceInfo:
+          syncLegacyPreferredLocation(
+            previous.preferenceInfo,
+            preferredLocations
+          ),
+      };
+    });
+  }
+
+  function removePreferredLocation(
+    index: number
+  ): void {
+    setProfile((previous) => {
+      const preferredLocations =
+        previous.preferenceInfo
+          .preferredLocations
+          .filter(
+            (_, locationIndex) =>
+              locationIndex !== index
+          );
+
+      return {
+        ...previous,
+
+        preferenceInfo:
+          syncLegacyPreferredLocation(
+            previous.preferenceInfo,
+            preferredLocations
+          ),
+      };
+    });
+  }
+
+  function updatePreferredLocation(
+    index: number,
+    field: keyof PreferredLocation,
+    value: string
+  ): void {
+    setProfile((previous) => {
+      const preferredLocations =
+        previous.preferenceInfo
+          .preferredLocations
+          .map(
+            (
+              location,
+              locationIndex
+            ) => {
+              if (
+                locationIndex !== index
+              ) {
+                return location;
+              }
+
+              if (
+                field === "country"
+              ) {
+                return {
+                  country: value,
+                  state: "",
+                  district: "",
+                  city: "",
+                };
+              }
+
+              if (
+                field === "state"
+              ) {
+                return {
+                  ...location,
+                  state: value,
+                  district: "",
+                  city: "",
+                };
+              }
+
+              return {
+                ...location,
+                [field]: value,
+              };
+            }
+          );
+
+      return {
+        ...previous,
+
+        preferenceInfo:
+          syncLegacyPreferredLocation(
+            previous.preferenceInfo,
+            preferredLocations
+          ),
+      };
+    });
   }
 
   function handleContinue(): void {
@@ -300,7 +347,7 @@ export default function PreferencesForm({
       <div className="p-4 sm:p-5">
 
         <div className="mb-4 rounded-xl border border-pink-100 bg-pink-50/60 px-3 py-2.5 text-[11px] leading-5 text-pink-800">
-          Age range, height range, religion and education are required for profile completion. Other preferences can be kept flexible.
+          Partner preferences are optional. Add the details that matter to you to improve personalized recommendations, or keep them flexible to discover more suitable matches.
         </div>
 
         {/* =====================================================
@@ -321,7 +368,6 @@ export default function PreferencesForm({
 
           <FormField
             label="Preferred Age From"
-            required
             htmlFor="preferred-age-from"
             error={
               errors.preferredAgeFrom
@@ -360,7 +406,6 @@ export default function PreferencesForm({
 
           <FormField
             label="Preferred Age To"
-            required
             htmlFor="preferred-age-to"
             error={
               errors.preferredAgeTo
@@ -399,7 +444,6 @@ export default function PreferencesForm({
 
           <FormField
             label="Preferred Height From"
-            required
             htmlFor="preferred-height-from"
             error={
               errors.preferredHeightFromCm
@@ -452,7 +496,6 @@ export default function PreferencesForm({
 
           <FormField
             label="Preferred Height To"
-            required
             htmlFor="preferred-height-to"
             error={
               errors.preferredHeightToCm
@@ -529,7 +572,6 @@ export default function PreferencesForm({
 
           <FormField
             label="Preferred Religion"
-            required
             htmlFor="preferred-religion"
             error={
               errors.preferredReligion
@@ -869,7 +911,6 @@ export default function PreferencesForm({
 
           <FormField
             label="Preferred Education"
-            required
             htmlFor="preferred-education"
             error={
               errors.preferredEducation
@@ -961,7 +1002,7 @@ export default function PreferencesForm({
         </div>
 
         {/* =====================================================
-            Preferred Location
+            Preferred Locations
             ===================================================== */}
 
         <SectionDivider />
@@ -972,188 +1013,337 @@ export default function PreferencesForm({
               size={15}
             />
           }
-          title="Preferred Location"
-          description="Optional. Leave these fields blank if location does not matter."
+          title="Preferred Locations"
+          description="Add one or more places where you would prefer your life partner to be based."
           variant="green"
         />
 
-        <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-3">
+        <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50/45 px-3.5 py-3 text-[10px] leading-5 text-emerald-800 sm:text-[11px]">
+          You can choose multiple countries, states, districts and
+          cities by adding multiple preferred locations. Leave this
+          section empty when location does not matter. Preferred
+          locations do not affect profile completion or verification.
+        </div>
 
-          <FormField
-            label="Preferred Country"
-            htmlFor="preferred-country"
-            error={
-              errors.preferredCountry
+        <div className="mt-4 space-y-4">
+
+          {preferenceInfo.preferredLocations.map(
+            (
+              location,
+              index
+            ) => {
+              const states =
+                location.country
+                  ? getStatesForCountry(
+                      location.country
+                    )
+                  : [];
+
+              const cities =
+                location.country &&
+                location.state
+                  ? getCitiesForCountryState(
+                      location.country,
+                      location.state
+                    )
+                  : [];
+
+              const selectedCountryExists =
+                COUNTRIES.some(
+                  (country) =>
+                    country.value ===
+                    location.country
+                );
+
+              const selectedStateExists =
+                states.some(
+                  (state) =>
+                    state.value ===
+                    location.state
+                );
+
+              const selectedCityExists =
+                cities.some(
+                  (city) =>
+                    city.value ===
+                    location.city
+                );
+
+              return (
+                <div
+                  key={index}
+                  className="rounded-2xl border border-slate-200 bg-slate-50/55 p-3.5 sm:p-4"
+                >
+
+                  <div className="mb-3 flex items-center justify-between gap-3">
+
+                    <div>
+                      <p className="text-xs font-black text-[#0B2D5C]">
+                        Preferred Location {index + 1}
+                      </p>
+
+                      <p className="mt-0.5 text-[10px] text-slate-500">
+                        Choose as much geographic detail as you want.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        removePreferredLocation(
+                          index
+                        )
+                      }
+                      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-red-200 bg-white px-2.5 text-[10px] font-bold text-red-600 transition hover:bg-red-50"
+                    >
+                      <Trash2
+                        size={13}
+                      />
+                      Remove
+                    </button>
+
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-2 lg:grid-cols-4">
+
+                    {/* Country */}
+
+                    <FormField
+                      label="Country"
+                      htmlFor={`preferred-country-${index}`}
+                    >
+                      <Select
+                        id={`preferred-country-${index}`}
+                        value={
+                          location.country
+                        }
+                        onChange={(event) =>
+                          updatePreferredLocation(
+                            index,
+                            "country",
+                            event.target.value
+                          )
+                        }
+                      >
+                        <option value="">
+                          Any country
+                        </option>
+
+                        {location.country &&
+                          !selectedCountryExists && (
+                            <option
+                              value={
+                                location.country
+                              }
+                            >
+                              {
+                                location.country
+                              }
+                            </option>
+                          )}
+
+                        {COUNTRIES.map(
+                          (country) => (
+                            <option
+                              key={
+                                country.isoCode
+                              }
+                              value={
+                                country.value
+                              }
+                            >
+                              {
+                                country.label
+                              }
+                            </option>
+                          )
+                        )}
+                      </Select>
+                    </FormField>
+
+                    {/* State */}
+
+                    <FormField
+                      label="State"
+                      htmlFor={`preferred-state-${index}`}
+                    >
+                      <Select
+                        id={`preferred-state-${index}`}
+                        value={
+                          location.state
+                        }
+                        disabled={
+                          !location.country
+                        }
+                        onChange={(event) =>
+                          updatePreferredLocation(
+                            index,
+                            "state",
+                            event.target.value
+                          )
+                        }
+                      >
+                        <option value="">
+                          Any state
+                        </option>
+
+                        {location.state &&
+                          !selectedStateExists && (
+                            <option
+                              value={
+                                location.state
+                              }
+                            >
+                              {
+                                location.state
+                              }
+                            </option>
+                          )}
+
+                        {states.map(
+                          (state) => (
+                            <option
+                              key={`${location.country}-${state.isoCode}`}
+                              value={
+                                state.value
+                              }
+                            >
+                              {
+                                state.label
+                              }
+                            </option>
+                          )
+                        )}
+                      </Select>
+                    </FormField>
+
+                    {/* District */}
+
+                    <FormField
+                      label="District"
+                      htmlFor={`preferred-district-${index}`}
+                    >
+                      <Input
+                        id={`preferred-district-${index}`}
+                        value={
+                          location.district
+                        }
+                        disabled={
+                          !location.state
+                        }
+                        maxLength={120}
+                        placeholder={
+                          location.state
+                            ? "Any district"
+                            : "Select state first"
+                        }
+                        onChange={(event) =>
+                          updatePreferredLocation(
+                            index,
+                            "district",
+                            event.target.value
+                          )
+                        }
+                      />
+                    </FormField>
+
+                    {/* City */}
+
+                    <FormField
+                      label="City"
+                      htmlFor={`preferred-city-${index}`}
+                    >
+                      <Select
+                        id={`preferred-city-${index}`}
+                        value={
+                          location.city
+                        }
+                        disabled={
+                          !location.state
+                        }
+                        onChange={(event) =>
+                          updatePreferredLocation(
+                            index,
+                            "city",
+                            event.target.value
+                          )
+                        }
+                      >
+                        <option value="">
+                          Any city
+                        </option>
+
+                        {location.city &&
+                          !selectedCityExists && (
+                            <option
+                              value={
+                                location.city
+                              }
+                            >
+                              {
+                                location.city
+                              }
+                            </option>
+                          )}
+
+                        {cities.map(
+                          (city) => (
+                            <option
+                              key={
+                                city.value
+                              }
+                              value={
+                                city.value
+                              }
+                            >
+                              {
+                                city.label
+                              }
+                            </option>
+                          )
+                        )}
+                      </Select>
+                    </FormField>
+
+                  </div>
+                </div>
+              );
             }
-          >
-            <Select
-              id="preferred-country"
-              value={
-                preferenceInfo.preferredCountry
-              }
-              error={
-                errors.preferredCountry
-              }
-              onChange={(event) =>
-                updatePreferenceInfo(
-                  "preferredCountry",
-                  event.target.value
-                )
-              }
-            >
-              <option value="">
-                Any country
-              </option>
+          )}
 
-              {preferenceInfo.preferredCountry &&
-                preferenceInfo.preferredCountry !==
-                  "Any" &&
-                !selectedCountryExists && (
-                  <option
-                    value={
-                      preferenceInfo.preferredCountry
-                    }
-                  >
-                    {
-                      preferenceInfo.preferredCountry
-                    }
-                  </option>
-                )}
+          {preferenceInfo.preferredLocations.length === 0 && (
+            <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 px-4 py-6 text-center">
 
-              {COUNTRIES.map(
-                (country) => (
-                  <option
-                    key={
-                      country.isoCode
-                    }
-                    value={
-                      country.value
-                    }
-                  >
-                    {country.label}
-                  </option>
-                )
-              )}
-            </Select>
-          </FormField>
+              <MapPin
+                size={22}
+                className="mx-auto text-slate-400"
+              />
 
-          <FormField
-            label="Preferred State"
-            htmlFor="preferred-state"
-            error={
-              errors.preferredState
+              <p className="mt-2 text-xs font-black text-slate-700">
+                No preferred locations selected
+              </p>
+
+              <p className="mt-1 text-[10px] leading-5 text-slate-500">
+                Your recommendations can currently include members
+                from any location.
+              </p>
+
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={
+              addPreferredLocation
             }
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-xs font-black text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100"
           >
-            <Select
-              id="preferred-state"
-              value={
-                preferenceInfo.preferredState
-              }
-              error={
-                errors.preferredState
-              }
-              disabled={
-                !preferenceInfo.preferredCountry ||
-                preferenceInfo.preferredCountry ===
-                  "Any"
-              }
-              onChange={(event) =>
-                updatePreferenceInfo(
-                  "preferredState",
-                  event.target.value
-                )
-              }
-            >
-              <option value="">
-                Any state
-              </option>
+            <Plus
+              size={15}
+            />
+            Add Another Preferred Location
+          </button>
 
-              {preferenceInfo.preferredState &&
-                !selectedStateExists && (
-                  <option
-                    value={
-                      preferenceInfo.preferredState
-                    }
-                  >
-                    {
-                      preferenceInfo.preferredState
-                    }
-                  </option>
-                )}
-
-              {preferredStates.map(
-                (state) => (
-                  <option
-                    key={`${preferenceInfo.preferredCountry}-${state.isoCode}`}
-                    value={
-                      state.value
-                    }
-                  >
-                    {state.label}
-                  </option>
-                )
-              )}
-            </Select>
-          </FormField>
-
-          <FormField
-            label="Preferred City"
-            htmlFor="preferred-city"
-            error={
-              errors.preferredCity
-            }
-          >
-            <Select
-              id="preferred-city"
-              value={
-                preferenceInfo.preferredCity
-              }
-              error={
-                errors.preferredCity
-              }
-              disabled={
-                !preferenceInfo.preferredState
-              }
-              onChange={(event) =>
-                updatePreferenceInfo(
-                  "preferredCity",
-                  event.target.value
-                )
-              }
-            >
-              <option value="">
-                Any city
-              </option>
-
-              {preferenceInfo.preferredCity &&
-                !selectedCityExists && (
-                  <option
-                    value={
-                      preferenceInfo.preferredCity
-                    }
-                  >
-                    {
-                      preferenceInfo.preferredCity
-                    }
-                  </option>
-                )}
-
-              {preferredCities.map(
-                (city) => (
-                  <option
-                    key={
-                      city.value
-                    }
-                    value={
-                      city.value
-                    }
-                  >
-                    {city.label}
-                  </option>
-                )
-              )}
-            </Select>
-          </FormField>
         </div>
 
         {/* =====================================================

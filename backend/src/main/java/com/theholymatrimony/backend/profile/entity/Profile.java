@@ -3,6 +3,7 @@ package com.theholymatrimony.backend.profile.entity;
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.profile.enums.ProfileVerificationStatus;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -11,7 +12,9 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -24,6 +27,8 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -171,6 +176,36 @@ public class Profile {
     @Column(length = 300)
     private String churchAddress;
 
+    /*
+ * Structured church location.
+ *
+ * Church information remains optional and these fields must never
+ * block profile completion or verification submission.
+ */
+@Column(
+        name = "church_country",
+        length = 120
+)
+private String churchCountry;
+
+@Column(
+        name = "church_state",
+        length = 120
+)
+private String churchState;
+
+@Column(
+        name = "church_district",
+        length = 120
+)
+private String churchDistrict;
+
+@Column(
+        name = "church_city",
+        length = 120
+)
+private String churchCity;
+
     // =========================================================
     // Education
     // =========================================================
@@ -217,6 +252,36 @@ public class Profile {
 
     @Column(length = 120)
     private String familyLocation;
+
+    /*
+ * Structured family location.
+ *
+ * familyLocation is retained temporarily for backward compatibility
+ * with existing profiles.
+ */
+@Column(
+        name = "family_country",
+        length = 120
+)
+private String familyCountry;
+
+@Column(
+        name = "family_state",
+        length = 120
+)
+private String familyState;
+
+@Column(
+        name = "family_district",
+        length = 120
+)
+private String familyDistrict;
+
+@Column(
+        name = "family_city",
+        length = 120
+)
+private String familyCity;
 
     @Column(
             name = "family_type",
@@ -304,10 +369,31 @@ public class Profile {
     private String preferredState;
 
     @Column(
+        name = "preferred_district",
+        length = 120
+)
+private String preferredDistrict;
+
+    @Column(
             name = "preferred_city",
             length = 120
     )
     private String preferredCity;
+
+    // =========================================================
+    // Multiple Preferred Locations
+    // =========================================================
+
+    @OneToMany(
+            mappedBy = "profile",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @OrderBy("sortOrder ASC")
+    @Builder.Default
+    private List<PreferredLocation> preferredLocations =
+            new ArrayList<>();
+
 
     @Column(
             name = "preferred_diet",
@@ -345,6 +431,12 @@ public class Profile {
     // =========================================================
     // Location
     // =========================================================
+
+@Column(
+        name = "district",
+        length = 120
+)
+private String district;
 
     @Column(length = 120)
     private String city;
@@ -586,4 +678,16 @@ public class Profile {
                 ? null
                 : normalized;
     }
+
+
+    public List<PreferredLocation> getPreferredLocations() {
+
+        if (preferredLocations == null) {
+            preferredLocations =
+                    new ArrayList<>();
+        }
+
+        return preferredLocations;
+    }
+
 }

@@ -100,6 +100,18 @@ function mapApiToState(
 
       churchAddress:
         api.churchAddress ?? "",
+
+      churchCountry:
+        api.churchCountry ?? "",
+
+      churchState:
+        api.churchState ?? "",
+
+      churchDistrict:
+        api.churchDistrict ?? "",
+
+      churchCity:
+        api.churchCity ?? "",
     },
 
     educationInfo: {
@@ -131,6 +143,18 @@ function mapApiToState(
 
       familyLocation:
         api.familyLocation ?? "",
+
+      familyCountry:
+        api.familyCountry ?? "",
+
+      familyState:
+        api.familyState ?? "",
+
+      familyDistrict:
+        api.familyDistrict ?? "",
+
+      familyCity:
+        api.familyCity ?? "",
 
       familyType:
         api.familyType ?? "",
@@ -182,8 +206,45 @@ function mapApiToState(
       preferredState:
         api.preferredState ?? "",
 
+      preferredDistrict:
+        api.preferredDistrict ?? "",
+
       preferredCity:
         api.preferredCity ?? "",
+
+      preferredLocations:
+        api.preferredLocations?.length
+          ? api.preferredLocations.map(
+              (location) => ({
+                country:
+                  location.country ?? "",
+                state:
+                  location.state ?? "",
+                district:
+                  location.district ?? "",
+                city:
+                  location.city ?? "",
+              })
+            )
+          : (
+              api.preferredCountry ||
+              api.preferredState ||
+              api.preferredDistrict ||
+              api.preferredCity
+            )
+            ? [
+                {
+                  country:
+                    api.preferredCountry ?? "",
+                  state:
+                    api.preferredState ?? "",
+                  district:
+                    api.preferredDistrict ?? "",
+                  city:
+                    api.preferredCity ?? "",
+                },
+              ]
+            : [],
 
       preferredDiet:
         api.preferredDiet ?? "",
@@ -199,14 +260,17 @@ function mapApiToState(
     },
 
     locationInfo: {
-      city:
-        api.city ?? "",
+      country:
+        api.country ?? "",
 
       state:
         api.state ?? "",
 
-      country:
-        api.country ?? "",
+      district:
+        api.district ?? "",
+
+      city:
+        api.city ?? "",
     },
 
     aboutInfo: {
@@ -229,12 +293,50 @@ function mapApiToState(
 function mapStateToApi(
   profile: ProfileState
 ): ProfilePayload {
+  const preferredLocations =
+    profile.preferenceInfo.preferredLocations
+      .map((location) => ({
+        country:
+          location.country.trim(),
+        state:
+          location.state.trim(),
+        district:
+          location.district.trim(),
+        city:
+          location.city.trim(),
+      }))
+      .filter(
+        (location) =>
+          location.country ||
+          location.state ||
+          location.district ||
+          location.city
+      );
+
+  const firstPreferredLocation =
+    preferredLocations[0];
+
   return {
     ...profile.basicInfo,
     ...profile.churchInfo,
     ...profile.educationInfo,
     ...profile.familyInfo,
     ...profile.preferenceInfo,
+
+    preferredLocations,
+
+    preferredCountry:
+      firstPreferredLocation?.country ?? "",
+
+    preferredState:
+      firstPreferredLocation?.state ?? "",
+
+    preferredDistrict:
+      firstPreferredLocation?.district ?? "",
+
+    preferredCity:
+      firstPreferredLocation?.city ?? "",
+
     ...profile.locationInfo,
     ...profile.aboutInfo,
 

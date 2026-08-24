@@ -268,7 +268,7 @@ export default function Review({
    * Completion
    * =========================================================
    *
-   * Uses the same 30-field model as ProfileService.
+   * Uses the same 20-field core completion model as ProfileService.
    * Optional fields and photos do not block 100%.
    */
 
@@ -339,22 +339,15 @@ export default function Review({
       aboutInfo.aboutMe
     );
 
-  const churchComplete =
-    hasText(
-      churchInfo.denomination
-    ) &&
-    hasText(
-      churchInfo.churchName
-    ) &&
-    hasText(
-      churchInfo.pastorName
-    ) &&
-    hasText(
-      churchInfo.baptized
-    ) &&
-    hasText(
-      churchInfo.churchAddress
-    );
+  /*
+   * Church Information is optional.
+   *
+   * Denomination remains a core personal-profile field and is
+   * counted by calculateProfileCompletion(), but the Church
+   * section itself must never appear incomplete because optional
+   * church details were left blank.
+   */
+  const churchComplete = true;
 
   const educationComplete =
     hasText(
@@ -384,25 +377,11 @@ export default function Review({
       familyInfo.familyType
     );
 
-  const preferenceComplete =
-    hasText(
-      preferenceInfo.preferredAgeFrom
-    ) &&
-    hasText(
-      preferenceInfo.preferredAgeTo
-    ) &&
-    hasText(
-      preferenceInfo.preferredHeightFromCm
-    ) &&
-    hasText(
-      preferenceInfo.preferredHeightToCm
-    ) &&
-    hasText(
-      preferenceInfo.preferredReligion
-    ) &&
-    hasText(
-      preferenceInfo.preferredEducation
-    );
+  /*
+   * Partner Preferences are completely optional and therefore
+   * never block profile completion or verification submission.
+   */
+  const preferenceComplete = true;
 
   const primaryPhoto =
     photoInfo.photos.find(
@@ -706,6 +685,13 @@ export default function Review({
         />
 
         <SummaryItem
+          label="Current District"
+          value={
+            locationInfo.district
+          }
+        />
+
+        <SummaryItem
           label="Current City"
           value={
             locationInfo.city
@@ -783,9 +769,30 @@ export default function Review({
         />
 
         <SummaryItem
-          label="Church Location"
+          label="Church Country"
           value={
-            churchInfo.churchAddress
+            churchInfo.churchCountry
+          }
+        />
+
+        <SummaryItem
+          label="Church State"
+          value={
+            churchInfo.churchState
+          }
+        />
+
+        <SummaryItem
+          label="Church District"
+          value={
+            churchInfo.churchDistrict
+          }
+        />
+
+        <SummaryItem
+          label="Church City"
+          value={
+            churchInfo.churchCity
           }
         />
       </ReviewSection>
@@ -894,9 +901,30 @@ export default function Review({
         />
 
         <SummaryItem
-          label="Family Location"
+          label="Family Country"
           value={
-            familyInfo.familyLocation
+            familyInfo.familyCountry
+          }
+        />
+
+        <SummaryItem
+          label="Family State"
+          value={
+            familyInfo.familyState
+          }
+        />
+
+        <SummaryItem
+          label="Family District"
+          value={
+            familyInfo.familyDistrict
+          }
+        />
+
+        <SummaryItem
+          label="Family City"
+          value={
+            familyInfo.familyCity
           }
         />
       </ReviewSection>
@@ -997,23 +1025,36 @@ export default function Review({
         />
 
         <SummaryItem
-          label="Preferred Country"
+          label="Preferred Locations"
           value={
-            preferenceInfo.preferredCountry
-          }
-        />
-
-        <SummaryItem
-          label="Preferred State"
-          value={
-            preferenceInfo.preferredState
-          }
-        />
-
-        <SummaryItem
-          label="Preferred City"
-          value={
-            preferenceInfo.preferredCity
+            preferenceInfo.preferredLocations.length > 0
+              ? preferenceInfo.preferredLocations
+                  .map((location) =>
+                    [
+                      location.city,
+                      location.district,
+                      location.state,
+                      location.country,
+                    ]
+                      .map((value) =>
+                        value.trim()
+                      )
+                      .filter(Boolean)
+                      .join(", ")
+                  )
+                  .filter(Boolean)
+                  .join(" • ")
+              : [
+                  preferenceInfo.preferredCity,
+                  preferenceInfo.preferredDistrict,
+                  preferenceInfo.preferredState,
+                  preferenceInfo.preferredCountry,
+                ]
+                  .map((value) =>
+                    value.trim()
+                  )
+                  .filter(Boolean)
+                  .join(", ")
           }
         />
 

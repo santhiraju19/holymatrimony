@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -65,7 +64,13 @@ export const initialProfile: ProfileState = {
     pastorName: "",
     baptized: "",
     membershipId: "",
+
     churchAddress: "",
+
+    churchCountry: "",
+    churchState: "",
+    churchDistrict: "",
+    churchCity: "",
   },
 
   educationInfo: {
@@ -80,7 +85,14 @@ export const initialProfile: ProfileState = {
     fatherName: "",
     motherName: "",
     siblings: "",
+
     familyLocation: "",
+
+    familyCountry: "",
+    familyState: "",
+    familyDistrict: "",
+    familyCity: "",
+
     familyType: "",
     familyValues: "",
   },
@@ -106,7 +118,10 @@ export const initialProfile: ProfileState = {
 
     preferredCountry: "",
     preferredState: "",
+    preferredDistrict: "",
     preferredCity: "",
+
+    preferredLocations: [],
 
     preferredDiet: "",
     preferredSmoking: "",
@@ -116,9 +131,10 @@ export const initialProfile: ProfileState = {
   },
 
   locationInfo: {
-    city: "",
-    state: "",
     country: "",
+    state: "",
+    district: "",
+    city: "",
   },
 
   aboutInfo: {

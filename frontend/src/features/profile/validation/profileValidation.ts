@@ -478,31 +478,18 @@ export function validateBasicInfo(
 // =========================================================
 
 export function validateChurchInfo(
-  values: ChurchInfo,
+  _values: ChurchInfo,
   _location: LocationSelection
 ): ChurchFormErrors {
-  const errors:
-    ChurchFormErrors = {};
-
   /*
-   * Church Information is optional.
+   * Church Information is completely optional.
    *
-   * Only denomination is part of the core profile.
-   * Church name, pastor name, baptism status,
-   * membership ID and church location must never
-   * block onboarding or profile submission.
+   * Denomination, church name, pastor name, baptism status,
+   * membership ID and structured church location must never
+   * block onboarding, profile completion or verification
+   * submission.
    */
-
-  if (
-    isBlank(
-      values.denomination
-    )
-  ) {
-    errors.denomination =
-      "Please select your denomination.";
-  }
-
-  return errors;
+  return {};
 }
 
 // =========================================================
@@ -719,17 +706,7 @@ export function validateFamilyInfo(
       "Please select your family state.";
   }
 
-  if (
-    !isBlank(
-      location.state
-    ) &&
-    isBlank(
-      location.district
-    )
-  ) {
-    errors.familyDistrict =
-      "Please select your family district.";
-  }
+
 
   if (
     !isBlank(
@@ -757,161 +734,178 @@ export function validatePreferenceInfo(
     FieldErrors<PreferenceInfo> =
       {};
 
+  /*
+   * Partner Preferences are completely optional.
+   *
+   * Blank fields never block profile completion,
+   * onboarding or submission for verification.
+   *
+   * When members choose to provide ranges, however,
+   * validate the supplied values so invalid preference
+   * data is not saved.
+   */
+
   // =====================================================
   // Preferred age
   // =====================================================
 
-  const ageFrom =
-    Number(
+  const hasAgeFrom =
+    !isBlank(
       values.preferredAgeFrom
     );
 
-  const ageTo =
-    Number(
+  const hasAgeTo =
+    !isBlank(
       values.preferredAgeTo
     );
 
   if (
-    isBlank(
-      values.preferredAgeFrom
-    )
+    hasAgeFrom ||
+    hasAgeTo
   ) {
-    errors.preferredAgeFrom =
-      "Please enter the minimum preferred age.";
-  } else if (
-    !Number.isInteger(
-      ageFrom
-    ) ||
-    ageFrom < 18 ||
-    ageFrom > 100
-  ) {
-    errors.preferredAgeFrom =
-      "Preferred age must be between 18 and 100.";
-  }
+    if (!hasAgeFrom) {
+      errors.preferredAgeFrom =
+        "Please enter the minimum preferred age.";
+    }
 
-  if (
-    isBlank(
-      values.preferredAgeTo
-    )
-  ) {
-    errors.preferredAgeTo =
-      "Please enter the maximum preferred age.";
-  } else if (
-    !Number.isInteger(
-      ageTo
-    ) ||
-    ageTo < 18 ||
-    ageTo > 100
-  ) {
-    errors.preferredAgeTo =
-      "Preferred age must be between 18 and 100.";
-  }
+    if (!hasAgeTo) {
+      errors.preferredAgeTo =
+        "Please enter the maximum preferred age.";
+    }
 
-  if (
-    !errors.preferredAgeFrom &&
-    !errors.preferredAgeTo &&
-    ageFrom > ageTo
-  ) {
-    errors.preferredAgeTo =
-      "Maximum age must be greater than or equal to minimum age.";
+    const ageFrom =
+      Number(
+        values.preferredAgeFrom
+      );
+
+    const ageTo =
+      Number(
+        values.preferredAgeTo
+      );
+
+    if (
+      hasAgeFrom &&
+      (
+        !Number.isInteger(
+          ageFrom
+        ) ||
+        ageFrom < 18 ||
+        ageFrom > 100
+      )
+    ) {
+      errors.preferredAgeFrom =
+        "Preferred age must be between 18 and 100.";
+    }
+
+    if (
+      hasAgeTo &&
+      (
+        !Number.isInteger(
+          ageTo
+        ) ||
+        ageTo < 18 ||
+        ageTo > 100
+      )
+    ) {
+      errors.preferredAgeTo =
+        "Preferred age must be between 18 and 100.";
+    }
+
+    if (
+      hasAgeFrom &&
+      hasAgeTo &&
+      !errors.preferredAgeFrom &&
+      !errors.preferredAgeTo &&
+      ageFrom > ageTo
+    ) {
+      errors.preferredAgeTo =
+        "Maximum age must be greater than or equal to minimum age.";
+    }
   }
 
   // =====================================================
   // Preferred height
   // =====================================================
 
-  const heightFrom =
-    Number(
+  const hasHeightFrom =
+    !isBlank(
       values.preferredHeightFromCm
     );
 
-  const heightTo =
-    Number(
+  const hasHeightTo =
+    !isBlank(
       values.preferredHeightToCm
     );
 
   if (
-    isBlank(
-      values.preferredHeightFromCm
-    )
+    hasHeightFrom ||
+    hasHeightTo
   ) {
-    errors.preferredHeightFromCm =
-      "Please select the minimum preferred height.";
-  } else if (
-    !Number.isInteger(
-      heightFrom
-    ) ||
-    heightFrom < 100 ||
-    heightFrom > 250
-  ) {
-    errors.preferredHeightFromCm =
-      "Please select a valid minimum height.";
-  }
+    if (!hasHeightFrom) {
+      errors.preferredHeightFromCm =
+        "Please select the minimum preferred height.";
+    }
 
-  if (
-    isBlank(
-      values.preferredHeightToCm
-    )
-  ) {
-    errors.preferredHeightToCm =
-      "Please select the maximum preferred height.";
-  } else if (
-    !Number.isInteger(
-      heightTo
-    ) ||
-    heightTo < 100 ||
-    heightTo > 250
-  ) {
-    errors.preferredHeightToCm =
-      "Please select a valid maximum height.";
-  }
+    if (!hasHeightTo) {
+      errors.preferredHeightToCm =
+        "Please select the maximum preferred height.";
+    }
 
-  if (
-    !errors.preferredHeightFromCm &&
-    !errors.preferredHeightToCm &&
-    heightFrom > heightTo
-  ) {
-    errors.preferredHeightToCm =
-      "Maximum height must be greater than or equal to minimum height.";
-  }
+    const heightFrom =
+      Number(
+        values.preferredHeightFromCm
+      );
 
-  // =====================================================
-  // Religion
-  // =====================================================
+    const heightTo =
+      Number(
+        values.preferredHeightToCm
+      );
 
-  if (
-    isBlank(
-      values.preferredReligion
-    )
-  ) {
-    errors.preferredReligion =
-      "Please select a preferred religion.";
+    if (
+      hasHeightFrom &&
+      (
+        !Number.isInteger(
+          heightFrom
+        ) ||
+        heightFrom < 100 ||
+        heightFrom > 250
+      )
+    ) {
+      errors.preferredHeightFromCm =
+        "Please select a valid minimum height.";
+    }
+
+    if (
+      hasHeightTo &&
+      (
+        !Number.isInteger(
+          heightTo
+        ) ||
+        heightTo < 100 ||
+        heightTo > 250
+      )
+    ) {
+      errors.preferredHeightToCm =
+        "Please select a valid maximum height.";
+    }
+
+    if (
+      hasHeightFrom &&
+      hasHeightTo &&
+      !errors.preferredHeightFromCm &&
+      !errors.preferredHeightToCm &&
+      heightFrom > heightTo
+    ) {
+      errors.preferredHeightToCm =
+        "Maximum height must be greater than or equal to minimum height.";
+    }
   }
 
   /*
-   * Preferred denomination is optional.
-   *
-   * Members may select "Any" in the UI.
+   * Community is optional even when Community No Bar is
+   * not selected. The toggle controls matching behavior;
+   * it is not a profile-completion requirement.
    */
-
-  // =====================================================
-  // Community
-  // =====================================================
-
-  /*
-   * When Community No Bar is enabled,
-   * preferredCommunity is intentionally ignored.
-   */
-  if (
-    !values.communityNoBar &&
-    isBlank(
-      values.preferredCommunity
-    )
-  ) {
-    errors.preferredCommunity =
-      "Please enter your preferred community or select Community No Bar.";
-  }
-
   if (
     values.preferredCommunity
       .trim()
@@ -919,59 +913,6 @@ export function validatePreferenceInfo(
   ) {
     errors.preferredCommunity =
       "Preferred community cannot exceed 120 characters.";
-  }
-
-  // =====================================================
-  // Education
-  // =====================================================
-
-  if (
-    isBlank(
-      values.preferredEducation
-    )
-  ) {
-    errors.preferredEducation =
-      "Please select a preferred education or Any.";
-  }
-
-  // =====================================================
-  // Optional preference fields
-  // =====================================================
-
-  if (
-    values.preferredProfession
-      .trim()
-      .length > 120
-  ) {
-    errors.preferredProfession =
-      "Preferred profession cannot exceed 120 characters.";
-  }
-
-  if (
-    values.preferredCountry
-      .trim()
-      .length > 120
-  ) {
-    errors.preferredCountry =
-      "Preferred country cannot exceed 120 characters.";
-  }
-
-  if (
-    values.preferredState
-      .trim()
-      .length > 120
-  ) {
-    errors.preferredState =
-      "Preferred state cannot exceed 120 characters.";
-  }
-
-  if (
-    values.preferredCity
-      .trim()
-      .length > 120
-  ) {
-    errors.preferredCity =
-      "Preferred city cannot exceed 120 characters.";
   }
 
   return errors;

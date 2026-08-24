@@ -1,5 +1,7 @@
 package com.theholymatrimony.backend.profile.dto;
 
+import java.util.List;
+
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -86,6 +88,10 @@ public class ProfileRequest {
     private Boolean baptized;
     private String membershipId;
     private String churchAddress;
+    private String churchCountry;
+private String churchState;
+private String churchDistrict;
+private String churchCity;
 
     // =========================================================
     // Education & Career
@@ -107,6 +113,10 @@ public class ProfileRequest {
     private String familyLocation;
     private String familyType;
     private String familyValues;
+    private String familyCountry;
+private String familyState;
+private String familyDistrict;
+private String familyCity;
 
     // =========================================================
     // Partner Preferences
@@ -138,9 +148,19 @@ public class ProfileRequest {
     private String preferredEducation;
     private String preferredProfession;
 
-    private String preferredCountry;
-    private String preferredState;
-    private String preferredCity;
+   private String preferredCountry;
+private String preferredState;
+private String preferredDistrict;
+private String preferredCity;
+
+    /*
+     * Multiple preferred locations.
+     *
+     * null = older client did not send this field.
+     * empty list = member wants no location restriction.
+     */
+    private List<PreferredLocationDto> preferredLocations;
+
 
     private String preferredDiet;
     private String preferredSmoking;
@@ -152,10 +172,10 @@ public class ProfileRequest {
     // Current Location
     // =========================================================
 
-    private String city;
-    private String state;
-    private String country;
-
+  private String city;
+private String district;
+private String state;
+private String country;
     // =========================================================
     // About
     // =========================================================

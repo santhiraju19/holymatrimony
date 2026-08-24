@@ -39,7 +39,21 @@ export interface ChurchInfo {
   pastorName: string;
   baptized: string;
   membershipId: string;
+
+  /*
+   * Legacy formatted address.
+   * Keep for existing profiles.
+   */
   churchAddress: string;
+
+  /*
+   * Structured church location.
+   * All church information remains optional.
+   */
+  churchCountry: string;
+  churchState: string;
+  churchDistrict: string;
+  churchCity: string;
 }
 
 export interface EducationInfo {
@@ -54,9 +68,30 @@ export interface FamilyInfo {
   fatherName: string;
   motherName: string;
   siblings: string;
+
+  /*
+   * Legacy formatted location.
+   * Keep for existing profiles.
+   */
   familyLocation: string;
+
+  /*
+   * Structured family location.
+   */
+  familyCountry: string;
+  familyState: string;
+  familyDistrict: string;
+  familyCity: string;
+
   familyType: string;
   familyValues: string;
+}
+
+export interface PreferredLocation {
+  country: string;
+  state: string;
+  district: string;
+  city: string;
 }
 
 export interface PreferenceInfo {
@@ -78,9 +113,24 @@ export interface PreferenceInfo {
   preferredEducation: string;
   preferredProfession: string;
 
+  /*
+   * Preferred location hierarchy.
+   *
+   * These remain optional and do not affect
+   * profile completion.
+   */
   preferredCountry: string;
   preferredState: string;
+  preferredDistrict: string;
   preferredCity: string;
+
+  /*
+   * New source of truth for Partner Preference locations.
+   *
+   * Legacy scalar fields above remain temporarily for
+   * backward compatibility.
+   */
+  preferredLocations: PreferredLocation[];
 
   preferredDiet: string;
   preferredSmoking: string;
@@ -90,9 +140,10 @@ export interface PreferenceInfo {
 }
 
 export interface LocationInfo {
-  city: string;
-  state: string;
   country: string;
+  state: string;
+  district: string;
+  city: string;
 }
 
 export interface AboutInfo {

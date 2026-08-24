@@ -15,6 +15,13 @@ export interface PhotoPayload {
   displayOrder: number;
 }
 
+export interface PreferredLocationPayload {
+  country?: string;
+  state?: string;
+  district?: string;
+  city?: string;
+}
+
 export interface ProfilePayload {
   id?: string;
   userId?: string;
@@ -43,12 +50,25 @@ export interface ProfilePayload {
   smoking?: string;
   drinking?: string;
 
+  // Church
+
   denomination?: string;
   churchName?: string;
   pastorName?: string;
   baptized?: boolean;
   membershipId?: string;
+
+  /*
+   * Legacy formatted church address.
+   */
   churchAddress?: string;
+
+  churchCountry?: string;
+  churchState?: string;
+  churchDistrict?: string;
+  churchCity?: string;
+
+  // Education
 
   highestEducation?: string;
   educationField?: string;
@@ -56,12 +76,26 @@ export interface ProfilePayload {
   company?: string;
   annualIncome?: string;
 
+  // Family
+
   fatherName?: string;
   motherName?: string;
   siblings?: string;
+
+  /*
+   * Legacy formatted family location.
+   */
   familyLocation?: string;
+
+  familyCountry?: string;
+  familyState?: string;
+  familyDistrict?: string;
+  familyCity?: string;
+
   familyType?: string;
   familyValues?: string;
+
+  // Preferences
 
   preferredAgeFrom?: number;
   preferredAgeTo?: number;
@@ -83,7 +117,10 @@ export interface ProfilePayload {
 
   preferredCountry?: string;
   preferredState?: string;
+  preferredDistrict?: string;
   preferredCity?: string;
+
+  preferredLocations?: PreferredLocationPayload[];
 
   preferredDiet?: string;
   preferredSmoking?: string;
@@ -91,14 +128,23 @@ export interface ProfilePayload {
 
   preferredFaithCommitment?: string;
 
-  city?: string;
-  state?: string;
+  // Current location
+
   country?: string;
+  state?: string;
+  district?: string;
+  city?: string;
+
+  // About
 
   aboutMe?: string;
 
+  // Completion
+
   completionPercentage?: number;
   profileCompleted?: boolean;
+
+  // Verification
 
   verificationStatus?: ProfileVerificationStatus;
   verificationSubmittedAt?: string | null;

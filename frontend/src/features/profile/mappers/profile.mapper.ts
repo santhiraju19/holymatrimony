@@ -93,6 +93,18 @@ export function toProfileState(
 
       churchAddress:
         data.churchAddress ?? "",
+
+      churchCountry:
+        data.churchCountry ?? "",
+
+      churchState:
+        data.churchState ?? "",
+
+      churchDistrict:
+        data.churchDistrict ?? "",
+
+      churchCity:
+        data.churchCity ?? "",
     },
 
     educationInfo: {
@@ -124,6 +136,18 @@ export function toProfileState(
 
       familyLocation:
         data.familyLocation ?? "",
+
+      familyCountry:
+        data.familyCountry ?? "",
+
+      familyState:
+        data.familyState ?? "",
+
+      familyDistrict:
+        data.familyDistrict ?? "",
+
+      familyCity:
+        data.familyCity ?? "",
 
       familyType:
         data.familyType ?? "",
@@ -175,8 +199,45 @@ export function toProfileState(
       preferredState:
         data.preferredState ?? "",
 
+      preferredDistrict:
+        data.preferredDistrict ?? "",
+
       preferredCity:
         data.preferredCity ?? "",
+
+      preferredLocations:
+        data.preferredLocations?.length
+          ? data.preferredLocations.map(
+              (location) => ({
+                country:
+                  location.country ?? "",
+                state:
+                  location.state ?? "",
+                district:
+                  location.district ?? "",
+                city:
+                  location.city ?? "",
+              })
+            )
+          : (
+              data.preferredCountry ||
+              data.preferredState ||
+              data.preferredDistrict ||
+              data.preferredCity
+            )
+            ? [
+                {
+                  country:
+                    data.preferredCountry ?? "",
+                  state:
+                    data.preferredState ?? "",
+                  district:
+                    data.preferredDistrict ?? "",
+                  city:
+                    data.preferredCity ?? "",
+                },
+              ]
+            : [],
 
       preferredDiet:
         data.preferredDiet ?? "",
@@ -192,14 +253,17 @@ export function toProfileState(
     },
 
     locationInfo: {
-      city:
-        data.city ?? "",
+      country:
+        data.country ?? "",
 
       state:
         data.state ?? "",
 
-      country:
-        data.country ?? "",
+      district:
+        data.district ?? "",
+
+      city:
+        data.city ?? "",
     },
 
     aboutInfo: {

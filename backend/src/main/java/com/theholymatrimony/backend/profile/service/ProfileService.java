@@ -2,8 +2,10 @@ package com.theholymatrimony.backend.profile.service;
 
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.auth.repository.UserRepository;
+import com.theholymatrimony.backend.profile.dto.PreferredLocationDto;
 import com.theholymatrimony.backend.profile.dto.ProfileRequest;
 import com.theholymatrimony.backend.profile.dto.ProfileResponse;
+import com.theholymatrimony.backend.profile.entity.PreferredLocation;
 import com.theholymatrimony.backend.profile.entity.Profile;
 import com.theholymatrimony.backend.profile.enums.ProfileVerificationStatus;
 import com.theholymatrimony.backend.profile.repository.ProfileRepository;
@@ -25,12 +27,10 @@ public class ProfileService {
     /*
      * Core profile fields used for profile completion.
      *
-     * Optional/sensitive preference fields are intentionally
-     * excluded so members are never forced to disclose them.
-     *
-     * Photos are also excluded.
+     * Church information, partner preferences, photos and other
+     * optional/sensitive fields are intentionally excluded.
      */
-private static final int REQUIRED_PROFILE_FIELDS = 26;
+    private static final int REQUIRED_PROFILE_FIELDS = 20;
 
     private final ProfileRepository profileRepository;
     private final UserRepository userRepository;
@@ -50,8 +50,7 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
                         .orElse(null);
 
         if (profile == null) {
-            profile =
-                    createEmptyProfile(email);
+            profile = createEmptyProfile(email);
         }
 
         return map(profile);
@@ -141,6 +140,10 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
                 request.getPhysicalStatus()
         );
 
+        // =====================================================
+        // Lifestyle
+        // =====================================================
+
         profile.setDiet(
                 request.getDiet()
         );
@@ -155,6 +158,9 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
 
         // =====================================================
         // Church Information
+        //
+        // Completely optional for profile completion and
+        // administrator verification submission.
         // =====================================================
 
         profile.setDenomination(
@@ -179,6 +185,22 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
 
         profile.setChurchAddress(
                 request.getChurchAddress()
+        );
+
+        profile.setChurchCountry(
+                request.getChurchCountry()
+        );
+
+        profile.setChurchState(
+                request.getChurchState()
+        );
+
+        profile.setChurchDistrict(
+                request.getChurchDistrict()
+        );
+
+        profile.setChurchCity(
+                request.getChurchCity()
         );
 
         // =====================================================
@@ -225,6 +247,22 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
                 request.getFamilyLocation()
         );
 
+        profile.setFamilyCountry(
+                request.getFamilyCountry()
+        );
+
+        profile.setFamilyState(
+                request.getFamilyState()
+        );
+
+        profile.setFamilyDistrict(
+                request.getFamilyDistrict()
+        );
+
+        profile.setFamilyCity(
+                request.getFamilyCity()
+        );
+
         profile.setFamilyType(
                 request.getFamilyType()
         );
@@ -235,6 +273,9 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
 
         // =====================================================
         // Partner Preferences
+        //
+        // Optional. These improve search/recommendation quality
+        // but do not affect profile completion.
         // =====================================================
 
         profile.setPreferredAgeFrom(
@@ -273,13 +314,16 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
          * Existing members and older frontend clients may not
          * send communityNoBar yet.
          *
-         * Preserve the existing value when it is omitted.
+         * Preserve the existing value when omitted.
          */
         if (request.getCommunityNoBar() != null) {
+
             profile.setCommunityNoBar(
                     request.getCommunityNoBar()
             );
+
         } else if (profile.getCommunityNoBar() == null) {
+
             profile.setCommunityNoBar(true);
         }
 
@@ -295,17 +339,139 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
                 request.getPreferredProfession()
         );
 
-        profile.setPreferredCountry(
-                request.getPreferredCountry()
-        );
+        /*
+         * =====================================================
+         * Preferred Locations
+         * =====================================================
+         *
+         * preferredLocations is the new source of truth.
+         *
+         * null:
+         *   Older client did not send the collection, so preserve
+         *   any existing collection and continue supporting the
+         *   legacy scalar fields.
+         *
+         * empty list:
+         *   Member intentionally selected no preferred locations.
+         *
+         * populated list:
+         *   Replace the collection with the submitted structured
+         *   locations.
+         */
+        if (request.getPreferredLocations() != null) {
 
-        profile.setPreferredState(
-                request.getPreferredState()
-        );
+            profile.getPreferredLocations().clear();
 
-        profile.setPreferredCity(
-                request.getPreferredCity()
-        );
+            int sortOrder = 0;
+
+            for (
+                    PreferredLocationDto location :
+                    request.getPreferredLocations()
+            ) {
+
+                if (location == null) {
+                    continue;
+                }
+
+                boolean completelyBlank =
+                        isBlank(location.getCountry())
+                                &&
+                        isBlank(location.getState())
+                                &&
+                        isBlank(location.getDistrict())
+                                &&
+                        isBlank(location.getCity());
+
+                if (completelyBlank) {
+                    continue;
+                }
+
+                PreferredLocation preferredLocation =
+                        PreferredLocation.builder()
+                                .profile(profile)
+                                .sortOrder(sortOrder++)
+                                .country(
+                                        normalizeOptionalText(
+                                                location.getCountry()
+                                        )
+                                )
+                                .state(
+                                        normalizeOptionalText(
+                                                location.getState()
+                                        )
+                                )
+                                .district(
+                                        normalizeOptionalText(
+                                                location.getDistrict()
+                                        )
+                                )
+                                .city(
+                                        normalizeOptionalText(
+                                                location.getCity()
+                                        )
+                                )
+                                .build();
+
+                profile.getPreferredLocations().add(
+                        preferredLocation
+                );
+            }
+
+            /*
+             * Maintain legacy scalar columns from the first
+             * preferred location for compatibility with existing
+             * browse/search/matching code.
+             */
+            if (profile.getPreferredLocations().isEmpty()) {
+
+                profile.setPreferredCountry(null);
+                profile.setPreferredState(null);
+                profile.setPreferredDistrict(null);
+                profile.setPreferredCity(null);
+
+            } else {
+
+                PreferredLocation first =
+                        profile.getPreferredLocations().get(0);
+
+                profile.setPreferredCountry(
+                        first.getCountry()
+                );
+
+                profile.setPreferredState(
+                        first.getState()
+                );
+
+                profile.setPreferredDistrict(
+                        first.getDistrict()
+                );
+
+                profile.setPreferredCity(
+                        first.getCity()
+                );
+            }
+
+        } else {
+
+            /*
+             * Legacy-client compatibility.
+             */
+            profile.setPreferredCountry(
+                    request.getPreferredCountry()
+            );
+
+            profile.setPreferredState(
+                    request.getPreferredState()
+            );
+
+            profile.setPreferredDistrict(
+                    request.getPreferredDistrict()
+            );
+
+            profile.setPreferredCity(
+                    request.getPreferredCity()
+            );
+        }
 
         profile.setPreferredDiet(
                 request.getPreferredDiet()
@@ -327,16 +493,20 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
         // Current Location
         // =====================================================
 
-        profile.setCity(
-                request.getCity()
+        profile.setCountry(
+                request.getCountry()
         );
 
         profile.setState(
                 request.getState()
         );
 
-        profile.setCountry(
-                request.getCountry()
+        profile.setDistrict(
+                request.getDistrict()
+        );
+
+        profile.setCity(
+                request.getCity()
         );
 
         // =====================================================
@@ -388,8 +558,8 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
                         );
 
         /*
-         * Recalculate before verification so an old completion
-         * percentage can never incorrectly allow submission.
+         * Always recalculate so a stale completion percentage
+         * cannot incorrectly allow verification submission.
          */
         int completionPercentage =
                 calculateCompletion(profile);
@@ -415,7 +585,7 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
             profileRepository.save(profile);
 
             throw new IllegalStateException(
-                    "Please complete all required profile information before submitting for verification. Profile photos and optional personal fields are not required."
+                    "Please complete all required profile information before submitting for verification. Church information, partner preferences, profile photos and optional personal fields are not required."
             );
         }
 
@@ -445,8 +615,6 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
         }
 
         /*
-         * Handles:
-         *
          * NOT_SUBMITTED -> PENDING
          * REJECTED      -> PENDING
          */
@@ -496,38 +664,26 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
     // Profile completion
     // =========================================================
 
-   /*
- * Profile completion intentionally measures only the
- * core information needed to create a useful matrimonial
- * profile.
- *
- * Church information is optional and does not affect
- * profile completion or eligibility to submit a profile
- * for administrator verification.
- *
- * Denomination remains part of the core personal profile.
- *
- * Optional/sensitive information such as:
- *
- * - weight
- * - complexion
- * - body type
- * - community
- * - sub-community
- * - faith background
- * - physical status
- * - diet
- * - smoking
- * - drinking
- * - church name
- * - pastor name
- * - baptism status
- * - church membership ID
- * - church address
- * - most partner lifestyle preferences
- *
- * does NOT prevent a member from reaching 100%.
- */
+    /*
+     * Completion measures only the core information required
+     * to create a useful matrimonial profile.
+     *
+     * Church Information:
+     * OPTIONAL
+     *
+     * Partner Preferences:
+     * OPTIONAL
+     *
+     * Photos:
+     * OPTIONAL
+     *
+     * District:
+     * Captured for search/matching but intentionally not added
+     * as a new completion requirement so existing completed
+     * profiles do not suddenly lose their 100% status.
+     *
+     * Denomination remains part of the core personal profile.
+     */
     private int calculateCompletion(
             Profile profile
     ) {
@@ -575,7 +731,9 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
         }
 
         // =====================================================
-        // Location — 3
+        // Current Location — 3
+        //
+        // District is captured but is not currently required.
         // =====================================================
 
         if (hasText(profile.getCity())) {
@@ -597,8 +755,6 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
         if (hasText(profile.getAboutMe())) {
             completed++;
         }
-
-
 
         // =====================================================
         // Education & Career — 4
@@ -632,6 +788,13 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
             completed++;
         }
 
+        /*
+         * Keep the legacy familyLocation as the current required
+         * completion field until existing profiles are migrated.
+         *
+         * Structured family country/state/district/city can be
+         * collected independently without changing completion.
+         */
         if (hasText(profile.getFamilyLocation())) {
             completed++;
         }
@@ -640,39 +803,11 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
             completed++;
         }
 
-        // =====================================================
-        // Core Partner Preferences — 6
-        // =====================================================
-
-        if (profile.getPreferredAgeFrom() != null) {
-            completed++;
-        }
-
-        if (profile.getPreferredAgeTo() != null) {
-            completed++;
-        }
-
-        if (profile.getPreferredHeightFromCm() != null) {
-            completed++;
-        }
-
-        if (profile.getPreferredHeightToCm() != null) {
-            completed++;
-        }
-
-        if (hasText(profile.getPreferredReligion())) {
-            completed++;
-        }
-
-        if (hasText(profile.getPreferredEducation())) {
-            completed++;
-        }
-
         /*
-         * REQUIRED_PROFILE_FIELDS is deliberately kept in one
-         * constant so future profile expansion cannot silently
-         * change the completion denominator.
+         * Church fields and all Partner Preference fields are
+         * intentionally excluded from this calculation.
          */
+
         return Math.min(
                 100,
                 (completed * 100)
@@ -693,6 +828,32 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
                 !value.isBlank();
     }
 
+
+    private boolean isBlank(
+            String value
+    ) {
+
+        return value == null
+                ||
+                value.isBlank();
+    }
+
+    private String normalizeOptionalText(
+            String value
+    ) {
+
+        if (value == null) {
+            return null;
+        }
+
+        String normalized =
+                value.trim();
+
+        return normalized.isEmpty()
+                ? null
+                : normalized;
+    }
+
     // =========================================================
     // DTO mapping
     // =========================================================
@@ -706,6 +867,8 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
 
         return ProfileResponse
                 .builder()
+
+                // ===== Identity =====
 
                 .id(
                         profile.getId()
@@ -789,6 +952,8 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
                         profile.getPhysicalStatus()
                 )
 
+                // ===== Lifestyle =====
+
                 .diet(
                         profile.getDiet()
                 )
@@ -825,6 +990,22 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
 
                 .churchAddress(
                         profile.getChurchAddress()
+                )
+
+                .churchCountry(
+                        profile.getChurchCountry()
+                )
+
+                .churchState(
+                        profile.getChurchState()
+                )
+
+                .churchDistrict(
+                        profile.getChurchDistrict()
+                )
+
+                .churchCity(
+                        profile.getChurchCity()
                 )
 
                 // ===== Education =====
@@ -865,6 +1046,22 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
 
                 .familyLocation(
                         profile.getFamilyLocation()
+                )
+
+                .familyCountry(
+                        profile.getFamilyCountry()
+                )
+
+                .familyState(
+                        profile.getFamilyState()
+                )
+
+                .familyDistrict(
+                        profile.getFamilyDistrict()
+                )
+
+                .familyCity(
+                        profile.getFamilyCity()
                 )
 
                 .familyType(
@@ -935,8 +1132,39 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
                         profile.getPreferredState()
                 )
 
+                .preferredDistrict(
+                        profile.getPreferredDistrict()
+                )
+
                 .preferredCity(
                         profile.getPreferredCity()
+                )
+
+
+                .preferredLocations(
+                        profile.getPreferredLocations() == null
+                                ? java.util.List.of()
+                                : profile.getPreferredLocations()
+                                        .stream()
+                                        .map(
+                                                location ->
+                                                        PreferredLocationDto
+                                                                .builder()
+                                                                .country(
+                                                                        location.getCountry()
+                                                                )
+                                                                .state(
+                                                                        location.getState()
+                                                                )
+                                                                .district(
+                                                                        location.getDistrict()
+                                                                )
+                                                                .city(
+                                                                        location.getCity()
+                                                                )
+                                                                .build()
+                                        )
+                                        .toList()
                 )
 
                 .preferredDiet(
@@ -957,16 +1185,20 @@ private static final int REQUIRED_PROFILE_FIELDS = 26;
 
                 // ===== Current Location =====
 
-                .city(
-                        profile.getCity()
+                .country(
+                        profile.getCountry()
                 )
 
                 .state(
                         profile.getState()
                 )
 
-                .country(
-                        profile.getCountry()
+                .district(
+                        profile.getDistrict()
+                )
+
+                .city(
+                        profile.getCity()
                 )
 
                 // ===== About =====

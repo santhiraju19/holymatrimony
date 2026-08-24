@@ -1,5 +1,7 @@
 package com.theholymatrimony.backend.profile.dto;
 
+import java.util.List;
+
 import com.theholymatrimony.backend.profile.enums.ProfileVerificationStatus;
 
 import lombok.Builder;
@@ -48,10 +50,8 @@ public class ProfileResponse {
     private String motherTongue;
 
     private String religion;
-
     private String community;
     private String subCommunity;
-
     private String faithBackground;
     private String physicalStatus;
 
@@ -64,7 +64,7 @@ public class ProfileResponse {
     private String drinking;
 
     // =========================================================
-    // Church
+    // Church Information
     // =========================================================
 
     private String denomination;
@@ -72,7 +72,24 @@ public class ProfileResponse {
     private String pastorName;
     private Boolean baptized;
     private String membershipId;
+
+    /*
+     * Legacy formatted church address.
+     *
+     * Retained for existing profiles and backward compatibility.
+     */
     private String churchAddress;
+
+    /*
+     * Structured church location.
+     *
+     * Church information remains optional and these fields
+     * must never block profile completion or verification.
+     */
+    private String churchCountry;
+    private String churchState;
+    private String churchDistrict;
+    private String churchCity;
 
     // =========================================================
     // Education & Career
@@ -85,13 +102,28 @@ public class ProfileResponse {
     private String annualIncome;
 
     // =========================================================
-    // Family
+    // Family Information
     // =========================================================
 
     private String fatherName;
     private String motherName;
     private String siblings;
+
+    /*
+     * Legacy formatted family location.
+     *
+     * Retained for existing profiles and backward compatibility.
+     */
     private String familyLocation;
+
+    /*
+     * Structured family location.
+     */
+    private String familyCountry;
+    private String familyState;
+    private String familyDistrict;
+    private String familyCity;
+
     private String familyType;
     private String familyValues;
 
@@ -117,9 +149,18 @@ public class ProfileResponse {
     private String preferredEducation;
     private String preferredProfession;
 
+    /*
+     * Preferred location hierarchy.
+     *
+     * Preferences remain optional and do not affect profile
+     * completion or verification eligibility.
+     */
     private String preferredCountry;
     private String preferredState;
+    private String preferredDistrict;
     private String preferredCity;
+
+    private List<PreferredLocationDto> preferredLocations;
 
     private String preferredDiet;
     private String preferredSmoking;
@@ -131,9 +172,10 @@ public class ProfileResponse {
     // Current Location
     // =========================================================
 
-    private String city;
-    private String state;
     private String country;
+    private String state;
+    private String district;
+    private String city;
 
     // =========================================================
     // About

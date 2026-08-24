@@ -28,12 +28,10 @@ import {
 } from "@/features/profile/data/profileOptions";
 
 import {
-  formatLocation,
-  getCitiesForState,
-  getDistrictsForState,
-  INDIA_STATES,
-  parseLocation,
-} from "@/features/profile/data/indiaLocations";
+  COUNTRIES,
+  getCitiesForCountryState,
+  getStatesForCountry,
+} from "@/features/profile/data/worldLocations";
 
 import type {
   FamilyInfo,
@@ -50,6 +48,12 @@ interface FamilyFormProps {
   onNext: () => void;
   onBack: () => void;
 }
+
+type FamilyLocationField =
+  | "familyCountry"
+  | "familyState"
+  | "familyDistrict"
+  | "familyCity";
 
 export default function FamilyForm({
   onNext,
@@ -68,33 +72,41 @@ export default function FamilyForm({
       {}
     );
 
-  const familyLocation =
-    parseLocation(
-      familyInfo.familyLocation
-    );
-
-  const districts =
-    getDistrictsForState(
-      familyLocation.state
-    );
+  const states =
+    familyInfo.familyCountry
+      ? getStatesForCountry(
+          familyInfo.familyCountry
+        )
+      : [];
 
   const cities =
-    getCitiesForState(
-      familyLocation.state
+    familyInfo.familyCountry &&
+    familyInfo.familyState
+      ? getCitiesForCountryState(
+          familyInfo.familyCountry,
+          familyInfo.familyState
+        )
+      : [];
+
+  const selectedCountryExists =
+    COUNTRIES.some(
+      (country) =>
+        country.value ===
+        familyInfo.familyCountry
     );
 
-  const selectedDistrictExists =
-    districts.some(
-      (district) =>
-        district.value ===
-        familyLocation.district
+  const selectedStateExists =
+    states.some(
+      (state) =>
+        state.value ===
+        familyInfo.familyState
     );
 
   const selectedCityExists =
     cities.some(
       (city) =>
         city.value ===
-        familyLocation.city
+        familyInfo.familyCity
     );
 
   function clearError(
@@ -128,81 +140,136 @@ export default function FamilyForm({
       },
     }));
 
-    clearError(field);
+    clearError(
+      field as keyof FamilyFormErrors
+    );
+  }
+
+  function buildFamilyLocationSummary(
+    country: string,
+    state: string,
+    district: string,
+    city: string
+  ): string {
+    return [
+      city,
+      district,
+      state,
+      country,
+    ]
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .join(", ");
   }
 
   function updateFamilyLocation(
-    field:
-      | "state"
-      | "district"
-      | "city",
+    field: FamilyLocationField,
     value: string
   ): void {
-    let nextState =
-      familyLocation.state;
+    setProfile((previous) => {
+      let familyCountry =
+        previous.familyInfo.familyCountry;
 
-    let nextDistrict =
-      familyLocation.district;
+      let familyState =
+        previous.familyInfo.familyState;
 
-    let nextCity =
-      familyLocation.city;
+      let familyDistrict =
+        previous.familyInfo.familyDistrict;
 
-    if (field === "state") {
-      nextState = value;
-      nextDistrict = "";
-      nextCity = "";
+      let familyCity =
+        previous.familyInfo.familyCity;
 
-      clearError(
-        "familyState"
-      );
+      if (field === "familyCountry") {
+        familyCountry = value;
+        familyState = "";
+        familyDistrict = "";
+        familyCity = "";
+      }
 
-      clearError(
-        "familyDistrict"
-      );
+      if (field === "familyState") {
+        familyState = value;
+        familyDistrict = "";
+        familyCity = "";
+      }
 
-      clearError(
-        "familyCity"
-      );
-    }
+      if (field === "familyDistrict") {
+        familyDistrict = value;
+      }
 
-    if (
-      field === "district"
-    ) {
-      nextDistrict = value;
-      nextCity = "";
+      if (field === "familyCity") {
+        familyCity = value;
+      }
 
-      clearError(
-        "familyDistrict"
-      );
+      const familyLocation =
+        buildFamilyLocationSummary(
+          familyCountry,
+          familyState,
+          familyDistrict,
+          familyCity
+        );
 
-      clearError(
-        "familyCity"
-      );
-    }
+      return {
+        ...previous,
 
-    if (field === "city") {
-      nextCity = value;
+        familyInfo: {
+          ...previous.familyInfo,
 
-      clearError(
-        "familyCity"
-      );
-    }
+          familyCountry,
+          familyState,
+          familyDistrict,
+          familyCity,
 
-    updateFamilyInfo(
-      "familyLocation",
-      formatLocation(
-        nextCity,
-        nextDistrict,
-        nextState
-      )
+          /*
+           * Compatibility summary.
+           *
+           * The structured fields above are the source of truth.
+           * familyLocation remains populated because the existing
+           * 20-field completion model counts Family Location as
+           * one field and older profile/review code may still read it.
+           */
+          familyLocation,
+        },
+      };
+    });
+
+    clearError(
+      field as keyof FamilyFormErrors
     );
+
+    if (field === "familyCountry") {
+      clearError("familyState");
+      clearError("familyDistrict");
+      clearError("familyCity");
+    }
+
+    if (field === "familyState") {
+      clearError("familyDistrict");
+      clearError("familyCity");
+    }
+
+    if (field === "familyDistrict") {
+      clearError("familyDistrict");
+    }
+
+    if (field === "familyCity") {
+      clearError("familyCity");
+    }
   }
 
   function handleContinue(): void {
     const validationErrors =
       validateFamilyInfo(
         familyInfo,
-        familyLocation
+        {
+          state:
+            familyInfo.familyState,
+
+          district:
+            familyInfo.familyDistrict,
+
+          city:
+            familyInfo.familyCity,
+        }
       );
 
     setErrors(
@@ -224,8 +291,15 @@ export default function FamilyForm({
 
   return (
     <Card className="overflow-hidden p-0">
+
+      {/* =====================================================
+          Header
+          ===================================================== */}
+
       <div className="border-b border-slate-100 bg-gradient-to-r from-rose-50/75 via-white to-amber-50/55 px-4 py-3.5 sm:px-5">
+
         <div className="flex items-start gap-3">
+
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0B2D5C] to-rose-700 text-white shadow-sm">
             <UsersRound
               size={17}
@@ -233,6 +307,7 @@ export default function FamilyForm({
           </div>
 
           <div className="min-w-0">
+
             <p className="text-[9px] font-black uppercase tracking-[0.13em] text-[#B38B19]">
               Step 4 of 7
             </p>
@@ -244,20 +319,31 @@ export default function FamilyForm({
             <p className="mt-0.5 max-w-2xl text-[11px] leading-5 text-slate-500 sm:text-xs">
               Share your family background, family structure and location.
             </p>
+
           </div>
+
         </div>
+
       </div>
 
       <div className="p-4 sm:p-5">
+
         <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-rose-100 bg-rose-50/60 px-3 py-2.5 text-[11px] leading-5 text-rose-800">
+
           <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-rose-100 font-black text-rose-700">
             *
           </span>
 
           <p>
-            Parent names, family type and family location are required. Siblings and family values are optional.
+            Parent names, family type and family location are required.
+            District, siblings and family values are optional.
           </p>
+
         </div>
+
+        {/* =====================================================
+            Family Details
+            ===================================================== */}
 
         <SectionHeading
           icon={
@@ -270,6 +356,7 @@ export default function FamilyForm({
         />
 
         <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-2">
+
           <FormField
             label="Father's Name"
             required
@@ -426,6 +513,7 @@ export default function FamilyForm({
             className="md:col-span-2"
           >
             <div className="md:max-w-[calc(50%-0.5rem)]">
+
               <IconField
                 icon={
                   <HeartHandshake
@@ -469,9 +557,15 @@ export default function FamilyForm({
                   )}
                 </Select>
               </IconField>
+
             </div>
           </FormField>
+
         </div>
+
+        {/* =====================================================
+            Family Location
+            ===================================================== */}
 
         <SectionDivider />
 
@@ -486,7 +580,61 @@ export default function FamilyForm({
           variant="green"
         />
 
-        <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-3">
+        <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-2 lg:grid-cols-4">
+
+          <FormField
+            label="Family Country"
+            required
+            htmlFor="family-country"
+          >
+            <Select
+              id="family-country"
+              value={
+                familyInfo.familyCountry
+              }
+              onChange={(event) =>
+                updateFamilyLocation(
+                  "familyCountry",
+                  event.target.value
+                )
+              }
+            >
+              <option value="">
+                Select country
+              </option>
+
+              {familyInfo.familyCountry &&
+                !selectedCountryExists && (
+                  <option
+                    value={
+                      familyInfo.familyCountry
+                    }
+                  >
+                    {
+                      familyInfo.familyCountry
+                    }
+                  </option>
+                )}
+
+              {COUNTRIES.map(
+                (country) => (
+                  <option
+                    key={
+                      country.isoCode
+                    }
+                    value={
+                      country.value
+                    }
+                  >
+                    {
+                      country.label
+                    }
+                  </option>
+                )
+              )}
+            </Select>
+          </FormField>
+
           <FormField
             label="Family State"
             required
@@ -498,14 +646,17 @@ export default function FamilyForm({
             <Select
               id="family-state"
               value={
-                familyLocation.state
+                familyInfo.familyState
               }
               error={
                 errors.familyState
               }
+              disabled={
+                !familyInfo.familyCountry
+              }
               onChange={(event) =>
                 updateFamilyLocation(
-                  "state",
+                  "familyState",
                   event.target.value
                 )
               }
@@ -514,12 +665,23 @@ export default function FamilyForm({
                 Select state
               </option>
 
-              {INDIA_STATES.map(
+              {familyInfo.familyState &&
+                !selectedStateExists && (
+                  <option
+                    value={
+                      familyInfo.familyState
+                    }
+                  >
+                    {
+                      familyInfo.familyState
+                    }
+                  </option>
+                )}
+
+              {states.map(
                 (state) => (
                   <option
-                    key={
-                      state.value
-                    }
+                    key={`${familyInfo.familyCountry}-${state.isoCode}`}
                     value={
                       state.value
                     }
@@ -535,64 +697,36 @@ export default function FamilyForm({
 
           <FormField
             label="Family District"
-            required
             htmlFor="family-district"
+            helperText="Optional"
             error={
               errors.familyDistrict
             }
           >
-            <Select
+            <Input
               id="family-district"
               value={
-                familyLocation.district
+                familyInfo.familyDistrict
               }
               error={
                 errors.familyDistrict
               }
               disabled={
-                !familyLocation.state
+                !familyInfo.familyState
+              }
+              maxLength={120}
+              placeholder={
+                familyInfo.familyState
+                  ? "Enter district"
+                  : "Select state first"
               }
               onChange={(event) =>
                 updateFamilyLocation(
-                  "district",
+                  "familyDistrict",
                   event.target.value
                 )
               }
-            >
-              <option value="">
-                Select district
-              </option>
-
-              {familyLocation.district &&
-                !selectedDistrictExists && (
-                  <option
-                    value={
-                      familyLocation.district
-                    }
-                  >
-                    {
-                      familyLocation.district
-                    }
-                  </option>
-                )}
-
-              {districts.map(
-                (district) => (
-                  <option
-                    key={
-                      district.value
-                    }
-                    value={
-                      district.value
-                    }
-                  >
-                    {
-                      district.label
-                    }
-                  </option>
-                )
-              )}
-            </Select>
+            />
           </FormField>
 
           <FormField
@@ -606,17 +740,17 @@ export default function FamilyForm({
             <Select
               id="family-city"
               value={
-                familyLocation.city
+                familyInfo.familyCity
               }
               error={
                 errors.familyCity
               }
               disabled={
-                !familyLocation.state
+                !familyInfo.familyState
               }
               onChange={(event) =>
                 updateFamilyLocation(
-                  "city",
+                  "familyCity",
                   event.target.value
                 )
               }
@@ -625,15 +759,15 @@ export default function FamilyForm({
                 Select city
               </option>
 
-              {familyLocation.city &&
+              {familyInfo.familyCity &&
                 !selectedCityExists && (
                   <option
                     value={
-                      familyLocation.city
+                      familyInfo.familyCity
                     }
                   >
                     {
-                      familyLocation.city
+                      familyInfo.familyCity
                     }
                   </option>
                 )}
@@ -656,9 +790,15 @@ export default function FamilyForm({
               )}
             </Select>
           </FormField>
+
         </div>
 
+        {/* =====================================================
+            Navigation
+            ===================================================== */}
+
         <div className="mt-6 flex flex-col-reverse gap-2.5 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+
           <Button
             type="button"
             variant="secondary"
@@ -684,8 +824,11 @@ export default function FamilyForm({
           >
             Save & Continue
           </Button>
+
         </div>
+
       </div>
+
     </Card>
   );
 }
@@ -699,11 +842,13 @@ function IconField({
 }) {
   return (
     <div className="relative">
+
       <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-slate-400">
         {icon}
       </span>
 
       {children}
+
     </div>
   );
 }
@@ -736,6 +881,7 @@ function SectionHeading({
 
   return (
     <div className="flex items-start gap-2.5">
+
       <div
         className={[
           "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
@@ -746,6 +892,7 @@ function SectionHeading({
       </div>
 
       <div className="min-w-0">
+
         <h3 className="text-sm font-black text-[#0B2D5C]">
           {title}
         </h3>
@@ -753,7 +900,9 @@ function SectionHeading({
         <p className="mt-0.5 text-[11px] leading-5 text-slate-500">
           {description}
         </p>
+
       </div>
+
     </div>
   );
 }

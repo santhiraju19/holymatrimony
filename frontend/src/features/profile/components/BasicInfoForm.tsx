@@ -252,18 +252,13 @@ export default function BasicInfoForm({
     );
 
   function clearError(
-    field: keyof BasicFormErrors
-  ): void {
-    setErrors((current) => {
-      if (!current[field]) {
-        return current;
-      }
+    field: keyof BasicInfo | keyof LocationInfo | keyof AboutInfo
+  ) {
+    setErrors((prev) => {
+      const next = { ...prev };
 
-      const next = {
-        ...current,
-      };
-
-      delete next[field];
+      const errorField = field as keyof typeof next;
+      delete next[errorField];
 
       return next;
     });
@@ -311,50 +306,57 @@ export default function BasicInfoForm({
     value: string
   ): void {
     setProfile((previous) => {
-      let nextLocation = {
+      let nextLocation: LocationInfo = {
         ...previous.locationInfo,
         [field]: value,
       };
 
-      if (
-        field === "country"
-      ) {
+      if (field === "country") {
         nextLocation = {
           country: value,
           state: "",
+          district: "",
           city: "",
         };
       }
 
-      if (
-        field === "state"
-      ) {
+      if (field === "state") {
         nextLocation = {
           ...previous.locationInfo,
           state: value,
+          district: "",
+          city: "",
+        };
+      }
+
+      if (field === "district") {
+        nextLocation = {
+          ...previous.locationInfo,
+          district: value,
           city: "",
         };
       }
 
       return {
         ...previous,
-        locationInfo:
-          nextLocation,
+        locationInfo: nextLocation,
       };
     });
 
     clearError(field);
 
-    if (
-      field === "country"
-    ) {
+    if (field === "country") {
       clearError("state");
+      clearError("district");
       clearError("city");
     }
 
-    if (
-      field === "state"
-    ) {
+    if (field === "state") {
+      clearError("district");
+      clearError("city");
+    }
+
+    if (field === "district") {
       clearError("city");
     }
   }
@@ -1400,11 +1402,11 @@ export default function BasicInfoForm({
             />
           }
           title="Current Location"
-          description="Where you currently live. This is separate from your family location."
+          description="Where you currently live. District is optional and does not affect profile completion."
           variant="green"
         />
 
-        <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-3">
+        <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-2 lg:grid-cols-4">
 
           <FormField
             label="Country"
@@ -1523,6 +1525,34 @@ export default function BasicInfoForm({
                 )
               )}
             </Select>
+          </FormField>
+
+          <FormField
+            label="District"
+            htmlFor="profile-district"
+            helperText="Optional"
+          >
+            <Input
+              id="profile-district"
+              value={
+                locationInfo.district
+              }
+              disabled={
+                !locationInfo.state
+              }
+              maxLength={120}
+              placeholder={
+                locationInfo.state
+                  ? "Enter district"
+                  : "Select state first"
+              }
+              onChange={(event) =>
+                updateLocation(
+                  "district",
+                  event.target.value
+                )
+              }
+            />
           </FormField>
 
           <FormField
