@@ -46,6 +46,11 @@ import {
 } from "@/features/profile/data/profileOptions";
 
 import {
+  getDistrictsForState,
+  isIndia,
+} from "@/features/profile/data/indiaLocations";
+
+import {
   COUNTRIES,
   getCitiesForCountryState,
   getStatesForCountry,
@@ -1048,6 +1053,32 @@ export default function PreferencesForm({
                     )
                   : [];
 
+              const indianLocation =
+                isIndia(
+                  location.country
+                );
+
+              const districts =
+                indianLocation &&
+                location.state
+                  ? getDistrictsForState(
+                      location.state
+                    )
+                  : [];
+
+              /*
+               * Use a district dropdown for Indian states
+               * when district data exists.
+               *
+               * Until our local India district dataset covers
+               * every state / UT, an Indian state without data
+               * falls back to text input so members are never
+               * blocked.
+               */
+              const hasDistrictOptions =
+                indianLocation &&
+                districts.length > 0;
+
               const selectedCountryExists =
                 COUNTRIES.some(
                   (country) =>
@@ -1060,6 +1091,13 @@ export default function PreferencesForm({
                   (state) =>
                     state.value ===
                     location.state
+                );
+
+              const selectedDistrictExists =
+                districts.some(
+                  (district) =>
+                    district.value ===
+                    location.district
                 );
 
               const selectedCityExists =
@@ -1222,29 +1260,91 @@ export default function PreferencesForm({
                     <FormField
                       label="District"
                       htmlFor={`preferred-district-${index}`}
+                      helperText={
+                        hasDistrictOptions
+                          ? undefined
+                          : "Optional"
+                      }
                     >
-                      <Input
-                        id={`preferred-district-${index}`}
-                        value={
-                          location.district
-                        }
-                        disabled={
-                          !location.state
-                        }
-                        maxLength={120}
-                        placeholder={
-                          location.state
-                            ? "Any district"
-                            : "Select state first"
-                        }
-                        onChange={(event) =>
-                          updatePreferredLocation(
-                            index,
-                            "district",
-                            event.target.value
-                          )
-                        }
-                      />
+                      {hasDistrictOptions ? (
+                        <Select
+                          id={`preferred-district-${index}`}
+                          value={
+                            location.district
+                          }
+                          disabled={
+                            !location.state
+                          }
+                          onChange={(event) =>
+                            updatePreferredLocation(
+                              index,
+                              "district",
+                              event.target.value
+                            )
+                          }
+                        >
+                          <option value="">
+                            {location.state
+                              ? "Any district"
+                              : "Select state first"}
+                          </option>
+
+                          {location.district &&
+                            !selectedDistrictExists && (
+                              <option
+                                value={
+                                  location.district
+                                }
+                              >
+                                {
+                                  location.district
+                                }
+                              </option>
+                            )}
+
+                          {districts.map(
+                            (district) => (
+                              <option
+                                key={
+                                  district.value
+                                }
+                                value={
+                                  district.value
+                                }
+                              >
+                                {
+                                  district.label
+                                }
+                              </option>
+                            )
+                          )}
+                        </Select>
+                      ) : (
+                        <Input
+                          id={`preferred-district-${index}`}
+                          value={
+                            location.district
+                          }
+                          disabled={
+                            !location.state
+                          }
+                          maxLength={120}
+                          placeholder={
+                            location.state
+                              ? indianLocation
+                                ? "Enter district"
+                                : "Any district"
+                              : "Select state first"
+                          }
+                          onChange={(event) =>
+                            updatePreferredLocation(
+                              index,
+                              "district",
+                              event.target.value
+                            )
+                          }
+                        />
+                      )}
                     </FormField>
 
                     {/* City */}

@@ -28,6 +28,11 @@ import {
 } from "@/features/profile/data/profileOptions";
 
 import {
+  getDistrictsForState,
+  isIndia,
+} from "@/features/profile/data/indiaLocations";
+
+import {
   COUNTRIES,
   getCitiesForCountryState,
   getStatesForCountry,
@@ -72,6 +77,12 @@ export default function FamilyForm({
       {}
     );
 
+  /*
+   * =========================================================
+   * Structured Family Location
+   * =========================================================
+   */
+
   const states =
     familyInfo.familyCountry
       ? getStatesForCountry(
@@ -88,6 +99,32 @@ export default function FamilyForm({
         )
       : [];
 
+  const indianLocation =
+    isIndia(
+      familyInfo.familyCountry
+    );
+
+  const districts =
+    indianLocation &&
+    familyInfo.familyState
+      ? getDistrictsForState(
+          familyInfo.familyState
+        )
+      : [];
+
+  /*
+   * Show a district dropdown only when our India
+   * district dataset contains options for the
+   * selected state.
+   *
+   * For Indian states not yet present in the
+   * local district dataset, keep the text fallback
+   * so the member is never blocked.
+   */
+  const hasDistrictOptions =
+    indianLocation &&
+    districts.length > 0;
+
   const selectedCountryExists =
     COUNTRIES.some(
       (country) =>
@@ -102,12 +139,25 @@ export default function FamilyForm({
         familyInfo.familyState
     );
 
+  const selectedDistrictExists =
+    districts.some(
+      (district) =>
+        district.value ===
+        familyInfo.familyDistrict
+    );
+
   const selectedCityExists =
     cities.some(
       (city) =>
         city.value ===
         familyInfo.familyCity
     );
+
+  /*
+   * =========================================================
+   * Error Helpers
+   * =========================================================
+   */
 
   function clearError(
     field: keyof FamilyFormErrors
@@ -127,6 +177,12 @@ export default function FamilyForm({
     });
   }
 
+  /*
+   * =========================================================
+   * Family Information
+   * =========================================================
+   */
+
   function updateFamilyInfo(
     field: keyof FamilyInfo,
     value: string
@@ -145,6 +201,12 @@ export default function FamilyForm({
     );
   }
 
+  /*
+   * =========================================================
+   * Compatibility Location Summary
+   * =========================================================
+   */
+
   function buildFamilyLocationSummary(
     country: string,
     state: string,
@@ -157,10 +219,19 @@ export default function FamilyForm({
       state,
       country,
     ]
-      .map((value) => value.trim())
+      .map(
+        (value) =>
+          value.trim()
+      )
       .filter(Boolean)
       .join(", ");
   }
+
+  /*
+   * =========================================================
+   * Structured Location Update
+   * =========================================================
+   */
 
   function updateFamilyLocation(
     field: FamilyLocationField,
@@ -168,35 +239,51 @@ export default function FamilyForm({
   ): void {
     setProfile((previous) => {
       let familyCountry =
-        previous.familyInfo.familyCountry;
+        previous.familyInfo
+          .familyCountry;
 
       let familyState =
-        previous.familyInfo.familyState;
+        previous.familyInfo
+          .familyState;
 
       let familyDistrict =
-        previous.familyInfo.familyDistrict;
+        previous.familyInfo
+          .familyDistrict;
 
       let familyCity =
-        previous.familyInfo.familyCity;
+        previous.familyInfo
+          .familyCity;
 
-      if (field === "familyCountry") {
+      if (
+        field ===
+        "familyCountry"
+      ) {
         familyCountry = value;
         familyState = "";
         familyDistrict = "";
         familyCity = "";
       }
 
-      if (field === "familyState") {
+      if (
+        field ===
+        "familyState"
+      ) {
         familyState = value;
         familyDistrict = "";
         familyCity = "";
       }
 
-      if (field === "familyDistrict") {
+      if (
+        field ===
+        "familyDistrict"
+      ) {
         familyDistrict = value;
       }
 
-      if (field === "familyCity") {
+      if (
+        field ===
+        "familyCity"
+      ) {
         familyCity = value;
       }
 
@@ -222,10 +309,11 @@ export default function FamilyForm({
           /*
            * Compatibility summary.
            *
-           * The structured fields above are the source of truth.
-           * familyLocation remains populated because the existing
-           * 20-field completion model counts Family Location as
-           * one field and older profile/review code may still read it.
+           * Structured fields are the source of truth.
+           * familyLocation remains populated because
+           * the existing completion model counts Family
+           * Location as one field and older profile/review
+           * code may still read it.
            */
           familyLocation,
         },
@@ -236,25 +324,60 @@ export default function FamilyForm({
       field as keyof FamilyFormErrors
     );
 
-    if (field === "familyCountry") {
-      clearError("familyState");
-      clearError("familyDistrict");
-      clearError("familyCity");
+    if (
+      field ===
+      "familyCountry"
+    ) {
+      clearError(
+        "familyState"
+      );
+
+      clearError(
+        "familyDistrict"
+      );
+
+      clearError(
+        "familyCity"
+      );
     }
 
-    if (field === "familyState") {
-      clearError("familyDistrict");
-      clearError("familyCity");
+    if (
+      field ===
+      "familyState"
+    ) {
+      clearError(
+        "familyDistrict"
+      );
+
+      clearError(
+        "familyCity"
+      );
     }
 
-    if (field === "familyDistrict") {
-      clearError("familyDistrict");
+    if (
+      field ===
+      "familyDistrict"
+    ) {
+      clearError(
+        "familyDistrict"
+      );
     }
 
-    if (field === "familyCity") {
-      clearError("familyCity");
+    if (
+      field ===
+      "familyCity"
+    ) {
+      clearError(
+        "familyCity"
+      );
     }
   }
+
+  /*
+   * =========================================================
+   * Continue
+   * =========================================================
+   */
 
   function handleContinue(): void {
     const validationErrors =
@@ -582,6 +705,8 @@ export default function FamilyForm({
 
         <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3.5 md:grid-cols-2 lg:grid-cols-4">
 
+          {/* Country */}
+
           <FormField
             label="Family Country"
             required
@@ -635,6 +760,8 @@ export default function FamilyForm({
             </Select>
           </FormField>
 
+          {/* State */}
+
           <FormField
             label="Family State"
             required
@@ -662,7 +789,9 @@ export default function FamilyForm({
               }
             >
               <option value="">
-                Select state
+                {familyInfo.familyCountry
+                  ? "Select state"
+                  : "Select country first"}
               </option>
 
               {familyInfo.familyState &&
@@ -695,39 +824,106 @@ export default function FamilyForm({
             </Select>
           </FormField>
 
+          {/* District */}
+
           <FormField
             label="Family District"
             htmlFor="family-district"
-            helperText="Optional"
+            helperText={
+              hasDistrictOptions
+                ? undefined
+                : "Optional"
+            }
             error={
               errors.familyDistrict
             }
           >
-            <Input
-              id="family-district"
-              value={
-                familyInfo.familyDistrict
-              }
-              error={
-                errors.familyDistrict
-              }
-              disabled={
-                !familyInfo.familyState
-              }
-              maxLength={120}
-              placeholder={
-                familyInfo.familyState
-                  ? "Enter district"
-                  : "Select state first"
-              }
-              onChange={(event) =>
-                updateFamilyLocation(
-                  "familyDistrict",
-                  event.target.value
-                )
-              }
-            />
+            {hasDistrictOptions ? (
+              <Select
+                id="family-district"
+                value={
+                  familyInfo.familyDistrict
+                }
+                error={
+                  errors.familyDistrict
+                }
+                disabled={
+                  !familyInfo.familyState
+                }
+                onChange={(event) =>
+                  updateFamilyLocation(
+                    "familyDistrict",
+                    event.target.value
+                  )
+                }
+              >
+                <option value="">
+                  {familyInfo.familyState
+                    ? "Select district"
+                    : "Select state first"}
+                </option>
+
+                {familyInfo.familyDistrict &&
+                  !selectedDistrictExists && (
+                    <option
+                      value={
+                        familyInfo.familyDistrict
+                      }
+                    >
+                      {
+                        familyInfo.familyDistrict
+                      }
+                    </option>
+                  )}
+
+                {districts.map(
+                  (district) => (
+                    <option
+                      key={
+                        district.value
+                      }
+                      value={
+                        district.value
+                      }
+                    >
+                      {
+                        district.label
+                      }
+                    </option>
+                  )
+                )}
+              </Select>
+            ) : (
+              <Input
+                id="family-district"
+                value={
+                  familyInfo.familyDistrict
+                }
+                error={
+                  errors.familyDistrict
+                }
+                disabled={
+                  !familyInfo.familyState
+                }
+                maxLength={120}
+                placeholder={
+                  familyInfo.familyState
+                    ? indianLocation
+                      ? "Enter district"
+                      : "Enter district (optional)"
+                    : "Select state first"
+                }
+                onChange={(event) =>
+                  updateFamilyLocation(
+                    "familyDistrict",
+                    event.target.value
+                  )
+                }
+              />
+            )}
           </FormField>
+
+          {/* City */}
 
           <FormField
             label="Family City"
@@ -756,7 +952,9 @@ export default function FamilyForm({
               }
             >
               <option value="">
-                Select city
+                {familyInfo.familyState
+                  ? "Select city"
+                  : "Select state first"}
               </option>
 
               {familyInfo.familyCity &&

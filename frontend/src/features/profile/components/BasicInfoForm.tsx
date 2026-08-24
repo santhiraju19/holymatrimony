@@ -1,6 +1,11 @@
 "use client";
 
 import {
+  getDistrictsForState,
+  isIndia,
+} from "../data/indiaLocations";
+
+import {
   useState,
 } from "react";
 
@@ -229,6 +234,26 @@ export default function BasicInfoForm({
           locationInfo.state
         )
       : [];
+
+  const indianLocation =
+    isIndia(
+      locationInfo.country
+    );
+
+  const districts =
+    indianLocation &&
+    locationInfo.state
+      ? getDistrictsForState(
+          locationInfo.state
+        )
+      : [];
+
+  const selectedDistrictExists =
+    districts.some(
+      (district) =>
+        district.value ===
+        locationInfo.district
+    );
 
   const selectedCountryExists =
     COUNTRIES.some(
@@ -1402,7 +1427,7 @@ export default function BasicInfoForm({
             />
           }
           title="Current Location"
-          description="Where you currently live. District is optional and does not affect profile completion."
+          description="Where you currently live. Select your district for Indian locations. District does not add another profile-completion requirement."
           variant="green"
         />
 
@@ -1530,29 +1555,82 @@ export default function BasicInfoForm({
           <FormField
             label="District"
             htmlFor="profile-district"
-            helperText="Optional"
           >
-            <Input
-              id="profile-district"
-              value={
-                locationInfo.district
-              }
-              disabled={
-                !locationInfo.state
-              }
-              maxLength={120}
-              placeholder={
-                locationInfo.state
-                  ? "Enter district"
-                  : "Select state first"
-              }
-              onChange={(event) =>
-                updateLocation(
-                  "district",
-                  event.target.value
-                )
-              }
-            />
+            {indianLocation ? (
+              <Select
+                id="profile-district"
+                value={
+                  locationInfo.district
+                }
+                disabled={
+                  !locationInfo.state
+                }
+                onChange={(event) =>
+                  updateLocation(
+                    "district",
+                    event.target.value
+                  )
+                }
+              >
+                <option value="">
+                  {locationInfo.state
+                    ? "Select district"
+                    : "Select state first"}
+                </option>
+
+                {locationInfo.district &&
+                  !selectedDistrictExists && (
+                    <option
+                      value={
+                        locationInfo.district
+                      }
+                    >
+                      {
+                        locationInfo.district
+                      }
+                    </option>
+                  )}
+
+                {districts.map(
+                  (district) => (
+                    <option
+                      key={
+                        district.value
+                      }
+                      value={
+                        district.value
+                      }
+                    >
+                      {
+                        district.label
+                      }
+                    </option>
+                  )
+                )}
+              </Select>
+            ) : (
+              <Input
+                id="profile-district"
+                value={
+                  locationInfo.district
+                }
+                disabled={
+                  !locationInfo.state
+                }
+                maxLength={120}
+                placeholder={
+                  locationInfo.state
+                    ? "District (optional)"
+                    : "Select state first"
+                }
+                onChange={(event) =>
+                  updateLocation(
+                    "district",
+                    event.target.value
+                  )
+                }
+              />
+            )}
           </FormField>
 
           <FormField
