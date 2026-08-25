@@ -1,10 +1,13 @@
 package com.theholymatrimony.backend.compatibility.service;
 
 import com.theholymatrimony.backend.compatibility.dto.CompatibilityScoreResponse;
+import com.theholymatrimony.backend.profile.entity.PreferredLocation;
 import com.theholymatrimony.backend.profile.entity.Profile;
 
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 @Service
@@ -17,14 +20,15 @@ public class CompatibilityScoreService {
      *
      * Total possible weight = 100.
      *
-     * These weights are used for the comprehensive compatibility
-     * percentage returned as CompatibilityScoreResponse.score.
+     * Location is now treated as one hierarchical preference
+     * category worth 10 points:
      *
-     * A category is included in the denominator only when at least
-     * one member actually supplied a preference for that category.
+     * Country -> State -> District -> City
      *
-     * This prevents incomplete preference data from creating an
-     * artificial 100% compatibility score.
+     * This replaces the old independent Country / State / City
+     * scoring. Treating location as a single hierarchy prevents
+     * fields from different preferredLocations entries from being
+     * incorrectly combined.
      */
 
     private static final int AGE_WEIGHT = 15;
@@ -45,11 +49,17 @@ public class CompatibilityScoreService {
 
     private static final int PROFESSION_WEIGHT = 6;
 
-    private static final int COUNTRY_WEIGHT = 5;
-
-    private static final int STATE_WEIGHT = 3;
-
-    private static final int CITY_WEIGHT = 2;
+    /*
+     * Replaces:
+     *
+     * Country = 5
+     * State   = 3
+     * City    = 2
+     *
+     * The overall location allocation therefore remains exactly 10
+     * points and the complete compatibility model still totals 100.
+     */
+    private static final int LOCATION_WEIGHT = 10;
 
     private static final int DIET_WEIGHT = 3;
 
@@ -179,31 +189,39 @@ public class CompatibilityScoreService {
                         currentProfile.getProfession()
                 );
 
-        MatchResult country =
-                evaluateTextPreference(
-                        currentProfile.getPreferredCountry(),
-                        candidateProfile.getCountry(),
-
-                        candidateProfile.getPreferredCountry(),
-                        currentProfile.getCountry()
-                );
-
-        MatchResult state =
-                evaluateTextPreference(
-                        currentProfile.getPreferredState(),
-                        candidateProfile.getState(),
-
-                        candidateProfile.getPreferredState(),
-                        currentProfile.getState()
-                );
-
-        MatchResult city =
-                evaluateTextPreference(
-                        currentProfile.getPreferredCity(),
-                        candidateProfile.getCity(),
-
-                        candidateProfile.getPreferredCity(),
-                        currentProfile.getCity()
+        /*
+         * ========================================================
+         * STRUCTURED LOCATION
+         * ========================================================
+         *
+         * Evaluate:
+         *
+         * current member preferredLocations[]
+         *              against
+         * candidate actual Country / State / District / City
+         *
+         * AND:
+         *
+         * candidate preferredLocations[]
+         *              against
+         * current member actual Country / State / District / City
+         *
+         * Multiple preferred locations use OR semantics.
+         *
+         * Example:
+         *
+         * India / Telangana / Hyderabad
+         * OR
+         * India / Andhra Pradesh / Guntur
+         * OR
+         * United States / Texas / Dallas
+         *
+         * Any one complete preference path may satisfy that side.
+         */
+        MatchResult location =
+                evaluateLocationPreference(
+                        currentProfile,
+                        candidateProfile
                 );
 
         MatchResult diet =
@@ -240,8 +258,6 @@ public class CompatibilityScoreService {
          * not have a corresponding member-side faithCommitment field.
          *
          * We should not fabricate a match from unrelated fields.
-         * When the candidate-side field is introduced, this category
-         * can be added to the scoring engine.
          */
 
         WeightedScore weightedScore =
@@ -293,18 +309,8 @@ public class CompatibilityScoreService {
         );
 
         weightedScore.add(
-                country,
-                COUNTRY_WEIGHT
-        );
-
-        weightedScore.add(
-                state,
-                STATE_WEIGHT
-        );
-
-        weightedScore.add(
-                city,
-                CITY_WEIGHT
+                location,
+                LOCATION_WEIGHT
         );
 
         weightedScore.add(
@@ -331,7 +337,7 @@ public class CompatibilityScoreService {
          * ========================================================
          *
          * Preserve the current API contract while the overall score
-         * becomes substantially richer.
+         * uses the richer preference model.
          */
 
         int ageScore =
@@ -381,11 +387,6 @@ public class CompatibilityScoreService {
      * ============================================================
      * RANGE PREFERENCES
      * ============================================================
-     *
-     * Used by:
-     *
-     * Age
-     * Height
      */
 
     private MatchResult evaluateRangePreference(
@@ -424,10 +425,6 @@ public class CompatibilityScoreService {
             Integer actualValue
     ) {
 
-        /*
-         * No preference supplied.
-         */
-
         if (
                 minimum == null
                         && maximum == null
@@ -435,11 +432,6 @@ public class CompatibilityScoreService {
 
             return null;
         }
-
-        /*
-         * A preference exists but the candidate has not supplied
-         * the value required to evaluate it.
-         */
 
         if (actualValue == null) {
 
@@ -501,9 +493,6 @@ public class CompatibilityScoreService {
      * ============================================================
      * COMMUNITY
      * ============================================================
-     *
-     * communityNoBar=true means the member explicitly does not
-     * want community to influence recommendations.
      */
 
     private MatchResult evaluateCommunityPreference(
@@ -551,6 +540,311 @@ public class CompatibilityScoreService {
 
     /*
      * ============================================================
+     * STRUCTURED LOCATION PREFERENCES
+     * ============================================================
+     */
+
+    private MatchResult evaluateLocationPreference(
+            Profile currentProfile,
+            Profile candidateProfile
+    ) {
+
+        Boolean currentAcceptsCandidate =
+                matchesLocationPreference(
+                        currentProfile,
+                        candidateProfile.getCountry(),
+                        candidateProfile.getState(),
+                        candidateProfile.getDistrict(),
+                        candidateProfile.getCity()
+                );
+
+        Boolean candidateAcceptsCurrent =
+                matchesLocationPreference(
+                        candidateProfile,
+                        currentProfile.getCountry(),
+                        currentProfile.getState(),
+                        currentProfile.getDistrict(),
+                        currentProfile.getCity()
+                );
+
+        return combinePreferenceResults(
+                currentAcceptsCandidate,
+                candidateAcceptsCurrent
+        );
+    }
+
+    /*
+     * Returns:
+     *
+     * null  -> member supplied no meaningful location preference
+     * true  -> at least one preferred location path matches
+     * false -> preferences exist, but none match
+     */
+    private Boolean matchesLocationPreference(
+            Profile preferenceOwner,
+            String actualCountry,
+            String actualState,
+            String actualDistrict,
+            String actualCity
+    ) {
+
+        List<LocationPreference> preferredLocations =
+                resolveLocationPreferences(
+                        preferenceOwner
+                );
+
+        if (preferredLocations.isEmpty()) {
+
+            return null;
+        }
+
+        for (
+                LocationPreference preferredLocation
+                : preferredLocations
+        ) {
+
+            if (
+                    locationPathMatches(
+                            preferredLocation,
+                            actualCountry,
+                            actualState,
+                            actualDistrict,
+                            actualCity
+                    )
+            ) {
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /*
+     * ============================================================
+     * PREFERRED LOCATION SOURCE
+     * ============================================================
+     *
+     * New source of truth:
+     *
+     * Profile.preferredLocations[]
+     *
+     * Backward compatibility:
+     *
+     * If a profile has no meaningful structured locations, construct
+     * one location path from the legacy preferredCountry /
+     * preferredState / preferredDistrict / preferredCity columns.
+     */
+
+    private List<LocationPreference> resolveLocationPreferences(
+            Profile profile
+    ) {
+
+        List<LocationPreference> result =
+                new ArrayList<>();
+
+        if (profile == null) {
+
+            return result;
+        }
+
+        List<PreferredLocation> structuredLocations =
+                profile.getPreferredLocations();
+
+        if (structuredLocations != null) {
+
+            for (
+                    PreferredLocation location
+                    : structuredLocations
+            ) {
+
+                if (location == null) {
+
+                    continue;
+                }
+
+                LocationPreference preference =
+                        new LocationPreference(
+                                location.getCountry(),
+                                location.getState(),
+                                location.getDistrict(),
+                                location.getCity()
+                        );
+
+                if (
+                        hasMeaningfulLocationPreference(
+                                preference
+                        )
+                ) {
+
+                    result.add(
+                            preference
+                    );
+                }
+            }
+        }
+
+        /*
+         * Structured locations are authoritative whenever at least
+         * one meaningful entry exists.
+         */
+        if (!result.isEmpty()) {
+
+            return result;
+        }
+
+        LocationPreference legacy =
+                new LocationPreference(
+                        profile.getPreferredCountry(),
+                        profile.getPreferredState(),
+                        profile.getPreferredDistrict(),
+                        profile.getPreferredCity()
+                );
+
+        if (
+                hasMeaningfulLocationPreference(
+                        legacy
+                )
+        ) {
+
+            result.add(
+                    legacy
+            );
+        }
+
+        return result;
+    }
+
+    /*
+     * ============================================================
+     * HIERARCHICAL PATH MATCH
+     * ============================================================
+     *
+     * Every non-empty field in one preferred-location entry must
+     * match the corresponding actual field.
+     *
+     * Blank / Any values mean that level is unrestricted.
+     *
+     * Examples:
+     *
+     * India
+     *     -> accepts any location in India
+     *
+     * India + Telangana
+     *     -> accepts any location in Telangana
+     *
+     * India + Telangana + Hyderabad
+     *     -> accepts any city in Hyderabad district
+     *
+     * India + Telangana + Hyderabad + Hyderabad
+     *     -> exact full path
+     */
+
+    private boolean locationPathMatches(
+            LocationPreference preference,
+            String actualCountry,
+            String actualState,
+            String actualDistrict,
+            String actualCity
+    ) {
+
+        return locationFieldMatches(
+                preference.country(),
+                actualCountry
+        )
+                && locationFieldMatches(
+                preference.state(),
+                actualState
+        )
+                && locationFieldMatches(
+                preference.district(),
+                actualDistrict
+        )
+                && locationFieldMatches(
+                preference.city(),
+                actualCity
+        );
+    }
+
+    private boolean locationFieldMatches(
+            String preferredValue,
+            String actualValue
+    ) {
+
+        String normalizedPreference =
+                normalize(
+                        preferredValue
+                );
+
+        /*
+         * Blank / Any means this hierarchy level does not restrict
+         * the match.
+         */
+        if (
+                normalizedPreference == null
+                        || isNoPreferenceValue(
+                                normalizedPreference
+                        )
+        ) {
+
+            return true;
+        }
+
+        String normalizedActual =
+                normalize(
+                        actualValue
+                );
+
+        if (normalizedActual == null) {
+
+            return false;
+        }
+
+        return normalizedPreference.equals(
+                normalizedActual
+        );
+    }
+
+    private boolean hasMeaningfulLocationPreference(
+            LocationPreference preference
+    ) {
+
+        if (preference == null) {
+
+            return false;
+        }
+
+        return isMeaningfulPreferenceValue(
+                preference.country()
+        )
+                || isMeaningfulPreferenceValue(
+                preference.state()
+        )
+                || isMeaningfulPreferenceValue(
+                preference.district()
+        )
+                || isMeaningfulPreferenceValue(
+                preference.city()
+        );
+    }
+
+    private boolean isMeaningfulPreferenceValue(
+            String value
+    ) {
+
+        String normalized =
+                normalize(
+                        value
+                );
+
+        return normalized != null
+                && !isNoPreferenceValue(
+                        normalized
+                );
+    }
+
+    /*
+     * ============================================================
      * TEXT MATCH
      * ============================================================
      */
@@ -564,11 +858,6 @@ public class CompatibilityScoreService {
                 normalize(
                         preference
                 );
-
-        /*
-         * No preference means this side does not contribute to
-         * compatibility for the category.
-         */
 
         if (
                 normalizedPreference == null
@@ -584,10 +873,6 @@ public class CompatibilityScoreService {
                 normalize(
                         actualValue
                 );
-
-        /*
-         * Preference exists but candidate data is unavailable.
-         */
 
         if (normalizedActual == null) {
 
@@ -625,7 +910,10 @@ public class CompatibilityScoreService {
                 || normalizedValue.equals("any marital status")
                 || normalizedValue.equals("any country")
                 || normalizedValue.equals("any state")
+                || normalizedValue.equals("any district")
                 || normalizedValue.equals("any city")
+                || normalizedValue.equals("any location")
+                || normalizedValue.equals("anywhere")
                 || normalizedValue.equals("any diet")
                 || normalizedValue.equals("no preference")
                 || normalizedValue.equals("no bar")
@@ -638,25 +926,6 @@ public class CompatibilityScoreService {
      * ============================================================
      * MUTUAL PREFERENCE RESULT
      * ============================================================
-     *
-     * null / null
-     *     Neither member supplied a preference.
-     *     The category is NOT_APPLICABLE and does not affect
-     *     either numerator or denominator.
-     *
-     * null / true
-     * true / null
-     *     Only one member supplied a preference and it matches.
-     *
-     * null / false
-     * false / null
-     *     Only one member supplied a preference and it fails.
-     *
-     * true / true
-     *     Both members' preferences are satisfied.
-     *
-     * Any other combination
-     *     Mutual compatibility fails for that category.
      */
 
     private MatchResult combinePreferenceResults(
@@ -747,6 +1016,20 @@ public class CompatibilityScoreService {
                 .denominationCompatible(false)
                 .educationCompatible(false)
                 .build();
+    }
+
+    /*
+     * ============================================================
+     * INTERNAL LOCATION VALUE
+     * ============================================================
+     */
+
+    private record LocationPreference(
+            String country,
+            String state,
+            String district,
+            String city
+    ) {
     }
 
     /*

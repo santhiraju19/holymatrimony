@@ -194,6 +194,7 @@ export interface BrowseSearchFilters {
 
   country: string;
   state: string;
+  district: string;
   city: string;
 
   // =====================================================
@@ -242,6 +243,7 @@ export interface BrowseSearchParams
 
   country?: string;
   state?: string;
+  district?: string;
   city?: string;
 
   diet?: string;
@@ -278,6 +280,7 @@ export const EMPTY_BROWSE_SEARCH_FILTERS: BrowseSearchFilters =
 
     country: "",
     state: "",
+    district: "",
     city: "",
 
     diet: "",
@@ -315,6 +318,7 @@ export function hasActiveBrowseFilters(
     filters.profession.trim().length > 0 ||
     filters.country.trim().length > 0 ||
     filters.state.trim().length > 0 ||
+    filters.district.trim().length > 0 ||
     filters.city.trim().length > 0 ||
     filters.diet.trim().length > 0 ||
     filters.smoking.trim().length > 0 ||
@@ -464,6 +468,13 @@ export function buildBrowseSearchParams(
   ) {
     params.state =
       filters.state.trim();
+  }
+
+  if (
+    filters.district.trim()
+  ) {
+    params.district =
+      filters.district.trim();
   }
 
   if (

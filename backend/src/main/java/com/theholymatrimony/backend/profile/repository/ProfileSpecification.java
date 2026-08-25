@@ -225,32 +225,39 @@ public final class ProfileSpecification {
                         request.getDenomination()
                 );
 
-                /*
-                 * =================================================
-                 * Location
-                 * =================================================
-                 */
+             /*
+ * =================================================
+ * Location
+ * =================================================
+ */
 
-                addCaseInsensitiveEquals(
-                        predicates,
-                        criteriaBuilder,
-                        root.get("country"),
-                        request.getCountry()
-                );
+addCaseInsensitiveEquals(
+        predicates,
+        criteriaBuilder,
+        root.get("country"),
+        request.getCountry()
+);
 
-                addCaseInsensitiveEquals(
-                        predicates,
-                        criteriaBuilder,
-                        root.get("state"),
-                        request.getState()
-                );
+addCaseInsensitiveEquals(
+        predicates,
+        criteriaBuilder,
+        root.get("state"),
+        request.getState()
+);
 
-                addCaseInsensitiveEquals(
-                        predicates,
-                        criteriaBuilder,
-                        root.get("city"),
-                        request.getCity()
-                );
+addCaseInsensitiveEquals(
+        predicates,
+        criteriaBuilder,
+        root.get("district"),
+        request.getDistrict()
+);
+
+addCaseInsensitiveEquals(
+        predicates,
+        criteriaBuilder,
+        root.get("city"),
+        request.getCity()
+);
 
                 /*
                  * =================================================

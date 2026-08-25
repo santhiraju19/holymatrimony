@@ -521,6 +521,10 @@ public class SavedSearchService {
                 request.getState()
         );
 
+        target.setDistrict(
+                request.getDistrict()
+        );
+
         target.setCity(
                 request.getCity()
         );
@@ -627,6 +631,10 @@ public class SavedSearchService {
                 request.getState()
         );
 
+        target.setDistrict(
+                request.getDistrict()
+        );
+
         target.setCity(
                 request.getCity()
         );
@@ -730,6 +738,10 @@ toSearchProfileRequest(
 
         request.setState(
                 savedSearch.getState()
+        );
+
+        request.setDistrict(
+                savedSearch.getDistrict()
         );
 
         request.setCity(
@@ -844,6 +856,10 @@ toSearchProfileRequest(
 
                 .state(
                         savedSearch.getState()
+                )
+
+                .district(
+                        savedSearch.getDistrict()
                 )
 
                 .city(

@@ -50,6 +50,12 @@ import {
   getStatesForCountry,
 } from "@/features/profile/data/worldLocations";
 
+import {
+  getDistrictsForState,
+  isIndia,
+} from "@/features/profile/data/indiaLocations";
+
+
 import type {
   BrowseSearchFilters as BrowseSearchFiltersType,
   BrowseSortOption,
@@ -127,6 +133,19 @@ export default function BrowseSearchFilters({
         )
       : [];
 
+  const indianLocation =
+    isIndia(
+      filters.country
+    );
+
+  const districts =
+    indianLocation &&
+    filters.state
+      ? getDistrictsForState(
+          filters.state
+        )
+      : [];
+
   const cities =
     filters.country &&
     filters.state
@@ -148,6 +167,13 @@ export default function BrowseSearchFilters({
       (state) =>
         state.value ===
         filters.state
+    );
+
+  const selectedDistrictExists =
+    districts.some(
+      (district) =>
+        district.value ===
+        filters.district
     );
 
   const selectedCityExists =
@@ -179,6 +205,11 @@ export default function BrowseSearchFilters({
     );
 
     onChange(
+      "district",
+      ""
+    );
+
+    onChange(
       "city",
       ""
     );
@@ -190,6 +221,11 @@ export default function BrowseSearchFilters({
     onChange(
       "state",
       state
+    );
+
+    onChange(
+      "district",
+      ""
     );
 
     onChange(
@@ -917,7 +953,9 @@ export default function BrowseSearchFilters({
           eyebrow="Location"
           title="Preferred Location"
         >
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+
+            {/* Country */}
 
             <Select
               label="Country"
@@ -973,6 +1011,8 @@ export default function BrowseSearchFilters({
               )}
             </Select>
 
+            {/* State */}
+
             <Select
               label="State"
               value={
@@ -994,7 +1034,9 @@ export default function BrowseSearchFilters({
               }
             >
               <option value="">
-                Any state
+                {filters.country
+                  ? "Any state"
+                  : "Select country first"}
               </option>
 
               {filters.state &&
@@ -1028,6 +1070,98 @@ export default function BrowseSearchFilters({
               )}
             </Select>
 
+            {/* District */}
+
+            {indianLocation ? (
+              <Select
+                label="District"
+                value={
+                  filters.district
+                }
+                disabled={
+                  loading ||
+                  !filters.state
+                }
+                leftIcon={
+                  <MapPin
+                    size={16}
+                  />
+                }
+                onChange={(event) =>
+                  onChange(
+                    "district",
+                    event.target.value
+                  )
+                }
+              >
+                <option value="">
+                  {filters.state
+                    ? "Any district"
+                    : "Select state first"}
+                </option>
+
+                {filters.district &&
+                  !selectedDistrictExists && (
+                    <option
+                      value={
+                        filters.district
+                      }
+                    >
+                      {
+                        filters.district
+                      }
+                    </option>
+                  )}
+
+                {districts.map(
+                  (district) => (
+                    <option
+                      key={
+                        district.value
+                      }
+                      value={
+                        district.value
+                      }
+                    >
+                      {
+                        district.label
+                      }
+                    </option>
+                  )
+                )}
+              </Select>
+            ) : (
+              <Input
+                label="District"
+                value={
+                  filters.district
+                }
+                disabled={
+                  loading ||
+                  !filters.state
+                }
+                leftIcon={
+                  <MapPin
+                    size={16}
+                  />
+                }
+                maxLength={120}
+                placeholder={
+                  filters.state
+                    ? "Any district"
+                    : "Select state first"
+                }
+                onChange={(event) =>
+                  onChange(
+                    "district",
+                    event.target.value
+                  )
+                }
+              />
+            )}
+
+            {/* City */}
+
             <Select
               label="City"
               value={
@@ -1051,7 +1185,9 @@ export default function BrowseSearchFilters({
               }
             >
               <option value="">
-                Any city
+                {filters.state
+                  ? "Any city"
+                  : "Select state first"}
               </option>
 
               {filters.city &&
@@ -1084,6 +1220,7 @@ export default function BrowseSearchFilters({
                 )
               )}
             </Select>
+
           </div>
         </CompactSection>
 

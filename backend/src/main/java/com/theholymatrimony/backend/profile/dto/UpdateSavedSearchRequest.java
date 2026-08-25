@@ -33,9 +33,10 @@ public class UpdateSavedSearchRequest {
     private String highestEducation;
     private String profession;
 
-    private String country;
-    private String state;
-    private String city;
+  private String country;
+private String state;
+private String district;
+private String city;
 
     private String diet;
     private String smoking;

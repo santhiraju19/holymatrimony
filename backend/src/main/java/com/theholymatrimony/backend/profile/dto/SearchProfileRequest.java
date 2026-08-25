@@ -61,6 +61,9 @@ public class SearchProfileRequest {
 
     private String state;
 
+    private String district;
+
+
     private String city;
 
     /*

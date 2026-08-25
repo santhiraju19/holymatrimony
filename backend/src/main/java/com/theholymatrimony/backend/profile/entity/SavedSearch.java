@@ -117,26 +117,32 @@ public class SavedSearch {
     private String profession;
 
     // =========================================================
-    // Location
-    // =========================================================
+// Location
+// =========================================================
 
-    @Column(
-            name = "country",
-            length = 120
-    )
-    private String country;
+@Column(
+        name = "country",
+        length = 120
+)
+private String country;
 
-    @Column(
-            name = "state",
-            length = 120
-    )
-    private String state;
+@Column(
+        name = "state",
+        length = 120
+)
+private String state;
 
-    @Column(
-            name = "city",
-            length = 120
-    )
-    private String city;
+@Column(
+        name = "district",
+        length = 120
+)
+private String district;
+
+@Column(
+        name = "city",
+        length = 120
+)
+private String city;
 
     // =========================================================
     // Lifestyle
@@ -274,9 +280,10 @@ public class SavedSearch {
         profession =
                 normalizeOptional(profession);
 
-        country = normalizeOptional(country);
-        state = normalizeOptional(state);
-        city = normalizeOptional(city);
+      country = normalizeOptional(country);
+state = normalizeOptional(state);
+district = normalizeOptional(district);
+city = normalizeOptional(city);
 
         diet = normalizeOptional(diet);
         smoking = normalizeOptional(smoking);
@@ -458,6 +465,14 @@ public class SavedSearch {
     public void setState(String state) {
         this.state = state;
     }
+
+    public String getDistrict() {
+    return district;
+}
+
+public void setDistrict(String district) {
+    this.district = district;
+}
 
     public String getCity() {
         return city;

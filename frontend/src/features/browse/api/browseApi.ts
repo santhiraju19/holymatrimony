@@ -162,6 +162,9 @@ export async function searchBrowseProfiles(
           state:
             params.state,
 
+          district:
+            params.district,
+
           city:
             params.city,
 

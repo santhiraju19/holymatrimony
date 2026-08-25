@@ -1,0 +1,2 @@
+ALTER TABLE saved_searches
+    ADD COLUMN IF NOT EXISTS district VARCHAR(120);
