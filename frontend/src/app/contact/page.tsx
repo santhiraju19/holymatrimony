@@ -6,9 +6,29 @@ import ContactFAQ from "@/features/contact/ContactFAQ";
 import ContactCTA from "@/features/contact/ContactCTA";
 
 export const metadata = {
-  title: "Contact Us | Holy Matrimony",
+  title: "Contact Holy Matrimony",
+
   description:
-    "Get in touch with Holy Matrimony Services Pvt Ltd. Contact us for membership support, profile verification, technical assistance, or general enquiries.",
+    "Contact Holy Matrimony for Christian matrimony membership support, profile verification, technical assistance, or general enquiries.",
+
+  alternates: {
+    canonical:
+      "https://www.theholymatrimony.com/contact",
+  },
+
+  openGraph: {
+    title:
+      "Contact Holy Matrimony",
+
+    description:
+      "Get support for membership, verification and your Holy Matrimony account.",
+
+    url:
+      "https://www.theholymatrimony.com/contact",
+
+    type:
+      "website",
+  },
 };
 
 export default function ContactPage() {

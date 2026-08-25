@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import Link from "next/link";
 
 import {
@@ -17,6 +19,33 @@ import {
   UserRoundCheck,
   UsersRound,
 } from "lucide-react";
+
+export const metadata: Metadata = {
+  title:
+    "Christian Matrimony Success Stories",
+
+  description:
+    "Discover the Holy Matrimony journey and how Christian singles can build meaningful connections through faith, family values and thoughtful partner preferences.",
+
+  alternates: {
+    canonical:
+      "https://www.theholymatrimony.com/success-stories",
+  },
+
+  openGraph: {
+    title:
+      "Christian Matrimony Success Stories | Holy Matrimony",
+
+    description:
+      "Discover meaningful Christian matchmaking journeys built around faith, family and compatibility.",
+
+    url:
+      "https://www.theholymatrimony.com/success-stories",
+
+    type:
+      "website",
+  },
+};
 
 const journeySteps = [
   {
