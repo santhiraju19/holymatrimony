@@ -1,5 +1,7 @@
 package com.theholymatrimony.backend.profile.dto;
 
+import com.theholymatrimony.backend.compatibility.dto.CompatibilityCategoryResponse;
+
 import lombok.Builder;
 import lombok.Data;
 
@@ -39,6 +41,14 @@ public class BrowseProfileResponse {
     private Integer compatibilityDenominationScore;
 
     private Integer compatibilityEducationScore;
+
+    /*
+     * Compatibility 2.0 category breakdown.
+     *
+     * Legacy compatibility fields above remain temporarily for
+     * existing frontend components.
+     */
+    private List<CompatibilityCategoryResponse> compatibilityCategories;
 
     /*
      * ============================================================

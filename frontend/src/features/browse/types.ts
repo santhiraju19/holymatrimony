@@ -3,12 +3,42 @@ export type BrowseSortOption =
   | "NEWEST"
   | "TRUST_VERIFIED";
 
+/*
+ * ============================================================
+ * Compatibility 2.0
+ * ============================================================
+ */
+
+export type CompatibilityCategoryStatus =
+  | "MATCH"
+  | "MISMATCH"
+  | "FLEXIBLE";
+
+export interface CompatibilityCategory {
+  key: string;
+  label: string;
+  status: CompatibilityCategoryStatus;
+  weight: number;
+}
+
+/*
+ * ============================================================
+ * Profile Photos
+ * ============================================================
+ */
+
 export interface BrowseProfilePhoto {
   id: string;
   imageUrl: string;
   primaryPhoto: boolean;
   displayOrder: number;
 }
+
+/*
+ * ============================================================
+ * Browse Profile
+ * ============================================================
+ */
 
 export interface BrowseProfile {
   id: string;
@@ -121,6 +151,23 @@ export interface BrowseProfile {
   // =====================================================
 
   compatibilityScore: number | null;
+
+  /*
+   * Compatibility 2.0 category breakdown.
+   *
+   * Nullable while older responses / profiles may not
+   * contain category-level compatibility information.
+   */
+  compatibilityCategories:
+    | CompatibilityCategory[]
+    | null;
+
+  /*
+   * Legacy compatibility fields.
+   *
+   * Keep temporarily while BrowseProfileCard and
+   * ProfileDetailsContent migrate to compatibilityCategories.
+   */
   compatibilityAgeScore: number | null;
   compatibilityDenominationScore: number | null;
   compatibilityEducationScore: number | null;
@@ -134,6 +181,12 @@ export interface BrowseProfile {
 
   photos: BrowseProfilePhoto[];
 }
+
+/*
+ * ============================================================
+ * Browse Result
+ * ============================================================
+ */
 
 export interface BrowseProfilesResult {
   profiles: BrowseProfile[];
@@ -151,10 +204,22 @@ export interface BrowseProfilesResult {
   hasPrevious: boolean;
 }
 
+/*
+ * ============================================================
+ * Pagination
+ * ============================================================
+ */
+
 export interface BrowsePaginationParams {
   page?: number;
   size?: number;
 }
+
+/*
+ * ============================================================
+ * Search Filters
+ * ============================================================
+ */
 
 export interface BrowseSearchFilters {
   // =====================================================
@@ -220,12 +285,24 @@ export interface BrowseSearchFilters {
   sort: BrowseSortOption;
 }
 
+/*
+ * ============================================================
+ * Search Location
+ * ============================================================
+ */
+
 export interface BrowseSearchLocation {
   country?: string;
   state?: string;
   district?: string;
   city?: string;
 }
+
+/*
+ * ============================================================
+ * Search Parameters
+ * ============================================================
+ */
 
 export interface BrowseSearchParams
   extends BrowsePaginationParams {
@@ -266,6 +343,12 @@ export interface BrowseSearchParams
   sort?: BrowseSortOption;
 }
 
+/*
+ * ============================================================
+ * Empty Search Filters
+ * ============================================================
+ */
+
 export const EMPTY_BROWSE_SEARCH_FILTERS: BrowseSearchFilters =
   {
     ageFrom: "",
@@ -303,27 +386,28 @@ export const EMPTY_BROWSE_SEARCH_FILTERS: BrowseSearchFilters =
     sort: "RECOMMENDED",
   };
 
+/*
+ * ============================================================
+ * Active Filter Detection
+ * ============================================================
+ */
+
 export function hasActiveBrowseFilters(
   filters: BrowseSearchFilters
 ): boolean {
   return (
     filters.ageFrom.trim().length > 0 ||
     filters.ageTo.trim().length > 0 ||
-    filters.heightFrom.trim().length >
-      0 ||
+    filters.heightFrom.trim().length > 0 ||
     filters.heightTo.trim().length > 0 ||
     filters.gender.trim().length > 0 ||
-    filters.maritalStatus.trim().length >
-      0 ||
+    filters.maritalStatus.trim().length > 0 ||
     filters.religion.trim().length > 0 ||
-    filters.denomination.trim().length >
-      0 ||
+    filters.denomination.trim().length > 0 ||
     filters.community.trim().length > 0 ||
-    filters.motherTongue.trim().length >
-      0 ||
+    filters.motherTongue.trim().length > 0 ||
     filters.baptized.trim().length > 0 ||
-    filters.highestEducation.trim().length >
-      0 ||
+    filters.highestEducation.trim().length > 0 ||
     filters.profession.trim().length > 0 ||
     filters.country.trim().length > 0 ||
     filters.state.trim().length > 0 ||
@@ -338,6 +422,12 @@ export function hasActiveBrowseFilters(
     filters.sort !== "RECOMMENDED"
   );
 }
+
+/*
+ * ============================================================
+ * Build Search Parameters
+ * ============================================================
+ */
 
 export function buildBrowseSearchParams(
   filters: BrowseSearchFilters,

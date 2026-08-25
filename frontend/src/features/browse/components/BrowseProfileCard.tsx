@@ -26,6 +26,8 @@ import InterestButton from "@/features/interests/components/InterestButton";
 
 import type {
   BrowseProfile,
+  CompatibilityCategory,
+  CompatibilityCategoryStatus,
 } from "../types";
 
 import {
@@ -408,7 +410,7 @@ export default function BrowseProfileCard({
             ) : null}
 
             {/* =================================================
-                V25 Match Snapshot
+                Match Snapshot
                 ================================================= */}
 
             <div className="grid grid-cols-2 gap-2">
@@ -523,13 +525,16 @@ export default function BrowseProfileCard({
             </div>
 
             {/* =================================================
-                Compatibility
+                Compatibility 2.0
                 ================================================= */}
 
             {compatibilityScore !== null && (
               <CompatibilitySummary
                 score={
                   compatibilityScore
+                }
+                categories={
+                  profile.compatibilityCategories
                 }
                 ageScore={
                   profile.compatibilityAgeScore
@@ -634,7 +639,7 @@ export default function BrowseProfileCard({
 
 /*
  * ============================================================
- * V25 Snapshot Item
+ * Match Snapshot
  * ============================================================
  */
 
@@ -666,12 +671,23 @@ function SnapshotItem({
 
 /*
  * ============================================================
- * Compatibility Summary
+ * Compatibility 2.0 Summary
  * ============================================================
  */
 
 interface CompatibilitySummaryProps {
   score: number;
+
+  categories:
+    | CompatibilityCategory[]
+    | null;
+
+  /*
+   * Legacy fallback.
+   *
+   * These remain until all deployed API responses are guaranteed
+   * to contain Compatibility 2.0 categories.
+   */
   ageScore: number | null;
   denominationScore: number | null;
   educationScore: number | null;
@@ -679,6 +695,7 @@ interface CompatibilitySummaryProps {
 
 function CompatibilitySummary({
   score,
+  categories,
   ageScore,
   denominationScore,
   educationScore,
@@ -691,6 +708,47 @@ function CompatibilitySummary({
         : score >= 40
           ? "Good Potential"
           : "Explore Match";
+
+  const normalizedCategories =
+    buildCompatibilityCategories(
+      categories,
+      ageScore,
+      denominationScore,
+      educationScore
+    );
+
+  /*
+   * Browse cards stay intentionally compact.
+   *
+   * Prioritize the categories most useful at a glance.
+   * The complete 13-category explanation belongs on the
+   * full profile page.
+   */
+  const visibleCategories =
+    selectCardCompatibilityCategories(
+      normalizedCategories
+    );
+
+  const matchedCount =
+    normalizedCategories.filter(
+      (category) =>
+        category.status ===
+        "MATCH"
+    ).length;
+
+  const mismatchCount =
+    normalizedCategories.filter(
+      (category) =>
+        category.status ===
+        "MISMATCH"
+    ).length;
+
+  const flexibleCount =
+    normalizedCategories.filter(
+      (category) =>
+        category.status ===
+        "FLEXIBLE"
+    ).length;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50/80 via-white to-blue-50/50">
@@ -710,6 +768,19 @@ function CompatibilitySummary({
             <p className="truncate text-xs font-black text-[#0B2D5C]">
               {label}
             </p>
+
+            {normalizedCategories.length >
+              0 && (
+              <p className="mt-0.5 truncate text-[9px] font-bold text-slate-400">
+                {matchedCount} matched
+                {flexibleCount > 0
+                  ? ` • ${flexibleCount} flexible`
+                  : ""}
+                {mismatchCount > 0
+                  ? ` • ${mismatchCount} different`
+                  : ""}
+              </p>
+            )}
           </div>
         </div>
 
@@ -718,63 +789,295 @@ function CompatibilitySummary({
         </span>
       </div>
 
-      <div className="grid grid-cols-3 border-t border-amber-100/70 bg-white/70">
-        <CompatibilityItem
-          label="Age"
-          matched={
-            (ageScore ?? 0) > 0
-          }
-        />
-
-        <CompatibilityItem
-          label="Faith"
-          matched={
-            (denominationScore ?? 0) >
-            0
-          }
-        />
-
-        <CompatibilityItem
-          label="Education"
-          matched={
-            (educationScore ?? 0) >
-            0
-          }
-        />
-      </div>
+      {visibleCategories.length >
+        0 && (
+        <div className="grid grid-cols-2 border-t border-amber-100/70 bg-white/70">
+          {visibleCategories.map(
+            (category) => (
+              <CompatibilityItem
+                key={
+                  category.key
+                }
+                label={
+                  category.label
+                }
+                status={
+                  category.status
+                }
+              />
+            )
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
+/*
+ * ============================================================
+ * Compatibility Category Normalization
+ * ============================================================
+ */
+
+function buildCompatibilityCategories(
+  categories:
+    | CompatibilityCategory[]
+    | null,
+  ageScore: number | null,
+  denominationScore: number | null,
+  educationScore: number | null
+): CompatibilityCategory[] {
+  if (
+    Array.isArray(categories) &&
+    categories.length > 0
+  ) {
+    return categories
+      .filter(
+        (category) =>
+          Boolean(
+            category &&
+              category.key &&
+              category.label &&
+              isCompatibilityStatus(
+                category.status
+              )
+          )
+      )
+      .map(
+        (category) => ({
+          ...category,
+
+          key:
+            category.key.trim(),
+
+          label:
+            category.label.trim(),
+
+          weight:
+            Number.isFinite(
+              category.weight
+            )
+              ? Math.max(
+                  0,
+                  category.weight
+                )
+              : 0,
+        })
+      );
+  }
+
+  /*
+   * ========================================================
+   * Legacy API fallback
+   * ========================================================
+   */
+
+  const legacyCategories: CompatibilityCategory[] =
+    [];
+
+  if (
+    ageScore !== null &&
+    ageScore !== undefined
+  ) {
+    legacyCategories.push({
+      key: "age",
+      label: "Age",
+      status:
+        ageScore > 0
+          ? "MATCH"
+          : "MISMATCH",
+      weight: 0,
+    });
+  }
+
+  if (
+    denominationScore !== null &&
+    denominationScore !== undefined
+  ) {
+    legacyCategories.push({
+      key: "denomination",
+      label: "Denomination",
+      status:
+        denominationScore > 0
+          ? "MATCH"
+          : "MISMATCH",
+      weight: 0,
+    });
+  }
+
+  if (
+    educationScore !== null &&
+    educationScore !== undefined
+  ) {
+    legacyCategories.push({
+      key: "education",
+      label: "Education",
+      status:
+        educationScore > 0
+          ? "MATCH"
+          : "MISMATCH",
+      weight: 0,
+    });
+  }
+
+  return legacyCategories;
+}
+
+/*
+ * ============================================================
+ * Card Compatibility Priorities
+ * ============================================================
+ */
+
+function selectCardCompatibilityCategories(
+  categories: CompatibilityCategory[]
+): CompatibilityCategory[] {
+  const preferredKeys = [
+    "age",
+    "denomination",
+    "location",
+    "education",
+  ];
+
+  const selected: CompatibilityCategory[] =
+    [];
+
+  for (const key of preferredKeys) {
+    const category =
+      categories.find(
+        (item) =>
+          item.key === key
+      );
+
+    if (category) {
+      selected.push(
+        category
+      );
+    }
+  }
+
+  /*
+   * Legacy responses may not contain all four preferred
+   * categories. Fill any remaining spaces from available data.
+   */
+
+  if (selected.length < 4) {
+    for (const category of categories) {
+      if (
+        selected.some(
+          (item) =>
+            item.key ===
+            category.key
+        )
+      ) {
+        continue;
+      }
+
+      selected.push(
+        category
+      );
+
+      if (selected.length >= 4) {
+        break;
+      }
+    }
+  }
+
+  return selected.slice(
+    0,
+    4
+  );
+}
+
+/*
+ * ============================================================
+ * Compatibility Status Guard
+ * ============================================================
+ */
+
+function isCompatibilityStatus(
+  status: unknown
+): status is CompatibilityCategoryStatus {
+  return (
+    status === "MATCH" ||
+    status === "MISMATCH" ||
+    status === "FLEXIBLE"
+  );
+}
+
+/*
+ * ============================================================
+ * Compatibility Item
+ * ============================================================
+ */
+
 function CompatibilityItem({
   label,
-  matched,
+  status,
 }: {
   label: string;
-  matched: boolean;
+  status: CompatibilityCategoryStatus;
 }) {
+  const matched =
+    status === "MATCH";
+
+  const flexible =
+    status === "FLEXIBLE";
+
+  const statusLabel =
+    matched
+      ? "Matched"
+      : flexible
+        ? "Flexible"
+        : "Different";
+
   return (
-    <div className="flex items-center justify-center gap-1 border-r border-slate-100 px-2 py-2.5 last:border-r-0">
-      <CheckCircle2
-        size={12}
-        className={
+    <div className="min-w-0 border-b border-r border-slate-100 px-2 py-2.5 even:border-r-0">
+      <div className="flex items-center justify-center gap-1">
+        {flexible ? (
+          <Sparkles
+            size={12}
+            className="shrink-0 text-amber-500"
+          />
+        ) : (
+          <CheckCircle2
+            size={12}
+            className={
+              matched
+                ? "shrink-0 text-emerald-600"
+                : "shrink-0 text-slate-300"
+            }
+          />
+        )}
+
+        <span
+          className={[
+            "truncate text-[10px] font-extrabold",
+
+            matched
+              ? "text-slate-600"
+              : flexible
+                ? "text-amber-700"
+                : "text-slate-400",
+          ].join(" ")}
+        >
+          {label}
+        </span>
+      </div>
+
+      <p
+        className={[
+          "mt-0.5 text-center text-[8px] font-bold uppercase tracking-[0.05em]",
+
           matched
             ? "text-emerald-600"
-            : "text-slate-300"
-        }
-      />
-
-      <span
-        className={[
-          "text-[10px] font-extrabold",
-
-          matched
-            ? "text-slate-600"
-            : "text-slate-400",
+            : flexible
+              ? "text-amber-600"
+              : "text-slate-400",
         ].join(" ")}
       >
-        {label}
-      </span>
+        {statusLabel}
+      </p>
     </div>
   );
 }

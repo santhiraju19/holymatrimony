@@ -1,5 +1,6 @@
 package com.theholymatrimony.backend.compatibility.service;
 
+import com.theholymatrimony.backend.compatibility.dto.CompatibilityCategoryResponse;
 import com.theholymatrimony.backend.compatibility.dto.CompatibilityScoreResponse;
 import com.theholymatrimony.backend.profile.entity.PreferredLocation;
 import com.theholymatrimony.backend.profile.entity.Profile;
@@ -20,73 +21,81 @@ public class CompatibilityScoreService {
      *
      * Total possible weight = 100.
      *
-     * Location is now treated as one hierarchical preference
-     * category worth 10 points:
+     * Important:
+     *
+     * The score is normalized only across preferences that actually
+     * apply to the pair.
+     *
+     * NOT_APPLICABLE categories are removed from the denominator.
+     *
+     * Location is treated as one hierarchical category:
      *
      * Country -> State -> District -> City
-     *
-     * This replaces the old independent Country / State / City
-     * scoring. Treating location as a single hierarchy prevents
-     * fields from different preferredLocations entries from being
-     * incorrectly combined.
      */
 
-    private static final int AGE_WEIGHT = 15;
+    private static final int AGE_WEIGHT =
+            15;
 
-    private static final int HEIGHT_WEIGHT = 6;
+    private static final int HEIGHT_WEIGHT =
+            6;
 
-    private static final int RELIGION_WEIGHT = 11;
+    private static final int RELIGION_WEIGHT =
+            11;
 
-    private static final int DENOMINATION_WEIGHT = 15;
+    private static final int DENOMINATION_WEIGHT =
+            15;
 
-    private static final int MARITAL_STATUS_WEIGHT = 8;
+    private static final int MARITAL_STATUS_WEIGHT =
+            8;
 
-    private static final int COMMUNITY_WEIGHT = 4;
+    private static final int COMMUNITY_WEIGHT =
+            4;
 
-    private static final int MOTHER_TONGUE_WEIGHT = 4;
+    private static final int MOTHER_TONGUE_WEIGHT =
+            4;
 
-    private static final int EDUCATION_WEIGHT = 9;
+    private static final int EDUCATION_WEIGHT =
+            9;
 
-    private static final int PROFESSION_WEIGHT = 6;
+    private static final int PROFESSION_WEIGHT =
+            6;
 
-    /*
-     * Replaces:
-     *
-     * Country = 5
-     * State   = 3
-     * City    = 2
-     *
-     * The overall location allocation therefore remains exactly 10
-     * points and the complete compatibility model still totals 100.
-     */
-    private static final int LOCATION_WEIGHT = 10;
+    private static final int LOCATION_WEIGHT =
+            10;
 
-    private static final int DIET_WEIGHT = 3;
+    private static final int DIET_WEIGHT =
+            3;
 
-    private static final int SMOKING_WEIGHT = 5;
+    private static final int SMOKING_WEIGHT =
+            5;
 
-    private static final int DRINKING_WEIGHT = 4;
+    private static final int DRINKING_WEIGHT =
+            4;
 
     /*
      * ============================================================
      * LEGACY BREAKDOWN WEIGHTS
      * ============================================================
      *
-     * Existing frontend compatibility components currently expect:
+     * Keep these temporarily because existing frontend components
+     * still consume:
      *
-     * Age          -> maximum 40
-     * Denomination -> maximum 35
-     * Education    -> maximum 25
+     * Age          -> 40
+     * Denomination -> 35
+     * Education    -> 25
      *
-     * Keep these values until the frontend compatibility breakdown
-     * is upgraded to the richer category model.
+     * Compatibility 2.0 uses categories[] as the new richer
+     * breakdown while preserving the old API contract.
      */
 
-    private static final int LEGACY_AGE_SCORE = 40;
+    private static final int LEGACY_AGE_SCORE =
+            40;
 
-    private static final int LEGACY_DENOMINATION_SCORE = 35;
+    private static final int LEGACY_DENOMINATION_SCORE =
+            35;
 
-    private static final int LEGACY_EDUCATION_SCORE = 25;
+    private static final int LEGACY_EDUCATION_SCORE =
+            25;
 
     /*
      * ============================================================
@@ -107,6 +116,12 @@ public class CompatibilityScoreService {
             return emptyScore();
         }
 
+        /*
+         * ========================================================
+         * AGE
+         * ========================================================
+         */
+
         MatchResult age =
                 evaluateRangePreference(
                         currentProfile.getPreferredAgeFrom(),
@@ -117,6 +132,12 @@ public class CompatibilityScoreService {
                         candidateProfile.getPreferredAgeTo(),
                         currentProfile.getAge()
                 );
+
+        /*
+         * ========================================================
+         * HEIGHT
+         * ========================================================
+         */
 
         MatchResult height =
                 evaluateRangePreference(
@@ -129,6 +150,12 @@ public class CompatibilityScoreService {
                         currentProfile.getHeightCm()
                 );
 
+        /*
+         * ========================================================
+         * RELIGION
+         * ========================================================
+         */
+
         MatchResult religion =
                 evaluateTextPreference(
                         currentProfile.getPreferredReligion(),
@@ -137,6 +164,12 @@ public class CompatibilityScoreService {
                         candidateProfile.getPreferredReligion(),
                         currentProfile.getReligion()
                 );
+
+        /*
+         * ========================================================
+         * DENOMINATION
+         * ========================================================
+         */
 
         MatchResult denomination =
                 evaluateTextPreference(
@@ -147,6 +180,12 @@ public class CompatibilityScoreService {
                         currentProfile.getDenomination()
                 );
 
+        /*
+         * ========================================================
+         * MARITAL STATUS
+         * ========================================================
+         */
+
         MatchResult maritalStatus =
                 evaluateTextPreference(
                         currentProfile.getPreferredMaritalStatus(),
@@ -156,11 +195,23 @@ public class CompatibilityScoreService {
                         currentProfile.getMaritalStatus()
                 );
 
+        /*
+         * ========================================================
+         * COMMUNITY
+         * ========================================================
+         */
+
         MatchResult community =
                 evaluateCommunityPreference(
                         currentProfile,
                         candidateProfile
                 );
+
+        /*
+         * ========================================================
+         * MOTHER TONGUE
+         * ========================================================
+         */
 
         MatchResult motherTongue =
                 evaluateTextPreference(
@@ -171,6 +222,12 @@ public class CompatibilityScoreService {
                         currentProfile.getMotherTongue()
                 );
 
+        /*
+         * ========================================================
+         * EDUCATION
+         * ========================================================
+         */
+
         MatchResult education =
                 evaluateTextPreference(
                         currentProfile.getPreferredEducation(),
@@ -179,6 +236,12 @@ public class CompatibilityScoreService {
                         candidateProfile.getPreferredEducation(),
                         currentProfile.getHighestEducation()
                 );
+
+        /*
+         * ========================================================
+         * PROFESSION
+         * ========================================================
+         */
 
         MatchResult profession =
                 evaluateTextPreference(
@@ -196,33 +259,30 @@ public class CompatibilityScoreService {
          *
          * Evaluate:
          *
-         * current member preferredLocations[]
-         *              against
-         * candidate actual Country / State / District / City
+         * Current member preferredLocations[]
+         *     against candidate actual location
          *
-         * AND:
+         * AND
          *
-         * candidate preferredLocations[]
-         *              against
-         * current member actual Country / State / District / City
+         * Candidate preferredLocations[]
+         *     against current member actual location.
          *
-         * Multiple preferred locations use OR semantics.
+         * Multiple locations use OR semantics.
          *
-         * Example:
-         *
-         * India / Telangana / Hyderabad
-         * OR
-         * India / Andhra Pradesh / Guntur
-         * OR
-         * United States / Texas / Dallas
-         *
-         * Any one complete preference path may satisfy that side.
+         * Fields inside one location use AND semantics.
          */
+
         MatchResult location =
                 evaluateLocationPreference(
                         currentProfile,
                         candidateProfile
                 );
+
+        /*
+         * ========================================================
+         * DIET
+         * ========================================================
+         */
 
         MatchResult diet =
                 evaluateTextPreference(
@@ -233,6 +293,12 @@ public class CompatibilityScoreService {
                         currentProfile.getDiet()
                 );
 
+        /*
+         * ========================================================
+         * SMOKING
+         * ========================================================
+         */
+
         MatchResult smoking =
                 evaluateTextPreference(
                         currentProfile.getPreferredSmoking(),
@@ -241,6 +307,12 @@ public class CompatibilityScoreService {
                         candidateProfile.getPreferredSmoking(),
                         currentProfile.getSmoking()
                 );
+
+        /*
+         * ========================================================
+         * DRINKING
+         * ========================================================
+         */
 
         MatchResult drinking =
                 evaluateTextPreference(
@@ -252,12 +324,22 @@ public class CompatibilityScoreService {
                 );
 
         /*
-         * preferredFaithCommitment intentionally is not included yet.
+         * ========================================================
+         * FAITH COMMITMENT
+         * ========================================================
          *
-         * Profile currently stores preferredFaithCommitment but does
-         * not have a corresponding member-side faithCommitment field.
+         * preferredFaithCommitment intentionally remains excluded.
          *
-         * We should not fabricate a match from unrelated fields.
+         * Profile stores preferredFaithCommitment but currently has
+         * no corresponding actual member-side faithCommitment field.
+         *
+         * Do not fabricate compatibility from an unrelated field.
+         */
+
+        /*
+         * ========================================================
+         * WEIGHTED OVERALL SCORE
+         * ========================================================
          */
 
         WeightedScore weightedScore =
@@ -333,11 +415,126 @@ public class CompatibilityScoreService {
 
         /*
          * ========================================================
-         * EXISTING FRONTEND BREAKDOWN
+         * COMPATIBILITY 2.0 CATEGORY BREAKDOWN
          * ========================================================
          *
-         * Preserve the current API contract while the overall score
-         * uses the richer preference model.
+         * Status meanings:
+         *
+         * MATCH
+         *     At least one meaningful preference applies and every
+         *     applicable side accepts the other profile.
+         *
+         * MISMATCH
+         *     At least one meaningful preference applies and one or
+         *     both applicable sides do not accept the other profile.
+         *
+         * FLEXIBLE
+         *     Neither member restricted this category.
+         *
+         * FLEXIBLE categories do not affect the denominator.
+         */
+
+        List<CompatibilityCategoryResponse> categories =
+                List.of(
+                        category(
+                                "age",
+                                "Age Preference",
+                                age,
+                                AGE_WEIGHT
+                        ),
+
+                        category(
+                                "height",
+                                "Height Preference",
+                                height,
+                                HEIGHT_WEIGHT
+                        ),
+
+                        category(
+                                "religion",
+                                "Faith",
+                                religion,
+                                RELIGION_WEIGHT
+                        ),
+
+                        category(
+                                "denomination",
+                                "Denomination",
+                                denomination,
+                                DENOMINATION_WEIGHT
+                        ),
+
+                        category(
+                                "maritalStatus",
+                                "Marital Status",
+                                maritalStatus,
+                                MARITAL_STATUS_WEIGHT
+                        ),
+
+                        category(
+                                "community",
+                                "Community",
+                                community,
+                                COMMUNITY_WEIGHT
+                        ),
+
+                        category(
+                                "motherTongue",
+                                "Mother Tongue",
+                                motherTongue,
+                                MOTHER_TONGUE_WEIGHT
+                        ),
+
+                        category(
+                                "education",
+                                "Education",
+                                education,
+                                EDUCATION_WEIGHT
+                        ),
+
+                        category(
+                                "profession",
+                                "Profession",
+                                profession,
+                                PROFESSION_WEIGHT
+                        ),
+
+                        category(
+                                "location",
+                                "Location",
+                                location,
+                                LOCATION_WEIGHT
+                        ),
+
+                        category(
+                                "diet",
+                                "Diet",
+                                diet,
+                                DIET_WEIGHT
+                        ),
+
+                        category(
+                                "smoking",
+                                "Smoking",
+                                smoking,
+                                SMOKING_WEIGHT
+                        ),
+
+                        category(
+                                "drinking",
+                                "Drinking",
+                                drinking,
+                                DRINKING_WEIGHT
+                        )
+                );
+
+        /*
+         * ========================================================
+         * LEGACY FRONTEND BREAKDOWN
+         * ========================================================
+         *
+         * Keep until BrowseProfileCard and ProfileDetailsContent
+         * are migrated completely to categories[].
          */
 
         int ageScore =
@@ -357,29 +554,41 @@ public class CompatibilityScoreService {
 
         return CompatibilityScoreResponse
                 .builder()
+
                 .score(
                         overallScore
                 )
+
+                .categories(
+                        categories
+                )
+
                 .ageScore(
                         ageScore
                 )
+
                 .denominationScore(
                         denominationScore
                 )
+
                 .educationScore(
                         educationScore
                 )
+
                 .ageCompatible(
                         age == MatchResult.MATCH
                 )
+
                 .denominationCompatible(
                         denomination
                                 == MatchResult.MATCH
                 )
+
                 .educationCompatible(
                         education
                                 == MatchResult.MATCH
                 )
+
                 .build();
     }
 
@@ -425,6 +634,10 @@ public class CompatibilityScoreService {
             Integer actualValue
     ) {
 
+        /*
+         * No restriction.
+         */
+
         if (
                 minimum == null
                         && maximum == null
@@ -432,6 +645,11 @@ public class CompatibilityScoreService {
 
             return null;
         }
+
+        /*
+         * A preference exists but the other member has no usable
+         * actual value.
+         */
 
         if (actualValue == null) {
 
@@ -523,6 +741,16 @@ public class CompatibilityScoreService {
             String actualCommunity
     ) {
 
+        if (preferenceOwner == null) {
+
+            return null;
+        }
+
+        /*
+         * Community No Bar means there is intentionally no
+         * community restriction.
+         */
+
         if (
                 Boolean.TRUE.equals(
                         preferenceOwner.getCommunityNoBar()
@@ -576,10 +804,16 @@ public class CompatibilityScoreService {
     /*
      * Returns:
      *
-     * null  -> member supplied no meaningful location preference
-     * true  -> at least one preferred location path matches
-     * false -> preferences exist, but none match
+     * null
+     *     Member supplied no meaningful location preference.
+     *
+     * true
+     *     At least one preferred location path matches.
+     *
+     * false
+     *     Meaningful preferences exist but no path matches.
      */
+
     private Boolean matchesLocationPreference(
             Profile preferenceOwner,
             String actualCountry,
@@ -629,11 +863,12 @@ public class CompatibilityScoreService {
      *
      * Profile.preferredLocations[]
      *
-     * Backward compatibility:
+     * Legacy scalar fallback:
      *
-     * If a profile has no meaningful structured locations, construct
-     * one location path from the legacy preferredCountry /
-     * preferredState / preferredDistrict / preferredCity columns.
+     * preferredCountry
+     * preferredState
+     * preferredDistrict
+     * preferredCity
      */
 
     private List<LocationPreference> resolveLocationPreferences(
@@ -688,10 +923,16 @@ public class CompatibilityScoreService {
          * Structured locations are authoritative whenever at least
          * one meaningful entry exists.
          */
+
         if (!result.isEmpty()) {
 
             return result;
         }
+
+        /*
+         * Backward compatibility for profiles saved before the
+         * preferredLocations table became the primary source.
+         */
 
         LocationPreference legacy =
                 new LocationPreference(
@@ -717,27 +958,13 @@ public class CompatibilityScoreService {
 
     /*
      * ============================================================
-     * HIERARCHICAL PATH MATCH
+     * HIERARCHICAL LOCATION PATH
      * ============================================================
      *
-     * Every non-empty field in one preferred-location entry must
-     * match the corresponding actual field.
+     * Every meaningful field in ONE preferred location must match
+     * the corresponding actual profile field.
      *
-     * Blank / Any values mean that level is unrestricted.
-     *
-     * Examples:
-     *
-     * India
-     *     -> accepts any location in India
-     *
-     * India + Telangana
-     *     -> accepts any location in Telangana
-     *
-     * India + Telangana + Hyderabad
-     *     -> accepts any city in Hyderabad district
-     *
-     * India + Telangana + Hyderabad + Hyderabad
-     *     -> exact full path
+     * Blank / Any values mean that hierarchy level is unrestricted.
      */
 
     private boolean locationPathMatches(
@@ -752,14 +979,17 @@ public class CompatibilityScoreService {
                 preference.country(),
                 actualCountry
         )
+
                 && locationFieldMatches(
                 preference.state(),
                 actualState
         )
+
                 && locationFieldMatches(
                 preference.district(),
                 actualDistrict
         )
+
                 && locationFieldMatches(
                 preference.city(),
                 actualCity
@@ -777,9 +1007,9 @@ public class CompatibilityScoreService {
                 );
 
         /*
-         * Blank / Any means this hierarchy level does not restrict
-         * the match.
+         * Blank / Any means this level is unrestricted.
          */
+
         if (
                 normalizedPreference == null
                         || isNoPreferenceValue(
@@ -817,12 +1047,15 @@ public class CompatibilityScoreService {
         return isMeaningfulPreferenceValue(
                 preference.country()
         )
+
                 || isMeaningfulPreferenceValue(
                 preference.state()
         )
+
                 || isMeaningfulPreferenceValue(
                 preference.district()
         )
+
                 || isMeaningfulPreferenceValue(
                 preference.city()
         );
@@ -886,7 +1119,7 @@ public class CompatibilityScoreService {
 
     /*
      * ============================================================
-     * FLEXIBLE "NO PREFERENCE" VALUES
+     * FLEXIBLE / NO-PREFERENCE VALUES
      * ============================================================
      */
 
@@ -926,6 +1159,23 @@ public class CompatibilityScoreService {
      * ============================================================
      * MUTUAL PREFERENCE RESULT
      * ============================================================
+     *
+     * Examples:
+     *
+     * first FLEXIBLE + second FLEXIBLE
+     *     -> NOT_APPLICABLE
+     *
+     * first FLEXIBLE + second MATCH
+     *     -> MATCH
+     *
+     * first MATCH + second FLEXIBLE
+     *     -> MATCH
+     *
+     * first MATCH + second MATCH
+     *     -> MATCH
+     *
+     * any applicable mismatch
+     *     -> MISMATCH
      */
 
     private MatchResult combinePreferenceResults(
@@ -959,10 +1209,69 @@ public class CompatibilityScoreService {
                     : MatchResult.MISMATCH;
         }
 
-        return Boolean.TRUE.equals(first)
-                && Boolean.TRUE.equals(second)
+        return Boolean.TRUE.equals(
+                first
+        )
+                && Boolean.TRUE.equals(
+                second
+        )
                 ? MatchResult.MATCH
                 : MatchResult.MISMATCH;
+    }
+
+    /*
+     * ============================================================
+     * COMPATIBILITY CATEGORY
+     * ============================================================
+     */
+
+    private CompatibilityCategoryResponse category(
+            String key,
+            String label,
+            MatchResult result,
+            int weight
+    ) {
+
+        MatchResult safeResult =
+                result == null
+                        ? MatchResult.NOT_APPLICABLE
+                        : result;
+
+        String status =
+                switch (
+                        safeResult
+                ) {
+
+                    case MATCH ->
+                            "MATCH";
+
+                    case MISMATCH ->
+                            "MISMATCH";
+
+                    case NOT_APPLICABLE ->
+                            "FLEXIBLE";
+                };
+
+        return CompatibilityCategoryResponse
+                .builder()
+
+                .key(
+                        key
+                )
+
+                .label(
+                        label
+                )
+
+                .status(
+                        status
+                )
+
+                .weight(
+                        weight
+                )
+
+                .build();
     }
 
     /*
@@ -983,8 +1292,14 @@ public class CompatibilityScoreService {
         String normalized =
                 value
                         .trim()
-                        .replace('_', ' ')
-                        .replace('-', ' ')
+                        .replace(
+                                '_',
+                                ' '
+                        )
+                        .replace(
+                                '-',
+                                ' '
+                        )
                         .replaceAll(
                                 "\\s+",
                                 " "
@@ -1008,13 +1323,39 @@ public class CompatibilityScoreService {
 
         return CompatibilityScoreResponse
                 .builder()
-                .score(0)
-                .ageScore(0)
-                .denominationScore(0)
-                .educationScore(0)
-                .ageCompatible(false)
-                .denominationCompatible(false)
-                .educationCompatible(false)
+
+                .score(
+                        0
+                )
+
+                .categories(
+                        List.of()
+                )
+
+                .ageScore(
+                        0
+                )
+
+                .denominationScore(
+                        0
+                )
+
+                .educationScore(
+                        0
+                )
+
+                .ageCompatible(
+                        false
+                )
+
+                .denominationCompatible(
+                        false
+                )
+
+                .educationCompatible(
+                        false
+                )
+
                 .build();
     }
 
@@ -1051,6 +1392,12 @@ public class CompatibilityScoreService {
      * ============================================================
      * WEIGHTED SCORE
      * ============================================================
+     *
+     * This is intentionally unchanged from the existing scoring
+     * semantics.
+     *
+     * NOT_APPLICABLE categories do not participate in the
+     * denominator.
      */
 
     private static final class WeightedScore {

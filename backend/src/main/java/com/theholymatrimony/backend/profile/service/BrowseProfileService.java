@@ -1064,6 +1064,13 @@ List<BrowseProfilePhotoResponse> photos =
                                         .getEducationScore()
                 )
 
+                .compatibilityCategories(
+                        compatibility == null
+                                ? null
+                                : compatibility
+                                        .getCategories()
+                )
+
                 /*
                  * Basic Profile
                  */

@@ -10,6 +10,8 @@ import {
 
 import type {
   BrowseProfile,
+  CompatibilityCategory,
+  CompatibilityCategoryStatus,
 } from "../../types";
 
 import ProfileInfoSection from "./ProfileInfoSection";
@@ -17,6 +19,12 @@ import ProfileInfoSection from "./ProfileInfoSection";
 interface ProfileDetailsContentProps {
   profile: BrowseProfile;
 }
+
+/*
+ * ============================================================
+ * Formatting Helpers
+ * ============================================================
+ */
 
 function formatBoolean(
   value:
@@ -153,6 +161,12 @@ function formatFaithBackground(
   }
 }
 
+/*
+ * ============================================================
+ * Main Content
+ * ============================================================
+ */
+
 export default function ProfileDetailsContent({
   profile,
 }: ProfileDetailsContentProps) {
@@ -189,10 +203,6 @@ export default function ProfileDetailsContent({
 
       <div className="grid gap-4 lg:grid-cols-2">
 
-        {/* ===================================================
-            Personal Information
-            =================================================== */}
-
         <ProfileInfoSection
           title="Personal Information"
           description="Personal, physical and marital details"
@@ -202,7 +212,6 @@ export default function ProfileDetailsContent({
               value:
                 profile.fullName,
             },
-
             {
               label: "Age",
               value:
@@ -210,7 +219,6 @@ export default function ProfileDetailsContent({
                   ? `${profile.age} years`
                   : "",
             },
-
             {
               label:
                 "Date of birth",
@@ -219,20 +227,17 @@ export default function ProfileDetailsContent({
                   profile.dateOfBirth
                 ),
             },
-
             {
               label: "Gender",
               value:
                 profile.gender,
             },
-
             {
               label:
                 "Marital status",
               value:
                 profile.maritalStatus,
             },
-
             {
               label: "Height",
               value:
@@ -240,7 +245,6 @@ export default function ProfileDetailsContent({
                   profile.heightCm
                 ),
             },
-
             {
               label: "Weight",
               value:
@@ -248,27 +252,23 @@ export default function ProfileDetailsContent({
                   profile.weightKg
                 ),
             },
-
             {
               label:
                 "Complexion / Skin tone",
               value:
                 profile.complexion,
             },
-
             {
               label: "Body type",
               value:
                 profile.bodyType,
             },
-
             {
               label:
                 "Physical status",
               value:
                 profile.physicalStatus,
             },
-
             {
               label:
                 "Mother tongue",
@@ -277,10 +277,6 @@ export default function ProfileDetailsContent({
             },
           ]}
         />
-
-        {/* ===================================================
-            Religion & Community
-            =================================================== */}
 
         <ProfileInfoSection
           title="Religion & Community"
@@ -291,21 +287,18 @@ export default function ProfileDetailsContent({
               value:
                 profile.religion,
             },
-
             {
               label:
                 "Community / Caste",
               value:
                 profile.community,
             },
-
             {
               label:
                 "Sub-community",
               value:
                 profile.subCommunity,
             },
-
             {
               label:
                 "Faith background",
@@ -317,10 +310,6 @@ export default function ProfileDetailsContent({
           ]}
         />
 
-        {/* ===================================================
-            Church & Faith
-            =================================================== */}
-
         <ProfileInfoSection
           title="Church & Faith"
           description="Church affiliation and spiritual background"
@@ -331,21 +320,18 @@ export default function ProfileDetailsContent({
               value:
                 profile.denomination,
             },
-
             {
               label:
                 "Church name",
               value:
                 profile.churchName,
             },
-
             {
               label:
                 "Pastor name",
               value:
                 profile.pastorName,
             },
-
             {
               label: "Baptized",
               value:
@@ -355,10 +341,6 @@ export default function ProfileDetailsContent({
             },
           ]}
         />
-
-        {/* ===================================================
-            Education & Career
-            =================================================== */}
 
         <ProfileInfoSection
           title="Education & Career"
@@ -370,28 +352,24 @@ export default function ProfileDetailsContent({
               value:
                 profile.highestEducation,
             },
-
             {
               label:
                 "Field of study",
               value:
                 profile.educationField,
             },
-
             {
               label:
                 "Profession",
               value:
                 profile.profession,
             },
-
             {
               label:
                 "Company / Organization",
               value:
                 profile.company,
             },
-
             {
               label:
                 "Annual income",
@@ -400,10 +378,6 @@ export default function ProfileDetailsContent({
             },
           ]}
         />
-
-        {/* ===================================================
-            Lifestyle
-            =================================================== */}
 
         <ProfileInfoSection
           title="Lifestyle"
@@ -414,13 +388,11 @@ export default function ProfileDetailsContent({
               value:
                 profile.diet,
             },
-
             {
               label: "Smoking",
               value:
                 profile.smoking,
             },
-
             {
               label: "Drinking",
               value:
@@ -428,10 +400,6 @@ export default function ProfileDetailsContent({
             },
           ]}
         />
-
-        {/* ===================================================
-            Family
-            =================================================== */}
 
         <ProfileInfoSection
           title="Family Background"
@@ -443,7 +411,6 @@ export default function ProfileDetailsContent({
               value:
                 profile.familyType,
             },
-
             {
               label:
                 "Family values",
@@ -452,10 +419,6 @@ export default function ProfileDetailsContent({
             },
           ]}
         />
-
-        {/* ===================================================
-            Location
-            =================================================== */}
 
         <ProfileInfoSection
           title="Location"
@@ -466,13 +429,11 @@ export default function ProfileDetailsContent({
               value:
                 profile.city,
             },
-
             {
               label: "State",
               value:
                 profile.state,
             },
-
             {
               label: "Country",
               value:
@@ -480,10 +441,6 @@ export default function ProfileDetailsContent({
             },
           ]}
         />
-
-        {/* ===================================================
-            About
-            =================================================== */}
 
         <ProfileInfoSection
           title="About"
@@ -501,8 +458,9 @@ export default function ProfileDetailsContent({
   );
 }
 
-/* ============================================================
- * Compatibility
+/*
+ * ============================================================
+ * Compatibility 2.0
  * ============================================================
  */
 
@@ -523,19 +481,34 @@ function CompatibilitySection({
       100
     );
 
-  const ageScore =
-    profile.compatibilityAgeScore ??
-    0;
+  const categories =
+    buildCompatibilityCategories(
+      profile.compatibilityCategories,
+      profile.compatibilityAgeScore,
+      profile.compatibilityDenominationScore,
+      profile.compatibilityEducationScore
+    );
 
-  const denominationScore =
-    profile
-      .compatibilityDenominationScore ??
-    0;
+  const matchedCount =
+    categories.filter(
+      (category) =>
+        category.status ===
+        "MATCH"
+    ).length;
 
-  const educationScore =
-    profile
-      .compatibilityEducationScore ??
-    0;
+  const mismatchCount =
+    categories.filter(
+      (category) =>
+        category.status ===
+        "MISMATCH"
+    ).length;
+
+  const flexibleCount =
+    categories.filter(
+      (category) =>
+        category.status ===
+        "FLEXIBLE"
+    ).length;
 
   const matchLabel =
     score >= 85
@@ -548,15 +521,19 @@ function CompatibilitySection({
 
   const matchDescription =
     score >= 85
-      ? "Your preferences align very closely with this profile."
+      ? "Your mutual partner preferences align very closely with this profile."
       : score >= 65
-        ? "Several important preferences align with this profile."
+        ? "Several important mutual preferences align with this profile."
         : score >= 40
-          ? "There are some meaningful areas of compatibility."
-          : "Review the profile to explore your compatibility.";
+          ? "There are some meaningful areas of preference compatibility."
+          : "Review the profile and preferences to explore your compatibility.";
 
   return (
     <section className="overflow-hidden rounded-[20px] border border-amber-200/70 bg-white shadow-[0_8px_26px_rgba(15,23,42,0.05)]">
+
+      {/* =====================================================
+          Header
+          ===================================================== */}
 
       <div className="border-b border-amber-100 bg-gradient-to-r from-amber-50/90 via-white to-blue-50/80 px-4 py-4 sm:px-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -612,46 +589,76 @@ function CompatibilitySection({
         </div>
       </div>
 
+      {/* =====================================================
+          Summary
+          ===================================================== */}
+
+      {categories.length > 0 && (
+        <div className="border-b border-slate-100 bg-white px-4 py-3 sm:px-5">
+          <div className="flex flex-wrap gap-2">
+            <CompatibilitySummaryBadge
+              label="Matched"
+              count={matchedCount}
+              status="MATCH"
+            />
+
+            <CompatibilitySummaryBadge
+              label="Flexible"
+              count={flexibleCount}
+              status="FLEXIBLE"
+            />
+
+            <CompatibilitySummaryBadge
+              label="Different"
+              count={mismatchCount}
+              status="MISMATCH"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          Full Category Breakdown
+          ===================================================== */}
+
       <div className="p-4 sm:p-5">
-        <div className="mb-3">
+        <div className="mb-4">
           <h3 className="text-xs font-black text-slate-800">
             Compatibility Breakdown
           </h3>
 
-          <p className="mt-0.5 text-[10px] leading-5 text-slate-500">
-            Match points are calculated from mutual partner preferences.
+          <p className="mt-1 text-[10px] leading-5 text-slate-500">
+            Compatibility is calculated from mutual partner preferences. Flexible means neither side restricted that category.
           </p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <CompatibilityMetric
-            title="Age Preference"
-            description="Preferred age range"
-            score={
-              ageScore
-            }
-            maximum={40}
-          />
-
-          <CompatibilityMetric
-            title="Faith & Denomination"
-            description="Faith preference"
-            score={
-              denominationScore
-            }
-            maximum={35}
-          />
-
-          <CompatibilityMetric
-            title="Education"
-            description="Education preference"
-            score={
-              educationScore
-            }
-            maximum={25}
-          />
-        </div>
+        {categories.length > 0 ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {categories.map(
+              (category) => (
+                <CompatibilityMetric
+                  key={
+                    category.key
+                  }
+                  category={
+                    category
+                  }
+                />
+              )
+            )}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5 text-center">
+            <p className="text-xs font-bold text-slate-500">
+              Detailed compatibility information is not available yet.
+            </p>
+          </div>
+        )}
       </div>
+
+      {/* =====================================================
+          Disclaimer
+          ===================================================== */}
 
       <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-3 sm:px-5">
         <div className="flex items-start gap-2">
@@ -669,41 +676,86 @@ function CompatibilitySection({
   );
 }
 
+/*
+ * ============================================================
+ * Compatibility Summary Badge
+ * ============================================================
+ */
+
+interface CompatibilitySummaryBadgeProps {
+  label: string;
+  count: number;
+  status: CompatibilityCategoryStatus;
+}
+
+function CompatibilitySummaryBadge({
+  label,
+  count,
+  status,
+}: CompatibilitySummaryBadgeProps) {
+  const className =
+    status === "MATCH"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+      : status === "FLEXIBLE"
+        ? "border-amber-200 bg-amber-50 text-amber-700"
+        : "border-slate-200 bg-slate-50 text-slate-600";
+
+  return (
+    <span
+      className={[
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black",
+        className,
+      ].join(" ")}
+    >
+      {status === "MATCH" && (
+        <CheckCircle2
+          size={12}
+        />
+      )}
+
+      {status === "FLEXIBLE" && (
+        <Sparkles
+          size={12}
+        />
+      )}
+
+      {label}: {count}
+    </span>
+  );
+}
+
+/*
+ * ============================================================
+ * Compatibility Metric
+ * ============================================================
+ */
+
 interface CompatibilityMetricProps {
-  title: string;
-  description: string;
-  score: number;
-  maximum: number;
+  category: CompatibilityCategory;
 }
 
 function CompatibilityMetric({
-  title,
-  description,
-  score,
-  maximum,
+  category,
 }: CompatibilityMetricProps) {
-  const safeScore =
-    Math.min(
-      Math.max(
-        score,
-        0
-      ),
-      maximum
-    );
-
-  const percentage =
-    maximum > 0
-      ? Math.round(
-          (
-            safeScore /
-            maximum
-          ) *
-            100
-        )
-      : 0;
-
   const matched =
-    safeScore > 0;
+    category.status ===
+    "MATCH";
+
+  const flexible =
+    category.status ===
+    "FLEXIBLE";
+
+  const statusLabel =
+    matched
+      ? "Preference matched"
+      : flexible
+        ? "Flexible preference"
+        : "Preference differs";
+
+  const description =
+    compatibilityDescription(
+      category.key
+    );
 
   return (
     <div
@@ -712,7 +764,9 @@ function CompatibilityMetric({
 
         matched
           ? "border-emerald-100 bg-gradient-to-br from-emerald-50/70 via-white to-blue-50/40"
-          : "border-slate-200 bg-slate-50/80",
+          : flexible
+            ? "border-amber-100 bg-gradient-to-br from-amber-50/70 via-white to-yellow-50/40"
+            : "border-slate-200 bg-slate-50/80",
       ].join(" ")}
     >
       <div className="flex items-start justify-between gap-3">
@@ -722,33 +776,47 @@ function CompatibilityMetric({
 
             matched
               ? "bg-emerald-100 text-emerald-700"
-              : "bg-slate-200 text-slate-400",
+              : flexible
+                ? "bg-amber-100 text-amber-700"
+                : "bg-slate-200 text-slate-400",
           ].join(" ")}
         >
-          <CheckCircle2
-            size={16}
-          />
+          {flexible ? (
+            <Sparkles
+              size={16}
+            />
+          ) : (
+            <CheckCircle2
+              size={16}
+            />
+          )}
         </div>
 
         <span
           className={[
-            "rounded-full px-2 py-1 text-[10px] font-black",
+            "rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-[0.06em]",
 
             matched
               ? "bg-emerald-100 text-emerald-700"
-              : "bg-slate-200 text-slate-500",
+              : flexible
+                ? "bg-amber-100 text-amber-700"
+                : "bg-slate-200 text-slate-500",
           ].join(" ")}
         >
-          {safeScore}/{maximum}
+          {matched
+            ? "Matched"
+            : flexible
+              ? "Flexible"
+              : "Different"}
         </span>
       </div>
 
       <div className="mt-3">
         <p className="text-xs font-black text-slate-800">
-          {title}
+          {category.label}
         </p>
 
-        <p className="mt-0.5 text-[10px] text-slate-500">
+        <p className="mt-0.5 text-[10px] leading-4 text-slate-500">
           {description}
         </p>
       </div>
@@ -760,38 +828,204 @@ function CompatibilityMetric({
 
             matched
               ? "text-emerald-700"
-              : "text-slate-400",
+              : flexible
+                ? "text-amber-700"
+                : "text-slate-500",
           ].join(" ")}
         >
-          {matched
-            ? "Preference matched"
-            : "Not matched"}
+          {statusLabel}
         </span>
 
-        <span className="text-[10px] font-black text-slate-500">
-          {percentage}%
-        </span>
-      </div>
-
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200/80">
-        <div
-          className={[
-            "h-full rounded-full transition-all duration-700",
-
-            matched
-              ? "bg-gradient-to-r from-emerald-500 to-blue-600"
-              : "bg-slate-300",
-          ].join(" ")}
-          style={{
-            width: `${percentage}%`,
-          }}
-        />
+        {category.weight > 0 && (
+          <span className="text-[9px] font-black text-slate-400">
+            Weight {category.weight}
+          </span>
+        )}
       </div>
     </div>
   );
 }
 
-/* ============================================================
+/*
+ * ============================================================
+ * Compatibility Category Normalization
+ * ============================================================
+ */
+
+function buildCompatibilityCategories(
+  categories:
+    | CompatibilityCategory[]
+    | null,
+  ageScore: number | null,
+  denominationScore: number | null,
+  educationScore: number | null
+): CompatibilityCategory[] {
+  if (
+    Array.isArray(categories) &&
+    categories.length > 0
+  ) {
+    return categories
+      .filter(
+        (category) =>
+          Boolean(
+            category &&
+              category.key &&
+              category.label &&
+              isCompatibilityStatus(
+                category.status
+              )
+          )
+      )
+      .map(
+        (category) => ({
+          ...category,
+
+          key:
+            category.key.trim(),
+
+          label:
+            category.label.trim(),
+
+          weight:
+            Number.isFinite(
+              category.weight
+            )
+              ? Math.max(
+                  0,
+                  category.weight
+                )
+              : 0,
+        })
+      );
+  }
+
+  /*
+   * Legacy fallback.
+   */
+
+  const legacyCategories: CompatibilityCategory[] =
+    [];
+
+  if (
+    ageScore !== null &&
+    ageScore !== undefined
+  ) {
+    legacyCategories.push({
+      key: "age",
+      label: "Age Preference",
+      status:
+        ageScore > 0
+          ? "MATCH"
+          : "MISMATCH",
+      weight: 0,
+    });
+  }
+
+  if (
+    denominationScore !== null &&
+    denominationScore !== undefined
+  ) {
+    legacyCategories.push({
+      key: "denomination",
+      label: "Denomination",
+      status:
+        denominationScore > 0
+          ? "MATCH"
+          : "MISMATCH",
+      weight: 0,
+    });
+  }
+
+  if (
+    educationScore !== null &&
+    educationScore !== undefined
+  ) {
+    legacyCategories.push({
+      key: "education",
+      label: "Education",
+      status:
+        educationScore > 0
+          ? "MATCH"
+          : "MISMATCH",
+      weight: 0,
+    });
+  }
+
+  return legacyCategories;
+}
+
+/*
+ * ============================================================
+ * Compatibility Status Guard
+ * ============================================================
+ */
+
+function isCompatibilityStatus(
+  value: unknown
+): value is CompatibilityCategoryStatus {
+  return (
+    value === "MATCH" ||
+    value === "MISMATCH" ||
+    value === "FLEXIBLE"
+  );
+}
+
+/*
+ * ============================================================
+ * Compatibility Descriptions
+ * ============================================================
+ */
+
+function compatibilityDescription(
+  key: string
+): string {
+  switch (key) {
+    case "age":
+      return "Mutual preferred age ranges.";
+
+    case "height":
+      return "Mutual preferred height ranges.";
+
+    case "religion":
+      return "Religious preference alignment.";
+
+    case "denomination":
+      return "Christian denomination preferences.";
+
+    case "maritalStatus":
+      return "Preferred marital status.";
+
+    case "community":
+      return "Community preference alignment.";
+
+    case "motherTongue":
+      return "Preferred mother tongue.";
+
+    case "education":
+      return "Educational preference alignment.";
+
+    case "profession":
+      return "Professional preference alignment.";
+
+    case "location":
+      return "Preferred country, state, district and city.";
+
+    case "diet":
+      return "Dietary preference alignment.";
+
+    case "smoking":
+      return "Smoking preference alignment.";
+
+    case "drinking":
+      return "Drinking preference alignment.";
+
+    default:
+      return "Mutual partner preference alignment.";
+  }
+}
+
+/*
+ * ============================================================
  * Trust & Verification
  * ============================================================
  */
@@ -859,6 +1093,7 @@ function TrustVerificationSection({
       <div className="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-blue-50/70 via-white to-amber-50/60 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
 
         <div className="flex items-center gap-3">
+
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0B2D5C] to-blue-700 text-white shadow-sm">
             <ShieldCheck
               size={18}
@@ -952,6 +1187,12 @@ function TrustVerificationSection({
     </section>
   );
 }
+
+/*
+ * ============================================================
+ * Verification Item
+ * ============================================================
+ */
 
 interface VerificationItemProps {
   icon: React.ReactNode;
