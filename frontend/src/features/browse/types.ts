@@ -220,6 +220,13 @@ export interface BrowseSearchFilters {
   sort: BrowseSortOption;
 }
 
+export interface BrowseSearchLocation {
+  country?: string;
+  state?: string;
+  district?: string;
+  city?: string;
+}
+
 export interface BrowseSearchParams
   extends BrowsePaginationParams {
   ageFrom?: number;
@@ -245,6 +252,8 @@ export interface BrowseSearchParams
   state?: string;
   district?: string;
   city?: string;
+
+  locations?: BrowseSearchLocation[];
 
   diet?: string;
   smoking?: string;

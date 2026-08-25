@@ -226,38 +226,170 @@ public final class ProfileSpecification {
                 );
 
              /*
+/*
  * =================================================
  * Location
  * =================================================
+ *
+ * Multi-location search takes precedence when one
+ * or more usable locations are supplied.
+ *
+ * Example:
+ *
+ *   (India AND Andhra Pradesh AND NTR AND Vijayawada)
+ *   OR
+ *   (India AND Telangana AND Hyderabad AND Hyderabad)
+ *
+ * If no multi-location values are supplied, fall
+ * back to the legacy single-location fields.
  */
 
-addCaseInsensitiveEquals(
-        predicates,
-        criteriaBuilder,
-        root.get("country"),
-        request.getCountry()
-);
+if (
+        request.getLocations() != null
+                && !request.getLocations().isEmpty()
+) {
 
-addCaseInsensitiveEquals(
-        predicates,
-        criteriaBuilder,
-        root.get("state"),
-        request.getState()
-);
+    List<Predicate> locationPredicates =
+            new ArrayList<>();
 
-addCaseInsensitiveEquals(
-        predicates,
-        criteriaBuilder,
-        root.get("district"),
-        request.getDistrict()
-);
+    for (
+            com.theholymatrimony.backend.profile.dto.SearchLocationRequest location
+            : request.getLocations()
+    ) {
 
-addCaseInsensitiveEquals(
-        predicates,
-        criteriaBuilder,
-        root.get("city"),
-        request.getCity()
-);
+        if (location == null) {
+            continue;
+        }
+
+        List<Predicate> locationParts =
+                new ArrayList<>();
+
+        addCaseInsensitiveEquals(
+                locationParts,
+                criteriaBuilder,
+                root.get("country"),
+                location.getCountry()
+        );
+
+        addCaseInsensitiveEquals(
+                locationParts,
+                criteriaBuilder,
+                root.get("state"),
+                location.getState()
+        );
+
+        addCaseInsensitiveEquals(
+                locationParts,
+                criteriaBuilder,
+                root.get("district"),
+                location.getDistrict()
+        );
+
+        addCaseInsensitiveEquals(
+                locationParts,
+                criteriaBuilder,
+                root.get("city"),
+                location.getCity()
+        );
+
+        /*
+         * Ignore completely empty location objects.
+         */
+        if (!locationParts.isEmpty()) {
+
+            locationPredicates.add(
+                    criteriaBuilder.and(
+                            locationParts.toArray(
+                                    new Predicate[0]
+                            )
+                    )
+            );
+        }
+    }
+
+    /*
+     * Every preferred location is an alternative.
+     */
+    if (!locationPredicates.isEmpty()) {
+
+        predicates.add(
+                criteriaBuilder.or(
+                        locationPredicates.toArray(
+                                new Predicate[0]
+                        )
+                )
+        );
+
+    } else {
+
+        /*
+         * locations[] existed but contained no usable
+         * values. Preserve legacy behavior.
+         */
+
+        addCaseInsensitiveEquals(
+                predicates,
+                criteriaBuilder,
+                root.get("country"),
+                request.getCountry()
+        );
+
+        addCaseInsensitiveEquals(
+                predicates,
+                criteriaBuilder,
+                root.get("state"),
+                request.getState()
+        );
+
+        addCaseInsensitiveEquals(
+                predicates,
+                criteriaBuilder,
+                root.get("district"),
+                request.getDistrict()
+        );
+
+        addCaseInsensitiveEquals(
+                predicates,
+                criteriaBuilder,
+                root.get("city"),
+                request.getCity()
+        );
+    }
+
+} else {
+
+    /*
+     * Legacy single-location search.
+     */
+
+    addCaseInsensitiveEquals(
+            predicates,
+            criteriaBuilder,
+            root.get("country"),
+            request.getCountry()
+    );
+
+    addCaseInsensitiveEquals(
+            predicates,
+            criteriaBuilder,
+            root.get("state"),
+            request.getState()
+    );
+
+    addCaseInsensitiveEquals(
+            predicates,
+            criteriaBuilder,
+            root.get("district"),
+            request.getDistrict()
+    );
+
+    addCaseInsensitiveEquals(
+            predicates,
+            criteriaBuilder,
+            root.get("city"),
+            request.getCity()
+    );
+}
 
                 /*
                  * =================================================

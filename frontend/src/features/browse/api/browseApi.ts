@@ -7,51 +7,92 @@ import type {
   BrowseSearchParams,
 } from "../types";
 
+/*
+ * ============================================================
+ * API envelope
+ * ============================================================
+ */
+
 interface ApiEnvelope<T> {
-  success?: boolean;
-  message?: string;
+  success: boolean;
+  message: string;
   data: T;
 }
 
+/*
+ * ============================================================
+ * Helpers
+ * ============================================================
+ */
+
 function unwrapApiResponse<T>(
-  response: ApiEnvelope<T> | T
+  payload:
+    | ApiEnvelope<T>
+    | T
 ): T {
   if (
-    response &&
-    typeof response === "object" &&
-    "data" in response
+    payload &&
+    typeof payload ===
+      "object" &&
+    "data" in payload
   ) {
     return (
-      response as ApiEnvelope<T>
+      payload as ApiEnvelope<T>
     ).data;
   }
 
-  return response as T;
+  return payload as T;
 }
 
-function cleanParams<
-  T extends Record<string, unknown>
->(
-  params: T
-): Partial<T> {
+/*
+ * Remove empty / undefined values before they
+ * become query parameters.
+ */
+
+function cleanParams(
+  values: Record<
+    string,
+    unknown
+  >
+): Record<
+  string,
+  unknown
+> {
   return Object.fromEntries(
     Object.entries(
-      params
+      values
     ).filter(
-      ([, value]) =>
-        value !== undefined &&
-        value !== null &&
-        value !== ""
+      ([
+        ,
+        value,
+      ]) => {
+        if (
+          value ===
+            undefined ||
+          value ===
+            null
+        ) {
+          return false;
+        }
+
+        if (
+          typeof value ===
+            "string" &&
+          !value.trim()
+        ) {
+          return false;
+        }
+
+        return true;
+      }
     )
-  ) as Partial<T>;
+  );
 }
 
 /*
  * ============================================================
  * Browse Profiles
  * ============================================================
- *
- * Normal browse does not invoke Advanced Search entitlement.
  */
 
 export async function getBrowseProfiles(
@@ -83,11 +124,123 @@ export async function getBrowseProfiles(
  * ============================================================
  * Advanced Search
  * ============================================================
+ *
+ * Supports:
+ *
+ * Legacy single location:
+ *
+ *   country
+ *   state
+ *   district
+ *   city
+ *
+ * AND new multi-location searching:
+ *
+ *   locations[0].country
+ *   locations[0].state
+ *   locations[0].district
+ *   locations[0].city
+ *
+ *   locations[1].country
+ *   ...
+ *
+ * Backend semantics:
+ *
+ *   fields inside one location = AND
+ *   multiple locations          = OR
  */
 
 export async function searchBrowseProfiles(
   params: BrowseSearchParams
 ): Promise<BrowseProfilesResult> {
+
+  /*
+   * ==========================================================
+   * MULTI-LOCATION QUERY PARAMETERS
+   * ==========================================================
+   *
+   * Spring binds:
+   *
+   * locations[0].country=India
+   * locations[0].state=Andhra Pradesh
+   * locations[0].district=Guntur
+   * locations[0].city=Guntur
+   *
+   * into:
+   *
+   * List<SearchLocationRequest> locations
+   */
+
+  const locationParams:
+    Record<
+      string,
+      string
+    > = {};
+
+  (
+    params.locations ??
+    []
+  ).forEach(
+    (
+      location,
+      index
+    ) => {
+      const country =
+        location.country
+          ?.trim();
+
+      const state =
+        location.state
+          ?.trim();
+
+      const district =
+        location.district
+          ?.trim();
+
+      const city =
+        location.city
+          ?.trim();
+
+      /*
+       * Ignore a completely empty
+       * location entry.
+       */
+
+      if (
+        !country &&
+        !state &&
+        !district &&
+        !city
+      ) {
+        return;
+      }
+
+      if (country) {
+        locationParams[
+          `locations[${index}].country`
+        ] = country;
+      }
+
+      if (state) {
+        locationParams[
+          `locations[${index}].state`
+        ] = state;
+      }
+
+      if (district) {
+        locationParams[
+          `locations[${index}].district`
+        ] = district;
+      }
+
+      if (city) {
+        locationParams[
+          `locations[${index}].city`
+        ] = city;
+      }
+    }
+  );
+
   const response =
     await api.get<
       | ApiEnvelope<BrowseProfilesResult>
@@ -97,8 +250,11 @@ export async function searchBrowseProfiles(
       {
         params: cleanParams({
           /*
+           * ==================================================
            * Pagination
+           * ==================================================
            */
+
           page:
             params.page ?? 0,
 
@@ -106,8 +262,11 @@ export async function searchBrowseProfiles(
             params.size ?? 12,
 
           /*
+           * ==================================================
            * Match Basics
+           * ==================================================
            */
+
           ageFrom:
             params.ageFrom,
 
@@ -127,8 +286,11 @@ export async function searchBrowseProfiles(
             params.maritalStatus,
 
           /*
+           * ==================================================
            * Faith & Background
+           * ==================================================
            */
+
           religion:
             params.religion,
 
@@ -145,8 +307,11 @@ export async function searchBrowseProfiles(
             params.baptized,
 
           /*
+           * ==================================================
            * Education & Career
+           * ==================================================
            */
+
           highestEducation:
             params.highestEducation,
 
@@ -154,8 +319,30 @@ export async function searchBrowseProfiles(
             params.profession,
 
           /*
-           * Location
+           * ==================================================
+           * Multiple Preferred Locations
+           * ==================================================
+           *
+           * These take precedence in ProfileSpecification
+           * whenever at least one usable locations[] entry
+           * exists.
            */
+
+          ...locationParams,
+
+          /*
+           * ==================================================
+           * Legacy / Custom Single Location
+           * ==================================================
+           *
+           * Keep these because:
+           *
+           * - Custom Search still uses them.
+           * - Homepage search still uses them.
+           * - Saved Searches still use them.
+           * - Older URLs continue to work.
+           */
+
           country:
             params.country,
 
@@ -169,8 +356,11 @@ export async function searchBrowseProfiles(
             params.city,
 
           /*
+           * ==================================================
            * Lifestyle
+           * ==================================================
            */
+
           diet:
             params.diet,
 
@@ -181,8 +371,11 @@ export async function searchBrowseProfiles(
             params.drinking,
 
           /*
+           * ==================================================
            * Trust Verification
+           * ==================================================
            */
+
           aadhaarVerified:
             params.aadhaarVerified,
 
@@ -193,8 +386,11 @@ export async function searchBrowseProfiles(
             params.churchVerified,
 
           /*
+           * ==================================================
            * Result Ordering
+           * ==================================================
            */
+
           sort:
             params.sort,
         }),
@@ -215,9 +411,10 @@ export async function searchBrowseProfiles(
 export async function getBrowseProfileById(
   profileId: string
 ): Promise<BrowseProfile> {
-  if (
-    !profileId.trim()
-  ) {
+  const normalizedId =
+    profileId.trim();
+
+  if (!normalizedId) {
     throw new Error(
       "Profile ID is required."
     );
@@ -228,7 +425,9 @@ export async function getBrowseProfileById(
       | ApiEnvelope<BrowseProfile>
       | BrowseProfile
     >(
-      `/profiles/${profileId}`
+      `/profiles/${encodeURIComponent(
+        normalizedId
+      )}`
     );
 
   return unwrapApiResponse(

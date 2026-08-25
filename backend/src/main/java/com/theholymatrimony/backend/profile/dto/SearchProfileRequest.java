@@ -3,6 +3,8 @@ package com.theholymatrimony.backend.profile.dto;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 public class SearchProfileRequest {
@@ -55,6 +57,22 @@ public class SearchProfileRequest {
      * ============================================================
      * Location
      * ============================================================
+     *
+     * Legacy single-location fields remain supported for:
+     *
+     * - existing browse/search requests
+     * - saved searches
+     * - older frontend clients
+     *
+     * locations is the new multi-location search contract.
+     *
+     * Location groups are OR conditions:
+     *
+     *   location1 OR location2 OR location3
+     *
+     * Fields inside one location are AND conditions:
+     *
+     *   country AND state AND district AND city
      */
 
     private String country;
@@ -63,8 +81,9 @@ public class SearchProfileRequest {
 
     private String district;
 
-
     private String city;
+
+    private List<SearchLocationRequest> locations;
 
     /*
      * ============================================================

@@ -142,6 +142,11 @@ export default async function SearchPage({
           params.state
         ),
 
+      district:
+        firstValue(
+          params.district
+        ),
+
       city:
         explicitCity ||
         homepageLocation,

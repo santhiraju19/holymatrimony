@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -25,19 +26,25 @@ import type {
   BrowseProfile,
   BrowseProfilesResult,
   BrowseSearchFilters,
+  BrowseSearchLocation,
 } from "../types";
+
+export type BrowseLocationMode =
+  | "ANYWHERE"
+  | "CUSTOM"
+  | "PARTNER_PREFERENCES";
 
 interface UseBrowseProfilesOptions {
   initialPage?: number;
   pageSize?: number;
 
-  /*
-   * Optional initial filters.
-   *
-   * Used by homepage Quick Search so /search can start
-   * directly with the selected criteria.
-   */
-  initialFilters?: Partial<BrowseSearchFilters>;
+  initialFilters?:
+    Partial<BrowseSearchFilters>;
+
+  locationMode?: BrowseLocationMode;
+
+  preferredLocations?:
+    BrowseSearchLocation[];
 }
 
 interface UseBrowseProfilesReturn {
@@ -45,22 +52,19 @@ interface UseBrowseProfilesReturn {
 
   filters: BrowseSearchFilters;
 
-  appliedFilters: BrowseSearchFilters;
+  appliedFilters:
+    BrowseSearchFilters;
 
   page: number;
-
   size: number;
 
   totalElements: number;
-
   totalPages: number;
 
   first: boolean;
-
   last: boolean;
 
   hasNext: boolean;
-
   hasPrevious: boolean;
 
   loading: boolean;
@@ -70,7 +74,8 @@ interface UseBrowseProfilesReturn {
   isFiltering: boolean;
 
   updateFilter: (
-    name: keyof BrowseSearchFilters,
+    name:
+      keyof BrowseSearchFilters,
     value: string
   ) => void;
 
@@ -86,7 +91,8 @@ interface UseBrowseProfilesReturn {
     page: number
   ) => void;
 
-  refresh: () => Promise<void>;
+  refresh:
+    () => Promise<void>;
 }
 
 function createEmptyFilters():
@@ -107,22 +113,84 @@ function createInitialFilters(
   };
 }
 
+function hasUsableLocation(
+  location:
+    | BrowseSearchLocation
+    | null
+    | undefined
+): boolean {
+  if (!location) {
+    return false;
+  }
+
+  return Boolean(
+    location.country?.trim() ||
+    location.state?.trim() ||
+    location.district?.trim() ||
+    location.city?.trim()
+  );
+}
+
+function normalizeLocations(
+  locations:
+    | BrowseSearchLocation[]
+    | undefined
+): BrowseSearchLocation[] {
+  return (
+    locations ??
+    []
+  )
+    .filter(
+      hasUsableLocation
+    )
+    .map(
+      (location) => ({
+        country:
+          location.country?.trim() ??
+          "",
+
+        state:
+          location.state?.trim() ??
+          "",
+
+        district:
+          location.district?.trim() ??
+          "",
+
+        city:
+          location.city?.trim() ??
+          "",
+      })
+    );
+}
+
 export default function useBrowseProfiles(
-  options: UseBrowseProfilesOptions = {}
+  options:
+    UseBrowseProfilesOptions = {}
 ): UseBrowseProfilesReturn {
   const initialPage =
-    options.initialPage ??
-    0;
+    options.initialPage ?? 0;
 
   const pageSize =
-    options.pageSize ??
-    12;
+    options.pageSize ?? 12;
 
-  /*
-   * ============================================================
-   * INITIAL FILTER STATE
-   * ============================================================
-   */
+  const locationMode =
+    options.locationMode ??
+    "CUSTOM";
+
+  const rawPreferredLocations =
+    options.preferredLocations;
+
+  const preferredLocations =
+    useMemo(
+      () =>
+        normalizeLocations(
+          rawPreferredLocations
+        ),
+      [
+        rawPreferredLocations,
+      ]
+    );
 
   const [
     filters,
@@ -147,12 +215,6 @@ export default function useBrowseProfiles(
         options.initialFilters
       )
     );
-
-  /*
-   * ============================================================
-   * RESULT STATE
-   * ============================================================
-   */
 
   const [
     profiles,
@@ -227,16 +289,16 @@ export default function useBrowseProfiles(
       string | null
     >(null);
 
+  const partnerLocationFiltering =
+    locationMode ===
+      "PARTNER_PREFERENCES" &&
+    preferredLocations.length > 0;
+
   const isFiltering =
     hasActiveBrowseFilters(
       appliedFilters
-    );
-
-  /*
-   * ============================================================
-   * APPLY API RESULT
-   * ============================================================
-   */
+    ) ||
+    partnerLocationFiltering;
 
   const applyResult =
     useCallback(
@@ -250,8 +312,7 @@ export default function useBrowseProfiles(
         );
 
         setPage(
-          result.page ??
-            0
+          result.page ?? 0
         );
 
         setTotalElements(
@@ -287,12 +348,6 @@ export default function useBrowseProfiles(
       []
     );
 
-  /*
-   * ============================================================
-   * RESET RESULT METADATA
-   * ============================================================
-   */
-
   const clearResults =
     useCallback(
       (): void => {
@@ -313,28 +368,10 @@ export default function useBrowseProfiles(
       []
     );
 
-  /*
-   * ============================================================
-   * LOAD PROFILES
-   * ============================================================
-   *
-   * Normal browsing:
-   *
-   * GET /profiles
-   *
-   * Advanced filtered search:
-   *
-   * GET /profiles/search
-   *
-   * The backend remains the source of truth for membership
-   * entitlement enforcement.
-   */
-
   const loadProfiles =
     useCallback(
       async (
         targetPage: number,
-
         activeFilters:
           BrowseSearchFilters
       ): Promise<void> => {
@@ -343,23 +380,91 @@ export default function useBrowseProfiles(
         setError(null);
 
         try {
-          const hasFilters =
+          const normalFiltersActive =
             hasActiveBrowseFilters(
               activeFilters
             );
 
-          const result =
-            hasFilters
-              ? await searchBrowseProfiles(
-                  buildBrowseSearchParams(
-                    activeFilters,
-                    {
-                      page:
-                        targetPage,
+          const usePartnerLocations =
+            locationMode ===
+              "PARTNER_PREFERENCES" &&
+            preferredLocations.length >
+              0;
 
-                      size,
-                    }
-                  )
+          const searchParams =
+            buildBrowseSearchParams(
+              activeFilters,
+              {
+                page:
+                  targetPage,
+
+                size,
+              }
+            );
+
+          if (
+            locationMode ===
+            "PARTNER_PREFERENCES"
+          ) {
+            /*
+             * Structured preferredLocations[]
+             * becomes the complete location
+             * source for this mode.
+             */
+
+            searchParams.country =
+              undefined;
+
+            searchParams.state =
+              undefined;
+
+            searchParams.district =
+              undefined;
+
+            searchParams.city =
+              undefined;
+
+            searchParams.locations =
+              preferredLocations;
+
+          } else if (
+            locationMode ===
+            "ANYWHERE"
+          ) {
+            searchParams.country =
+              undefined;
+
+            searchParams.state =
+              undefined;
+
+            searchParams.district =
+              undefined;
+
+            searchParams.city =
+              undefined;
+
+            searchParams.locations =
+              undefined;
+
+          } else {
+            /*
+             * CUSTOM location uses the normal
+             * scalar Country / State /
+             * District / City controls.
+             */
+
+            searchParams.locations =
+              undefined;
+          }
+
+          const shouldSearch =
+            normalFiltersActive ||
+            usePartnerLocations;
+
+          const result =
+            shouldSearch
+              ? await searchBrowseProfiles(
+                  searchParams
                 )
               : await getBrowseProfiles(
                   {
@@ -379,25 +484,6 @@ export default function useBrowseProfiles(
         ) {
           clearResults();
 
-          /*
-           * IMPORTANT:
-           *
-           * Do not use:
-           *
-           * caughtError instanceof Error
-           *     ? caughtError.message
-           *
-           * Axios would reduce a useful backend 403 response to:
-           *
-           * "Request failed with status code 403"
-           *
-           * getApiErrorMessage() extracts the application's
-           * response body instead, including membership messages
-           * such as:
-           *
-           * "Upgrade your membership to access advanced search."
-           */
-
           const message =
             getApiErrorMessage(
               caughtError,
@@ -414,15 +500,11 @@ export default function useBrowseProfiles(
       [
         applyResult,
         clearResults,
+        locationMode,
+        preferredLocations,
         size,
       ]
     );
-
-  /*
-   * ============================================================
-   * INITIAL LOAD / PAGE CHANGE / FILTER CHANGE
-   * ============================================================
-   */
 
   useEffect(
     () => {
@@ -438,18 +520,11 @@ export default function useBrowseProfiles(
     ]
   );
 
-  /*
-   * ============================================================
-   * UPDATE DRAFT FILTER
-   * ============================================================
-   */
-
   const updateFilter =
     useCallback(
       (
         name:
           keyof BrowseSearchFilters,
-
         value:
           string
       ): void => {
@@ -467,12 +542,6 @@ export default function useBrowseProfiles(
       []
     );
 
-  /*
-   * ============================================================
-   * APPLY FILTERS
-   * ============================================================
-   */
-
   const applyFilters =
     useCallback(
       (): void => {
@@ -481,8 +550,7 @@ export default function useBrowseProfiles(
         };
 
         if (
-          page ===
-          0
+          page === 0
         ) {
           setAppliedFilters(
             nextFilters
@@ -503,12 +571,6 @@ export default function useBrowseProfiles(
       ]
     );
 
-  /*
-   * ============================================================
-   * RESET FILTERS
-   * ============================================================
-   */
-
   const resetFilters =
     useCallback(
       (): void => {
@@ -519,13 +581,10 @@ export default function useBrowseProfiles(
           emptyFilters
         );
 
-        setError(
-          null
-        );
+        setError(null);
 
         if (
-          page ===
-          0
+          page === 0
         ) {
           setAppliedFilters({
             ...emptyFilters,
@@ -545,12 +604,6 @@ export default function useBrowseProfiles(
       ]
     );
 
-  /*
-   * ============================================================
-   * PAGINATION
-   * ============================================================
-   */
-
   const nextPage =
     useCallback(
       (): void => {
@@ -565,8 +618,7 @@ export default function useBrowseProfiles(
           (
             currentPage
           ) =>
-            currentPage +
-            1
+            currentPage + 1
         );
       },
       [
@@ -590,8 +642,7 @@ export default function useBrowseProfiles(
             currentPage
           ) =>
             Math.max(
-              currentPage -
-                1,
+              currentPage - 1,
               0
             )
         );
@@ -608,16 +659,13 @@ export default function useBrowseProfiles(
         targetPage:
           number
       ): void => {
-        if (
-          loading
-        ) {
+        if (loading) {
           return;
         }
 
         const maximumPage =
           Math.max(
-            totalPages -
-              1,
+            totalPages - 1,
             0
           );
 
@@ -640,12 +688,6 @@ export default function useBrowseProfiles(
       ]
     );
 
-  /*
-   * ============================================================
-   * REFRESH
-   * ============================================================
-   */
-
   const refresh =
     useCallback(
       async (): Promise<void> => {
@@ -663,43 +705,32 @@ export default function useBrowseProfiles(
 
   return {
     profiles,
-
     filters,
-
     appliedFilters,
 
     page,
-
     size,
 
     totalElements,
-
     totalPages,
 
     first,
-
     last,
 
     hasNext,
-
     hasPrevious,
 
     loading,
-
     error,
 
     isFiltering,
 
     updateFilter,
-
     applyFilters,
-
     resetFilters,
 
     nextPage,
-
     previousPage,
-
     goToPage,
 
     refresh,
