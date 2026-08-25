@@ -4,6 +4,7 @@ import com.theholymatrimony.backend.payments.entity.Membership;
 import com.theholymatrimony.backend.payments.enums.MembershipPlan;
 import com.theholymatrimony.backend.payments.enums.MembershipStatus;
 
+import com.theholymatrimony.backend.profile.dto.SearchLocationRequest;
 import com.theholymatrimony.backend.profile.dto.SearchProfileRequest;
 import com.theholymatrimony.backend.profile.entity.Profile;
 
@@ -45,11 +46,25 @@ public final class ProfileSpecification {
      * ============================================================
      * PROFILE SEARCH
      * ============================================================
+     *
+     * requiredGender is a mandatory server-side matrimony rule.
+     *
+     * Example:
+     *
+     * authenticated member = MALE
+     * requiredGender        = FEMALE
+     *
+     * authenticated member = FEMALE
+     * requiredGender        = MALE
+     *
+     * request.getGender() is intentionally ignored so clients
+     * cannot override this rule.
      */
 
     public static Specification<Profile> search(
             SearchProfileRequest request,
-            String authenticatedEmail
+            String authenticatedEmail,
+            String requiredGender
     ) {
 
         return (
@@ -75,18 +90,49 @@ public final class ProfileSpecification {
                     )
             );
 
-            predicates.add(
-                    criteriaBuilder.notEqual(
-                            criteriaBuilder.lower(
-                                    root.get("user")
-                                            .get("email")
-                            ),
-                            authenticatedEmail
-                                    .trim()
-                                    .toLowerCase(
-                                            Locale.ROOT
-                                    )
-                    )
+            /*
+             * Never return the authenticated member's own profile.
+             */
+
+            if (
+                    authenticatedEmail != null
+                            && !authenticatedEmail.isBlank()
+            ) {
+
+                predicates.add(
+                        criteriaBuilder.notEqual(
+                                criteriaBuilder.lower(
+                                        root.get("user")
+                                                .get("email")
+                                ),
+                                authenticatedEmail
+                                        .trim()
+                                        .toLowerCase(
+                                                Locale.ROOT
+                                        )
+                        )
+                );
+            }
+
+            /*
+             * =====================================================
+             * Mandatory Matrimony Gender Rule
+             * =====================================================
+             *
+             * This is not a user-controlled search filter.
+             *
+             * MALE member
+             *     -> FEMALE candidates only
+             *
+             * FEMALE member
+             *     -> MALE candidates only
+             */
+
+            addCaseInsensitiveEquals(
+                    predicates,
+                    criteriaBuilder,
+                    root.get("gender"),
+                    requiredGender
             );
 
             /*
@@ -169,14 +215,14 @@ public final class ProfileSpecification {
                  * =================================================
                  * Basic Information
                  * =================================================
+                 *
+                 * NOTE:
+                 *
+                 * request.getGender() is intentionally NOT applied.
+                 *
+                 * Candidate gender is controlled only by
+                 * requiredGender from the authenticated member.
                  */
-
-                addCaseInsensitiveEquals(
-                        predicates,
-                        criteriaBuilder,
-                        root.get("gender"),
-                        request.getGender()
-                );
 
                 addCaseInsensitiveEquals(
                         predicates,
@@ -225,171 +271,135 @@ public final class ProfileSpecification {
                         request.getDenomination()
                 );
 
-             /*
-/*
- * =================================================
- * Location
- * =================================================
- *
- * Multi-location search takes precedence when one
- * or more usable locations are supplied.
- *
- * Example:
- *
- *   (India AND Andhra Pradesh AND NTR AND Vijayawada)
- *   OR
- *   (India AND Telangana AND Hyderabad AND Hyderabad)
- *
- * If no multi-location values are supplied, fall
- * back to the legacy single-location fields.
- */
+                /*
+                 * =================================================
+                 * Location
+                 * =================================================
+                 *
+                 * Multi-location search takes precedence when one
+                 * or more usable locations are supplied.
+                 *
+                 * Example:
+                 *
+                 *   (
+                 *      India
+                 *      AND Andhra Pradesh
+                 *      AND NTR
+                 *      AND Vijayawada
+                 *   )
+                 *
+                 *   OR
+                 *
+                 *   (
+                 *      India
+                 *      AND Telangana
+                 *      AND Hyderabad
+                 *      AND Hyderabad
+                 *   )
+                 *
+                 * If locations[] is absent or contains no usable
+                 * entries, legacy country/state/district/city
+                 * filtering remains supported.
+                 */
 
-if (
-        request.getLocations() != null
-                && !request.getLocations().isEmpty()
-) {
+                if (
+                        request.getLocations() != null
+                                && !request.getLocations().isEmpty()
+                ) {
 
-    List<Predicate> locationPredicates =
-            new ArrayList<>();
+                    List<Predicate> locationPredicates =
+                            new ArrayList<>();
 
-    for (
-            com.theholymatrimony.backend.profile.dto.SearchLocationRequest location
-            : request.getLocations()
-    ) {
+                    for (
+                            SearchLocationRequest location
+                            : request.getLocations()
+                    ) {
 
-        if (location == null) {
-            continue;
-        }
+                        if (location == null) {
+                            continue;
+                        }
 
-        List<Predicate> locationParts =
-                new ArrayList<>();
+                        List<Predicate> locationParts =
+                                new ArrayList<>();
 
-        addCaseInsensitiveEquals(
-                locationParts,
-                criteriaBuilder,
-                root.get("country"),
-                location.getCountry()
-        );
+                        addCaseInsensitiveEquals(
+                                locationParts,
+                                criteriaBuilder,
+                                root.get("country"),
+                                location.getCountry()
+                        );
 
-        addCaseInsensitiveEquals(
-                locationParts,
-                criteriaBuilder,
-                root.get("state"),
-                location.getState()
-        );
+                        addCaseInsensitiveEquals(
+                                locationParts,
+                                criteriaBuilder,
+                                root.get("state"),
+                                location.getState()
+                        );
 
-        addCaseInsensitiveEquals(
-                locationParts,
-                criteriaBuilder,
-                root.get("district"),
-                location.getDistrict()
-        );
+                        addCaseInsensitiveEquals(
+                                locationParts,
+                                criteriaBuilder,
+                                root.get("district"),
+                                location.getDistrict()
+                        );
 
-        addCaseInsensitiveEquals(
-                locationParts,
-                criteriaBuilder,
-                root.get("city"),
-                location.getCity()
-        );
+                        addCaseInsensitiveEquals(
+                                locationParts,
+                                criteriaBuilder,
+                                root.get("city"),
+                                location.getCity()
+                        );
 
-        /*
-         * Ignore completely empty location objects.
-         */
-        if (!locationParts.isEmpty()) {
+                        /*
+                         * Ignore completely empty location entries.
+                         */
 
-            locationPredicates.add(
-                    criteriaBuilder.and(
-                            locationParts.toArray(
-                                    new Predicate[0]
-                            )
-                    )
-            );
-        }
-    }
+                        if (!locationParts.isEmpty()) {
 
-    /*
-     * Every preferred location is an alternative.
-     */
-    if (!locationPredicates.isEmpty()) {
+                            locationPredicates.add(
+                                    criteriaBuilder.and(
+                                            locationParts.toArray(
+                                                    new Predicate[0]
+                                            )
+                                    )
+                            );
+                        }
+                    }
 
-        predicates.add(
-                criteriaBuilder.or(
-                        locationPredicates.toArray(
-                                new Predicate[0]
-                        )
-                )
-        );
+                    /*
+                     * Every structured preferred location is an
+                     * alternative.
+                     */
 
-    } else {
+                    if (!locationPredicates.isEmpty()) {
 
-        /*
-         * locations[] existed but contained no usable
-         * values. Preserve legacy behavior.
-         */
+                        predicates.add(
+                                criteriaBuilder.or(
+                                        locationPredicates.toArray(
+                                                new Predicate[0]
+                                        )
+                                )
+                        );
 
-        addCaseInsensitiveEquals(
-                predicates,
-                criteriaBuilder,
-                root.get("country"),
-                request.getCountry()
-        );
+                    } else {
 
-        addCaseInsensitiveEquals(
-                predicates,
-                criteriaBuilder,
-                root.get("state"),
-                request.getState()
-        );
+                        addLegacyLocationFilters(
+                                predicates,
+                                criteriaBuilder,
+                                root,
+                                request
+                        );
+                    }
 
-        addCaseInsensitiveEquals(
-                predicates,
-                criteriaBuilder,
-                root.get("district"),
-                request.getDistrict()
-        );
+                } else {
 
-        addCaseInsensitiveEquals(
-                predicates,
-                criteriaBuilder,
-                root.get("city"),
-                request.getCity()
-        );
-    }
-
-} else {
-
-    /*
-     * Legacy single-location search.
-     */
-
-    addCaseInsensitiveEquals(
-            predicates,
-            criteriaBuilder,
-            root.get("country"),
-            request.getCountry()
-    );
-
-    addCaseInsensitiveEquals(
-            predicates,
-            criteriaBuilder,
-            root.get("state"),
-            request.getState()
-    );
-
-    addCaseInsensitiveEquals(
-            predicates,
-            criteriaBuilder,
-            root.get("district"),
-            request.getDistrict()
-    );
-
-    addCaseInsensitiveEquals(
-            predicates,
-            criteriaBuilder,
-            root.get("city"),
-            request.getCity()
-    );
-}
+                    addLegacyLocationFilters(
+                            predicates,
+                            criteriaBuilder,
+                            root,
+                            request
+                    );
+                }
 
                 /*
                  * =================================================
@@ -578,6 +588,48 @@ if (
 
     /*
      * ============================================================
+     * LEGACY LOCATION FILTERS
+     * ============================================================
+     */
+
+    private static void addLegacyLocationFilters(
+            List<Predicate> predicates,
+            CriteriaBuilder criteriaBuilder,
+            Root<Profile> root,
+            SearchProfileRequest request
+    ) {
+
+        addCaseInsensitiveEquals(
+                predicates,
+                criteriaBuilder,
+                root.get("country"),
+                request.getCountry()
+        );
+
+        addCaseInsensitiveEquals(
+                predicates,
+                criteriaBuilder,
+                root.get("state"),
+                request.getState()
+        );
+
+        addCaseInsensitiveEquals(
+                predicates,
+                criteriaBuilder,
+                root.get("district"),
+                request.getDistrict()
+        );
+
+        addCaseInsensitiveEquals(
+                predicates,
+                criteriaBuilder,
+                root.get("city"),
+                request.getCity()
+        );
+    }
+
+    /*
+     * ============================================================
      * RECOMMENDED RANKING
      * ============================================================
      *
@@ -600,12 +652,6 @@ if (
         LocalDateTime now =
                 LocalDateTime.now();
 
-        /*
-         * --------------------------------------------------------
-         * Active Profile Boost
-         * --------------------------------------------------------
-         */
-
         Predicate activeBoost =
                 activeProfileBoost(
                         profileRoot,
@@ -624,12 +670,6 @@ if (
                                 0
                         );
 
-        /*
-         * --------------------------------------------------------
-         * Platinum Top Search Placement
-         * --------------------------------------------------------
-         */
-
         Predicate topSearchPlacement =
                 activePlatinumMembershipExists(
                         profileRoot,
@@ -647,12 +687,6 @@ if (
                         .otherwise(
                                 0
                         );
-
-        /*
-         * --------------------------------------------------------
-         * Final Recommended Ordering
-         * --------------------------------------------------------
-         */
 
         query.orderBy(
 
@@ -723,12 +757,6 @@ if (
                         false
                 );
 
-        /*
-         * --------------------------------------------------------
-         * Trust Score
-         * --------------------------------------------------------
-         */
-
         Expression<Integer> trustScore =
                 criteriaBuilder
                         .<Integer>selectCase()
@@ -771,12 +799,6 @@ if (
         LocalDateTime now =
                 LocalDateTime.now();
 
-        /*
-         * --------------------------------------------------------
-         * Active Boost
-         * --------------------------------------------------------
-         */
-
         Predicate activeBoost =
                 activeProfileBoost(
                         profileRoot,
@@ -795,12 +817,6 @@ if (
                                 0
                         );
 
-        /*
-         * --------------------------------------------------------
-         * Platinum Top Search Placement
-         * --------------------------------------------------------
-         */
-
         Predicate topSearchPlacement =
                 activePlatinumMembershipExists(
                         profileRoot,
@@ -818,14 +834,6 @@ if (
                         .otherwise(
                                 0
                         );
-
-        /*
-         * --------------------------------------------------------
-         * Final Trust Ordering
-         * --------------------------------------------------------
-         *
-         * Payment/boost must never override the trust hierarchy.
-         */
 
         query.orderBy(
 
@@ -883,12 +891,6 @@ if (
      * ============================================================
      * ACTIVE PLATINUM MEMBERSHIP
      * ============================================================
-     *
-     * Matches effective membership behavior:
-     *
-     * - plan must be PLATINUM
-     * - status must be ACTIVE
-     * - expiry must be in the future
      */
 
     private static Predicate activePlatinumMembershipExists(
@@ -964,10 +966,6 @@ if (
     private static boolean isRecommendedSort(
             SearchProfileRequest request
     ) {
-
-        /*
-         * Missing explicit sort is RECOMMENDED.
-         */
 
         if (
                 request == null
@@ -1197,7 +1195,8 @@ if (
                         criteriaBuilder.lower(
                                 field
                         ),
-                        value.trim()
+                        value
+                                .trim()
                                 .toLowerCase(
                                         Locale.ROOT
                                 )

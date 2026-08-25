@@ -570,38 +570,6 @@ export default function BrowseSearchFilters({
               )}
             </Select>
 
-            <Select
-              label="Gender"
-              value={
-                filters.gender
-              }
-              disabled={
-                loading
-              }
-              leftIcon={
-                <UserRound
-                  size={16}
-                />
-              }
-              onChange={(event) =>
-                onChange(
-                  "gender",
-                  event.target.value
-                )
-              }
-            >
-              <option value="">
-                Any gender
-              </option>
-
-              <option value="Male">
-                Male
-              </option>
-
-              <option value="Female">
-                Female
-              </option>
-            </Select>
 
             <Select
               label="Marital Status"

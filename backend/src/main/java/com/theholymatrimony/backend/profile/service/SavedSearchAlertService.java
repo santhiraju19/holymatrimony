@@ -28,6 +28,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
 import java.util.List;
+import java.util.Locale;
+
 import java.util.Optional;
 import java.util.UUID;
 
@@ -125,10 +127,88 @@ public class SavedSearchAlertService {
             return;
         }
 
+        /*
+
+
+         * Resolve the saved-search owner's profile so alerts obey
+
+
+         * the same matrimony gender rule as Browse, Search and
+
+
+         * Dashboard Recommendations.
+
+
+         */
+
+
+
+        Optional<Profile> currentProfileOptional =
+
+
+                profileRepository.findByUserEmail(
+
+
+                        email
+
+
+                );
+
+
+
+        if (currentProfileOptional.isEmpty()) {
+
+
+
+            markProcessed(
+
+
+                    savedSearch
+
+
+            );
+
+
+
+            return;
+
+
+        }
+
+
+
+        Profile currentProfile =
+
+
+                currentProfileOptional.get();
+
+
+
+        String requiredMatchGender =
+
+
+                resolveRequiredMatchGender(
+
+
+                        currentProfile
+
+
+                );
+
+
+
         SearchProfileRequest request =
+
+
                 savedSearchService
+
+
                         .toSearchProfileRequest(
+
+
                                 savedSearch
+
+
                         );
 
         /*
@@ -149,7 +229,8 @@ public class SavedSearchAlertService {
                 profileRepository.findAll(
                         ProfileSpecification.search(
                                 request,
-                                email
+                                email,
+                                requiredMatchGender
                         ),
                         pageable
                 );
@@ -210,6 +291,66 @@ public class SavedSearchAlertService {
                 newMatchCount
         );
     }
+
+    /*
+     * ============================================================
+     * REQUIRED MATCH GENDER
+     * ============================================================
+     *
+     * MALE   -> FEMALE
+     * FEMALE -> MALE
+     *
+     * Saved-search alerts use the authenticated member's profile
+     * as the only source of truth for candidate gender.
+     */
+
+    private String resolveRequiredMatchGender(
+            Profile currentProfile
+    ) {
+
+        if (currentProfile == null) {
+
+            throw new IllegalStateException(
+                    "Profile is required before processing saved-search alerts"
+            );
+        }
+
+        String gender =
+                currentProfile.getGender();
+
+        if (
+                gender == null
+                        || gender.isBlank()
+        ) {
+
+            throw new IllegalStateException(
+                    "Profile gender is required before processing saved-search alerts"
+            );
+        }
+
+        return switch (
+                gender
+                        .trim()
+                        .toUpperCase(
+                                Locale.ROOT
+                        )
+        ) {
+
+            case "MALE" ->
+                    "FEMALE";
+
+            case "FEMALE" ->
+                    "MALE";
+
+            default ->
+                    throw new IllegalStateException(
+                            "Unsupported profile gender: "
+                                    + gender
+                    );
+        };
+    }
+
+
 
     /*
      * ============================================================

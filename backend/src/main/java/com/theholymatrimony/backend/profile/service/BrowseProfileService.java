@@ -134,7 +134,10 @@ public class BrowseProfileService {
                 profileRepository.findAll(
                         ProfileSpecification.search(
                                 null,
-                                authenticatedEmail
+                                authenticatedEmail,
+                                resolveRequiredMatchGender(
+                                        currentProfile
+                                )
                         ),
                         pageable
                 );
@@ -212,7 +215,10 @@ public class BrowseProfileService {
                 profileRepository.findAll(
                         ProfileSpecification.search(
                                 request,
-                                authenticatedEmail
+                                authenticatedEmail,
+                                resolveRequiredMatchGender(
+                                        currentProfile
+                                )
                         ),
                         pageable
                 );
@@ -366,6 +372,64 @@ public class BrowseProfileService {
                 )
 
                 .build();
+    }
+
+    /*
+     * ============================================================
+     * REQUIRED MATCH GENDER
+     * ============================================================
+     *
+     * Matrimony rule:
+     *
+     * MALE   -> FEMALE
+     * FEMALE -> MALE
+     *
+     * Candidate gender is derived only from the authenticated
+     * member's profile and cannot be overridden by search input.
+     */
+
+    private String resolveRequiredMatchGender(
+            Profile currentProfile
+    ) {
+
+        if (currentProfile == null) {
+            throw new IllegalStateException(
+                    "Authenticated profile is required before browsing matches"
+            );
+        }
+
+        String gender =
+                currentProfile.getGender();
+
+        if (
+                gender == null
+                        || gender.isBlank()
+        ) {
+            throw new IllegalStateException(
+                    "Profile gender is required before browsing matches"
+            );
+        }
+
+        return switch (
+                gender
+                        .trim()
+                        .toUpperCase(
+                                Locale.ROOT
+                        )
+        ) {
+
+            case "MALE" ->
+                    "FEMALE";
+
+            case "FEMALE" ->
+                    "MALE";
+
+            default ->
+                    throw new IllegalStateException(
+                            "Unsupported profile gender: "
+                                    + gender
+                    );
+        };
     }
 
     /*

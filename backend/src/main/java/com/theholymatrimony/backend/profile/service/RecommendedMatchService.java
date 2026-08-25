@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -36,11 +37,14 @@ public class RecommendedMatchService {
      * the strongest dashboard recommendations.
      */
 
-    private static final int CANDIDATE_POOL_SIZE = 50;
+    private static final int CANDIDATE_POOL_SIZE =
+            50;
 
-    private static final int DEFAULT_LIMIT = 6;
+    private static final int DEFAULT_LIMIT =
+            6;
 
-    private static final int MAXIMUM_LIMIT = 12;
+    private static final int MAXIMUM_LIMIT =
+            12;
 
     private final ProfileRepository
             profileRepository;
@@ -55,6 +59,16 @@ public class RecommendedMatchService {
      * ============================================================
      * RECOMMENDED MATCHES
      * ============================================================
+     *
+     * Matrimony gender rule:
+     *
+     * Logged-in MALE
+     *     -> FEMALE profiles only
+     *
+     * Logged-in FEMALE
+     *     -> MALE profiles only
+     *
+     * The authenticated profile is always the source of truth.
      */
 
     public List<RecommendedMatchResponse> getRecommendedMatches(
@@ -67,6 +81,11 @@ public class RecommendedMatchService {
                         authenticatedEmail
                 );
 
+        String requiredMatchGender =
+                resolveRequiredMatchGender(
+                        currentProfile
+                );
+
         int safeLimit =
                 normalizeLimit(
                         requestedLimit
@@ -75,10 +94,10 @@ public class RecommendedMatchService {
         /*
          * Keep the pageable unsorted.
          *
-         * ProfileSpecification already owns the normal recommended
+         * ProfileSpecification owns the normal recommended
          * ordering rules such as profile boost / membership priority.
          *
-         * We subsequently rank the candidate pool by personalized
+         * We subsequently re-rank the candidate pool by personalized
          * compatibility.
          */
 
@@ -86,7 +105,8 @@ public class RecommendedMatchService {
                 profileRepository.findAll(
                         ProfileSpecification.search(
                                 null,
-                                authenticatedEmail
+                                authenticatedEmail,
+                                requiredMatchGender
                         ),
                         PageRequest.of(
                                 0,
@@ -99,16 +119,37 @@ public class RecommendedMatchService {
                 .stream()
 
                 /*
-                 * Never recommend the authenticated profile even if
-                 * future specification changes accidentally allow it.
+                 * Defensive protection:
+                 *
+                 * ProfileSpecification already excludes the
+                 * authenticated profile, but keep this check in case
+                 * the specification changes in the future.
                  */
+
                 .filter(
                         candidate ->
                                 !candidate
                                         .getId()
                                         .equals(
-                                                currentProfile.getId()
+                                                currentProfile
+                                                        .getId()
                                         )
+                )
+
+                /*
+                 * Defensive gender protection:
+                 *
+                 * The database query should already enforce this,
+                 * but the recommendation stream also refuses to
+                 * surface a candidate of the wrong gender.
+                 */
+
+                .filter(
+                        candidate ->
+                                isRequiredGender(
+                                        candidate,
+                                        requiredMatchGender
+                                )
                 )
 
                 .map(
@@ -129,10 +170,13 @@ public class RecommendedMatchService {
                  * Newer profiles provide deterministic tie-breaking
                  * when scores are equal.
                  */
+
                 .sorted(
                         Comparator
                                 .comparingInt(
-                                        (RankedCandidate ranked) ->
+                                        (
+                                                RankedCandidate ranked
+                                        ) ->
                                                 safeScore(
                                                         ranked
                                                                 .compatibility()
@@ -141,7 +185,8 @@ public class RecommendedMatchService {
                                 .reversed()
                                 .thenComparing(
                                         ranked ->
-                                                ranked.profile()
+                                                ranked
+                                                        .profile()
                                                         .getCreatedAt(),
                                         Comparator.nullsLast(
                                                 Comparator.reverseOrder()
@@ -158,6 +203,96 @@ public class RecommendedMatchService {
                 )
 
                 .toList();
+    }
+
+    /*
+     * ============================================================
+     * REQUIRED MATCH GENDER
+     * ============================================================
+     *
+     * MALE   -> FEMALE
+     * FEMALE -> MALE
+     *
+     * Fail closed if the profile contains no usable gender.
+     */
+
+    private String resolveRequiredMatchGender(
+            Profile currentProfile
+    ) {
+
+        if (currentProfile == null) {
+
+            throw new IllegalStateException(
+                    "Authenticated profile is required before viewing recommended matches"
+            );
+        }
+
+        String gender =
+                currentProfile.getGender();
+
+        if (
+                gender == null
+                        || gender.isBlank()
+        ) {
+
+            throw new IllegalStateException(
+                    "Profile gender is required before viewing recommended matches"
+            );
+        }
+
+        String normalizedGender =
+                gender
+                        .trim()
+                        .toUpperCase(
+                                Locale.ROOT
+                        );
+
+        return switch (
+                normalizedGender
+        ) {
+
+            case "MALE" ->
+                    "FEMALE";
+
+            case "FEMALE" ->
+                    "MALE";
+
+            default ->
+                    throw new IllegalStateException(
+                            "Unsupported profile gender: "
+                                    + gender
+                    );
+        };
+    }
+
+    /*
+     * ============================================================
+     * DEFENSIVE GENDER CHECK
+     * ============================================================
+     */
+
+    private boolean isRequiredGender(
+            Profile candidate,
+            String requiredGender
+    ) {
+
+        if (
+                candidate == null
+                        || candidate.getGender() == null
+                        || candidate.getGender().isBlank()
+                        || requiredGender == null
+                        || requiredGender.isBlank()
+        ) {
+
+            return false;
+        }
+
+        return candidate
+                .getGender()
+                .trim()
+                .equalsIgnoreCase(
+                        requiredGender
+                );
     }
 
     /*
@@ -235,9 +370,9 @@ public class RecommendedMatchService {
                  * Leave the trust flags unset here rather than
                  * duplicating BrowseProfileService verification logic.
                  *
-                 * They remain optional on the frontend. We can connect
-                 * the centralized trust service in the next refinement.
+                 * They remain optional on the frontend.
                  */
+
                 .verified(
                         null
                 )
@@ -273,7 +408,7 @@ public class RecommendedMatchService {
 
     /*
      * ============================================================
-     * LIMIT
+     * LIMIT NORMALIZATION
      * ============================================================
      */
 
@@ -281,7 +416,9 @@ public class RecommendedMatchService {
             int requestedLimit
     ) {
 
-        if (requestedLimit <= 0) {
+        if (
+                requestedLimit <= 0
+        ) {
 
             return DEFAULT_LIMIT;
         }
@@ -294,11 +431,11 @@ public class RecommendedMatchService {
 
     /*
      * ============================================================
-     * COMPATIBILITY
+     * SAFE COMPATIBILITY SCORE
      * ============================================================
      */
 
-    private static int safeScore(
+    private int safeScore(
             CompatibilityScoreResponse compatibility
     ) {
 
@@ -310,13 +447,8 @@ public class RecommendedMatchService {
             return 0;
         }
 
-        return Math.max(
-                0,
-                Math.min(
-                        compatibility.getScore(),
-                        100
-                )
-        );
+        return compatibility
+                .getScore();
     }
 
     /*
@@ -329,33 +461,68 @@ public class RecommendedMatchService {
             Profile profile
     ) {
 
-        return List.of(
-                        profile.getCity(),
-                        profile.getState(),
-                        profile.getCountry()
-                )
-                .stream()
-                .filter(
-                        value ->
-                                value != null
-                                        && !value.isBlank()
-                )
-                .map(
-                        String::trim
-                )
-                .distinct()
-                .reduce(
-                        (left, right) ->
-                                left + ", " + right
-                )
-                .orElse(
-                        ""
+        String city =
+                normalizeText(
+                        profile.getCity()
                 );
+
+        String state =
+                normalizeText(
+                        profile.getState()
+                );
+
+        String country =
+                normalizeText(
+                        profile.getCountry()
+                );
+
+        if (
+                city != null
+                        && state != null
+        ) {
+
+            return city
+                    + ", "
+                    + state;
+        }
+
+        if (city != null) {
+
+            return city;
+        }
+
+        if (state != null) {
+
+            return state;
+        }
+
+        return country;
     }
 
     /*
      * ============================================================
-     * INTERNAL RANKED CANDIDATE
+     * TEXT NORMALIZATION
+     * ============================================================
+     */
+
+    private String normalizeText(
+            String value
+    ) {
+
+        if (
+                value == null
+                        || value.isBlank()
+        ) {
+
+            return null;
+        }
+
+        return value.trim();
+    }
+
+    /*
+     * ============================================================
+     * RANKED CANDIDATE
      * ============================================================
      */
 
