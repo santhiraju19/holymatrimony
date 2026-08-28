@@ -725,6 +725,33 @@ export default function ProfilePage() {
       saving={
         saving
       }
+      verificationContent={
+        <ProfileVerificationCard
+          status={
+            verificationStatus
+          }
+          completionPercentage={
+            backendProfileCompleted
+              ? 100
+              : backendCompletionPercentage
+          }
+          submittedAt={
+            verificationSubmittedAt
+          }
+          reviewedAt={
+            verificationReviewedAt
+          }
+          reason={
+            verificationReason
+          }
+          submitting={
+            submittingVerification
+          }
+          onSubmit={
+            handleSubmitForVerification
+          }
+        />
+      }
     />,
   ];
 
@@ -977,34 +1004,7 @@ export default function ProfilePage() {
                 completion.pending
               }
             />
-
-            <ProfileVerificationCard
-              status={
-                verificationStatus
-              }
-              completionPercentage={
-                backendProfileCompleted
-                  ? 100
-                  : backendCompletionPercentage
-              }
-              submittedAt={
-                verificationSubmittedAt
-              }
-              reviewedAt={
-                verificationReviewedAt
-              }
-              reason={
-                verificationReason
-              }
-              submitting={
-                submittingVerification
-              }
-              onSubmit={
-                handleSubmitForVerification
-              }
-            />
-
-            <ProfileStepper
+<ProfileStepper
               currentStep={
                 currentStep
               }

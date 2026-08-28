@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import {
   BookOpenCheck,
   BriefcaseBusiness,
@@ -8,7 +10,6 @@ import {
   Church,
   Heart,
   Loader2,
-  MapPin,
   ShieldCheck,
   Sparkles,
   UserRound,
@@ -18,18 +19,26 @@ import {
 import Button from "@/components/ui/button";
 import Card from "@/components/ui/Card";
 
-import {
-  useProfile,
-} from "@/features/profile/context/useProfile";
+import { useProfile } from "@/features/profile/context/useProfile";
 
-import {
-  calculateProfileCompletion,
-} from "@/features/profile/utils/profileCompletion";
+import { calculateProfileCompletion } from "@/features/profile/utils/profileCompletion";
 
 interface ReviewProps {
   onBack: () => void;
   onSave: () => Promise<void>;
   saving: boolean;
+
+  /*
+   * Verification is owned by the profile page.
+   *
+   * Review only decides where the verification experience
+   * should appear in the profile journey.
+   *
+   * This keeps Review independent from verification API/state
+   * implementation details while allowing verification to live
+   * beside the final Save Profile action.
+   */
+  verificationContent?: ReactNode;
 }
 
 interface SummaryItemProps {
@@ -44,9 +53,9 @@ interface SummaryItemProps {
 interface ReviewSectionProps {
   title: string;
   description: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   complete: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 function displayValue(
@@ -251,6 +260,7 @@ export default function Review({
   onBack,
   onSave,
   saving,
+  verificationContent,
 }: ReviewProps) {
   const {
     basicInfo,
@@ -268,7 +278,7 @@ export default function Review({
    * Completion
    * =========================================================
    *
-   * Uses the same 20-field core completion model as ProfileService.
+   * Uses the same core completion model as ProfileService.
    * Optional fields and photos do not block 100%.
    */
 
@@ -347,6 +357,7 @@ export default function Review({
    * section itself must never appear incomplete because optional
    * church details were left blank.
    */
+
   const churchComplete = true;
 
   const educationComplete =
@@ -381,6 +392,7 @@ export default function Review({
    * Partner Preferences are completely optional and therefore
    * never block profile completion or verification submission.
    */
+
   const preferenceComplete = true;
 
   const primaryPhoto =
@@ -423,7 +435,7 @@ export default function Review({
               </h2>
 
               <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">
-                Review your information before saving your Holy Matrimony profile.
+                Review your information, save your latest details and submit your profile for verification when ready.
               </p>
             </div>
           </div>
@@ -1236,7 +1248,7 @@ export default function Review({
 
               <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
                 {profileInformationComplete
-                  ? "All 30 core profile fields are complete. Optional community, lifestyle, appearance and photo information can still be changed anytime."
+                  ? "Your required profile information is complete. Save any latest changes below, then submit your profile for verification."
                   : "Return to the relevant steps and complete the remaining required fields. Optional fields and photos do not prevent 100% completion."}
               </p>
             </div>
@@ -1256,63 +1268,106 @@ export default function Review({
             />
 
             {profileInformationComplete
-              ? "Ready to save"
+              ? "Ready to save & verify"
               : `${completedFields}/${totalRequiredFields} fields complete`}
           </div>
         </div>
       </Card>
 
       {/* =====================================================
-          Navigation
+          Save Profile
           ===================================================== */}
 
-      <Card className="p-4 sm:p-5">
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Button
-            type="button"
-            variant="secondary"
-            fullWidth
-            className="sm:w-auto"
-            onClick={
-              onBack
-            }
-            disabled={
-              saving
-            }
-          >
-            Back
-          </Button>
+      <Card className="overflow-hidden p-0">
+        <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-blue-50 px-4 py-3.5 sm:px-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#0B2D5C] text-white shadow-sm">
+              <ShieldCheck
+                size={18}
+              />
+            </div>
 
-          <Button
-            type="button"
-            variant="primary"
-            fullWidth
-            className="sm:w-auto"
-            onClick={() => {
-              void handleSubmit();
-            }}
-            disabled={
-              saving
-            }
-            leftIcon={
-              saving ? (
-                <Loader2
-                  size={18}
-                  className="animate-spin"
-                />
-              ) : (
-                <ShieldCheck
-                  size={18}
-                />
-              )
-            }
-          >
-            {saving
-              ? "Saving Profile..."
-              : "Save My Profile"}
-          </Button>
+            <div>
+              <h3 className="text-sm font-black text-[#0B2D5C] sm:text-base">
+                Save your profile
+              </h3>
+
+              <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
+                Save your latest changes before submitting the profile for verification.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-5">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Button
+              type="button"
+              variant="secondary"
+              fullWidth
+              className="sm:w-auto"
+              onClick={
+                onBack
+              }
+              disabled={
+                saving
+              }
+            >
+              Back
+            </Button>
+
+            <Button
+              type="button"
+              variant="primary"
+              fullWidth
+              className="sm:w-auto"
+              onClick={() => {
+                void handleSubmit();
+              }}
+              disabled={
+                saving
+              }
+              leftIcon={
+                saving ? (
+                  <Loader2
+                    size={18}
+                    className="animate-spin"
+                  />
+                ) : (
+                  <ShieldCheck
+                    size={18}
+                  />
+                )
+              }
+            >
+              {saving
+                ? "Saving Profile..."
+                : "Save My Profile"}
+            </Button>
+          </div>
         </div>
       </Card>
+
+      {/* =====================================================
+          Verification
+          =====================================================
+       *
+       * The profile page supplies the existing
+       * ProfileVerificationCard here.
+       *
+       * This places verification directly after Save My Profile
+       * instead of keeping the submission CTA as a separate
+       * permanent sidebar action.
+       */}
+
+      {verificationContent && (
+        <section
+          aria-label="Profile verification"
+          className="pt-1"
+        >
+          {verificationContent}
+        </section>
+      )}
     </div>
   );
 }
