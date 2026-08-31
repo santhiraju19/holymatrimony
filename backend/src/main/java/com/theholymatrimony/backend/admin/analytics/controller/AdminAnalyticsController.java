@@ -1,18 +1,16 @@
 package com.theholymatrimony.backend.admin.analytics.controller;
 
+import com.theholymatrimony.backend.admin.analytics.dto.AdminAnalyticsDetailResponse;
 import com.theholymatrimony.backend.admin.analytics.dto.AdminAnalyticsResponse;
+import com.theholymatrimony.backend.admin.analytics.service.AdminAnalyticsDetailService;
 import com.theholymatrimony.backend.admin.analytics.service.AdminAnalyticsExportService;
 import com.theholymatrimony.backend.admin.analytics.service.AdminAnalyticsService;
 import com.theholymatrimony.backend.common.response.ApiResponse;
-
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.format.annotation.DateTimeFormat;
-
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -21,14 +19,15 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 
 @RestController
-@RequestMapping(
-        "/api/v1/admin/analytics"
-)
+@RequestMapping("/api/v1/admin/analytics")
 @RequiredArgsConstructor
 public class AdminAnalyticsController {
 
     private final AdminAnalyticsService
             adminAnalyticsService;
+
+    private final AdminAnalyticsDetailService
+            adminAnalyticsDetailService;
 
     private final AdminAnalyticsExportService
             adminAnalyticsExportService;
@@ -38,23 +37,17 @@ public class AdminAnalyticsController {
             ApiResponse<AdminAnalyticsResponse>
             >
     getAnalytics(
-
-            @RequestParam(
-                    required = false
-            )
+            @RequestParam(required = false)
             @DateTimeFormat(
                     iso = DateTimeFormat.ISO.DATE
             )
             LocalDate from,
 
-            @RequestParam(
-                    required = false
-            )
+            @RequestParam(required = false)
             @DateTimeFormat(
                     iso = DateTimeFormat.ISO.DATE
             )
             LocalDate to
-
     ) {
 
         AdminAnalyticsResponse response =
@@ -71,33 +64,82 @@ public class AdminAnalyticsController {
         );
     }
 
+    @GetMapping("/details")
+    public ResponseEntity<
+            ApiResponse<AdminAnalyticsDetailResponse>
+            >
+    getDetails(
+            @RequestParam
+            String metric,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(
+                    iso = DateTimeFormat.ISO.DATE
+            )
+            LocalDate from,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(
+                    iso = DateTimeFormat.ISO.DATE
+            )
+            LocalDate to,
+
+            @RequestParam(required = false)
+            String search,
+
+            @RequestParam(
+                    required = false,
+                    defaultValue = "0"
+            )
+            Integer page,
+
+            @RequestParam(
+                    required = false,
+                    defaultValue = "20"
+            )
+            Integer size
+    ) {
+
+        AdminAnalyticsDetailResponse response =
+                adminAnalyticsDetailService
+                        .getDetails(
+                                metric,
+                                from,
+                                to,
+                                search,
+                                page,
+                                size
+                        );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        response
+                )
+        );
+    }
+
     @GetMapping(
             value = "/export/users",
             produces = "text/csv"
     )
     public ResponseEntity<byte[]>
     exportUsers(
-
-            @RequestParam(
-                    required = false
-            )
+            @RequestParam(required = false)
             @DateTimeFormat(
                     iso = DateTimeFormat.ISO.DATE
             )
             LocalDate from,
 
-            @RequestParam(
-                    required = false
-            )
+            @RequestParam(required = false)
             @DateTimeFormat(
                     iso = DateTimeFormat.ISO.DATE
             )
             LocalDate to
-
     ) {
 
         return csv(
                 "holy-matrimony-users.csv",
+
                 adminAnalyticsExportService
                         .exportUsers(
                                 from,
@@ -112,27 +154,22 @@ public class AdminAnalyticsController {
     )
     public ResponseEntity<byte[]>
     exportProfiles(
-
-            @RequestParam(
-                    required = false
-            )
+            @RequestParam(required = false)
             @DateTimeFormat(
                     iso = DateTimeFormat.ISO.DATE
             )
             LocalDate from,
 
-            @RequestParam(
-                    required = false
-            )
+            @RequestParam(required = false)
             @DateTimeFormat(
                     iso = DateTimeFormat.ISO.DATE
             )
             LocalDate to
-
     ) {
 
         return csv(
                 "holy-matrimony-profiles.csv",
+
                 adminAnalyticsExportService
                         .exportProfiles(
                                 from,
@@ -147,27 +184,22 @@ public class AdminAnalyticsController {
     )
     public ResponseEntity<byte[]>
     exportMemberships(
-
-            @RequestParam(
-                    required = false
-            )
+            @RequestParam(required = false)
             @DateTimeFormat(
                     iso = DateTimeFormat.ISO.DATE
             )
             LocalDate from,
 
-            @RequestParam(
-                    required = false
-            )
+            @RequestParam(required = false)
             @DateTimeFormat(
                     iso = DateTimeFormat.ISO.DATE
             )
             LocalDate to
-
     ) {
 
         return csv(
                 "holy-matrimony-memberships.csv",
+
                 adminAnalyticsExportService
                         .exportMemberships(
                                 from,
@@ -182,27 +214,22 @@ public class AdminAnalyticsController {
     )
     public ResponseEntity<byte[]>
     exportPayments(
-
-            @RequestParam(
-                    required = false
-            )
+            @RequestParam(required = false)
             @DateTimeFormat(
                     iso = DateTimeFormat.ISO.DATE
             )
             LocalDate from,
 
-            @RequestParam(
-                    required = false
-            )
+            @RequestParam(required = false)
             @DateTimeFormat(
                     iso = DateTimeFormat.ISO.DATE
             )
             LocalDate to
-
     ) {
 
         return csv(
                 "holy-matrimony-payments.csv",
+
                 adminAnalyticsExportService
                         .exportPayments(
                                 from,
@@ -221,6 +248,7 @@ public class AdminAnalyticsController {
                 .ok()
                 .header(
                         HttpHeaders.CONTENT_DISPOSITION,
+
                         "attachment; filename=\""
                                 + fileName
                                 + "\""
