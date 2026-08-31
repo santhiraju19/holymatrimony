@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  type ComponentType,
+  type FormEvent,
   useCallback,
   useEffect,
   useState,
@@ -9,12 +11,14 @@ import {
 import {
   AlertCircle,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Crown,
-  Download,
-  FileSpreadsheet,
+  Eye,
   Loader2,
   RefreshCw,
+  Search,
   TrendingUp,
   UserCheck,
   Users,
@@ -32,8 +36,16 @@ import {
 
 import type {
   AdminAnalyticsData,
-  AdminAnalyticsExportType,
+  AdminAnalyticsDetailData,
+  AdminAnalyticsDetailRow,
+  AdminAnalyticsMetric,
 } from "../types";
+
+type IconType =
+  ComponentType<{
+    size?: number;
+    className?: string;
+  }>;
 
 function localDateValue(
   date: Date
@@ -88,6 +100,7 @@ function formatCurrency(
     {
       style: "currency",
       currency: "INR",
+      minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }
   ).format(value ?? 0);
@@ -101,36 +114,106 @@ function formatPercent(
   ).toFixed(1)}%`;
 }
 
-const exportOptions: Array<{
-  type: AdminAnalyticsExportType;
-  label: string;
-  description: string;
-}> = [
-  {
-    type: "users",
-    label: "Users CSV",
-    description:
-      "Registration and account details.",
-  },
-  {
-    type: "profiles",
-    label: "Profiles CSV",
-    description:
-      "Completion, visibility and verification.",
-  },
-  {
-    type: "memberships",
-    label: "Memberships CSV",
-    description:
-      "Plans, dates and membership status.",
-  },
-  {
-    type: "payments",
-    label: "Payments CSV",
-    description:
-      "Transactions and payment reconciliation.",
-  },
-];
+function formatDate(
+  value?: string | null
+): string {
+  if (!value) {
+    return "—";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat(
+    "en-IN",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }
+  ).format(date);
+}
+
+function formatDateTime(
+  value?: string | null
+): string {
+  if (!value) {
+    return "—";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat(
+    "en-IN",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+  ).format(date);
+}
+
+function isUserMetric(
+  metric: AdminAnalyticsMetric
+): boolean {
+  return (
+    metric === "REGISTERED_USERS" ||
+    metric === "TOTAL_USERS"
+  );
+}
+
+function isProfileMetric(
+  metric: AdminAnalyticsMetric
+): boolean {
+  return (
+    metric === "PROFILES_CREATED" ||
+    metric === "COMPLETED_PROFILES" ||
+    metric === "INCOMPLETE_PROFILES" ||
+    metric === "BROWSE_VISIBLE"
+  );
+}
+
+function isMembershipMetric(
+  metric: AdminAnalyticsMetric
+): boolean {
+  return (
+    metric === "PAID_MEMBERSHIPS" ||
+    metric === "SILVER_MEMBERSHIPS" ||
+    metric === "GOLD_MEMBERSHIPS" ||
+    metric === "PLATINUM_MEMBERSHIPS"
+  );
+}
+
+function isPaymentMetric(
+  metric: AdminAnalyticsMetric
+): boolean {
+  return (
+    metric === "SUCCESSFUL_PAYMENTS" ||
+    metric === "PENDING_PAYMENTS" ||
+    metric === "FAILED_PAYMENTS" ||
+    metric === "PERIOD_REVENUE" ||
+    metric === "LIFETIME_REVENUE"
+  );
+}
 
 export default function AdminAnalytics() {
   const [
@@ -168,7 +251,8 @@ export default function AdminAnalytics() {
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
 
   const [
     error,
@@ -179,12 +263,54 @@ export default function AdminAnalytics() {
     );
 
   const [
-    downloading,
-    setDownloading,
+    selectedMetric,
+    setSelectedMetric,
   ] =
-    useState<
-      AdminAnalyticsExportType | null
-    >(null);
+    useState<AdminAnalyticsMetric>(
+      "REGISTERED_USERS"
+    );
+
+  const [
+    details,
+    setDetails,
+  ] =
+    useState<AdminAnalyticsDetailData | null>(
+      null
+    );
+
+  const [
+    detailsLoading,
+    setDetailsLoading,
+  ] =
+    useState(false);
+
+  const [
+    detailsError,
+    setDetailsError,
+  ] =
+    useState<string | null>(
+      null
+    );
+
+  const [
+    search,
+    setSearch,
+  ] =
+    useState("");
+
+  const [
+    appliedSearch,
+    setAppliedSearch,
+  ] =
+    useState("");
+
+  const [
+    page,
+    setPage,
+  ] =
+    useState(0);
+
+  const pageSize = 20;
 
   const loadAnalytics =
     useCallback(
@@ -222,6 +348,54 @@ export default function AdminAnalytics() {
       []
     );
 
+  const loadDetails =
+    useCallback(
+      async () => {
+        setDetailsLoading(true);
+        setDetailsError(null);
+
+        try {
+          const result =
+            await adminService
+              .getAnalyticsDetails({
+                metric:
+                  selectedMetric,
+                from:
+                  appliedFrom,
+                to:
+                  appliedTo,
+                search:
+                  appliedSearch,
+                page,
+                size:
+                  pageSize,
+              });
+
+          setDetails(result);
+        } catch (
+          caughtError: unknown
+        ) {
+          setDetails(null);
+
+          setDetailsError(
+            getApiErrorMessage(
+              caughtError,
+              "Unable to load analytics details."
+            )
+          );
+        } finally {
+          setDetailsLoading(false);
+        }
+      },
+      [
+        selectedMetric,
+        appliedFrom,
+        appliedTo,
+        appliedSearch,
+        page,
+      ]
+    );
+
   useEffect(() => {
     void loadAnalytics(
       appliedFrom,
@@ -233,6 +407,12 @@ export default function AdminAnalytics() {
     loadAnalytics,
   ]);
 
+  useEffect(() => {
+    void loadDetails();
+  }, [
+    loadDetails,
+  ]);
+
   function applyRange() {
     if (
       from &&
@@ -242,40 +422,51 @@ export default function AdminAnalytics() {
       setError(
         "From date cannot be after to date."
       );
+
       return;
     }
 
     setError(null);
     setAppliedFrom(from);
     setAppliedTo(to);
+
+    setPage(0);
   }
 
-  async function download(
-    type: AdminAnalyticsExportType
+  function selectMetric(
+    metric: AdminAnalyticsMetric
   ) {
-    try {
-      setDownloading(type);
+    setSelectedMetric(metric);
 
-      await adminService
-        .downloadAnalyticsCsv(
-          type,
-          {
-            from: appliedFrom,
-            to: appliedTo,
-          }
-        );
-    } catch (
-      caughtError: unknown
-    ) {
-      setError(
-        getApiErrorMessage(
-          caughtError,
-          "Unable to download the report."
-        )
-      );
-    } finally {
-      setDownloading(null);
-    }
+    setSearch("");
+    setAppliedSearch("");
+    setPage(0);
+
+    window.setTimeout(
+      () => {
+        document
+          .getElementById(
+            "analytics-details"
+          )
+          ?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+      },
+      80
+    );
+  }
+
+  function submitSearch(
+    event: FormEvent
+  ) {
+    event.preventDefault();
+
+    setAppliedSearch(
+      search.trim()
+    );
+
+    setPage(0);
   }
 
   return (
@@ -286,14 +477,16 @@ export default function AdminAnalytics() {
         </p>
 
         <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-          Analytics & Exports
+          Analytics & Details
         </h1>
 
         <p className="mt-3 max-w-3xl text-blue-100">
           Analyze customer growth,
-          profile completion, membership
-          sales, payments, revenue and
-          conversion for any date range.
+          profile completion,
+          membership sales,
+          payments and revenue.
+          Click any metric to view
+          the underlying records.
         </p>
       </section>
 
@@ -305,8 +498,9 @@ export default function AdminAnalytics() {
             </h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              Select the period used for
-              analytics and CSV exports.
+              Select the period used
+              for analytics and
+              customer drill-down data.
             </p>
           </div>
 
@@ -328,7 +522,10 @@ export default function AdminAnalytics() {
               onClick={applyRange}
               className="inline-flex h-[46px] items-center justify-center gap-2 rounded-xl bg-[#0B2D5C] px-5 font-bold text-white transition hover:bg-[#123e78]"
             >
-              <RefreshCw size={17} />
+              <RefreshCw
+                size={17}
+              />
+
               Apply
             </button>
           </div>
@@ -336,344 +533,542 @@ export default function AdminAnalytics() {
       </section>
 
       {error && (
-        <section className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
-          <AlertCircle
-            size={20}
-            className="mt-0.5 shrink-0"
-          />
-
-          <p className="font-medium">
-            {error}
-          </p>
-        </section>
+        <ErrorBox
+          message={error}
+        />
       )}
 
       {loading && (
-        <div className="flex min-h-[360px] items-center justify-center">
-          <div className="text-center">
-            <Loader2
-              size={38}
-              className="mx-auto animate-spin text-blue-700"
-            />
-
-            <p className="mt-4 font-semibold text-slate-600">
-              Loading analytics...
-            </p>
-          </div>
-        </div>
+        <LoadingBlock
+          label="Loading analytics..."
+        />
       )}
 
-      {!loading && analytics && (
-        <>
-          <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-            <SummaryCard
-              label="Registered"
-              value={formatNumber(
-                analytics.registeredUsers
-              )}
-              description="New accounts in selected period."
-              icon={Users}
-            />
-
-            <SummaryCard
-              label="Completed Profiles"
-              value={formatNumber(
-                analytics.completedProfiles
-              )}
-              description="Completed profiles created in period."
-              icon={UserCheck}
-            />
-
-            <SummaryCard
-              label="Paid Memberships"
-              value={formatNumber(
-                analytics.paidMemberships
-              )}
-              description="Successful paid membership purchases."
-              icon={Crown}
-            />
-
-            <SummaryCard
-              label="Period Revenue"
-              value={formatCurrency(
-                analytics.periodRevenue
-              )}
-              description="Successful payment revenue."
-              icon={WalletCards}
-            />
-          </section>
-
-          <section className="grid gap-6 xl:grid-cols-2">
-            <AnalyticsPanel
-              title="Customer Growth"
-              icon={Users}
-            >
-              <MetricRow
-                label="Registered Users"
+      {!loading &&
+        analytics && (
+          <>
+            <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+              <SummaryCard
+                label="Registered"
                 value={formatNumber(
                   analytics.registeredUsers
                 )}
+                description="New accounts in selected period."
+                icon={Users}
+                active={
+                  selectedMetric ===
+                  "REGISTERED_USERS"
+                }
+                onClick={() =>
+                  selectMetric(
+                    "REGISTERED_USERS"
+                  )
+                }
               />
 
-              <MetricRow
-                label="Total Platform Users"
-                value={formatNumber(
-                  analytics.totalUsers
-                )}
-              />
-
-              <MetricRow
-                label="Profiles Created"
-                value={formatNumber(
-                  analytics.profilesCreated
-                )}
-              />
-
-              <MetricRow
+              <SummaryCard
                 label="Completed Profiles"
                 value={formatNumber(
                   analytics.completedProfiles
                 )}
+                description="Completed profiles created in period."
+                icon={UserCheck}
+                active={
+                  selectedMetric ===
+                  "COMPLETED_PROFILES"
+                }
+                onClick={() =>
+                  selectMetric(
+                    "COMPLETED_PROFILES"
+                  )
+                }
               />
 
-              <MetricRow
-                label="Incomplete Profiles"
-                value={formatNumber(
-                  analytics.incompleteProfiles
-                )}
-              />
-
-              <MetricRow
-                label="Browse Visible"
-                value={formatNumber(
-                  analytics.browseVisibleProfiles
-                )}
-              />
-            </AnalyticsPanel>
-
-            <AnalyticsPanel
-              title="Membership Sales"
-              icon={Crown}
-            >
-              <MetricRow
-                label="Total Paid"
+              <SummaryCard
+                label="Paid Memberships"
                 value={formatNumber(
                   analytics.paidMemberships
                 )}
+                description="Successful paid membership purchases."
+                icon={Crown}
+                active={
+                  selectedMetric ===
+                  "PAID_MEMBERSHIPS"
+                }
+                onClick={() =>
+                  selectMetric(
+                    "PAID_MEMBERSHIPS"
+                  )
+                }
               />
 
-              <MetricRow
-                label="Silver"
-                value={formatNumber(
-                  analytics.silverMemberships
-                )}
-              />
-
-              <MetricRow
-                label="Gold"
-                value={formatNumber(
-                  analytics.goldMemberships
-                )}
-              />
-
-              <MetricRow
-                label="Platinum"
-                value={formatNumber(
-                  analytics.platinumMemberships
-                )}
-              />
-            </AnalyticsPanel>
-
-            <AnalyticsPanel
-              title="Payment Health"
-              icon={WalletCards}
-            >
-              <div className="grid gap-4 sm:grid-cols-3">
-                <StatusBox
-                  label="Successful"
-                  value={
-                    analytics.successfulPayments
-                  }
-                  icon={CheckCircle2}
-                  className="border-emerald-200 bg-emerald-50 text-emerald-700"
-                />
-
-                <StatusBox
-                  label="Pending"
-                  value={
-                    analytics.pendingPayments
-                  }
-                  icon={Clock3}
-                  className="border-amber-200 bg-amber-50 text-amber-700"
-                />
-
-                <StatusBox
-                  label="Failed"
-                  value={
-                    analytics.failedPayments
-                  }
-                  icon={XCircle}
-                  className="border-red-200 bg-red-50 text-red-700"
-                />
-              </div>
-            </AnalyticsPanel>
-
-            <AnalyticsPanel
-              title="Revenue"
-              icon={WalletCards}
-            >
-              <MetricRow
-                label="Selected Period"
+              <SummaryCard
+                label="Period Revenue"
                 value={formatCurrency(
                   analytics.periodRevenue
                 )}
-              />
-
-              <MetricRow
-                label="Lifetime"
-                value={formatCurrency(
-                  analytics.lifetimeRevenue
-                )}
-              />
-            </AnalyticsPanel>
-          </section>
-
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700">
-                <TrendingUp size={22} />
-              </div>
-
-              <div>
-                <h2 className="text-xl font-black text-[#0B2D5C]">
-                  Conversion
-                </h2>
-
-                <p className="mt-1 text-sm text-slate-500">
-                  Customer progression
-                  during the selected period.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-5 sm:grid-cols-2">
-              <ConversionBox
-                label="Registration → Profile"
-                value={
-                  analytics.registrationToProfileRate
+                description="Successful payment revenue."
+                icon={WalletCards}
+                active={
+                  selectedMetric ===
+                  "PERIOD_REVENUE"
+                }
+                onClick={() =>
+                  selectMetric(
+                    "PERIOD_REVENUE"
+                  )
                 }
               />
+            </section>
 
-              <ConversionBox
-                label="Registration → Paid"
-                value={
-                  analytics.registrationToPaidRate
-                }
-              />
+            <section className="grid gap-6 xl:grid-cols-2">
+              <AnalyticsPanel
+                title="Customer Growth"
+                icon={Users}
+              >
+                <MetricRow
+                  label="Registered Users"
+                  value={formatNumber(
+                    analytics.registeredUsers
+                  )}
+                  active={
+                    selectedMetric ===
+                    "REGISTERED_USERS"
+                  }
+                  onClick={() =>
+                    selectMetric(
+                      "REGISTERED_USERS"
+                    )
+                  }
+                />
+
+                <MetricRow
+                  label="Total Platform Users"
+                  value={formatNumber(
+                    analytics.totalUsers
+                  )}
+                  active={
+                    selectedMetric ===
+                    "TOTAL_USERS"
+                  }
+                  onClick={() =>
+                    selectMetric(
+                      "TOTAL_USERS"
+                    )
+                  }
+                />
+
+                <MetricRow
+                  label="Profiles Created"
+                  value={formatNumber(
+                    analytics.profilesCreated
+                  )}
+                  active={
+                    selectedMetric ===
+                    "PROFILES_CREATED"
+                  }
+                  onClick={() =>
+                    selectMetric(
+                      "PROFILES_CREATED"
+                    )
+                  }
+                />
+
+                <MetricRow
+                  label="Completed Profiles"
+                  value={formatNumber(
+                    analytics.completedProfiles
+                  )}
+                  active={
+                    selectedMetric ===
+                    "COMPLETED_PROFILES"
+                  }
+                  onClick={() =>
+                    selectMetric(
+                      "COMPLETED_PROFILES"
+                    )
+                  }
+                />
+
+                <MetricRow
+                  label="Incomplete Profiles"
+                  value={formatNumber(
+                    analytics.incompleteProfiles
+                  )}
+                  active={
+                    selectedMetric ===
+                    "INCOMPLETE_PROFILES"
+                  }
+                  onClick={() =>
+                    selectMetric(
+                      "INCOMPLETE_PROFILES"
+                    )
+                  }
+                />
+
+                <MetricRow
+                  label="Browse Visible"
+                  value={formatNumber(
+                    analytics.browseVisibleProfiles
+                  )}
+                  active={
+                    selectedMetric ===
+                    "BROWSE_VISIBLE"
+                  }
+                  onClick={() =>
+                    selectMetric(
+                      "BROWSE_VISIBLE"
+                    )
+                  }
+                />
+              </AnalyticsPanel>
+
+              <AnalyticsPanel
+                title="Membership Sales"
+                icon={Crown}
+              >
+                <MetricRow
+                  label="Total Paid"
+                  value={formatNumber(
+                    analytics.paidMemberships
+                  )}
+                  active={
+                    selectedMetric ===
+                    "PAID_MEMBERSHIPS"
+                  }
+                  onClick={() =>
+                    selectMetric(
+                      "PAID_MEMBERSHIPS"
+                    )
+                  }
+                />
+
+                <MetricRow
+                  label="Silver"
+                  value={formatNumber(
+                    analytics.silverMemberships
+                  )}
+                  active={
+                    selectedMetric ===
+                    "SILVER_MEMBERSHIPS"
+                  }
+                  onClick={() =>
+                    selectMetric(
+                      "SILVER_MEMBERSHIPS"
+                    )
+                  }
+                />
+
+                <MetricRow
+                  label="Gold"
+                  value={formatNumber(
+                    analytics.goldMemberships
+                  )}
+                  active={
+                    selectedMetric ===
+                    "GOLD_MEMBERSHIPS"
+                  }
+                  onClick={() =>
+                    selectMetric(
+                      "GOLD_MEMBERSHIPS"
+                    )
+                  }
+                />
+
+                <MetricRow
+                  label="Platinum"
+                  value={formatNumber(
+                    analytics.platinumMemberships
+                  )}
+                  active={
+                    selectedMetric ===
+                    "PLATINUM_MEMBERSHIPS"
+                  }
+                  onClick={() =>
+                    selectMetric(
+                      "PLATINUM_MEMBERSHIPS"
+                    )
+                  }
+                />
+              </AnalyticsPanel>
+
+              <AnalyticsPanel
+                title="Payment Health"
+                icon={WalletCards}
+              >
+                <MetricRow
+                  label="Successful"
+                  value={formatNumber(
+                    analytics.successfulPayments
+                  )}
+                  icon={
+                    CheckCircle2
+                  }
+                  active={
+                    selectedMetric ===
+                    "SUCCESSFUL_PAYMENTS"
+                  }
+                  onClick={() =>
+                    selectMetric(
+                      "SUCCESSFUL_PAYMENTS"
+                    )
+                  }
+                />
+
+                <MetricRow
+                  label="Pending"
+                  value={formatNumber(
+                    analytics.pendingPayments
+                  )}
+                  icon={Clock3}
+                  active={
+                    selectedMetric ===
+                    "PENDING_PAYMENTS"
+                  }
+                  onClick={() =>
+                    selectMetric(
+                      "PENDING_PAYMENTS"
+                    )
+                  }
+                />
+
+                <MetricRow
+                  label="Failed"
+                  value={formatNumber(
+                    analytics.failedPayments
+                  )}
+                  icon={XCircle}
+                  active={
+                    selectedMetric ===
+                    "FAILED_PAYMENTS"
+                  }
+                  onClick={() =>
+                    selectMetric(
+                      "FAILED_PAYMENTS"
+                    )
+                  }
+                />
+              </AnalyticsPanel>
+
+              <AnalyticsPanel
+                title="Revenue & Conversion"
+                icon={TrendingUp}
+              >
+                <MetricRow
+                  label="Period Revenue"
+                  value={formatCurrency(
+                    analytics.periodRevenue
+                  )}
+                  active={
+                    selectedMetric ===
+                    "PERIOD_REVENUE"
+                  }
+                  onClick={() =>
+                    selectMetric(
+                      "PERIOD_REVENUE"
+                    )
+                  }
+                />
+
+                <MetricRow
+                  label="Lifetime Revenue"
+                  value={formatCurrency(
+                    analytics.lifetimeRevenue
+                  )}
+                  active={
+                    selectedMetric ===
+                    "LIFETIME_REVENUE"
+                  }
+                  onClick={() =>
+                    selectMetric(
+                      "LIFETIME_REVENUE"
+                    )
+                  }
+                />
+
+                <StaticMetricRow
+                  label="Registered → Profile"
+                  value={formatPercent(
+                    analytics.registrationToProfileRate
+                  )}
+                />
+
+                <StaticMetricRow
+                  label="Registered → Paid"
+                  value={formatPercent(
+                    analytics.registrationToPaidRate
+                  )}
+                />
+              </AnalyticsPanel>
+            </section>
+          </>
+        )}
+
+      <section
+        id="analytics-details"
+        className="scroll-mt-24 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
+      >
+        <div className="border-b border-slate-200 p-6 sm:p-7">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+                  <Eye
+                    size={21}
+                  />
+                </div>
+
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">
+                    Drill-down
+                  </p>
+
+                  <h2 className="text-2xl font-black text-[#0B2D5C]">
+                    {details?.title ??
+                      "Analytics Details"}
+                  </h2>
+                </div>
+              </div>
+
+              <p className="mt-3 text-sm text-slate-500">
+                {selectedMetric ===
+                  "TOTAL_USERS" ||
+                selectedMetric ===
+                  "LIFETIME_REVENUE"
+                  ? "Lifetime platform data."
+                  : `${appliedFrom} through ${appliedTo}`}
+              </p>
             </div>
-          </section>
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-                <FileSpreadsheet
-                  size={22}
+            <form
+              onSubmit={
+                submitSearch
+              }
+              className="flex w-full max-w-xl gap-2"
+            >
+              <div className="relative flex-1">
+                <Search
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(
+                    event
+                  ) =>
+                    setSearch(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Search name, email, mobile, plan..."
+                  className="h-11 w-full rounded-xl border border-slate-300 bg-white pl-10 pr-4 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
 
-              <div>
-                <h2 className="text-xl font-black text-[#0B2D5C]">
-                  Export Reports
-                </h2>
+              <button
+                type="submit"
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-[#0B2D5C] px-5 text-sm font-bold text-white transition hover:bg-[#123e78]"
+              >
+                Search
+              </button>
+            </form>
+          </div>
+        </div>
 
-                <p className="mt-1 text-sm text-slate-500">
-                  CSV files use the
-                  currently applied date
-                  range.
+        {detailsError && (
+          <div className="p-6">
+            <ErrorBox
+              message={
+                detailsError
+              }
+            />
+          </div>
+        )}
+
+        {detailsLoading && (
+          <LoadingBlock
+            label="Loading records..."
+          />
+        )}
+
+        {!detailsLoading &&
+          details && (
+            <>
+              <div className="flex flex-col gap-2 border-b border-slate-100 bg-slate-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="font-bold text-slate-700">
+                  {formatNumber(
+                    details.totalElements
+                  )}{" "}
+                  {details.totalElements ===
+                  1
+                    ? "record"
+                    : "records"}
                 </p>
+
+                {appliedSearch && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch("");
+                      setAppliedSearch("");
+                      setPage(0);
+                    }}
+                    className="text-sm font-semibold text-blue-700 hover:underline"
+                  >
+                    Clear search
+                  </button>
+                )}
               </div>
-            </div>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {exportOptions.map(
-                (option) => {
-                  const active =
-                    downloading ===
-                    option.type;
-
-                  return (
-                    <button
-                      key={option.type}
-                      type="button"
-                      disabled={
-                        downloading !== null
-                      }
-                      onClick={() =>
-                        void download(
-                          option.type
-                        )
-                      }
-                      className="rounded-2xl border border-slate-200 p-5 text-left transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {active ? (
-                        <Loader2
-                          size={22}
-                          className="animate-spin text-blue-700"
-                        />
-                      ) : (
-                        <Download
-                          size={22}
-                          className="text-blue-700"
-                        />
-                      )}
-
-                      <p className="mt-4 font-black text-slate-900">
-                        {option.label}
-                      </p>
-
-                      <p className="mt-1 text-sm leading-6 text-slate-500">
-                        {
-                          option.description
-                        }
-                      </p>
-                    </button>
-                  );
+              <DetailTable
+                metric={
+                  selectedMetric
                 }
-              )}
-            </div>
-          </section>
-        </>
-      )}
+                rows={
+                  details.rows
+                }
+              />
+
+              <Pagination
+                page={
+                  details.page
+                }
+                totalPages={
+                  details.totalPages
+                }
+                totalElements={
+                  details.totalElements
+                }
+                pageSize={
+                  details.size
+                }
+                onPrevious={() =>
+                  setPage((current) =>
+                    Math.max(
+                      0,
+                      current - 1
+                    )
+                  )
+                }
+                onNext={() =>
+                  setPage((current) =>
+                    Math.min(
+                      Math.max(
+                        0,
+                        details.totalPages -
+                          1
+                      ),
+                      current + 1
+                    )
+                  )
+                }
+              />
+            </>
+          )}
+      </section>
     </main>
-  );
-}
-
-function DateInput({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-        {label}
-      </span>
-
-      <input
-        type="date"
-        value={value}
-        onChange={(event) =>
-          onChange(
-            event.target.value
-          )
-        }
-        className="h-[46px] rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-      />
-    </label>
   );
 }
 
@@ -682,36 +1077,58 @@ function SummaryCard({
   value,
   description,
   icon: Icon,
+  active,
+  onClick,
 }: {
   label: string;
   value: string;
   description: string;
-  icon: React.ComponentType<{
-    size?: number;
-  }>;
+  icon: IconType;
+  active: boolean;
+  onClick: () => void;
 }) {
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group rounded-3xl border bg-white p-6 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
+        active
+          ? "border-blue-400 ring-2 ring-blue-100"
+          : "border-slate-200"
+      }`}
+    >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-slate-500">
+          <p className="font-bold text-slate-500">
             {label}
           </p>
 
-          <p className="mt-2 text-3xl font-black text-[#0B2D5C]">
+          <p className="mt-3 text-3xl font-black text-[#0B2D5C]">
             {value}
           </p>
-
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            {description}
-          </p>
         </div>
 
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
-          <Icon size={21} />
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition ${
+            active
+              ? "bg-blue-600 text-white"
+              : "bg-blue-50 text-blue-600 group-hover:bg-blue-100"
+          }`}
+        >
+          <Icon
+            size={23}
+          />
         </div>
       </div>
-    </article>
+
+      <p className="mt-4 text-sm leading-6 text-slate-500">
+        {description}
+      </p>
+
+      <p className="mt-4 text-xs font-bold uppercase tracking-wide text-blue-600">
+        View details →
+      </p>
+    </button>
   );
 }
 
@@ -721,31 +1138,96 @@ function AnalyticsPanel({
   children,
 }: {
   title: string;
-  icon: React.ComponentType<{
-    size?: number;
-  }>;
-  children: React.ReactNode;
+  icon: IconType;
+  children:
+    React.ReactNode;
 }) {
   return (
-    <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-          <Icon size={20} />
+    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+      <div className="mb-5 flex items-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+          <Icon
+            size={21}
+          />
         </div>
 
-        <h2 className="text-xl font-black text-[#0B2D5C]">
+        <h2 className="text-2xl font-black text-[#0B2D5C]">
           {title}
         </h2>
       </div>
 
-      <div className="mt-6">
+      <div className="divide-y divide-slate-100">
         {children}
       </div>
-    </article>
+    </section>
   );
 }
 
 function MetricRow({
+  label,
+  value,
+  icon: Icon,
+  active,
+  onClick,
+}: {
+  label: string;
+  value: string;
+  icon?: IconType;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center justify-between gap-4 rounded-xl px-1 py-4 text-left transition ${
+        active
+          ? "bg-blue-50 px-3"
+          : "hover:bg-slate-50 hover:px-3"
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        {Icon && (
+          <Icon
+            size={17}
+            className={
+              active
+                ? "text-blue-700"
+                : "text-slate-400"
+            }
+          />
+        )}
+
+        <span
+          className={`font-semibold ${
+            active
+              ? "text-blue-800"
+              : "text-slate-500"
+          }`}
+        >
+          {label}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <span className="font-black text-slate-900">
+          {value}
+        </span>
+
+        <Eye
+          size={16}
+          className={
+            active
+              ? "text-blue-700"
+              : "text-slate-300"
+          }
+        />
+      </div>
+    </button>
+  );
+}
+
+function StaticMetricRow({
   label,
   value,
 }: {
@@ -753,8 +1235,8 @@ function MetricRow({
   value: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-slate-100 py-3 first:pt-0 last:border-none last:pb-0">
-      <span className="text-sm font-semibold text-slate-500">
+    <div className="flex items-center justify-between gap-4 py-4">
+      <span className="font-semibold text-slate-500">
         {label}
       </span>
 
@@ -765,71 +1247,712 @@ function MetricRow({
   );
 }
 
-function StatusBox({
-  label,
-  value,
-  icon: Icon,
-  className,
+function DetailTable({
+  metric,
+  rows,
 }: {
-  label: string;
-  value: number;
-  icon: React.ComponentType<{
-    size?: number;
-  }>;
-  className: string;
+  metric: AdminAnalyticsMetric;
+  rows: AdminAnalyticsDetailRow[];
+}) {
+  if (rows.length === 0) {
+    return (
+      <div className="flex min-h-[250px] items-center justify-center p-8 text-center">
+        <div>
+          <Search
+            size={34}
+            className="mx-auto text-slate-300"
+          />
+
+          <h3 className="mt-4 font-black text-slate-700">
+            No records found
+          </h3>
+
+          <p className="mt-2 text-sm text-slate-500">
+            No data matches this
+            metric and reporting period.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (
+    isUserMetric(metric)
+  ) {
+    return (
+      <UserTable
+        rows={rows}
+      />
+    );
+  }
+
+  if (
+    isProfileMetric(metric)
+  ) {
+    return (
+      <ProfileTable
+        rows={rows}
+      />
+    );
+  }
+
+  if (
+    isMembershipMetric(metric)
+  ) {
+    return (
+      <MembershipTable
+        rows={rows}
+      />
+    );
+  }
+
+  if (
+    isPaymentMetric(metric)
+  ) {
+    return (
+      <PaymentTable
+        rows={rows}
+      />
+    );
+  }
+
+  return null;
+}
+
+function UserTable({
+  rows,
+}: {
+  rows: AdminAnalyticsDetailRow[];
 }) {
   return (
-    <div
-      className={`rounded-2xl border p-4 ${className}`}
-    >
-      <Icon size={20} />
+    <TableShell>
+      <thead>
+        <tr>
+          <TableHeader>
+            Customer
+          </TableHeader>
+          <TableHeader>
+            Mobile
+          </TableHeader>
+          <TableHeader>
+            Membership
+          </TableHeader>
+          <TableHeader>
+            Account Status
+          </TableHeader>
+          <TableHeader>
+            Registered
+          </TableHeader>
+        </tr>
+      </thead>
 
-      <p className="mt-3 text-2xl font-black">
-        {formatNumber(value)}
+      <tbody className="divide-y divide-slate-100">
+        {rows.map((row) => (
+          <tr
+            key={row.id}
+            className="hover:bg-slate-50"
+          >
+            <TableCell>
+              <PersonCell
+                name={row.name}
+                email={row.email}
+              />
+            </TableCell>
+
+            <TableCell>
+              {row.mobile ||
+                "—"}
+            </TableCell>
+
+            <TableCell>
+              <Badge
+                value={
+                  row.membershipPlan
+                }
+              />
+            </TableCell>
+
+            <TableCell>
+              <Badge
+                value={
+                  row.membershipStatus
+                }
+              />
+            </TableCell>
+
+            <TableCell>
+              {formatDateTime(
+                row.registeredAt
+              )}
+            </TableCell>
+          </tr>
+        ))}
+      </tbody>
+    </TableShell>
+  );
+}
+
+function ProfileTable({
+  rows,
+}: {
+  rows: AdminAnalyticsDetailRow[];
+}) {
+  return (
+    <TableShell>
+      <thead>
+        <tr>
+          <TableHeader>
+            Member
+          </TableHeader>
+          <TableHeader>
+            Gender
+          </TableHeader>
+          <TableHeader>
+            Location
+          </TableHeader>
+          <TableHeader>
+            Completion
+          </TableHeader>
+          <TableHeader>
+            Browse
+          </TableHeader>
+          <TableHeader>
+            Verification
+          </TableHeader>
+          <TableHeader>
+            Profile Created
+          </TableHeader>
+        </tr>
+      </thead>
+
+      <tbody className="divide-y divide-slate-100">
+        {rows.map((row) => (
+          <tr
+            key={row.id}
+            className="hover:bg-slate-50"
+          >
+            <TableCell>
+              <PersonCell
+                name={row.name}
+                email={row.email}
+              />
+            </TableCell>
+
+            <TableCell>
+              {row.gender ||
+                "—"}
+            </TableCell>
+
+            <TableCell>
+              {row.location ||
+                "—"}
+            </TableCell>
+
+            <TableCell>
+              <div className="min-w-28">
+                <div className="mb-1 flex justify-between text-xs font-semibold">
+                  <span>
+                    {row.completionPercentage ??
+                      0}
+                    %
+                  </span>
+                </div>
+
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-blue-600"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        Math.max(
+                          0,
+                          row.completionPercentage ??
+                            0
+                        )
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            </TableCell>
+
+            <TableCell>
+              <Badge
+                value={
+                  row.profileCompleted
+                    ? "LIVE"
+                    : "HIDDEN"
+                }
+              />
+            </TableCell>
+
+            <TableCell>
+              <Badge
+                value={
+                  row.verificationStatus
+                }
+              />
+            </TableCell>
+
+            <TableCell>
+              {formatDate(
+                row.createdAt
+              )}
+            </TableCell>
+          </tr>
+        ))}
+      </tbody>
+    </TableShell>
+  );
+}
+
+function MembershipTable({
+  rows,
+}: {
+  rows: AdminAnalyticsDetailRow[];
+}) {
+  return (
+    <TableShell>
+      <thead>
+        <tr>
+          <TableHeader>
+            Customer
+          </TableHeader>
+          <TableHeader>
+            Plan
+          </TableHeader>
+          <TableHeader>
+            Amount
+          </TableHeader>
+          <TableHeader>
+            Membership
+          </TableHeader>
+          <TableHeader>
+            Payment
+          </TableHeader>
+          <TableHeader>
+            Paid
+          </TableHeader>
+          <TableHeader>
+            Expires
+          </TableHeader>
+        </tr>
+      </thead>
+
+      <tbody className="divide-y divide-slate-100">
+        {rows.map((row) => (
+          <tr
+            key={row.id}
+            className="hover:bg-slate-50"
+          >
+            <TableCell>
+              <PersonCell
+                name={row.name}
+                email={row.email}
+              />
+            </TableCell>
+
+            <TableCell>
+              <Badge
+                value={
+                  row.membershipPlan
+                }
+              />
+            </TableCell>
+
+            <TableCell>
+              <span className="font-bold text-slate-900">
+                {formatCurrency(
+                  row.amount ?? 0
+                )}
+              </span>
+            </TableCell>
+
+            <TableCell>
+              <Badge
+                value={
+                  row.membershipStatus
+                }
+              />
+            </TableCell>
+
+            <TableCell>
+              <Badge
+                value={
+                  row.paymentStatus
+                }
+              />
+            </TableCell>
+
+            <TableCell>
+              {formatDateTime(
+                row.paidAt
+              )}
+            </TableCell>
+
+            <TableCell>
+              {formatDate(
+                row.expiryDate
+              )}
+            </TableCell>
+          </tr>
+        ))}
+      </tbody>
+    </TableShell>
+  );
+}
+
+function PaymentTable({
+  rows,
+}: {
+  rows: AdminAnalyticsDetailRow[];
+}) {
+  return (
+    <TableShell>
+      <thead>
+        <tr>
+          <TableHeader>
+            Customer
+          </TableHeader>
+          <TableHeader>
+            Plan
+          </TableHeader>
+          <TableHeader>
+            Amount
+          </TableHeader>
+          <TableHeader>
+            Status
+          </TableHeader>
+          <TableHeader>
+            Source
+          </TableHeader>
+          <TableHeader>
+            Payment ID
+          </TableHeader>
+          <TableHeader>
+            Paid / Created
+          </TableHeader>
+        </tr>
+      </thead>
+
+      <tbody className="divide-y divide-slate-100">
+        {rows.map((row) => (
+          <tr
+            key={row.id}
+            className="hover:bg-slate-50"
+          >
+            <TableCell>
+              <PersonCell
+                name={row.name}
+                email={row.email}
+              />
+            </TableCell>
+
+            <TableCell>
+              <Badge
+                value={
+                  row.membershipPlan
+                }
+              />
+            </TableCell>
+
+            <TableCell>
+              <span className="font-bold text-slate-900">
+                {formatCurrency(
+                  row.amount ?? 0
+                )}
+              </span>
+            </TableCell>
+
+            <TableCell>
+              <Badge
+                value={
+                  row.paymentStatus
+                }
+              />
+            </TableCell>
+
+            <TableCell>
+              {row.paymentSource ||
+                row.paymentMethod ||
+                "—"}
+            </TableCell>
+
+            <TableCell>
+              <div className="max-w-[190px] truncate font-mono text-xs text-slate-500">
+                {row.razorpayPaymentId ||
+                  row.razorpayOrderId ||
+                  "—"}
+              </div>
+            </TableCell>
+
+            <TableCell>
+              {formatDateTime(
+                row.paidAt ||
+                  row.createdAt
+              )}
+            </TableCell>
+          </tr>
+        ))}
+      </tbody>
+    </TableShell>
+  );
+}
+
+function TableShell({
+  children,
+}: {
+  children:
+    React.ReactNode;
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full text-sm">
+        {children}
+      </table>
+    </div>
+  );
+}
+
+function TableHeader({
+  children,
+}: {
+  children:
+    React.ReactNode;
+}) {
+  return (
+    <th className="whitespace-nowrap border-b border-slate-200 bg-slate-50 px-5 py-4 text-left text-xs font-black uppercase tracking-wide text-slate-500">
+      {children}
+    </th>
+  );
+}
+
+function TableCell({
+  children,
+}: {
+  children:
+    React.ReactNode;
+}) {
+  return (
+    <td className="whitespace-nowrap px-5 py-4 align-middle text-slate-600">
+      {children}
+    </td>
+  );
+}
+
+function PersonCell({
+  name,
+  email,
+}: {
+  name?: string | null;
+  email?: string | null;
+}) {
+  return (
+    <div>
+      <p className="font-bold text-slate-900">
+        {name ||
+          "Unnamed customer"}
       </p>
 
-      <p className="mt-1 text-xs font-bold uppercase tracking-wide">
-        {label}
+      <p className="mt-1 text-xs text-slate-500">
+        {email ||
+          "No email"}
       </p>
     </div>
   );
 }
 
-function ConversionBox({
-  label,
+function Badge({
   value,
 }: {
-  label: string;
-  value: number;
+  value?:
+    | string
+    | null;
 }) {
-  const safeValue =
+  if (!value) {
+    return (
+      <span className="text-slate-400">
+        —
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+      {value.replaceAll(
+        "_",
+        " "
+      )}
+    </span>
+  );
+}
+
+function Pagination({
+  page,
+  totalPages,
+  totalElements,
+  pageSize,
+  onPrevious,
+  onNext,
+}: {
+  page: number;
+  totalPages: number;
+  totalElements: number;
+  pageSize: number;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
+  const start =
+    totalElements === 0
+      ? 0
+      : page *
+          pageSize +
+        1;
+
+  const end =
     Math.min(
-      100,
-      Math.max(
-        0,
-        Number(value ?? 0)
-      )
+      totalElements,
+      (page + 1) *
+        pageSize
     );
 
   return (
-    <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-5">
-      <p className="font-semibold text-indigo-700">
+    <div className="flex flex-col gap-4 border-t border-slate-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-slate-500">
+        Showing{" "}
+        <span className="font-bold text-slate-700">
+          {formatNumber(start)}
+        </span>{" "}
+        –{" "}
+        <span className="font-bold text-slate-700">
+          {formatNumber(end)}
+        </span>{" "}
+        of{" "}
+        <span className="font-bold text-slate-700">
+          {formatNumber(
+            totalElements
+          )}
+        </span>
+      </p>
+
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          disabled={
+            page <= 0
+          }
+          onClick={
+            onPrevious
+          }
+          className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-300 px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <ChevronLeft
+            size={16}
+          />
+
+          Previous
+        </button>
+
+        <span className="text-sm font-semibold text-slate-600">
+          Page{" "}
+          {totalPages === 0
+            ? 0
+            : page + 1}{" "}
+          of{" "}
+          {totalPages}
+        </span>
+
+        <button
+          type="button"
+          disabled={
+            totalPages === 0 ||
+            page >=
+              totalPages - 1
+          }
+          onClick={
+            onNext
+          }
+          className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-300 px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Next
+
+          <ChevronRight
+            size={16}
+          />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DateInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange:
+    (value: string) =>
+      void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
         {label}
-      </p>
+      </span>
 
-      <p className="mt-2 text-3xl font-black text-indigo-950">
-        {formatPercent(
-          safeValue
-        )}
-      </p>
+      <input
+        type="date"
+        value={value}
+        onChange={(
+          event
+        ) =>
+          onChange(
+            event.target.value
+          )
+        }
+        className="h-[46px] rounded-xl border border-slate-300 bg-white px-4 font-semibold text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+      />
+    </label>
+  );
+}
 
-      <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white">
-        <div
-          className="h-full rounded-full bg-indigo-600"
-          style={{
-            width: `${safeValue}%`,
-          }}
+function ErrorBox({
+  message,
+}: {
+  message: string;
+}) {
+  return (
+    <section className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+      <AlertCircle
+        size={20}
+        className="mt-0.5 shrink-0"
+      />
+
+      <p className="font-medium">
+        {message}
+      </p>
+    </section>
+  );
+}
+
+function LoadingBlock({
+  label,
+}: {
+  label: string;
+}) {
+  return (
+    <div className="flex min-h-[260px] items-center justify-center">
+      <div className="text-center">
+        <Loader2
+          size={36}
+          className="mx-auto animate-spin text-blue-700"
         />
+
+        <p className="mt-4 font-semibold text-slate-600">
+          {label}
+        </p>
       </div>
     </div>
   );

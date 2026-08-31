@@ -2,7 +2,9 @@ import api from "@/lib/api";
 
 import type {
   AdminAnalyticsData,
+  AdminAnalyticsDetailData,
   AdminAnalyticsExportType,
+  AdminAnalyticsMetric,
   AdminDashboardData,
 } from "../types";
 
@@ -15,6 +17,13 @@ interface ApiEnvelope<T> {
 interface AnalyticsDateRange {
   from?: string;
   to?: string;
+}
+
+interface AnalyticsDetailParams extends AnalyticsDateRange {
+  metric: AdminAnalyticsMetric;
+  search?: string;
+  page?: number;
+  size?: number;
 }
 
 function buildDateParams(
@@ -36,7 +45,6 @@ function buildDateParams(
 export const adminService = {
   async getDashboard():
     Promise<AdminDashboardData> {
-
     const response = await api.get<
       ApiEnvelope<AdminDashboardData>
     >("/admin/dashboard");
@@ -47,7 +55,6 @@ export const adminService = {
   async getAnalytics(
     range?: AnalyticsDateRange
   ): Promise<AdminAnalyticsData> {
-
     const params =
       buildDateParams(range);
 
@@ -65,11 +72,47 @@ export const adminService = {
     return response.data.data;
   },
 
+  async getAnalyticsDetails(
+    options: AnalyticsDetailParams
+  ): Promise<AdminAnalyticsDetailData> {
+    const params =
+      buildDateParams(options);
+
+    params.set(
+      "metric",
+      options.metric
+    );
+
+    params.set(
+      "page",
+      String(options.page ?? 0)
+    );
+
+    params.set(
+      "size",
+      String(options.size ?? 20)
+    );
+
+    if (options.search?.trim()) {
+      params.set(
+        "search",
+        options.search.trim()
+      );
+    }
+
+    const response = await api.get<
+      ApiEnvelope<AdminAnalyticsDetailData>
+    >(
+      `/admin/analytics/details?${params.toString()}`
+    );
+
+    return response.data.data;
+  },
+
   async downloadAnalyticsCsv(
     type: AdminAnalyticsExportType,
     range?: AnalyticsDateRange
   ): Promise<void> {
-
     const params =
       buildDateParams(range);
 

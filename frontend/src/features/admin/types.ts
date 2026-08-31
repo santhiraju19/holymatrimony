@@ -73,3 +73,69 @@ export type AdminAnalyticsExportType =
   | "profiles"
   | "memberships"
   | "payments";
+
+export type AdminAnalyticsMetric =
+  | "REGISTERED_USERS"
+  | "TOTAL_USERS"
+  | "PROFILES_CREATED"
+  | "COMPLETED_PROFILES"
+  | "INCOMPLETE_PROFILES"
+  | "BROWSE_VISIBLE"
+  | "PAID_MEMBERSHIPS"
+  | "SILVER_MEMBERSHIPS"
+  | "GOLD_MEMBERSHIPS"
+  | "PLATINUM_MEMBERSHIPS"
+  | "SUCCESSFUL_PAYMENTS"
+  | "PENDING_PAYMENTS"
+  | "FAILED_PAYMENTS"
+  | "PERIOD_REVENUE"
+  | "LIFETIME_REVENUE";
+
+export interface AdminAnalyticsDetailRow {
+  id: string;
+  userId?: string | null;
+
+  name?: string | null;
+  email?: string | null;
+  mobile?: string | null;
+
+  gender?: string | null;
+  location?: string | null;
+
+  completionPercentage?: number | null;
+  profileCompleted?: boolean | null;
+  verificationStatus?: string | null;
+
+  membershipPlan?: string | null;
+  membershipStatus?: string | null;
+
+  paymentStatus?: string | null;
+  paymentSource?: string | null;
+  paymentMethod?: string | null;
+
+  amount?: number | null;
+
+  razorpayOrderId?: string | null;
+  razorpayPaymentId?: string | null;
+
+  registeredAt?: string | null;
+  createdAt?: string | null;
+  paidAt?: string | null;
+  startDate?: string | null;
+  expiryDate?: string | null;
+}
+
+export interface AdminAnalyticsDetailData {
+  metric: AdminAnalyticsMetric;
+  title: string;
+
+  from: string;
+  to: string;
+
+  totalElements: number;
+  page: number;
+  size: number;
+  totalPages: number;
+
+  rows: AdminAnalyticsDetailRow[];
+}
