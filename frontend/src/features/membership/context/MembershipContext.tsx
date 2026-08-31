@@ -23,23 +23,15 @@ import {
 interface MembershipContextType {
   selectedPlan: MembershipTier;
   billingCycle: BillingCycle;
-
   checkoutData: CheckoutData;
-
-  couponCode: string;
-  discount: number;
   gst: number;
   subtotal: number;
   total: number;
-
   plan?: MembershipPlan;
 
   setSelectedPlan: (plan: MembershipTier) => void;
   setBillingCycle: (cycle: BillingCycle) => void;
   updateCheckout: (data: Partial<CheckoutData>) => void;
-
-  applyCoupon: (code: string, discount: number) => void;
-
   resetCheckout: () => void;
 }
 
@@ -63,18 +55,15 @@ export function MembershipProvider({
   const [checkoutData, setCheckoutData] =
     useState<CheckoutData>(initialCheckout);
 
-  const [couponCode, setCouponCode] = useState("");
-  const [discount, setDiscount] = useState(0);
-
   const plan = getMembershipPlan(checkoutData.plan);
 
   const subtotal = plan
     ? getPlanPrice(plan, checkoutData.billingCycle)
     : 0;
 
-  const gst = Math.round((subtotal - discount) * 0.18);
+  const gst = Math.round(subtotal * 0.18);
 
-  const total = subtotal - discount + gst;
+  const total = subtotal + gst;
 
   function setSelectedPlan(plan: MembershipTier) {
     setCheckoutData((prev) => ({
@@ -97,45 +86,26 @@ export function MembershipProvider({
     }));
   }
 
-  function applyCoupon(code: string, amount: number) {
-    setCouponCode(code);
-    setDiscount(amount);
-  }
-
   function resetCheckout() {
     setCheckoutData(initialCheckout);
-    setCouponCode("");
-    setDiscount(0);
   }
 
   const value = useMemo(
     () => ({
       selectedPlan: checkoutData.plan,
       billingCycle: checkoutData.billingCycle,
-
       checkoutData,
-
-      couponCode,
-      discount,
-
       subtotal,
       gst,
       total,
-
       plan,
-
       setSelectedPlan,
       setBillingCycle,
       updateCheckout,
-
-      applyCoupon,
-
       resetCheckout,
     }),
     [
       checkoutData,
-      couponCode,
-      discount,
       subtotal,
       gst,
       total,
