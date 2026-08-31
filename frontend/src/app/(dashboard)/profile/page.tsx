@@ -25,7 +25,6 @@ import { calculateProfileCompletion } from "@/features/profile/utils/profileComp
 
 import ProfileCompletionCard from "@/features/profile/components/ProfileCompletionCard";
 import ProfileStepper from "@/features/profile/components/ProfileStepper";
-import ProfileVerificationCard from "@/features/profile/components/ProfileVerificationCard";
 
 import BasicInfoForm from "@/features/profile/components/BasicInfoForm";
 import ChurchInfoForm from "@/features/profile/components/ChurchInfoForm";
@@ -35,9 +34,7 @@ import PreferencesForm from "@/features/profile/components/PreferencesForm";
 import PhotoUpload from "@/features/profile/components/PhotoUpload";
 import Review from "@/features/profile/components/Review";
 
-import profileService, {
-  type ProfileVerificationStatus,
-} from "@/features/profile/services/profile.service";
+import profileService from "@/features/profile/services/profile.service";
 
 const TOTAL_STEPS = 7;
 
@@ -65,58 +62,6 @@ export default function ProfilePage() {
   ] = useState<string | null>(
     null
   );
-
-  /*
-   * =========================================================
-   * Verification state
-   * =========================================================
-   */
-
-  const [
-    verificationStatus,
-    setVerificationStatus,
-  ] =
-    useState<ProfileVerificationStatus>(
-      "NOT_SUBMITTED"
-    );
-
-  const [
-    verificationSubmittedAt,
-    setVerificationSubmittedAt,
-  ] =
-    useState<string | null>(
-      null
-    );
-
-  const [
-    verificationReviewedAt,
-    setVerificationReviewedAt,
-  ] =
-    useState<string | null>(
-      null
-    );
-
-  const [
-    verificationReason,
-    setVerificationReason,
-  ] =
-    useState<string | null>(
-      null
-    );
-
-  const [
-    submittingVerification,
-    setSubmittingVerification,
-  ] =
-    useState(false);
-
-  const [
-    verificationError,
-    setVerificationError,
-  ] =
-    useState<string | null>(
-      null
-    );
 
   /*
    * =========================================================
@@ -206,26 +151,6 @@ export default function ProfilePage() {
           return;
         }
 
-        setVerificationStatus(
-          data.verificationStatus ??
-            "NOT_SUBMITTED"
-        );
-
-        setVerificationSubmittedAt(
-          data.verificationSubmittedAt ??
-            null
-        );
-
-        setVerificationReviewedAt(
-          data.verificationReviewedAt ??
-            null
-        );
-
-        setVerificationReason(
-          data.verificationReason ??
-            null
-        );
-
         setBackendCompletionPercentage(
           data.completionPercentage ??
             0
@@ -273,26 +198,6 @@ export default function ProfilePage() {
         return;
       }
 
-      setVerificationStatus(
-        data.verificationStatus ??
-          "NOT_SUBMITTED"
-      );
-
-      setVerificationSubmittedAt(
-        data.verificationSubmittedAt ??
-          null
-      );
-
-      setVerificationReviewedAt(
-        data.verificationReviewedAt ??
-          null
-      );
-
-      setVerificationReason(
-        data.verificationReason ??
-          null
-      );
-
       setBackendCompletionPercentage(
         data.completionPercentage ??
           0
@@ -314,10 +219,6 @@ export default function ProfilePage() {
   const handleNext =
     async (): Promise<void> => {
       setSuccessMessage(
-        null
-      );
-
-      setVerificationError(
         null
       );
 
@@ -359,10 +260,6 @@ export default function ProfilePage() {
         null
       );
 
-      setVerificationError(
-        null
-      );
-
       back();
 
       window.requestAnimationFrame(
@@ -397,10 +294,6 @@ export default function ProfilePage() {
       null
     );
 
-    setVerificationError(
-      null
-    );
-
     goTo(
       targetIndex
     );
@@ -427,10 +320,6 @@ export default function ProfilePage() {
         null
       );
 
-      setVerificationError(
-        null
-      );
-
       const saved =
         await saveProfile();
 
@@ -448,7 +337,7 @@ export default function ProfilePage() {
       }
 
       setSuccessMessage(
-        "Your profile has been saved successfully."
+        "Your profile has been saved successfully. Completed profiles are now available to other members."
       );
 
       window.requestAnimationFrame(
@@ -459,195 +348,6 @@ export default function ProfilePage() {
           });
         }
       );
-    };
-
-  /*
-   * =========================================================
-   * Submit / resubmit for verification
-   * =========================================================
-   */
-
-  const handleSubmitForVerification =
-    async (): Promise<void> => {
-      if (
-        submittingVerification
-      ) {
-        return;
-      }
-
-      setSubmittingVerification(
-        true
-      );
-
-      setVerificationError(
-        null
-      );
-
-      setSuccessMessage(
-        null
-      );
-
-      try {
-        /*
-         * Save latest wizard data first.
-         */
-
-        const saved =
-          await saveProfile();
-
-        if (!saved) {
-          setVerificationError(
-            "Please save your profile before submitting it for verification."
-          );
-
-          return;
-        }
-
-        /*
-         * Re-read from backend.
-         *
-         * Backend completion is the
-         * verification source of truth.
-         */
-
-        const latestProfile =
-          await profileService
-            .getProfile();
-
-        if (!latestProfile) {
-          setVerificationError(
-            "Unable to load your saved profile."
-          );
-
-          return;
-        }
-
-        const latestCompletion =
-          latestProfile
-            .completionPercentage ??
-          0;
-
-        const latestCompleted =
-          Boolean(
-            latestProfile
-              .profileCompleted
-          );
-
-        setBackendCompletionPercentage(
-          latestCompletion
-        );
-
-        setBackendProfileCompleted(
-          latestCompleted
-        );
-
-        if (!latestCompleted) {
-          setVerificationError(
-            "Please complete all required profile information before submitting for verification."
-          );
-
-          return;
-        }
-
-        /*
-         * Backend enforces:
-         *
-         * NOT_SUBMITTED -> PENDING
-         * REJECTED      -> PENDING
-         */
-
-        const updatedProfile =
-          await profileService
-            .submitForVerification();
-
-        setVerificationStatus(
-          updatedProfile.verificationStatus ??
-            "PENDING"
-        );
-
-        setVerificationSubmittedAt(
-          updatedProfile.verificationSubmittedAt ??
-            null
-        );
-
-        setVerificationReviewedAt(
-          updatedProfile.verificationReviewedAt ??
-            null
-        );
-
-        setVerificationReason(
-          updatedProfile.verificationReason ??
-            null
-        );
-
-        setBackendCompletionPercentage(
-          updatedProfile.completionPercentage ??
-            latestCompletion
-        );
-
-        setBackendProfileCompleted(
-          Boolean(
-            updatedProfile.profileCompleted ??
-              latestCompleted
-          )
-        );
-
-        setSuccessMessage(
-          verificationStatus ===
-            "REJECTED"
-            ? "Your profile has been resubmitted for verification."
-            : "Your profile has been submitted for verification."
-        );
-
-        window.requestAnimationFrame(
-          () => {
-            window.scrollTo({
-              top: 0,
-              behavior:
-                "smooth",
-            });
-          }
-        );
-      } catch (
-        submitError
-      ) {
-        console.error(
-          "Unable to submit profile for verification:",
-          submitError
-        );
-
-        if (
-          axios.isAxiosError(
-            submitError
-          )
-        ) {
-          const responseData =
-            submitError.response
-              ?.data as
-              | {
-                  message?: string;
-                  error?: string;
-                }
-              | undefined;
-
-          setVerificationError(
-            responseData?.message ??
-              responseData?.error ??
-              "Unable to submit your profile for verification."
-          );
-        } else {
-          setVerificationError(
-            submitError instanceof
-              Error
-              ? submitError.message
-              : "Unable to submit your profile for verification."
-          );
-        }
-      } finally {
-        setSubmittingVerification(
-          false
-        );
-      }
     };
 
   /*
@@ -725,34 +425,7 @@ export default function ProfilePage() {
       saving={
         saving
       }
-      verificationContent={
-        <ProfileVerificationCard
-          status={
-            verificationStatus
-          }
-          completionPercentage={
-            backendProfileCompleted
-              ? 100
-              : backendCompletionPercentage
-          }
-          submittedAt={
-            verificationSubmittedAt
-          }
-          reviewedAt={
-            verificationReviewedAt
-          }
-          reason={
-            verificationReason
-          }
-          submitting={
-            submittingVerification
-          }
-          onSubmit={
-            handleSubmitForVerification
-          }
-        />
-      }
-    />,
+          />,
   ];
 
   /*
@@ -920,7 +593,7 @@ export default function ProfilePage() {
             "saved" &&
           !successMessage &&
           !error &&
-          !verificationError && (
+          (
             <StatusMessage
               tone="green"
               icon={
@@ -947,25 +620,10 @@ export default function ProfilePage() {
           </StatusMessage>
         )}
 
-        {verificationError && (
-          <StatusMessage
-            tone="red"
-            icon={
-              <AlertCircle
-                size={15}
-              />
-            }
-            role="alert"
-          >
-            {
-              verificationError
-            }
-          </StatusMessage>
-        )}
 
         {successMessage &&
           !error &&
-          !verificationError && (
+          (
             <StatusMessage
               tone="green"
               icon={

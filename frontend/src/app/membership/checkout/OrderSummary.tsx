@@ -13,7 +13,6 @@ import {
   ReceiptText,
   ShieldCheck,
   Sparkles,
-  Tag,
 } from "lucide-react";
 
 import {
@@ -30,10 +29,6 @@ import {
   paymentService,
 } from "@/features/membership/services/payment.service";
 
-import {
-  membershipActivationService,
-  type WaiverPlan,
-} from "@/features/membership/services/membershipActivation.service";
 
 /*
  * ============================================================
@@ -263,10 +258,8 @@ export default function OrderSummary() {
     plan,
     billingCycle,
     subtotal,
-    discount,
     gst,
     total,
-    couponCode,
     checkoutData,
     resetCheckout,
   } = useMembership();
@@ -302,41 +295,18 @@ export default function OrderSummary() {
   const selectedPlanName =
     plan.name;
 
-  /*
-   * ============================================================
-   * Coupon Eligibility
-   * ============================================================
-   */
-
-  const normalizedCoupon =
-    couponCode
-      .trim()
-      .toUpperCase();
-
   const isEligiblePlan =
-    checkoutData.plan ===
-      "silver" ||
-    checkoutData.plan ===
-      "gold" ||
-    checkoutData.plan ===
-      "platinum";
+    checkoutData.plan === "silver" ||
+    checkoutData.plan === "gold" ||
+    checkoutData.plan === "platinum";
 
-  const isHoly100Eligible =
-    normalizedCoupon ===
-      "HOLY100" &&
-    billingCycle ===
-      "monthly" &&
-    isEligiblePlan &&
-    total === 0;
 
   /*
    * ============================================================
    * Billing Validation
    * ============================================================
    */
-
-  function validateBillingDetails():
-    boolean {
+  function validateBillingDetails(): boolean {
     if (
       !checkoutData.fullName ||
       !checkoutData.email ||
@@ -350,120 +320,6 @@ export default function OrderSummary() {
     }
 
     return true;
-  }
-
-  /*
-   * ============================================================
-   * HOLY100 Waiver Activation
-   * ============================================================
-   */
-
-  async function activateWaivedPlan():
-    Promise<void> {
-    setError("");
-
-    if (
-      !validateBillingDetails()
-    ) {
-      return;
-    }
-
-    if (
-      normalizedCoupon !==
-      "HOLY100"
-    ) {
-      setError(
-        "Enter coupon code HOLY100 to activate this monthly plan free."
-      );
-
-      return;
-    }
-
-    if (
-      billingCycle !==
-      "monthly"
-    ) {
-      setError(
-        "HOLY100 is valid only for monthly memberships."
-      );
-
-      return;
-    }
-
-    if (
-      !isEligiblePlan
-    ) {
-      setError(
-        "HOLY100 is valid only for Silver, Gold, and Platinum plans."
-      );
-
-      return;
-    }
-
-    if (
-      total !== 0
-    ) {
-      setError(
-        "The coupon must reduce the total payable amount to ₹0."
-      );
-
-      return;
-    }
-
-    try {
-      setLoading(
-        true
-      );
-
-      await membershipActivationService
-        .activateHoly100({
-          plan:
-            checkoutData.plan
-              .toUpperCase() as WaiverPlan,
-
-          billingCycle:
-            "MONTHLY",
-
-          couponCode:
-            "HOLY100",
-        });
-
-      setSuccessMessage(
-        "Your membership is now active."
-      );
-
-      setSuccess(
-        true
-      );
-
-      window.setTimeout(
-        () => {
-          resetCheckout();
-
-          router.push(
-            "/dashboard/membership?activated=true"
-          );
-        },
-        1500
-      );
-    } catch (
-      activationError
-    ) {
-      console.error(
-        "Membership activation failed:",
-        activationError
-      );
-
-      setError(
-        getErrorMessage(
-          activationError
-        )
-      );
-    } finally {
-      setLoading(
-        false
-      );
-    }
   }
 
   /*
@@ -492,47 +348,6 @@ export default function OrderSummary() {
       );
 
       return;
-    }
-
-    /*
-     * HOLY100 is a free monthly waiver.
-     */
-    if (
-      isHoly100Eligible
-    ) {
-      await activateWaivedPlan();
-      return;
-    }
-
-    /*
-     * Prevent invalid HOLY100
-     * attempts from silently
-     * becoming paid transactions.
-     */
-    if (
-      normalizedCoupon ===
-      "HOLY100"
-    ) {
-      if (
-        billingCycle !==
-        "monthly"
-      ) {
-        setError(
-          "HOLY100 is valid only for monthly memberships. Remove the coupon to continue with online payment."
-        );
-
-        return;
-      }
-
-      if (
-        total !== 0
-      ) {
-        setError(
-          "HOLY100 must reduce the monthly membership total to ₹0. Please review the coupon before continuing."
-        );
-
-        return;
-      }
     }
 
     try {
@@ -900,19 +715,6 @@ export default function OrderSummary() {
             )}`}
           />
 
-          {discount > 0 && (
-            <SummaryRow
-              label={
-                couponCode
-                  ? `Discount (${normalizedCoupon})`
-                  : "Discount"
-              }
-              value={`-₹${discount.toLocaleString(
-                "en-IN"
-              )}`}
-              tone="green"
-            />
-          )}
 
           <SummaryRow
             label="GST (18%)"
@@ -938,48 +740,6 @@ export default function OrderSummary() {
         {/* =====================================================
             Main Action
             ===================================================== */}
-
-        {isHoly100Eligible ? (
-          <Button
-            type="button"
-            fullWidth
-            className="mt-4 h-10"
-            disabled={
-              loading ||
-              success
-            }
-            onClick={() => {
-              void activateWaivedPlan();
-            }}
-          >
-            {loading ? (
-              <span className="inline-flex items-center gap-1.5">
-                <Loader2
-                  size={14}
-                  className="animate-spin"
-                />
-
-                Activating...
-              </span>
-            ) : success ? (
-              <span className="inline-flex items-center gap-1.5">
-                <CheckCircle2
-                  size={14}
-                />
-
-                Activated
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5">
-                <ShieldCheck
-                  size={14}
-                />
-
-                Activate Membership
-              </span>
-            )}
-          </Button>
-        ) : (
           <Button
             type="button"
             fullWidth
@@ -1022,46 +782,7 @@ export default function OrderSummary() {
               </span>
             )}
           </Button>
-        )}
 
-        {/* =====================================================
-            Coupon / Payment Guidance
-            ===================================================== */}
-
-        {billingCycle ===
-        "monthly" ? (
-          <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2.5">
-            <Tag
-              size={13}
-              className="mt-0.5 shrink-0 text-amber-700"
-            />
-
-            <p className="text-[10px] leading-5 text-amber-800">
-              Use coupon{" "}
-              <strong>
-                HOLY100
-              </strong>{" "}
-              for a 100% waiver on Silver, Gold or Platinum monthly plans.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-3 flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2.5">
-            <ShieldCheck
-              size={13}
-              className="mt-0.5 shrink-0 text-[#0B2D5C]"
-            />
-
-            <p className="text-[10px] leading-5 text-slate-600">
-              Secure online payment is available for{" "}
-              <strong className="capitalize">
-                {
-                  billingCycle
-                }
-              </strong>{" "}
-              memberships. HOLY100 applies only to monthly memberships.
-            </p>
-          </div>
-        )}
 
         {/* =====================================================
             Security

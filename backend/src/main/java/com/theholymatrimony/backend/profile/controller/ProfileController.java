@@ -88,42 +88,6 @@ public class ProfileController {
 
     /*
      * ---------------------------------------------------------
-     * Submit profile for administrator verification
-     * ---------------------------------------------------------
-     *
-     * Allowed:
-     *
-     * NOT_SUBMITTED -> PENDING
-     * REJECTED      -> PENDING
-     *
-     * Not allowed:
-     *
-     * PENDING
-     * APPROVED
-     */
-
-    @PostMapping(
-            "/verification/submit"
-    )
-    public ApiResponse<ProfileResponse>
-    submitForVerification(
-            Authentication authentication
-    ) {
-
-        ProfileResponse response =
-                profileService
-                        .submitForVerification(
-                                authentication.getName()
-                        );
-
-        return ApiResponse.success(
-                "Profile submitted for verification successfully.",
-                response
-        );
-    }
-
-    /*
-     * ---------------------------------------------------------
      * Profile Boost Status
      * ---------------------------------------------------------
      */

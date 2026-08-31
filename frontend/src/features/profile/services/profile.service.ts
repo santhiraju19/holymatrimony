@@ -205,15 +205,6 @@ const profileService = {
     return response.data.data;
   },
 
-  async submitForVerification(): Promise<ProfilePayload> {
-    const response =
-      await api.post<ApiResponse<ProfilePayload>>(
-        "/profile/verification/submit"
-      );
-
-    return response.data.data;
-  },
-
   async uploadPhoto(
     file: File
   ): Promise<PhotoPayload> {

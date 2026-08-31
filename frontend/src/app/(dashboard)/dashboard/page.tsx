@@ -33,10 +33,6 @@ import {
   calculateProfileCompletion,
 } from "@/features/profile/utils/profileCompletion";
 
-import profileService, {
-  type ProfileVerificationStatus,
-} from "@/features/profile/services/profile.service";
-
 import DashboardProfileCard from "@/features/profile/components/DashboardProfileCard";
 
 import CurrentMembershipCard from "@/features/membership/components/CurrentMembershipCard";
@@ -48,8 +44,6 @@ import PaymentHistoryCard from "@/features/membership/components/PaymentHistoryC
 import DashboardHero from "@/features/dashboard/components/DashboardHero";
 
 import DashboardStats from "@/features/dashboard/components/DashboardStats";
-
-import ProfileVerificationBanner from "@/features/dashboard/components/ProfileVerificationBanner";
 
 import RecommendedMatches from "@/features/dashboard/components/RecommendedMatches";
 
@@ -207,46 +201,6 @@ export default function DashboardPage() {
 
   /*
    * =========================================================
-   * Profile verification
-   * =========================================================
-   */
-
-  const [
-    verificationStatus,
-    setVerificationStatus,
-  ] =
-    useState<ProfileVerificationStatus>(
-      "NOT_SUBMITTED"
-    );
-
-  const [
-    verificationReason,
-    setVerificationReason,
-  ] =
-    useState<string | null>(
-      null
-    );
-
-  const [
-    backendCompletionPercentage,
-    setBackendCompletionPercentage,
-  ] =
-    useState(0);
-
-  const [
-    backendProfileCompleted,
-    setBackendProfileCompleted,
-  ] =
-    useState(false);
-
-  const [
-    verificationLoading,
-    setVerificationLoading,
-  ] =
-    useState(true);
-
-  /*
-   * =========================================================
    * Notifications
    * =========================================================
    */
@@ -291,89 +245,6 @@ export default function DashboardPage() {
     setUser(
       authService.getUser()
     );
-  }, []);
-
-  /*
-   * =========================================================
-   * Load authoritative backend verification state
-   * =========================================================
-   *
-   * Do not rely only on local profile completion.
-   *
-   * The backend owns:
-   *
-   * NOT_SUBMITTED
-   * PENDING
-   * APPROVED
-   * REJECTED
-   *
-   * It also owns the administrator rejection reason.
-   */
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadVerificationStatus():
-      Promise<void> {
-      try {
-        setVerificationLoading(
-          true
-        );
-
-        const profile =
-          await profileService
-            .getProfile();
-
-        if (
-          !active ||
-          !profile
-        ) {
-          return;
-        }
-
-        setVerificationStatus(
-          profile
-            .verificationStatus ??
-            "NOT_SUBMITTED"
-        );
-
-        setVerificationReason(
-          profile
-            .verificationReason ??
-            null
-        );
-
-        setBackendCompletionPercentage(
-          profile
-            .completionPercentage ??
-            0
-        );
-
-        setBackendProfileCompleted(
-          Boolean(
-            profile
-              .profileCompleted
-          )
-        );
-      } catch (error) {
-        console.error(
-          "Unable to load dashboard verification status:",
-          error
-        );
-      } finally {
-        if (active) {
-          setVerificationLoading(
-            false
-          );
-        }
-      }
-    }
-
-    void loadVerificationStatus();
-
-    return () => {
-      active = false;
-    };
   }, []);
 
   /*
@@ -464,35 +335,6 @@ export default function DashboardPage() {
         }
         isRealtimeConnected={
           isRealtimeConnected
-        }
-      />
-
-      {/* =====================================================
-          Profile Verification Status
-          =====================================================
-       *
-       * Shown immediately after login/welcome so members
-       * cannot easily miss a rejected, pending or incomplete
-       * verification state.
-       */}
-
-      <ProfileVerificationBanner
-        status={
-          verificationStatus
-        }
-        completionPercentage={
-          backendProfileCompleted
-            ? 100
-            : backendCompletionPercentage
-        }
-        profileCompleted={
-          backendProfileCompleted
-        }
-        reason={
-          verificationReason
-        }
-        loading={
-          verificationLoading
         }
       />
 

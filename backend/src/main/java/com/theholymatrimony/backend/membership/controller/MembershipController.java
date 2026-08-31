@@ -3,19 +3,11 @@ package com.theholymatrimony.backend.membership.controller;
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.auth.repository.UserRepository;
 import com.theholymatrimony.backend.common.response.ApiResponse;
-import com.theholymatrimony.backend.membership.dto.ActivateMembershipRequest;
 import com.theholymatrimony.backend.membership.dto.MembershipResponse;
 import com.theholymatrimony.backend.membership.service.MembershipService;
-
-import jakarta.validation.Valid;
-
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.security.core.Authentication;
-
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,57 +16,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class MembershipController {
 
-    private final MembershipService
-            membershipService;
-
-    private final UserRepository
-            userRepository;
+    private final MembershipService membershipService;
+    private final UserRepository userRepository;
 
     @GetMapping("/me")
-    public ApiResponse<MembershipResponse>
-    getMyMembership(
+    public ApiResponse<MembershipResponse> getMyMembership(
             Authentication authentication
     ) {
-        User user =
-                getAuthenticatedUser(
-                        authentication
-                );
+        User user = getAuthenticatedUser(authentication);
 
         MembershipResponse response =
-                membershipService
-                        .getMembership(
-                                user.getId()
-                        );
+                membershipService.getMembership(user.getId());
 
-        return ApiResponse.success(
-                response
-        );
-    }
-
-    @PostMapping("/activate-waiver")
-    public ApiResponse<MembershipResponse>
-    activateWaivedMembership(
-            Authentication authentication,
-
-            @Valid
-            @RequestBody
-            ActivateMembershipRequest request
-    ) {
-        User user =
-                getAuthenticatedUser(
-                        authentication
-                );
-
-        MembershipResponse response =
-                membershipService
-                        .activateWaivedMembership(
-                                user.getId(),
-                                request
-                        );
-
-        return ApiResponse.success(
-                response
-        );
+        return ApiResponse.success(response);
     }
 
     private User getAuthenticatedUser(
@@ -83,9 +37,7 @@ public class MembershipController {
         if (
                 authentication == null
                         || authentication.getName() == null
-                        || authentication
-                        .getName()
-                        .isBlank()
+                        || authentication.getName().isBlank()
         ) {
             throw new IllegalArgumentException(
                     "Authenticated user was not found."
@@ -93,14 +45,11 @@ public class MembershipController {
         }
 
         return userRepository
-                .findByEmail(
-                        authentication.getName()
-                )
+                .findByEmail(authentication.getName())
                 .orElseThrow(
-                        () ->
-                                new IllegalArgumentException(
-                                        "Authenticated user was not found."
-                                )
+                        () -> new IllegalArgumentException(
+                                "Authenticated user was not found."
+                        )
                 );
     }
 }

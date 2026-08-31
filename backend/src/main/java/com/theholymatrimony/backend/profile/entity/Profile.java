@@ -600,23 +600,6 @@ private String district;
     // Verification helpers
     // =========================================================
 
-    public void submitForVerification() {
-
-        this.verificationStatus =
-                ProfileVerificationStatus.PENDING;
-
-        this.verificationSubmittedAt =
-                LocalDateTime.now();
-
-        /*
-         * A resubmission clears the previous
-         * administrative decision.
-         */
-        this.verificationReviewedAt = null;
-        this.verificationReviewedBy = null;
-        this.verificationReason = null;
-    }
-
     public void approveVerification(
             UUID adminId,
             String reason

@@ -28,17 +28,6 @@ interface ReviewProps {
   onSave: () => Promise<void>;
   saving: boolean;
 
-  /*
-   * Verification is owned by the profile page.
-   *
-   * Review only decides where the verification experience
-   * should appear in the profile journey.
-   *
-   * This keeps Review independent from verification API/state
-   * implementation details while allowing verification to live
-   * beside the final Save Profile action.
-   */
-  verificationContent?: ReactNode;
 }
 
 interface SummaryItemProps {
@@ -260,7 +249,6 @@ export default function Review({
   onBack,
   onSave,
   saving,
-  verificationContent,
 }: ReviewProps) {
   const {
     basicInfo,
@@ -435,7 +423,7 @@ export default function Review({
               </h2>
 
               <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">
-                Review your information, save your latest details and submit your profile for verification when ready.
+                Review your information and save your latest details. Once your required profile information is complete, your profile can appear to other members.
               </p>
             </div>
           </div>
@@ -1248,7 +1236,7 @@ export default function Review({
 
               <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
                 {profileInformationComplete
-                  ? "Your required profile information is complete. Save any latest changes below, then submit your profile for verification."
+                  ? "Your required profile information is complete. Save your latest changes below to make your completed profile available to other members."
                   : "Return to the relevant steps and complete the remaining required fields. Optional fields and photos do not prevent 100% completion."}
               </p>
             </div>
@@ -1268,7 +1256,7 @@ export default function Review({
             />
 
             {profileInformationComplete
-              ? "Ready to save & verify"
+              ? "Ready to save"
               : `${completedFields}/${totalRequiredFields} fields complete`}
           </div>
         </div>
@@ -1293,7 +1281,7 @@ export default function Review({
               </h3>
 
               <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
-                Save your latest changes before submitting the profile for verification.
+                Save your latest changes. Completed profiles can appear to other members after saving.
               </p>
             </div>
           </div>
@@ -1348,26 +1336,6 @@ export default function Review({
         </div>
       </Card>
 
-      {/* =====================================================
-          Verification
-          =====================================================
-       *
-       * The profile page supplies the existing
-       * ProfileVerificationCard here.
-       *
-       * This places verification directly after Save My Profile
-       * instead of keeping the submission CTA as a separate
-       * permanent sidebar action.
-       */}
-
-      {verificationContent && (
-        <section
-          aria-label="Profile verification"
-          className="pt-1"
-        >
-          {verificationContent}
-        </section>
-      )}
     </div>
   );
 }
