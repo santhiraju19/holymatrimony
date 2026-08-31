@@ -14,6 +14,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -127,4 +128,97 @@ public interface MembershipRepository
             @Param("membershipId")
             UUID membershipId
     );
+
+    /*
+     * =====================================================
+     * Admin Dashboard Analytics
+     * =====================================================
+     */
+
+    long countByStatusAndPlanNot(
+            MembershipStatus status,
+            MembershipPlan plan
+    );
+
+    long countByStatusAndPlan(
+            MembershipStatus status,
+            MembershipPlan plan
+    );
+
+    long countByStatusAndPlanNotAndExpiryDateBetween(
+            MembershipStatus status,
+            MembershipPlan plan,
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
+
+    /*
+     * =====================================================
+     * Admin Business Analytics - Date Range
+     * =====================================================
+     */
+
+    long countByPlanNotAndCreatedAtBetween(
+            MembershipPlan plan,
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
+    long countByPlanAndCreatedAtBetween(
+            MembershipPlan plan,
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
+
+    /*
+     * =====================================================
+     * Admin Business Reporting - Successful Paid Sales
+     * =====================================================
+     */
+
+    @Query("""
+            SELECT COUNT(m)
+            FROM Membership m
+            JOIN m.payment p
+            WHERE m.plan <> :freePlan
+              AND p.status = com.theholymatrimony.backend.payments.enums.PaymentStatus.SUCCESS
+              AND p.amount > 0
+              AND p.paidAt >= :start
+              AND p.paidAt < :end
+            """)
+    long countSuccessfulPaidMembershipsBetween(
+            @Param("freePlan")
+            MembershipPlan freePlan,
+            @Param("start")
+            LocalDateTime start,
+            @Param("end")
+            LocalDateTime end
+    );
+
+    @Query("""
+            SELECT COUNT(m)
+            FROM Membership m
+            JOIN m.payment p
+            WHERE m.plan = :plan
+              AND p.status = com.theholymatrimony.backend.payments.enums.PaymentStatus.SUCCESS
+              AND p.amount > 0
+              AND p.paidAt >= :start
+              AND p.paidAt < :end
+            """)
+    long countSuccessfulPaidMembershipsByPlanBetween(
+            @Param("plan")
+            MembershipPlan plan,
+            @Param("start")
+            LocalDateTime start,
+            @Param("end")
+            LocalDateTime end
+    );
+
+    List<Membership> findAllByCreatedAtBetweenOrderByCreatedAtDesc(
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
 }

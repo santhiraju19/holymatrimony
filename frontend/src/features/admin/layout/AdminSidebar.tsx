@@ -40,6 +40,11 @@ const navigation = [
     icon: "✝",
   },
   {
+    label: "Analytics",
+    href: "/admin/analytics",
+    icon: "▥",
+  },
+  {
     label: "Reports",
     href: "/admin/reports",
     icon: "◫",

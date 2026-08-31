@@ -103,4 +103,65 @@ public interface PaymentRepository
             @Param("paymentId")
             UUID paymentId
     );
+
+    /*
+     * =====================================================
+     * Admin Dashboard Analytics
+     * =====================================================
+     */
+
+    long countByStatus(
+            PaymentStatus status
+    );
+
+    @Query("""
+            SELECT COALESCE(SUM(p.amount), 0)
+            FROM Payment p
+            WHERE p.status = :status
+            """)
+    java.math.BigDecimal sumAmountByStatus(
+            @Param("status")
+            PaymentStatus status
+    );
+
+    @Query("""
+            SELECT COALESCE(SUM(p.amount), 0)
+            FROM Payment p
+            WHERE p.status = :status
+              AND p.paidAt >= :start
+              AND p.paidAt < :end
+            """)
+    java.math.BigDecimal sumAmountByStatusAndPaidAtBetween(
+            @Param("status")
+            PaymentStatus status,
+            @Param("start")
+            LocalDateTime start,
+            @Param("end")
+            LocalDateTime end
+    );
+
+
+    /*
+     * =====================================================
+     * Admin Business Analytics - Date Range
+     * =====================================================
+     */
+
+    long countByStatusAndCreatedAtBetween(
+            PaymentStatus status,
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
+    long countByStatusAndPaidAtBetween(
+            PaymentStatus status,
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
+    List<Payment> findAllByCreatedAtBetweenOrderByCreatedAtDesc(
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
 }
