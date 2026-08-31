@@ -16,6 +16,8 @@ import org.springframework.data.jpa.repository.Query;
 
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -126,4 +128,39 @@ public interface ProfileRepository
             @Param("profileId")
             UUID profileId
     );
+
+    /*
+     * =====================================================
+     * Admin Dashboard Analytics
+     * =====================================================
+     */
+
+    long countByProfileCompletedTrue();
+
+    long countByProfileCompletedFalse();
+
+
+    /*
+     * =====================================================
+     * Admin Business Analytics
+     * =====================================================
+     */
+
+    long countByCreatedAtBetween(
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
+    long countByProfileCompletedTrueAndCreatedAtBetween(
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
+
+    @EntityGraph(attributePaths = "user")
+    List<Profile> findAllByCreatedAtBetweenOrderByCreatedAtDesc(
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
 }
