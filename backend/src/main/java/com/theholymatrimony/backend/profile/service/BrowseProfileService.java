@@ -1102,6 +1102,49 @@ List<BrowseProfilePhotoResponse> photos =
                 )
 
                 /*
+                 * Personal Information
+                 */
+                .heightCm(
+                        profile.getHeightCm()
+                )
+                .weightKg(
+                        profile.getWeightKg()
+                )
+                .complexion(
+                        profile.getComplexion()
+                )
+                .bodyType(
+                        profile.getBodyType()
+                )
+                .motherTongue(
+                        profile.getMotherTongue()
+                )
+                .religion(
+                        profile.getReligion()
+                )
+                .community(
+                        profile.getCommunity()
+                )
+                .subCommunity(
+                        profile.getSubCommunity()
+                )
+                .faithBackground(
+                        profile.getFaithBackground()
+                )
+                .physicalStatus(
+                        profile.getPhysicalStatus()
+                )
+                .diet(
+                        profile.getDiet()
+                )
+                .smoking(
+                        profile.getSmoking()
+                )
+                .drinking(
+                        profile.getDrinking()
+                )
+
+                /*
                  * Church
                  */
 
@@ -1113,6 +1156,9 @@ List<BrowseProfilePhotoResponse> photos =
                 .churchName(
                         profile
                                 .getChurchName()
+                )
+                .pastorName(
+                        profile.getPastorName()
                 )
 
                 .baptized(
@@ -1128,6 +1174,9 @@ List<BrowseProfilePhotoResponse> photos =
                         profile
                                 .getHighestEducation()
                 )
+                .educationField(
+                        profile.getEducationField()
+                )
 
                 .profession(
                         profile
@@ -1142,6 +1191,40 @@ List<BrowseProfilePhotoResponse> photos =
                 .annualIncome(
                         profile
                                 .getAnnualIncome()
+                )
+
+                /*
+                 * Family
+                 */
+                .fatherName(
+                        profile.getFatherName()
+                )
+                .motherName(
+                        profile.getMotherName()
+                )
+                .siblings(
+                        profile.getSiblings()
+                )
+                .familyLocation(
+                        profile.getFamilyLocation()
+                )
+                .familyCountry(
+                        profile.getFamilyCountry()
+                )
+                .familyState(
+                        profile.getFamilyState()
+                )
+                .familyDistrict(
+                        profile.getFamilyDistrict()
+                )
+                .familyCity(
+                        profile.getFamilyCity()
+                )
+                .familyType(
+                        profile.getFamilyType()
+                )
+                .familyValues(
+                        profile.getFamilyValues()
                 )
 
                 /*

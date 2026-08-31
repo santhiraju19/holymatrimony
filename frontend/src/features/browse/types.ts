@@ -108,8 +108,24 @@ export interface BrowseProfile {
   // =====================================================
   // Family
   // =====================================================
+  fatherName: string | null;
+
+  motherName: string | null;
+
+  siblings: string | null;
+
+  familyLocation: string | null;
+
+  familyCountry: string | null;
+
+  familyState: string | null;
+
+  familyDistrict: string | null;
+
+  familyCity: string | null;
 
   familyType: string | null;
+
   familyValues: string | null;
 
   // =====================================================

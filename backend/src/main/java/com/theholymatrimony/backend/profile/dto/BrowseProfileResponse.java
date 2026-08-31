@@ -134,6 +134,22 @@ public class BrowseProfileResponse {
      * ============================================================
      */
 
+    private String fatherName;
+
+    private String motherName;
+
+    private String siblings;
+
+    private String familyLocation;
+
+    private String familyCountry;
+
+    private String familyState;
+
+    private String familyDistrict;
+
+    private String familyCity;
+
     private String familyType;
 
     private String familyValues;

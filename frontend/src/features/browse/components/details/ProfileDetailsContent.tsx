@@ -403,8 +403,26 @@ export default function ProfileDetailsContent({
 
         <ProfileInfoSection
           title="Family Background"
-          description="Family structure and values"
+          description="Family structure, values and background"
           items={[
+            {
+              label:
+                "Father's name",
+              value:
+                profile.fatherName,
+            },
+            {
+              label:
+                "Mother's name",
+              value:
+                profile.motherName,
+            },
+            {
+              label:
+                "Siblings",
+              value:
+                profile.siblings,
+            },
             {
               label:
                 "Family type",
@@ -416,6 +434,36 @@ export default function ProfileDetailsContent({
                 "Family values",
               value:
                 profile.familyValues,
+            },
+            {
+              label:
+                "Family city",
+              value:
+                profile.familyCity,
+            },
+            {
+              label:
+                "Family district",
+              value:
+                profile.familyDistrict,
+            },
+            {
+              label:
+                "Family state",
+              value:
+                profile.familyState,
+            },
+            {
+              label:
+                "Family country",
+              value:
+                profile.familyCountry,
+            },
+            {
+              label:
+                "Family location",
+              value:
+                profile.familyLocation,
             },
           ]}
         />
