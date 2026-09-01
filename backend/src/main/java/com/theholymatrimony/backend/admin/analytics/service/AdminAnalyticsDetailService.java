@@ -270,8 +270,7 @@ public class AdminAnalyticsDetailService {
                             MembershipPlan.PLATINUM
                     );
 
-            case "SUCCESSFUL_PAYMENTS",
-                 "PERIOD_REVENUE" ->
+            case "SUCCESSFUL_PAYMENTS" ->
                     paymentRepository
                             .findAll()
                             .stream()
@@ -279,6 +278,31 @@ public class AdminAnalyticsDetailService {
                                     payment ->
                                             payment.getStatus()
                                                     == PaymentStatus.SUCCESS
+                            )
+                            .filter(
+                                    payment ->
+                                            inRange(
+                                                    payment.getPaidAt(),
+                                                    start,
+                                                    end
+                                            )
+                            )
+                            .map(this::paymentRow)
+                            .toList();
+
+            case "PERIOD_REVENUE" ->
+                    paymentRepository
+                            .findAll()
+                            .stream()
+                            .filter(
+                                    payment ->
+                                            payment.getStatus()
+                                                    == PaymentStatus.SUCCESS
+                            )
+                            .filter(
+                                    payment ->
+                                            payment.getAmount() != null
+                                                    && payment.getAmount() > 0
                             )
                             .filter(
                                     payment ->
