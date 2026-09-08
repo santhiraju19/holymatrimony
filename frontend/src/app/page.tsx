@@ -2,6 +2,7 @@ import type {
   Metadata,
 } from "next";
 
+import IPhoneGiveawayPopup from "@/components/promotions/IPhoneGiveawayPopup";
 import FeaturedProfiles from "@/features/home/FeaturedProfiles";
 import FinalCTA from "@/features/home/FinalCTA";
 import Hero from "@/features/home/Hero";
@@ -127,6 +128,7 @@ const websiteJsonLd = {
 export default function HomePage() {
   return (
     <>
+      <IPhoneGiveawayPopup />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
