@@ -1,6 +1,7 @@
 package com.theholymatrimony.backend.profile.repository;
 
 import com.theholymatrimony.backend.auth.entity.User;
+import com.theholymatrimony.backend.auth.enums.UserStatus;
 import com.theholymatrimony.backend.profile.entity.Profile;
 import com.theholymatrimony.backend.profile.enums.ProfileVerificationStatus;
 
@@ -61,13 +62,14 @@ public interface ProfileRepository
             WHERE p.featuredOnHomepage = true
               AND p.profileCompleted = true
               AND u.enabled = true
-              AND u.status = com.theholymatrimony.backend.auth.enums.AccountStatus.ACTIVE
+              AND u.status = :accountStatus
               AND photo.primaryPhoto = true
               AND photo.imageUrl IS NOT NULL
               AND TRIM(photo.imageUrl) <> ''
             ORDER BY p.updatedAt DESC
             """)
     List<Profile> findPublicHomepageFeaturedProfiles(
+            @Param("accountStatus") UserStatus accountStatus,
             Pageable pageable
     );
 

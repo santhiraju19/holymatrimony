@@ -1,6 +1,7 @@
 package com.theholymatrimony.backend.profile.service;
 
 import com.theholymatrimony.backend.auth.entity.User;
+import com.theholymatrimony.backend.auth.enums.UserStatus;
 import com.theholymatrimony.backend.profile.dto.PublicFeaturedProfileResponse;
 import com.theholymatrimony.backend.profile.entity.Profile;
 import com.theholymatrimony.backend.profile.entity.ProfilePhoto;
@@ -33,6 +34,7 @@ public class PublicFeaturedProfileService {
     public List<PublicFeaturedProfileResponse> getFeaturedProfiles() {
         return profileRepository
                 .findPublicHomepageFeaturedProfiles(
+                        UserStatus.ACTIVE,
                         PageRequest.of(
                                 0,
                                 MAX_FEATURED_PROFILES
