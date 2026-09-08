@@ -91,6 +91,19 @@ public class SecurityConfig {
 
                         /*
                          * =====================================================
+                         * Public Homepage Featured Profiles
+                         * =====================================================
+                         *
+                         * Privacy-safe, curated profiles only.
+                         * Do NOT replace this with /api/v1/public/**.
+                         */
+                        .requestMatchers(
+                                "/api/v1/public/featured-profiles"
+                        )
+                        .permitAll()
+
+                        /*
+                         * =====================================================
                          * WebSocket Handshake
                          * =====================================================
                          */

@@ -37,6 +37,40 @@ public interface ProfileRepository
             UUID userId
     );
 
+    /*
+     * Public homepage featured profiles.
+     *
+     * Selection happens in PostgreSQL so the homepage does not
+     * load every profile into application memory.
+     *
+     * Requirements:
+     * - explicitly curated for homepage
+     * - completed profile
+     * - active/enabled account
+     * - usable primary photo
+     *
+     * Pageable controls the public result limit.
+     */
+    @EntityGraph(attributePaths = "user")
+    @Query("""
+            SELECT DISTINCT p
+            FROM Profile p
+            JOIN p.user u
+            JOIN ProfilePhoto photo
+                ON photo.user = u
+            WHERE p.featuredOnHomepage = true
+              AND p.profileCompleted = true
+              AND u.enabled = true
+              AND u.status = com.theholymatrimony.backend.auth.enums.AccountStatus.ACTIVE
+              AND photo.primaryPhoto = true
+              AND photo.imageUrl IS NOT NULL
+              AND TRIM(photo.imageUrl) <> ''
+            ORDER BY p.updatedAt DESC
+            """)
+    List<Profile> findPublicHomepageFeaturedProfiles(
+            Pageable pageable
+    );
+
     boolean existsByUser(
             User user
     );

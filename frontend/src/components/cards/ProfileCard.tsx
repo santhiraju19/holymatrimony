@@ -17,16 +17,18 @@ import Card from "@/components/ui/Card";
 export interface ProfileCardProps {
   id: string;
   name: string;
-  age: number;
+  age?: number | null;
   denomination: string;
   profession: string;
   location: string;
   image: string;
   verified: boolean;
   churchVerified?: boolean;
-  completion?: number;
+  completion?: number | null;
   onViewProfile?: (id: string) => void;
   onFavourite?: (id: string) => void;
+  unoptimizedImage?: boolean;
+  showFavourite?: boolean;
 }
 
 export default function ProfileCard({
@@ -39,10 +41,17 @@ export default function ProfileCard({
   image,
   verified,
   churchVerified = false,
-  completion = 100,
+  completion,
   onViewProfile,
   onFavourite,
+  unoptimizedImage = false,
+  showFavourite = true,
 }: ProfileCardProps) {
+  const safeCompletion =
+    typeof completion === "number"
+      ? Math.min(100, Math.max(0, completion))
+      : null;
+
   return (
     <motion.div
       whileHover={{ y: -8 }}
@@ -54,6 +63,7 @@ export default function ProfileCard({
             src={image}
             alt={name}
             fill
+            unoptimized={unoptimizedImage}
             className="object-cover transition duration-500 hover:scale-105"
             sizes="(max-width:768px) 100vw,
                    (max-width:1200px) 50vw,
@@ -62,13 +72,16 @@ export default function ProfileCard({
 
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
 
-          <button
-            type="button"
-            onClick={() => onFavourite?.(id)}
-            className="absolute right-4 top-4 rounded-full bg-white/90 p-3 backdrop-blur transition hover:scale-110"
-          >
-            <Heart className="h-5 w-5 text-rose-500" />
-          </button>
+          {showFavourite && (
+            <button
+              type="button"
+              onClick={() => onFavourite?.(id)}
+              className="absolute right-4 top-4 rounded-full bg-white/90 p-3 backdrop-blur transition hover:scale-110"
+              aria-label={`Favourite ${name}`}
+            >
+              <Heart className="h-5 w-5 text-rose-500" />
+            </button>
+          )}
 
           <div className="absolute bottom-5 left-5 right-5 text-white">
             <div className="mb-3 flex flex-wrap gap-2">
@@ -88,7 +101,8 @@ export default function ProfileCard({
             </div>
 
             <h3 className="text-2xl font-bold">
-              {name}, {age}
+              {name}
+              {age != null ? `, ${age}` : ""}
             </h3>
 
             <p className="text-sm text-white/90">
@@ -110,20 +124,21 @@ export default function ProfileCard({
             </div>
           </div>
 
-          <div>
-            <div className="mb-2 flex justify-between text-xs font-medium text-slate-500">
-              <span>Profile Completion</span>
+          {safeCompletion != null && (
+            <div>
+              <div className="mb-2 flex justify-between text-xs font-medium text-slate-500">
+                <span>Profile Completion</span>
+                <span>{safeCompletion}%</span>
+              </div>
 
-              <span>{completion}%</span>
+              <div className="h-2 rounded-full bg-slate-200">
+                <div
+                  className="h-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600"
+                  style={{ width: `${safeCompletion}%` }}
+                />
+              </div>
             </div>
-
-            <div className="h-2 rounded-full bg-slate-200">
-              <div
-                className="h-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600"
-                style={{ width: `${completion}%` }}
-              />
-            </div>
-          </div>
+          )}
 
           <Button
             fullWidth

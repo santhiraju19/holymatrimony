@@ -472,6 +472,24 @@ private String district;
     )
     private Boolean profileCompleted = false;
 
+    /*
+     * ============================================================
+     * Public Homepage Feature
+     * ============================================================
+     *
+     * Explicit administrative opt-in for displaying this profile
+     * on the anonymous public homepage.
+     *
+     * A completed/browse-visible profile is NOT automatically
+     * exposed on the homepage.
+     */
+    @Builder.Default
+    @Column(
+            name = "featured_on_homepage",
+            nullable = false
+    )
+    private Boolean featuredOnHomepage = false;
+
     // =========================================================
     // Profile Verification
     // =========================================================
