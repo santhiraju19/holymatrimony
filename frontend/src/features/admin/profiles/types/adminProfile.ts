@@ -19,6 +19,7 @@ export interface AdminProfileListItem {
   country?: string | null;
   completionPercentage?: number | null;
   profileCompleted?: boolean | null;
+  featuredOnHomepage?: boolean | null;
   verificationStatus: ProfileVerificationStatus;
   verificationSubmittedAt?: string | null;
   verificationReviewedAt?: string | null;
@@ -90,6 +91,7 @@ export interface AdminProfileDetail {
 
   completionPercentage?: number | null;
   profileCompleted?: boolean | null;
+  featuredOnHomepage?: boolean | null;
 
   verificationStatus: ProfileVerificationStatus;
   verificationSubmittedAt?: string | null;
@@ -108,6 +110,10 @@ export interface UpdateProfileVerificationRequest {
     | "APPROVED"
     | "REJECTED";
   reason?: string | null;
+}
+
+export interface UpdateHomepageFeatureRequest {
+  featured: boolean;
 }
 
 export interface ApiResponse<T> {

@@ -3,6 +3,7 @@ package com.theholymatrimony.backend.admin.service;
 import com.theholymatrimony.backend.admin.dto.AdminProfileDetailResponse;
 import com.theholymatrimony.backend.admin.dto.AdminProfilePageResponse;
 import com.theholymatrimony.backend.admin.dto.UpdateProfileVerificationRequest;
+import com.theholymatrimony.backend.admin.dto.UpdateHomepageFeatureRequest;
 import com.theholymatrimony.backend.profile.enums.ProfileVerificationStatus;
 
 import java.util.UUID;
@@ -24,4 +25,10 @@ public interface AdminProfileVerificationService {
             UUID profileId,
             UpdateProfileVerificationRequest request
     );
+
+    AdminProfileDetailResponse updateHomepageFeature(
+            UUID profileId,
+            UpdateHomepageFeatureRequest request
+    );
+
 }

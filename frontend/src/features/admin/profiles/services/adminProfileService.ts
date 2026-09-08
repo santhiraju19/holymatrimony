@@ -8,6 +8,7 @@ import type {
   ApiResponse,
   ProfileVerificationStatus,
   UpdateProfileVerificationRequest,
+  UpdateHomepageFeatureRequest,
 } from "../types/adminProfile";
 
 interface GetAdminProfilesParams {
@@ -123,6 +124,33 @@ export async function updateAdminProfileVerification(
       getApiErrorMessage(
         error,
         "Unable to update profile verification."
+      )
+    );
+  }
+}
+
+
+export async function updateAdminHomepageFeature(
+  profileId: string,
+  request: UpdateHomepageFeatureRequest
+): Promise<AdminProfileDetail> {
+  try {
+    const response =
+      await api.patch<
+        ApiResponse<AdminProfileDetail>
+      >(
+        `/admin/profiles/${profileId}/homepage-feature`,
+        request
+      );
+
+    return unwrap(response.data);
+  } catch (error) {
+    throw new Error(
+      getApiErrorMessage(
+        error,
+        request.featured
+          ? "Unable to feature profile on homepage."
+          : "Unable to remove profile from homepage."
       )
     );
   }

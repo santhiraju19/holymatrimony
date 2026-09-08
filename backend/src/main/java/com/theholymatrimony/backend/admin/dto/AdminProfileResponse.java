@@ -43,6 +43,7 @@ public class AdminProfileResponse {
     private Integer completionPercentage;
 
     private Boolean profileCompleted;
+    private Boolean featuredOnHomepage;
 
     private ProfileVerificationStatus verificationStatus;
 

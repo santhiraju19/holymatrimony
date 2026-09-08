@@ -8,6 +8,7 @@ import {
   UserRound,
 } from "lucide-react";
 
+import HomepageFeatureControl from "./HomepageFeatureControl";
 import ProfileVerificationBadge from "./ProfileVerificationBadge";
 
 import type {
@@ -16,6 +17,10 @@ import type {
 
 interface Props {
   profiles: AdminProfileListItem[];
+  updatingProfileId?: string | null;
+  onToggleHomepage: (
+    profile: AdminProfileListItem
+  ) => void;
 }
 
 function formatDate(
@@ -104,6 +109,8 @@ function BrowseStatusBadge({
 
 export default function AdminProfileTable({
   profiles,
+  updatingProfileId = null,
+  onToggleHomepage,
 }: Props) {
   if (profiles.length === 0) {
     return (
@@ -117,8 +124,7 @@ export default function AdminProfileTable({
         </h3>
 
         <p className="mt-2 text-sm text-slate-500">
-          No profiles match the current
-          search or filter.
+          No profiles match the current search or filter.
         </p>
       </div>
     );
@@ -151,6 +157,10 @@ export default function AdminProfileTable({
               </th>
 
               <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
+                Homepage
+              </th>
+
+              <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
                 Verification
               </th>
 
@@ -164,16 +174,33 @@ export default function AdminProfileTable({
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 bg-white">
             {profiles.map(
               (profile) => {
                 const completion =
-                  profile.completionPercentage ??
-                  0;
+                  Math.max(
+                    0,
+                    Math.min(
+                      100,
+                      profile.completionPercentage ??
+                        0
+                    )
+                  );
 
                 const completed =
                   Boolean(
                     profile.profileCompleted
+                  );
+
+                const featured =
+                  Boolean(
+                    profile.featuredOnHomepage
+                  );
+
+                const canFeature =
+                  completed &&
+                  Boolean(
+                    profile.primaryPhotoUrl
                   );
 
                 return (
@@ -181,87 +208,49 @@ export default function AdminProfileTable({
                     key={
                       profile.profileId
                     }
-                    className="transition hover:bg-slate-50"
+                    className="align-top transition hover:bg-slate-50/70"
                   >
                     <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-blue-50 text-[#0B2D5C]">
-                          {profile.primaryPhotoUrl ? (
-                            <img
-                              src={
-                                profile.primaryPhotoUrl
-                              }
-                              alt=""
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <UserRound
-                              size={21}
-                            />
-                          )}
-                        </div>
+                      <div className="min-w-[180px]">
+                        <p className="font-bold text-slate-900">
+                          {profile.fullName ||
+                            "Unnamed member"}
+                        </p>
 
-                        <div>
-                          <p className="font-bold text-slate-900">
-                            {
-                              profile.fullName
-                            }
+                        <p className="mt-1 text-xs text-slate-500">
+                          {profile.email ||
+                            "—"}
+                        </p>
+
+                        {profile.mobile && (
+                          <p className="mt-1 text-xs text-slate-400">
+                            {profile.mobile}
                           </p>
-
-                          <p className="mt-0.5 text-xs text-slate-500">
-                            {
-                              profile.email
-                            }
-                          </p>
-
-                          {profile.mobile && (
-                            <p className="mt-0.5 text-xs text-slate-400">
-                              {
-                                profile.mobile
-                              }
-                            </p>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </td>
 
-                    <td className="px-5 py-4 text-sm text-slate-600">
-                      {locationText(
-                        profile
-                      )}
+                    <td className="px-5 py-4">
+                      <div className="min-w-[160px] text-sm text-slate-600">
+                        {locationText(
+                          profile
+                        )}
+                      </div>
                     </td>
 
                     <td className="px-5 py-4">
-                      <div className="min-w-[100px]">
-                        <div className="flex items-center justify-between gap-2">
-                          <span
-                            className={[
-                              "text-sm font-black",
-                              completed
-                                ? "text-emerald-700"
-                                : "text-amber-700",
-                            ].join(" ")}
-                          >
+                      <div className="min-w-[135px]">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-sm font-bold text-slate-800">
                             {completion}%
                           </span>
                         </div>
 
                         <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
                           <div
-                            className={[
-                              "h-full rounded-full",
-                              completed
-                                ? "bg-emerald-500"
-                                : "bg-amber-500",
-                            ].join(" ")}
+                            className="h-full rounded-full bg-[#0B2D5C]"
                             style={{
-                              width: `${Math.min(
-                                100,
-                                Math.max(
-                                  0,
-                                  completion
-                                )
-                              )}%`,
+                              width: `${completion}%`,
                             }}
                           />
                         </div>
@@ -285,6 +274,27 @@ export default function AdminProfileTable({
                     </td>
 
                     <td className="px-5 py-4">
+                      <HomepageFeatureControl
+                        featured={
+                          featured
+                        }
+                        disabled={
+                          !featured &&
+                          !canFeature
+                        }
+                        loading={
+                          updatingProfileId ===
+                          profile.profileId
+                        }
+                        onToggle={() =>
+                          onToggleHomepage(
+                            profile
+                          )
+                        }
+                      />
+                    </td>
+
+                    <td className="px-5 py-4">
                       <ProfileVerificationBadge
                         status={
                           profile.verificationStatus
@@ -292,19 +302,20 @@ export default function AdminProfileTable({
                       />
                     </td>
 
-                    <td className="px-5 py-4 text-sm font-medium text-slate-600">
-                      {formatDate(
-                        profile.createdAt
-                      )}
+                    <td className="px-5 py-4">
+                      <div className="min-w-[115px] text-sm font-medium text-slate-600">
+                        {formatDate(
+                          profile.createdAt
+                        )}
+                      </div>
                     </td>
 
                     <td className="px-5 py-4 text-right">
                       <Link
                         href={`/admin/profiles/${profile.profileId}`}
-                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-[#0B2D5C] transition hover:border-[#0B2D5C] hover:bg-blue-50"
+                        className="inline-flex items-center justify-center rounded-xl bg-[#0B2D5C] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#123f78]"
                       >
-                        <Eye size={15} />
-                        View
+                        Review
                       </Link>
                     </td>
                   </tr>

@@ -4,6 +4,7 @@ import com.theholymatrimony.backend.admin.dto.AdminProfileDetailResponse;
 import com.theholymatrimony.backend.admin.dto.AdminProfilePageResponse;
 import com.theholymatrimony.backend.admin.dto.AdminProfileResponse;
 import com.theholymatrimony.backend.admin.dto.UpdateProfileVerificationRequest;
+import com.theholymatrimony.backend.admin.dto.UpdateHomepageFeatureRequest;
 
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.auth.repository.UserRepository;
@@ -235,6 +236,93 @@ public class AdminProfileVerificationServiceImpl
         );
     }
 
+
+    @Override
+    @Transactional
+    public AdminProfileDetailResponse updateHomepageFeature(
+            UUID profileId,
+            UpdateHomepageFeatureRequest request
+    ) {
+        Profile profile = findProfile(profileId);
+
+        boolean feature =
+                Boolean.TRUE.equals(
+                        request.getFeatured()
+                );
+
+        /*
+         * Removing a profile from the public homepage must
+         * always be possible immediately.
+         */
+        if (!feature) {
+            profile.setFeaturedOnHomepage(false);
+
+            Profile saved =
+                    profileRepository.save(profile);
+
+            return toDetailResponse(saved);
+        }
+
+        /*
+         * Public homepage eligibility is deliberately stricter
+         * than simply having a Profile row.
+         */
+        if (!Boolean.TRUE.equals(profile.getProfileCompleted())) {
+            throw new IllegalStateException(
+                    "Only completed profiles can be featured on the homepage."
+            );
+        }
+
+        User user = profile.getUser();
+
+        if (user == null) {
+            throw new IllegalStateException(
+                    "Profile is not associated with a valid user account."
+            );
+        }
+
+        if (!Boolean.TRUE.equals(user.getEnabled())) {
+            throw new IllegalStateException(
+                    "Disabled accounts cannot be featured on the homepage."
+            );
+        }
+
+        if (user.getStatus() !=
+                com.theholymatrimony.backend.auth.enums.UserStatus.ACTIVE) {
+            throw new IllegalStateException(
+                    "Only active accounts can be featured on the homepage."
+            );
+        }
+
+        ProfilePhoto primaryPhoto =
+                profilePhotoRepository
+                        .findFirstByUserIdAndPrimaryPhotoTrue(
+                                user.getId()
+                        )
+                        .orElseThrow(
+                                () -> new IllegalStateException(
+                                        "A primary profile photo is required before featuring this profile."
+                                )
+                        );
+
+        if (
+                primaryPhoto.getImageUrl() == null
+                        ||
+                primaryPhoto.getImageUrl().isBlank()
+        ) {
+            throw new IllegalStateException(
+                    "A valid primary profile photo is required before featuring this profile."
+            );
+        }
+
+        profile.setFeaturedOnHomepage(true);
+
+        Profile saved =
+                profileRepository.save(profile);
+
+        return toDetailResponse(saved);
+    }
+
     private Profile findProfile(
             UUID profileId
     ) {
@@ -345,6 +433,11 @@ public class AdminProfileVerificationServiceImpl
                 .profileCompleted(
                         Boolean.TRUE.equals(
                                 profile.getProfileCompleted()
+                        )
+                )
+                .featuredOnHomepage(
+                        Boolean.TRUE.equals(
+                                profile.getFeaturedOnHomepage()
                         )
                 )
                 .verificationStatus(
@@ -498,6 +591,11 @@ public class AdminProfileVerificationServiceImpl
                 .profileCompleted(
                         Boolean.TRUE.equals(
                                 profile.getProfileCompleted()
+                        )
+                )
+                .featuredOnHomepage(
+                        Boolean.TRUE.equals(
+                                profile.getFeaturedOnHomepage()
                         )
                 )
 

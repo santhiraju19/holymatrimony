@@ -3,6 +3,7 @@ package com.theholymatrimony.backend.admin.controller;
 import com.theholymatrimony.backend.admin.dto.AdminProfileDetailResponse;
 import com.theholymatrimony.backend.admin.dto.AdminProfilePageResponse;
 import com.theholymatrimony.backend.admin.dto.UpdateProfileVerificationRequest;
+import com.theholymatrimony.backend.admin.dto.UpdateHomepageFeatureRequest;
 
 import com.theholymatrimony.backend.admin.service.AdminProfileVerificationService;
 
@@ -133,4 +134,30 @@ public class AdminProfileVerificationController {
                 )
         );
     }
+
+    @PatchMapping("/{profileId}/homepage-feature")
+    public ResponseEntity<ApiResponse<AdminProfileDetailResponse>>
+    updateHomepageFeature(
+            @PathVariable UUID profileId,
+            @Valid @RequestBody UpdateHomepageFeatureRequest request
+    ) {
+        AdminProfileDetailResponse response =
+                adminProfileVerificationService.updateHomepageFeature(
+                        profileId,
+                        request
+                );
+
+        String message =
+                Boolean.TRUE.equals(request.getFeatured())
+                        ? "Profile featured on homepage successfully."
+                        : "Profile removed from homepage successfully.";
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        message,
+                        response
+                )
+        );
+    }
+
 }
