@@ -1,0 +1,2 @@
+ALTER TABLE profiles
+    ADD COLUMN featured_on_homepage BOOLEAN NOT NULL DEFAULT FALSE;
