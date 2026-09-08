@@ -19,9 +19,11 @@ import AdminProfileTable from "@/features/admin/profiles/components/AdminProfile
 
 import {
   getAdminProfiles,
+  updateAdminHomepageFeature,
 } from "@/features/admin/profiles/services/adminProfileService";
 
 import type {
+  AdminProfileListItem,
   AdminProfilePage,
   ProfileVerificationStatus,
 } from "@/features/admin/profiles/types/adminProfile";
@@ -74,6 +76,13 @@ export default function AdminProfilesPage() {
     >(
       "PENDING"
     );
+
+  const [
+    updatingHomepageProfileId,
+    setUpdatingHomepageProfileId,
+  ] = useState<string | null>(
+    null
+  );
 
   const loadProfiles =
     useCallback(
@@ -131,6 +140,48 @@ export default function AdminProfilesPage() {
   ): void {
     setStatus(value);
     setPage(0);
+  }
+
+  async function handleHomepageToggle(
+    profile: AdminProfileListItem
+  ): Promise<void> {
+    if (updatingHomepageProfileId) {
+      return;
+    }
+
+    const currentlyFeatured =
+      Boolean(
+        profile.featuredOnHomepage
+      );
+
+    setUpdatingHomepageProfileId(
+      profile.profileId
+    );
+    setError(null);
+
+    try {
+      await updateAdminHomepageFeature(
+        profile.profileId,
+        {
+          featured:
+            !currentlyFeatured,
+        }
+      );
+
+      await loadProfiles();
+    } catch (toggleError) {
+      setError(
+        toggleError instanceof Error
+          ? toggleError.message
+          : currentlyFeatured
+            ? "Unable to remove profile from homepage."
+            : "Unable to feature profile on homepage."
+      );
+    } finally {
+      setUpdatingHomepageProfileId(
+        null
+      );
+    }
   }
 
   return (
@@ -306,6 +357,12 @@ export default function AdminProfilesPage() {
           profiles={
             data?.content ??
             []
+          }
+          updatingProfileId={
+            updatingHomepageProfileId
+          }
+          onToggleHomepage={
+            handleHomepageToggle
           }
         />
       )}
