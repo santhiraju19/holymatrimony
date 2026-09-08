@@ -63,6 +63,7 @@ export default function IPhoneGiveawayPopup() {
 
     return () => {
       document.body.style.overflow = "";
+
       window.removeEventListener(
         "keydown",
         handleKeyDown
@@ -93,7 +94,7 @@ export default function IPhoneGiveawayPopup() {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/80 px-2 py-3 backdrop-blur-sm sm:px-6 sm:py-6"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/80 px-2 py-3 backdrop-blur-sm sm:px-5 sm:py-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="giveaway-title"
@@ -103,7 +104,7 @@ export default function IPhoneGiveawayPopup() {
         }
       }}
     >
-      <div className="relative flex max-h-[96vh] w-full max-w-[760px] flex-col overflow-hidden rounded-2xl border border-white/20 bg-white shadow-2xl sm:rounded-[28px]">
+      <div className="relative flex max-h-[97vh] w-full max-w-[900px] flex-col overflow-hidden rounded-2xl border border-white/20 bg-white shadow-2xl sm:rounded-[28px]">
         <button
           type="button"
           onClick={closePopup}
@@ -120,19 +121,26 @@ export default function IPhoneGiveawayPopup() {
           Holy Matrimony Mega Giveaway
         </h2>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#fff8f8]">
+        {/*
+          Mobile:
+          Poster can scroll vertically so text remains readable.
+
+          Desktop:
+          Entire poster scales down to fit above the CTA area.
+        */}
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#fff8f8] sm:flex sm:items-center sm:justify-center sm:overflow-hidden">
           <Image
             src="/promotions/iphone-giveaway-sept-2026.jpeg"
             alt="Holy Matrimony Mega Giveaway promotion for Platinum members during September 2026."
             width={1024}
             height={1536}
             priority
-            sizes="(max-width: 768px) 100vw, 760px"
-            className="h-auto w-full"
+            sizes="(max-width: 640px) 100vw, 520px"
+            className="h-auto w-full sm:max-h-[calc(97vh-118px)] sm:w-auto sm:max-w-full sm:object-contain"
           />
         </div>
 
-        <div className="shrink-0 border-t border-slate-200 bg-white px-4 py-4 sm:px-6">
+        <div className="shrink-0 border-t border-slate-200 bg-white px-4 py-3 sm:px-6 sm:py-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <Link
               href="/membership"
@@ -152,7 +160,7 @@ export default function IPhoneGiveawayPopup() {
             </button>
           </div>
 
-          <div className="mt-3 text-center text-xs leading-5 text-slate-500">
+          <div className="mt-2 text-center text-xs leading-5 text-slate-500">
             Campaign period: September 1–30, 2026.
             <span className="ml-1 font-semibold">
               Terms & Conditions Apply.
