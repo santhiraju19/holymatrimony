@@ -183,6 +183,11 @@ export default function Header({
   ] = useState(false);
 
   const [
+    globalSearchQuery,
+    setGlobalSearchQuery,
+  ] = useState("");
+
+  const [
     loggingOut,
     setLoggingOut,
   ] = useState(false);
@@ -246,6 +251,22 @@ export default function Header({
     }
   }
 
+  function handleGlobalSearch(): void {
+    const keyword =
+      globalSearchQuery.trim();
+
+    if (!keyword) {
+      router.push("/search");
+      return;
+    }
+
+    router.push(
+      `/search?keyword=${encodeURIComponent(
+        keyword
+      )}`
+    );
+  }
+
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/85 backdrop-blur-2xl">
       <div className="flex min-h-[82px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
@@ -278,24 +299,39 @@ export default function Header({
         </div>
 
         <div className="hidden max-w-md flex-1 px-8 xl:block">
-          <Link
-            href="/search"
-            className="group flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 text-sm text-slate-500 transition-all hover:border-blue-200 hover:bg-white hover:shadow-md"
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleGlobalSearch();
+            }}
+            className="group flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 text-sm text-slate-500 transition-all focus-within:border-blue-300 focus-within:bg-white focus-within:shadow-md"
           >
             <Search
               size={18}
-              className="text-slate-400 transition group-hover:text-[#0B2D5C]"
+              className="shrink-0 text-slate-400 transition group-focus-within:text-[#0B2D5C]"
             />
 
-            <span className="flex-1 truncate">
-              Search matches by name,
-              profession or location
-            </span>
+            <input
+              type="search"
+              value={globalSearchQuery}
+              onChange={(event) =>
+                setGlobalSearchQuery(
+                  event.target.value
+                )
+              }
+              placeholder="Search name, profession, email, mobile or location"
+              aria-label="Search profiles"
+              autoComplete="off"
+              className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400"
+            />
 
-            <span className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10px] font-bold text-slate-400">
+            <button
+              type="submit"
+              className="shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold text-slate-500 transition hover:border-blue-300 hover:text-[#0B2D5C]"
+            >
               Search
-            </span>
-          </Link>
+            </button>
+          </form>
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">

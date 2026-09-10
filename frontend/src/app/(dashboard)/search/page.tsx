@@ -67,6 +67,11 @@ export default async function SearchPage({
   const initialFilters:
     Partial<BrowseSearchFilters> =
     {
+      keyword:
+        firstValue(
+          params.keyword
+        ),
+
       ageFrom:
         firstValue(
           params.ageFrom
@@ -191,6 +196,11 @@ export default async function SearchPage({
 
   return (
     <BrowseProfilesPage
+      key={
+        firstValue(
+          params.keyword
+        )
+      }
       initialFilters={
         initialFilters
       }

@@ -238,6 +238,7 @@ export interface BrowsePaginationParams {
  */
 
 export interface BrowseSearchFilters {
+  keyword: string;
   // =====================================================
   // Match Basics
   // =====================================================
@@ -322,6 +323,7 @@ export interface BrowseSearchLocation {
 
 export interface BrowseSearchParams
   extends BrowsePaginationParams {
+  keyword?: string;
   ageFrom?: number;
   ageTo?: number;
 
@@ -367,6 +369,7 @@ export interface BrowseSearchParams
 
 export const EMPTY_BROWSE_SEARCH_FILTERS: BrowseSearchFilters =
   {
+    keyword: "",
     ageFrom: "",
     ageTo: "",
 
@@ -412,6 +415,7 @@ export function hasActiveBrowseFilters(
   filters: BrowseSearchFilters
 ): boolean {
   return (
+    filters.keyword.trim().length > 0 ||
     filters.ageFrom.trim().length > 0 ||
     filters.ageTo.trim().length > 0 ||
     filters.heightFrom.trim().length > 0 ||
@@ -454,6 +458,11 @@ export function buildBrowseSearchParams(
     size: pagination.size ?? 12,
     sort: filters.sort,
   };
+
+  if (filters.keyword.trim()) {
+    params.keyword =
+      filters.keyword.trim();
+  }
 
   const ageFrom =
     Number(filters.ageFrom);

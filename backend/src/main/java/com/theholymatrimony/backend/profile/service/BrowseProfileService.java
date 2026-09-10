@@ -188,11 +188,18 @@ public class BrowseProfileService {
                         .getUser()
                         .getId();
 
-        membershipEntitlementService
-                .requireFeature(
-                        authenticatedUserId,
-                        MembershipFeature.ADVANCED_SEARCH
-                );
+        /*
+         * Keyword-only search is available to every member.
+         *
+         * Detailed filters remain Advanced Search.
+         */
+        if (hasAdvancedSearchFilters(request)) {
+            membershipEntitlementService
+                    .requireFeature(
+                            authenticatedUserId,
+                            MembershipFeature.ADVANCED_SEARCH
+                    );
+        }
 
         boolean includeCompatibility =
                 membershipEntitlementService
@@ -230,6 +237,71 @@ public class BrowseProfileService {
                 currentProfile,
                 includeCompatibility
         );
+    }
+
+    /*
+     * ============================================================
+     * ADVANCED SEARCH DETECTION
+     * ============================================================
+     */
+    private boolean hasAdvancedSearchFilters(
+            SearchProfileRequest request
+    ) {
+        if (request == null) {
+            return false;
+        }
+
+        boolean hasLocations =
+                request.getLocations() != null
+                        && request.getLocations()
+                                .stream()
+                                .filter(java.util.Objects::nonNull)
+                                .anyMatch(
+                                        location ->
+                                                hasText(location.getCountry())
+                                                        || hasText(location.getState())
+                                                        || hasText(location.getDistrict())
+                                                        || hasText(location.getCity())
+                                );
+
+        boolean hasNonDefaultSort =
+                hasText(request.getSort())
+                        && !"RECOMMENDED".equalsIgnoreCase(
+                                request.getSort().trim()
+                        );
+
+        return request.getAgeFrom() != null
+                || request.getAgeTo() != null
+                || request.getHeightFrom() != null
+                || request.getHeightTo() != null
+                || hasText(request.getGender())
+                || hasText(request.getMaritalStatus())
+                || hasText(request.getReligion())
+                || hasText(request.getDenomination())
+                || hasText(request.getCommunity())
+                || hasText(request.getMotherTongue())
+                || request.getBaptized() != null
+                || hasText(request.getHighestEducation())
+                || hasText(request.getProfession())
+                || hasText(request.getCountry())
+                || hasText(request.getState())
+                || hasText(request.getDistrict())
+                || hasText(request.getCity())
+                || hasLocations
+                || hasText(request.getDiet())
+                || hasText(request.getSmoking())
+                || hasText(request.getDrinking())
+                || Boolean.TRUE.equals(request.getAadhaarVerified())
+                || Boolean.TRUE.equals(request.getIdVerified())
+                || Boolean.TRUE.equals(request.getChurchVerified())
+                || hasNonDefaultSort;
+    }
+
+    private boolean hasText(
+            String value
+    ) {
+        return value != null
+                && !value.isBlank();
     }
 
     /*

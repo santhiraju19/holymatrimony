@@ -249,6 +249,9 @@ export async function searchBrowseProfiles(
       "/profiles/search",
       {
         params: cleanParams({
+          keyword:
+            params.keyword,
+
           /*
            * ==================================================
            * Pagination
