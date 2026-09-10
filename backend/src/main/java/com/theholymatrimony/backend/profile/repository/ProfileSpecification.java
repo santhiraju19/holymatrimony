@@ -169,6 +169,104 @@ public final class ProfileSpecification {
 
                 /*
                  * =================================================
+                 * Global Keyword Search
+                 * =================================================
+                 */
+                if (hasText(request.getKeyword())) {
+
+                    String normalizedKeyword =
+                            request.getKeyword()
+                                    .trim()
+                                    .toLowerCase(
+                                            Locale.ROOT
+                                    );
+
+                    String containsPattern =
+                            "%"
+                                    + normalizedKeyword
+                                    + "%";
+
+                    predicates.add(
+                            criteriaBuilder.or(
+
+                                    criteriaBuilder.like(
+                                            criteriaBuilder.lower(
+                                                    root.get("user")
+                                                            .get("fullName")
+                                            ),
+                                            containsPattern
+                                    ),
+
+                                    criteriaBuilder.like(
+                                            criteriaBuilder.lower(
+                                                    root.get("profession")
+                                            ),
+                                            containsPattern
+                                    ),
+
+                                    criteriaBuilder.like(
+                                            criteriaBuilder.lower(
+                                                    root.get("denomination")
+                                            ),
+                                            containsPattern
+                                    ),
+
+                                    criteriaBuilder.like(
+                                            criteriaBuilder.lower(
+                                                    root.get("city")
+                                            ),
+                                            containsPattern
+                                    ),
+
+                                    criteriaBuilder.like(
+                                            criteriaBuilder.lower(
+                                                    root.get("district")
+                                            ),
+                                            containsPattern
+                                    ),
+
+                                    criteriaBuilder.like(
+                                            criteriaBuilder.lower(
+                                                    root.get("state")
+                                            ),
+                                            containsPattern
+                                    ),
+
+                                    criteriaBuilder.like(
+                                            criteriaBuilder.lower(
+                                                    root.get("country")
+                                            ),
+                                            containsPattern
+                                    ),
+
+                                    criteriaBuilder.equal(
+                                            criteriaBuilder.lower(
+                                                    root.get("user")
+                                                            .get("email")
+                                            ),
+                                            normalizedKeyword
+                                    ),
+
+                                    criteriaBuilder.equal(
+                                            criteriaBuilder.lower(
+                                                    root.get("user")
+                                                            .get("mobile")
+                                            ),
+                                            normalizedKeyword
+                                    ),
+
+                                    criteriaBuilder.equal(
+                                            criteriaBuilder.lower(
+                                                    root.get("mobile")
+                                            ),
+                                            normalizedKeyword
+                                    )
+                            )
+                    );
+                }
+
+                /*
+                 * =================================================
                  * Age
                  * =================================================
                  */

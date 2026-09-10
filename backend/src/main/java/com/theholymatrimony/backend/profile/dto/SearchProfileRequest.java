@@ -11,6 +11,23 @@ public class SearchProfileRequest {
 
     /*
      * ============================================================
+     * Global Keyword Search
+     * ============================================================
+     *
+     * Partial:
+     * - full name
+     * - profession
+     * - denomination
+     * - city / district / state / country
+     *
+     * Exact:
+     * - email
+     * - mobile
+     */
+    private String keyword;
+
+    /*
+     * ============================================================
      * Match Basics
      * ============================================================
      */

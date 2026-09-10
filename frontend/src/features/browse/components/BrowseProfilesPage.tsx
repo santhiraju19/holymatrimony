@@ -198,6 +198,7 @@ export default function BrowseProfilesPage({
 
           if (
             !explicitInitialLocation &&
+            !initialFilters?.keyword?.trim() &&
             locations.length > 0
           ) {
             setLocationMode(
@@ -236,6 +237,7 @@ export default function BrowseProfilesPage({
     },
     [
       explicitInitialLocation,
+      initialFilters?.keyword,
     ]
   );
 
