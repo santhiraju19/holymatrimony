@@ -100,7 +100,7 @@ ARCHIVE="/tmp/holymatrimony-frontend-${HEAD}.tar.gz"
 rm -f "$ARCHIVE"
 
 COPYFILE_DISABLE=1 \
-tar -czf "$ARCHIVE" .next
+tar -czf "$ARCHIVE" .next public
 
 echo
 echo "===== BUILD COMPLETE ====="

@@ -67,6 +67,10 @@ if [[ -d "$FRONTEND/.next" ]]; then
     cp -a "$FRONTEND/.next" "$BACKUP/.next"
 fi
 
+if [[ -d "$FRONTEND/public" ]]; then
+    cp -a "$FRONTEND/public" "$BACKUP/public"
+fi
+
 if [[ -f "$FRONTEND/.env.local" ]]; then
     cp "$FRONTEND/.env.local" "$BACKUP/.env.local"
 fi
@@ -80,10 +84,12 @@ echo "===== INSTALL RELEASE ====="
 cd "$FRONTEND"
 
 rm -rf .next
+rm -rf public
 
 tar -xzf "$ARCHIVE" -C "$FRONTEND"
 
 test -d "$FRONTEND/.next"
+test -d "$FRONTEND/public"
 test -f "$FRONTEND/.env.local"
 
 echo
