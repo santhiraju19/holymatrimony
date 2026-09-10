@@ -487,6 +487,7 @@ private void anonymizeProfile(Profile profile) {
     // Completion
     profile.setCompletionPercentage(0);
     profile.setProfileCompleted(false);
+    profile.setProfileLive(false);
 
     // Verification
     profile.setVerificationStatus(

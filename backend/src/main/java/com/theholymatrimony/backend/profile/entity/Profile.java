@@ -474,6 +474,24 @@ private String district;
 
     /*
      * ============================================================
+     * Browse / Search Visibility
+     * ============================================================
+     *
+     * True once the member has completed the minimum Personal
+     * Information required for the profile to become discoverable.
+     *
+     * This is intentionally independent from profileCompleted.
+     * Photos and the remaining profile sections are not required.
+     */
+    @Builder.Default
+    @Column(
+            name = "profile_live",
+            nullable = false
+    )
+    private Boolean profileLive = false;
+
+    /*
+     * ============================================================
      * Public Homepage Feature
      * ============================================================
      *
@@ -591,6 +609,10 @@ private String district;
             profileCompleted = false;
         }
 
+        if (profileLive == null) {
+            profileLive = false;
+        }
+
         if (communityNoBar == null) {
             communityNoBar = true;
         }
@@ -605,6 +627,10 @@ private String district;
 
     @PreUpdate
     public void onUpdate() {
+
+        if (profileLive == null) {
+            profileLive = false;
+        }
 
         if (communityNoBar == null) {
             communityNoBar = true;

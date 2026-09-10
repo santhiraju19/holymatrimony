@@ -1,5 +1,7 @@
 package com.theholymatrimony.backend.profile.repository;
 
+import com.theholymatrimony.backend.auth.enums.UserStatus;
+
 import com.theholymatrimony.backend.payments.entity.Membership;
 import com.theholymatrimony.backend.payments.enums.MembershipPlan;
 import com.theholymatrimony.backend.payments.enums.MembershipStatus;
@@ -85,8 +87,30 @@ public final class ProfileSpecification {
             predicates.add(
                     criteriaBuilder.isTrue(
                             root.get(
-                                    "profileCompleted"
+                                    "profileLive"
                             )
+                    )
+            );
+
+            /*
+             * A live profile is discoverable only while the
+             * owning account is enabled and ACTIVE.
+             *
+             * Temporary account deactivation therefore hides the
+             * profile without destroying its profileLive state.
+             */
+            predicates.add(
+                    criteriaBuilder.isTrue(
+                            root.get("user")
+                                    .get("enabled")
+                    )
+            );
+
+            predicates.add(
+                    criteriaBuilder.equal(
+                            root.get("user")
+                                    .get("status"),
+                            UserStatus.ACTIVE
                     )
             );
 
