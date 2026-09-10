@@ -1,5 +1,7 @@
 package com.theholymatrimony.backend.profile.service;
 
+import com.theholymatrimony.backend.auth.enums.UserStatus;
+
 import com.theholymatrimony.backend.compatibility.dto.CompatibilityScoreResponse;
 import com.theholymatrimony.backend.compatibility.service.CompatibilityScoreService;
 import com.theholymatrimony.backend.profile.dto.BrowseProfilePhotoResponse;
@@ -244,8 +246,9 @@ public class BrowseProfileService {
 
         Profile profile =
                 profileRepository
-                        .findByIdAndProfileCompletedTrueAndUserEmailNot(
+                        .findByIdAndProfileLiveTrueAndUserEnabledTrueAndUserStatusAndUserEmailNot(
                                 profileId,
+                                UserStatus.ACTIVE,
                                 authenticatedEmail
                         )
                         .orElseThrow(
@@ -302,8 +305,9 @@ public class BrowseProfileService {
 
         Profile profile =
                 profileRepository
-                        .findByIdAndProfileCompletedTrueAndUserEmailNot(
+                        .findByIdAndProfileLiveTrueAndUserEnabledTrueAndUserStatusAndUserEmailNot(
                                 profileId,
+                                UserStatus.ACTIVE,
                                 authenticatedEmail
                         )
                         .orElseThrow(

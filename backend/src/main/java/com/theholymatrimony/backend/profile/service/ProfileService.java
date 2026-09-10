@@ -561,6 +561,21 @@ public class ProfileService {
                         >= PROFILE_COMPLETION_THRESHOLD
         );
 
+        /*
+         * Browse/Search visibility is intentionally independent
+         * from full profile completion.
+         *
+         * A member becomes discoverable as soon as the required
+         * Basic + Personal Information has been completed.
+         *
+         * Photos, church details beyond denomination, education,
+         * family, partner preferences and verification are not
+         * required for the profile to become live.
+         */
+        profile.setProfileLive(
+                isProfileReadyToGoLive(profile)
+        );
+
         Profile savedProfile =
                 profileRepository.save(profile);
 
@@ -592,6 +607,7 @@ public class ProfileService {
                         .user(user)
                         .completionPercentage(0)
                         .profileCompleted(false)
+                        .profileLive(false)
                         .communityNoBar(true)
                         .verificationStatus(
                                 ProfileVerificationStatus.NOT_SUBMITTED
@@ -625,6 +641,26 @@ public class ProfileService {
      *
      * Denomination remains part of the core personal profile.
      */
+    /*
+     * Minimum information required for Browse/Search visibility.
+     *
+     * Keep this separate from calculateCompletion() so that
+     * profileLive and profileCompleted retain different meanings.
+     */
+    private boolean isProfileReadyToGoLive(
+            Profile profile
+    ) {
+
+        return hasText(profile.getMobile())
+                && profile.getDateOfBirth() != null
+                && hasText(profile.getGender())
+                && hasText(profile.getMaritalStatus())
+                && profile.getHeightCm() != null
+                && hasText(profile.getMotherTongue())
+                && hasText(profile.getReligion())
+                && hasText(profile.getDenomination());
+    }
+
     private int calculateCompletion(
             Profile profile
     ) {
@@ -1157,6 +1193,12 @@ public class ProfileService {
                 .profileCompleted(
                         Boolean.TRUE.equals(
                                 profile.getProfileCompleted()
+                        )
+                )
+
+                .profileLive(
+                        Boolean.TRUE.equals(
+                                profile.getProfileLive()
                         )
                 )
 

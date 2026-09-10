@@ -83,7 +83,8 @@ public interface ProfileRepository
      */
     @EntityGraph(attributePaths = "user")
     Page<Profile>
-    findByProfileCompletedTrueAndUserEmailNot(
+    findByProfileLiveTrueAndUserEnabledTrueAndUserStatusAndUserEmailNot(
+            UserStatus status,
             String email,
             Pageable pageable
     );
@@ -95,8 +96,9 @@ public interface ProfileRepository
      */
     @EntityGraph(attributePaths = "user")
     Optional<Profile>
-    findByIdAndProfileCompletedTrueAndUserEmailNot(
+    findByIdAndProfileLiveTrueAndUserEnabledTrueAndUserStatusAndUserEmailNot(
             UUID id,
+            UserStatus status,
             String email
     );
 

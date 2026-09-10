@@ -190,6 +190,8 @@ public class ProfileResponse {
     private Integer completionPercentage;
     private Boolean profileCompleted;
 
+    private Boolean profileLive;
+
     // =========================================================
     // Profile Verification
     // =========================================================
