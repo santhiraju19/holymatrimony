@@ -3,6 +3,7 @@ package com.theholymatrimony.backend.admin.analytics.service;
 import com.theholymatrimony.backend.admin.analytics.dto.AdminAnalyticsDetailResponse;
 import com.theholymatrimony.backend.admin.analytics.dto.AdminAnalyticsDetailRow;
 import com.theholymatrimony.backend.auth.entity.User;
+import com.theholymatrimony.backend.auth.enums.UserStatus;
 import com.theholymatrimony.backend.auth.repository.UserRepository;
 import com.theholymatrimony.backend.payments.entity.Membership;
 import com.theholymatrimony.backend.payments.entity.Payment;
@@ -236,8 +237,14 @@ public class AdminAnalyticsDetailService {
                             .filter(
                                     profile ->
                                             Boolean.TRUE.equals(
-                                                    profile.getProfileCompleted()
+                                                    profile.getProfileLive()
                                             )
+                                                    && profile.getUser() != null
+                                                    && Boolean.TRUE.equals(
+                                                            profile.getUser().getEnabled()
+                                                    )
+                                                    && profile.getUser().getStatus()
+                                                    == UserStatus.ACTIVE
                             )
                             .map(this::profileRow)
                             .toList();

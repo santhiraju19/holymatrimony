@@ -177,6 +177,24 @@ public interface ProfileRepository
 
     long countByProfileCompletedFalse();
 
+    /*
+     * Count profiles that are actually eligible for Browse/Search.
+     *
+     * Browse visibility requires:
+     * - profile_live = true
+     * - enabled user account
+     * - ACTIVE user status
+     */
+    long countByProfileLiveTrueAndUserEnabledTrueAndUserStatus(
+            UserStatus status
+    );
+
+    long countByProfileLiveTrueAndUserEnabledTrueAndUserStatusAndCreatedAtBetween(
+            UserStatus status,
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
 
     /*
      * =====================================================

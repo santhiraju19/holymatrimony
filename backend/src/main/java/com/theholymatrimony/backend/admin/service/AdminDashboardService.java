@@ -1,6 +1,7 @@
 package com.theholymatrimony.backend.admin.service;
 
 import com.theholymatrimony.backend.admin.dto.AdminDashboardResponse;
+import com.theholymatrimony.backend.auth.enums.UserStatus;
 import com.theholymatrimony.backend.auth.repository.UserRepository;
 import com.theholymatrimony.backend.communication.repository.ChatMessageRepository;
 import com.theholymatrimony.backend.interest.repository.InterestRepository;
@@ -97,7 +98,10 @@ public class AdminDashboardService {
                 totalProfiles - completedProfiles;
 
         long browseVisibleProfiles =
-                completedProfiles;
+                profileRepository
+                        .countByProfileLiveTrueAndUserEnabledTrueAndUserStatus(
+                                UserStatus.ACTIVE
+                        );
 
         BigDecimal profileCompletionRate =
                 percentage(

@@ -1,6 +1,7 @@
 package com.theholymatrimony.backend.admin.analytics.service;
 
 import com.theholymatrimony.backend.admin.analytics.dto.AdminAnalyticsResponse;
+import com.theholymatrimony.backend.auth.enums.UserStatus;
 import com.theholymatrimony.backend.auth.repository.UserRepository;
 import com.theholymatrimony.backend.payments.enums.MembershipPlan;
 import com.theholymatrimony.backend.payments.enums.PaymentStatus;
@@ -101,7 +102,12 @@ public class AdminAnalyticsService {
                 );
 
         long browseVisibleProfiles =
-                completedProfiles;
+                profileRepository
+                        .countByProfileLiveTrueAndUserEnabledTrueAndUserStatusAndCreatedAtBetween(
+                                UserStatus.ACTIVE,
+                                start,
+                                end
+                        );
 
         /*
          * MEMBERSHIPS
