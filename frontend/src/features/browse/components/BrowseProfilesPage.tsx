@@ -22,6 +22,8 @@ import Button from "@/components/ui/button";
 import SaveSearchModal from "@/features/saved-searches/components/SaveSearchModal";
 
 import profileService from "@/features/profile/services/profile.service";
+import { interpretAiSearch } from "@/features/ai-search/api/aiSearchApi";
+import { aiInterpretationToBrowseFilters } from "@/features/ai-search/types/toBrowseFilters";
 
 import AdvancedSearchUpgradeModal from "./AdvancedSearchUpgradeModal";
 import BrowseEmptyState from "./BrowseEmptyState";
@@ -258,6 +260,7 @@ export default function BrowseProfilesPage({
 
     updateFilter,
     applyFilters,
+    applyFilterSet,
     resetFilters,
 
     nextPage,
@@ -289,6 +292,21 @@ export default function BrowseProfilesPage({
       SavedSearch | null
     >(null);
 
+  const [
+    aiInterpreting,
+    setAiInterpreting,
+  ] = useState(false);
+
+  const [
+    aiUnderstoodAs,
+    setAiUnderstoodAs,
+  ] = useState<string | null>(null);
+
+  const [
+    aiFallbackUsed,
+    setAiFallbackUsed,
+  ] = useState(false);
+
   const membershipUpgradeRequired =
     Boolean(
       error &&
@@ -318,6 +336,83 @@ export default function BrowseProfilesPage({
     },
     [
       membershipUpgradeRequired,
+    ]
+  );
+
+  useEffect(
+    () => {
+      const query =
+        initialFilters?.keyword?.trim() ?? "";
+
+      if (!query) {
+        return;
+      }
+
+      let cancelled = false;
+
+      async function interpretSearch():
+        Promise<void> {
+        setAiInterpreting(true);
+        setAiUnderstoodAs(null);
+        setAiFallbackUsed(false);
+
+        try {
+          const interpretation =
+            await interpretAiSearch(query);
+
+          if (cancelled) {
+            return;
+          }
+
+          if (!interpretation.aiInterpreted) {
+            setAiFallbackUsed(true);
+            return;
+          }
+
+          const aiFilters =
+            aiInterpretationToBrowseFilters(
+              interpretation
+            );
+
+          const hasAiLocation =
+            Boolean(
+              aiFilters.country?.trim() ||
+              aiFilters.state?.trim() ||
+              aiFilters.district?.trim() ||
+              aiFilters.city?.trim()
+            );
+
+          setLocationMode(
+            hasAiLocation
+              ? "CUSTOM"
+              : "ANYWHERE"
+          );
+
+          setAiUnderstoodAs(
+            interpretation.understoodAs
+          );
+
+          applyFilterSet(aiFilters);
+        } catch {
+          if (!cancelled) {
+            setAiFallbackUsed(true);
+          }
+        } finally {
+          if (!cancelled) {
+            setAiInterpreting(false);
+          }
+        }
+      }
+
+      void interpretSearch();
+
+      return () => {
+        cancelled = true;
+      };
+    },
+    [
+      initialFilters?.keyword,
+      applyFilterSet,
     ]
   );
 
@@ -443,6 +538,57 @@ export default function BrowseProfilesPage({
 
         <div className="h-[2px] bg-gradient-to-r from-transparent via-[#D4AF37]/80 to-transparent" />
       </section>
+
+      {(aiInterpreting ||
+        aiUnderstoodAs ||
+        aiFallbackUsed) && (
+        <div
+          className={[
+            "rounded-2xl border px-4 py-3 shadow-sm",
+            aiFallbackUsed
+              ? "border-slate-200 bg-slate-50"
+              : "border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50",
+          ].join(" ")}
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className={[
+                "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+                aiFallbackUsed
+                  ? "bg-white text-slate-500"
+                  : "bg-white text-[#0B2D5C]",
+              ].join(" ")}
+            >
+              {aiInterpreting ? (
+                <RefreshCw
+                  size={17}
+                  className="animate-spin"
+                />
+              ) : (
+                <Sparkles size={17} />
+              )}
+            </div>
+
+            <div className="min-w-0">
+              <p className="text-sm font-black text-[#0B2D5C]">
+                {aiInterpreting
+                  ? "Understanding your search..."
+                  : aiFallbackUsed
+                    ? "Standard profile search"
+                    : "AI Smart Search"}
+              </p>
+
+              <p className="mt-1 text-sm leading-5 text-slate-600">
+                {aiInterpreting
+                  ? `Interpreting "${initialFilters?.keyword ?? ""}"`
+                  : aiFallbackUsed
+                    ? "AI search is currently unavailable. Your search is still using our standard profile search."
+                    : aiUnderstoodAs}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Location Search Mode */}
 
