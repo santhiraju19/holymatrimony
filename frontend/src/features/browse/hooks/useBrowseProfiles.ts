@@ -81,6 +81,9 @@ interface UseBrowseProfilesReturn {
 
   applyFilters: () => void;
 
+  applyFilterSet: (
+    filters: Partial<BrowseSearchFilters>
+  ) => void;
   resetFilters: () => void;
 
   nextPage: () => void;
@@ -571,6 +574,38 @@ export default function useBrowseProfiles(
       ]
     );
 
+  const applyFilterSet =
+    useCallback(
+      (
+        nextValues:
+          Partial<BrowseSearchFilters>
+      ): void => {
+        const nextFilters: BrowseSearchFilters = {
+          ...EMPTY_BROWSE_SEARCH_FILTERS,
+          ...nextValues,
+        };
+
+        setFilters(nextFilters);
+        setError(null);
+
+        if (page === 0) {
+          setAppliedFilters({
+            ...nextFilters,
+          });
+          return;
+        }
+
+        setPage(0);
+
+        setAppliedFilters({
+          ...nextFilters,
+        });
+      },
+      [
+        page,
+      ]
+    );
+
   const resetFilters =
     useCallback(
       (): void => {
@@ -727,6 +762,7 @@ export default function useBrowseProfiles(
 
     updateFilter,
     applyFilters,
+    applyFilterSet,
     resetFilters,
 
     nextPage,
