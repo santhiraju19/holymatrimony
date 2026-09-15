@@ -382,6 +382,24 @@ public class SecureConnectCallServiceImpl
         );
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<SecureConnectCallResponse> getCallHistory(
+            String authenticatedEmail
+    ) {
+        User authenticatedUser =
+                getUserByEmail(authenticatedEmail);
+
+        return callSessionRepository
+                .findByCallerIdOrCalleeIdOrderByCreatedAtDesc(
+                        authenticatedUser.getId(),
+                        authenticatedUser.getId()
+                )
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     private User getUserByEmail(
             String email
     ) {

@@ -3,6 +3,7 @@ package com.theholymatrimony.backend.secureconnect.service;
 import com.theholymatrimony.backend.secureconnect.dto.SecureConnectCallResponse;
 import com.theholymatrimony.backend.secureconnect.enums.CallMediaType;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface SecureConnectCallService {
@@ -39,5 +40,9 @@ public interface SecureConnectCallService {
     SecureConnectCallResponse endCall(
             String authenticatedEmail,
             UUID callId
+    );
+
+    List<SecureConnectCallResponse> getCallHistory(
+            String authenticatedEmail
     );
 }
