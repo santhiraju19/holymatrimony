@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import { Copy } from "lucide-react";
 import { useEffect, useMemo } from "react";
 
 import { useProfile } from "../context/useProfile";
@@ -11,6 +12,7 @@ import { ProfileState } from "../types";
 
 export default function DashboardProfileCard() {
   const {
+    memberId,
     basicInfo,
     churchInfo,
     educationInfo,
@@ -33,6 +35,7 @@ export default function DashboardProfileCard() {
 
   const profile = useMemo<ProfileState>(
     () => ({
+      memberId,
       basicInfo,
       churchInfo,
       educationInfo,
@@ -43,6 +46,7 @@ export default function DashboardProfileCard() {
       photoInfo,
     }),
     [
+      memberId,
       basicInfo,
       churchInfo,
       educationInfo,
@@ -108,6 +112,29 @@ export default function DashboardProfileCard() {
                   Complete profiles receive better visibility and more relevant
                   matches.
                 </p>
+
+                {memberId && (
+                  <button
+                    type="button"
+                    title={`Copy Member ID ${memberId}`}
+                    aria-label={`Copy Member ID ${memberId}`}
+                    onClick={() => {
+                      void navigator.clipboard.writeText(
+                        memberId
+                      );
+                    }}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold tracking-[0.04em] text-[#0B2D5C] transition hover:border-blue-200 hover:bg-blue-100"
+                  >
+                    <span>
+                      Member ID: {memberId}
+                    </span>
+
+                    <Copy
+                      size={13}
+                      strokeWidth={2.3}
+                    />
+                  </button>
+                )}
               </div>
             </div>
           </div>

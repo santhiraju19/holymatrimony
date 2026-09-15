@@ -251,6 +251,7 @@ export default function Review({
   saving,
 }: ReviewProps) {
   const {
+    memberId,
     basicInfo,
     churchInfo,
     educationInfo,
@@ -272,6 +273,7 @@ export default function Review({
 
   const completion =
     calculateProfileCompletion({
+      memberId,
       basicInfo,
       churchInfo,
       educationInfo,

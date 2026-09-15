@@ -1087,6 +1087,9 @@ List<BrowseProfilePhotoResponse> photos =
                 .userId(
                         userId
                 )
+                .memberId(
+                        profile.getMemberId()
+                )
 
                 /*
                  * Membership / Premium Presentation

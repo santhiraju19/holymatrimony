@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import {
   ArrowLeft,
+  Copy,
   HeartHandshake,
   MapPin,
   Sparkles,
@@ -161,6 +162,26 @@ export default function ProfileDetailsHeader({
               {displayName}
             </h1>
 
+            {profile.memberId && (
+              <button
+                type="button"
+                title={`Copy Member ID ${profile.memberId}`}
+                aria-label={`Copy Member ID ${profile.memberId}`}
+                onClick={() => {
+                  void navigator.clipboard.writeText(
+                    profile.memberId
+                  );
+                }}
+                className="pointer-events-auto mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/20 px-2.5 py-1 text-[10px] font-black tracking-[0.06em] text-white/90 backdrop-blur-md transition hover:bg-white/20 hover:text-white"
+              >
+                <span>{profile.memberId}</span>
+                <Copy
+                  size={11}
+                  strokeWidth={2.4}
+                />
+              </button>
+            )}
+
             {summary && (
               <p className="mt-1 text-sm font-semibold text-white/85">
                 {summary}
@@ -223,6 +244,26 @@ export default function ProfileDetailsHeader({
                   </span>
                 )}
               </div>
+
+              {profile.memberId && (
+                <button
+                  type="button"
+                  title={`Copy Member ID ${profile.memberId}`}
+                  aria-label={`Copy Member ID ${profile.memberId}`}
+                  onClick={() => {
+                    void navigator.clipboard.writeText(
+                      profile.memberId
+                    );
+                  }}
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-black tracking-[0.06em] text-[#0B2D5C] transition hover:border-blue-200 hover:bg-blue-100"
+                >
+                  <span>Member ID: {profile.memberId}</span>
+                  <Copy
+                    size={11}
+                    strokeWidth={2.4}
+                  />
+                </button>
+              )}
 
               {summary && (
                 <p className="mt-2 text-sm font-semibold text-slate-500">

@@ -224,6 +224,7 @@ export default function DashboardPage() {
    */
 
   const {
+    memberId,
     basicInfo,
     churchInfo,
     educationInfo,
@@ -283,6 +284,7 @@ export default function DashboardPage() {
       () =>
         calculateProfileCompletion(
           {
+            memberId,
             basicInfo,
             churchInfo,
             educationInfo,

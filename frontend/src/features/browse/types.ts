@@ -43,6 +43,8 @@ export interface BrowseProfilePhoto {
 export interface BrowseProfile {
   id: string;
   userId: string;
+  memberId: string;
+
 
   highlightedProfile: boolean;
   verifiedPremiumBadge: boolean;

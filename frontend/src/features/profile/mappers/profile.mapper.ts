@@ -10,6 +10,8 @@ export function toProfileState(
   data: ProfilePayload
 ): ProfileState {
   return {
+    memberId: data.memberId ?? "",
+
     basicInfo: {
       fullName:
         data.fullName ?? "",

@@ -614,7 +614,18 @@ public class ProfileService {
                         )
                         .build();
 
-        return profileRepository.save(profile);
+        /*
+         * Flush the INSERT so PostgreSQL can generate member_id
+         * from profile_member_id_seq, then refresh the entity so
+         * the generated Membership ID is immediately available in
+         * ProfileResponse.
+         */
+        Profile savedProfile =
+                profileRepository.saveAndFlush(profile);
+
+        entityManager.refresh(savedProfile);
+
+        return savedProfile;
     }
 
     // =========================================================
@@ -853,6 +864,9 @@ public class ProfileService {
 
                 .userId(
                         user.getId()
+                )
+                .memberId(
+                        profile.getMemberId()
                 )
 
                 // ===== User =====

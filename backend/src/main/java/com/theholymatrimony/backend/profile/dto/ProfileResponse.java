@@ -22,6 +22,14 @@ public class ProfileResponse {
     private UUID id;
     private UUID userId;
 
+    /*
+     * Permanent Holy Matrimony Membership ID.
+     *
+     * Do not confuse this with membershipId below, which is the
+     * optional church membership identifier.
+     */
+    private String memberId;
+
     // =========================================================
     // User
     // =========================================================

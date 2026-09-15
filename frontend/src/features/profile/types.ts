@@ -151,6 +151,14 @@ export interface AboutInfo {
 }
 
 export interface ProfileState {
+  /*
+   * Permanent Holy Matrimony public Membership ID.
+   *
+   * This is system-generated and is separate from the optional
+   * church membershipId stored inside churchInfo.
+   */
+  memberId: string;
+
   basicInfo: BasicInfo;
 
   churchInfo: ChurchInfo;

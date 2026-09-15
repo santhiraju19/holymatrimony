@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   ArrowUpRight,
   BriefcaseBusiness,
+  Copy,
   CheckCircle2,
   Church,
   GraduationCap,
@@ -319,6 +320,28 @@ export default function BrowseProfileCard({
                 <h2 className="truncate text-xl font-black tracking-[-0.025em] text-white drop-shadow-sm">
                   {displayName}
                 </h2>
+
+                {profile.memberId && (
+                  <button
+                    type="button"
+                    title={`Copy Member ID ${profile.memberId}`}
+                    aria-label={`Copy Member ID ${profile.memberId}`}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      void navigator.clipboard.writeText(
+                        profile.memberId
+                      );
+                    }}
+                    className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/20 px-2.5 py-1 text-[10px] font-black tracking-[0.06em] text-white/90 backdrop-blur-md transition hover:bg-white/20 hover:text-white"
+                  >
+                    <span>{profile.memberId}</span>
+                    <Copy
+                      size={11}
+                      strokeWidth={2.4}
+                    />
+                  </button>
+                )}
 
                 {basicDetails && (
                   <p className="mt-1 truncate text-xs font-semibold text-white/85 sm:text-sm">

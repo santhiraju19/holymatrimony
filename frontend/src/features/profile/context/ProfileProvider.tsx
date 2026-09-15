@@ -30,6 +30,8 @@ function mapApiToState(
   const photos: ProfileState["photoInfo"]["photos"] = [];
 
   return {
+    memberId: api.memberId ?? "",
+
     basicInfo: {
       fullName: api.fullName ?? "",
       mobile: api.mobile ?? "",

@@ -33,6 +33,8 @@ export interface ProfileContextType
 }
 
 export const initialProfile: ProfileState = {
+  memberId: "",
+
   basicInfo: {
     fullName: "",
     mobile: "",

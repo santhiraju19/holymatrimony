@@ -21,8 +21,11 @@ public class SearchProfileRequest {
      * - city / district / state / country
      *
      * Exact:
-     * - email
-     * - mobile
+     * - Holy Matrimony Membership ID (for example HM-000001)
+     *
+     * Email and mobile are intentionally excluded from member-facing
+     * discovery because their visibility is controlled by privacy
+     * settings.
      */
     private String keyword;
 

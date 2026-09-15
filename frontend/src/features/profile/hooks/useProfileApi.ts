@@ -25,6 +25,7 @@ export function useProfileApi() {
 
       setProfile((previous) => ({
         ...previous,
+        memberId: data.memberId ?? "",
 
         basicInfo: {
           ...previous.basicInfo,

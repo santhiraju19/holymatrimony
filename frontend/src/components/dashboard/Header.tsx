@@ -319,7 +319,7 @@ export default function Header({
                   event.target.value
                 )
               }
-              placeholder="Search name, profession, email, mobile or location"
+              placeholder="Search Member ID, name, profession or location"
               aria-label="Search profiles"
               autoComplete="off"
               className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400"

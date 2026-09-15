@@ -186,8 +186,28 @@ public final class ProfileSpecification {
                                     + normalizedKeyword
                                     + "%";
 
+                    /*
+                     * Member-facing global search.
+                     *
+                     * Membership ID:
+                     * - exact match
+                     *
+                     * Public profile information:
+                     * - partial match
+                     *
+                     * Email and mobile are intentionally excluded.
+                     * Those fields are controlled by member privacy
+                     * settings and must not be discovery identifiers.
+                     */
                     predicates.add(
                             criteriaBuilder.or(
+
+                                    criteriaBuilder.equal(
+                                            criteriaBuilder.lower(
+                                                    root.get("memberId")
+                                            ),
+                                            normalizedKeyword
+                                    ),
 
                                     criteriaBuilder.like(
                                             criteriaBuilder.lower(
@@ -237,29 +257,6 @@ public final class ProfileSpecification {
                                                     root.get("country")
                                             ),
                                             containsPattern
-                                    ),
-
-                                    criteriaBuilder.equal(
-                                            criteriaBuilder.lower(
-                                                    root.get("user")
-                                                            .get("email")
-                                            ),
-                                            normalizedKeyword
-                                    ),
-
-                                    criteriaBuilder.equal(
-                                            criteriaBuilder.lower(
-                                                    root.get("user")
-                                                            .get("mobile")
-                                            ),
-                                            normalizedKeyword
-                                    ),
-
-                                    criteriaBuilder.equal(
-                                            criteriaBuilder.lower(
-                                                    root.get("mobile")
-                                            ),
-                                            normalizedKeyword
                                     )
                             )
                     );
