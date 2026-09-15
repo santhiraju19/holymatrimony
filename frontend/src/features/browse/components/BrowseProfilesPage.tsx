@@ -348,6 +348,21 @@ export default function BrowseProfilesPage({
         return;
       }
 
+      /*
+       * Holy Matrimony Membership IDs are deterministic search
+       * identifiers and must go directly to the normal backend
+       * keyword search.
+       *
+       * Do not send them through AI interpretation because the
+       * AI layer may transform or discard the exact identifier.
+       */
+      if (/^HM-\d{6,}$/i.test(query)) {
+        setAiInterpreting(false);
+        setAiUnderstoodAs(null);
+        setAiFallbackUsed(false);
+        return;
+      }
+
       let cancelled = false;
 
       async function interpretSearch():

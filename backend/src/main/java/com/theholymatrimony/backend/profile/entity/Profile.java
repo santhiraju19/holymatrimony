@@ -52,6 +52,27 @@ public class Profile {
     )
     private User user;
 
+    /*
+     * Permanent Holy Matrimony Membership ID.
+     *
+     * Examples:
+     *   HM-000001
+     *   HM-000002
+     *
+     * PostgreSQL generates this value using profile_member_id_seq.
+     * It is intentionally read-only from Hibernate so application
+     * code cannot accidentally change a member's permanent ID.
+     */
+    @Column(
+            name = "member_id",
+            nullable = false,
+            unique = true,
+            insertable = false,
+            updatable = false,
+            length = 20
+    )
+    private String memberId;
+
     // =========================================================
     // Basic
     // =========================================================

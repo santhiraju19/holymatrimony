@@ -25,6 +25,8 @@ export interface PreferredLocationPayload {
 export interface ProfilePayload {
   id?: string;
   userId?: string;
+  memberId?: string;
+
 
   fullName?: string;
   email?: string;

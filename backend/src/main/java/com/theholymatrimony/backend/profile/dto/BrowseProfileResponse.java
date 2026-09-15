@@ -16,7 +16,16 @@ public class BrowseProfileResponse {
     private UUID id;
     private UUID userId;
 
+
     /*
+     * Permanent public-facing Holy Matrimony Membership ID.
+     *
+     * Example:
+     * HM-000001
+     */
+    private String memberId;
+
+/*
      * ============================================================
      * Premium Visibility
      * ============================================================

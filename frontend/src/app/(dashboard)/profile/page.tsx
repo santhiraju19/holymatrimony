@@ -46,6 +46,7 @@ export default function ProfilePage() {
     saveStatus,
     saveProfile,
 
+    memberId,
     basicInfo,
     churchInfo,
     educationInfo,
@@ -89,6 +90,7 @@ export default function ProfilePage() {
    */
 
   const profile = {
+    memberId,
     basicInfo,
     churchInfo,
     educationInfo,
@@ -118,6 +120,7 @@ export default function ProfilePage() {
           profile
         ),
       [
+        memberId,
         basicInfo,
         churchInfo,
         educationInfo,
