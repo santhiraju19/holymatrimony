@@ -82,6 +82,15 @@ public class MembershipFeatureRequiredException
 
             case EARLY_ACCESS ->
                     "Upgrade to Platinum for early access to new features.";
+
+            case AUDIO_CALL ->
+                    "An active Silver, Gold or Platinum membership is required to start secure audio calls.";
+
+            case VIDEO_CALL ->
+                    "An active Gold or Platinum membership is required to start secure video calls.";
+
+            case UNLIMITED_SECURE_CONNECT ->
+                    "Upgrade to Platinum for unlimited Secure Connect calling.";
         };
     }
 }
