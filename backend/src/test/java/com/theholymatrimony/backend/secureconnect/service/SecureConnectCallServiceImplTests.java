@@ -8,6 +8,7 @@ import com.theholymatrimony.backend.secureconnect.entity.SecureConnectCallSessio
 import com.theholymatrimony.backend.secureconnect.enums.CallMediaType;
 import com.theholymatrimony.backend.secureconnect.enums.CallStatus;
 import com.theholymatrimony.backend.secureconnect.repository.SecureConnectCallSessionRepository;
+import com.theholymatrimony.backend.secureconnect.realtime.SecureConnectRealtimePublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -26,6 +27,7 @@ class SecureConnectCallServiceImplTests {
     private SecureConnectCallSessionRepository callSessionRepository;
     private SecureConnectAuthorizationService authorizationService;
     private SecureConnectUsageService usageService;
+    private SecureConnectRealtimePublisher realtimePublisher;
 
     private SecureConnectCallServiceImpl service;
 
@@ -53,12 +55,16 @@ class SecureConnectCallServiceImplTests {
         usageService =
                 mock(SecureConnectUsageService.class);
 
+        realtimePublisher =
+                mock(SecureConnectRealtimePublisher.class);
+
         service =
                 new SecureConnectCallServiceImpl(
                         userRepository,
                         callSessionRepository,
                         authorizationService,
-                        usageService
+                        usageService,
+                        realtimePublisher
                 );
 
         callerId = UUID.randomUUID();
@@ -271,6 +277,9 @@ class SecureConnectCallServiceImplTests {
                 .save(call);
 
         verifyNoInteractions(usageService);
+    
+        verify(realtimePublisher)
+                .publishAcceptedCall(call);
     }
 
     @Test
@@ -293,6 +302,9 @@ class SecureConnectCallServiceImplTests {
         assertNotNull(call.getEndedAt());
 
         verifyNoInteractions(usageService);
+    
+        verify(realtimePublisher)
+                .publishDeclinedCall(call);
     }
 
     @Test
@@ -315,6 +327,9 @@ class SecureConnectCallServiceImplTests {
         assertNotNull(call.getEndedAt());
 
         verifyNoInteractions(usageService);
+    
+        verify(realtimePublisher)
+                .publishCancelledCall(call);
     }
 
     @Test
@@ -336,6 +351,9 @@ class SecureConnectCallServiceImplTests {
         assertNotNull(call.getEndedAt());
 
         verifyNoInteractions(usageService);
+    
+        verify(realtimePublisher)
+                .publishMissedCall(call);
     }
 
     @Test
@@ -357,6 +375,9 @@ class SecureConnectCallServiceImplTests {
         assertNotNull(call.getEndedAt());
 
         verifyNoInteractions(usageService);
+    
+        verify(realtimePublisher)
+                .publishFailedCall(call);
     }
 
     @Test
@@ -386,6 +407,9 @@ class SecureConnectCallServiceImplTests {
         assertNotNull(call.getEndedAt());
 
         verifyNoInteractions(usageService);
+    
+        verify(realtimePublisher)
+                .publishFailedCall(call);
     }
 
     @Test
@@ -462,6 +486,12 @@ class SecureConnectCallServiceImplTests {
                                         seconds >= 44L
                         )
                 );
+    
+        verify(realtimePublisher)
+                .publishEndedCall(
+                        call,
+                        caller
+                );
     }
 
     @Test
@@ -530,6 +560,12 @@ class SecureConnectCallServiceImplTests {
                 .finalizeUsage(
                         eq(call.getId()),
                         anyLong()
+                );
+    
+        verify(realtimePublisher)
+                .publishEndedCall(
+                        call,
+                        callee
                 );
     }
 

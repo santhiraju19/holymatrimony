@@ -8,6 +8,7 @@ import com.theholymatrimony.backend.secureconnect.entity.SecureConnectCallSessio
 import com.theholymatrimony.backend.secureconnect.enums.CallMediaType;
 import com.theholymatrimony.backend.secureconnect.enums.CallStatus;
 import com.theholymatrimony.backend.secureconnect.repository.SecureConnectCallSessionRepository;
+import com.theholymatrimony.backend.secureconnect.realtime.SecureConnectRealtimePublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ public class SecureConnectCallServiceImpl
     private final SecureConnectCallSessionRepository callSessionRepository;
     private final SecureConnectAuthorizationService authorizationService;
     private final SecureConnectUsageService usageService;
+    private final SecureConnectRealtimePublisher realtimePublisher;
 
     @Override
     @Transactional
@@ -96,9 +98,12 @@ public class SecureConnectCallServiceImpl
                         .updatedAt(now)
                         .build();
 
-        return toResponse(
-                callSessionRepository.save(call)
-        );
+        SecureConnectCallSession savedCall =
+                callSessionRepository.save(call);
+
+        realtimePublisher.publishIncomingCall(savedCall);
+
+        return toResponse(savedCall);
     }
 
     @Override
@@ -131,9 +136,12 @@ public class SecureConnectCallServiceImpl
         call.setAnsweredAt(now);
         call.setUpdatedAt(now);
 
-        return toResponse(
-                callSessionRepository.save(call)
-        );
+        SecureConnectCallSession savedCall =
+                callSessionRepository.save(call);
+
+        realtimePublisher.publishAcceptedCall(savedCall);
+
+        return toResponse(savedCall);
     }
 
     @Override
@@ -165,9 +173,12 @@ public class SecureConnectCallServiceImpl
                 CallStatus.DECLINED
         );
 
-        return toResponse(
-                callSessionRepository.save(call)
-        );
+        SecureConnectCallSession savedCall =
+                callSessionRepository.save(call);
+
+        realtimePublisher.publishDeclinedCall(savedCall);
+
+        return toResponse(savedCall);
     }
 
     @Override
@@ -199,9 +210,12 @@ public class SecureConnectCallServiceImpl
                 CallStatus.CANCELLED
         );
 
-        return toResponse(
-                callSessionRepository.save(call)
-        );
+        SecureConnectCallSession savedCall =
+                callSessionRepository.save(call);
+
+        realtimePublisher.publishCancelledCall(savedCall);
+
+        return toResponse(savedCall);
     }
 
     @Override
@@ -223,9 +237,12 @@ public class SecureConnectCallServiceImpl
                 CallStatus.MISSED
         );
 
-        return toResponse(
-                callSessionRepository.save(call)
-        );
+        SecureConnectCallSession savedCall =
+                callSessionRepository.save(call);
+
+        realtimePublisher.publishMissedCall(savedCall);
+
+        return toResponse(savedCall);
     }
 
     @Override
@@ -260,9 +277,12 @@ public class SecureConnectCallServiceImpl
         call.setEndedAt(now);
         call.setUpdatedAt(now);
 
-        return toResponse(
-                callSessionRepository.save(call)
-        );
+        SecureConnectCallSession savedCall =
+                callSessionRepository.save(call);
+
+        realtimePublisher.publishFailedCall(savedCall);
+
+        return toResponse(savedCall);
     }
 
     @Override
@@ -348,6 +368,11 @@ public class SecureConnectCallServiceImpl
          * before we reacquire it. Accept ENDED as idempotent.
          */
         if (lockedCall.getStatus() == CallStatus.ENDED) {
+            realtimePublisher.publishEndedCall(
+                    lockedCall,
+                    authenticatedUser
+            );
+
             return toResponse(lockedCall);
         }
 
@@ -375,11 +400,17 @@ public class SecureConnectCallServiceImpl
         );
         lockedCall.setUpdatedAt(endedAt);
 
-        return toResponse(
+        SecureConnectCallSession savedCall =
                 callSessionRepository.save(
                         lockedCall
-                )
+                );
+
+        realtimePublisher.publishEndedCall(
+                savedCall,
+                authenticatedUser
         );
+
+        return toResponse(savedCall);
     }
 
     @Override
