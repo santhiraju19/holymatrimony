@@ -50,6 +50,9 @@ public class SecureConnectCallSession {
     @Column(name = "answered_at")
     private LocalDateTime answeredAt;
 
+    @Column(name = "connected_at")
+    private LocalDateTime connectedAt;
+
     @Column(name = "ended_at")
     private LocalDateTime endedAt;
 

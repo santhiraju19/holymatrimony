@@ -55,7 +55,10 @@ interface Result {
 
 export function useSecureConnectMedia(
   activeCall:
-    SecureConnectActiveCall | null
+    SecureConnectActiveCall | null,
+  onCallUpdated?: (
+    call: SecureConnectActiveCall["call"]
+  ) => void
 ): Result {
   const sessionRef =
     useRef<
@@ -64,6 +67,17 @@ export function useSecureConnectMedia(
 
   const generationRef =
     useRef(0);
+
+  /*
+   * A participant may receive multiple media status callbacks
+   * during the lifetime of one call. Report media connection
+   * to the backend at most once per call from this hook.
+   *
+   * The backend endpoint is also idempotent, so both call
+   * participants may safely report their own LiveKit success.
+   */
+  const connectedReportedCallIdRef =
+    useRef<string | null>(null);
 
   const [
     status,
@@ -124,6 +138,8 @@ export function useSecureConnectMedia(
       call.status !== "ACCEPTED"
     ) {
       generationRef.current += 1;
+      connectedReportedCallIdRef.current =
+        null;
 
       const previous =
         sessionRef.current;
@@ -161,6 +177,62 @@ export function useSecureConnectMedia(
     let disposed =
       false;
 
+    async function reportMediaConnected() {
+      if (
+        disposed ||
+        generationRef.current !== generation ||
+        connectedReportedCallIdRef.current ===
+          acceptedCall.callId
+      ) {
+        return;
+      }
+
+      connectedReportedCallIdRef.current =
+        acceptedCall.callId;
+
+      try {
+        const connectedCall =
+          await secureConnectService.markConnected(
+            acceptedCall.callId
+          );
+
+        if (
+          disposed ||
+          generationRef.current !== generation
+        ) {
+          return;
+        }
+
+        onCallUpdated?.(connectedCall);
+      } catch (requestError) {
+        /*
+         * Allow a later connected callback/retry to report again
+         * when the request itself failed.
+         */
+        if (
+          connectedReportedCallIdRef.current ===
+          acceptedCall.callId
+        ) {
+          connectedReportedCallIdRef.current =
+            null;
+        }
+
+        if (
+          disposed ||
+          generationRef.current !== generation
+        ) {
+          return;
+        }
+
+        setError(
+          getApiErrorMessage(
+            requestError,
+            "Secure media connected, but the call connection time could not be recorded."
+          )
+        );
+      }
+    }
+
     async function connect() {
       setStatus("connecting");
       setError(null);
@@ -185,7 +257,15 @@ export function useSecureConnectMedia(
             credentials,
             {
               onStatusChange:
-                setStatus,
+                (nextStatus) => {
+                  setStatus(nextStatus);
+
+                  if (
+                    nextStatus === "connected"
+                  ) {
+                    void reportMediaConnected();
+                  }
+                },
 
               onRemoteAudioTrack:
                 setRemoteAudioTrack,
@@ -275,6 +355,7 @@ export function useSecureConnectMedia(
   }, [
     activeCall?.call.callId,
     activeCall?.call.status,
+    onCallUpdated,
   ]);
 
   const toggleMicrophone =

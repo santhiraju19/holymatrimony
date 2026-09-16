@@ -14,6 +14,7 @@ public record SecureConnectCallResponse(
         CallStatus status,
         LocalDateTime initiatedAt,
         LocalDateTime answeredAt,
+        LocalDateTime connectedAt,
         LocalDateTime endedAt,
         Long durationSeconds
 ) {

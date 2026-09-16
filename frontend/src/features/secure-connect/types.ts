@@ -34,6 +34,7 @@ export interface SecureConnectCall {
   status: CallStatus;
   initiatedAt: string;
   answeredAt: string | null;
+  connectedAt: string | null;
   endedAt: string | null;
   durationSeconds: number | null;
 }

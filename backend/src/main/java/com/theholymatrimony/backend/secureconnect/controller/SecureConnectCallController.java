@@ -58,6 +58,20 @@ public class SecureConnectCallController {
         );
     }
 
+    @PostMapping("/{callId}/connected")
+    public ResponseEntity<SecureConnectCallResponse> markConnected(
+            Authentication authentication,
+            @PathVariable
+            UUID callId
+    ) {
+        return ResponseEntity.ok(
+                callService.markConnected(
+                        getAuthenticatedEmail(authentication),
+                        callId
+                )
+        );
+    }
+
     @PostMapping("/{callId}/decline")
     public ResponseEntity<SecureConnectCallResponse> declineCall(
             Authentication authentication,

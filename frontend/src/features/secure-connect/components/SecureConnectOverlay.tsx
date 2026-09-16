@@ -78,13 +78,15 @@ export default function SecureConnectOverlay() {
     declineCall,
     cancelCall,
     endCall,
+    updateCall,
     clearCall,
   } =
     useSecureConnect();
 
   const media =
     useSecureConnectMedia(
-      activeCall
+      activeCall,
+      updateCall
     );
 
   const [
@@ -96,18 +98,17 @@ export default function SecureConnectOverlay() {
   useEffect(() => {
     if (
       activeCall?.call.status !==
-      "ACCEPTED"
+        "ACCEPTED" ||
+      !activeCall.call.connectedAt
     ) {
       setElapsedSeconds(0);
       return;
     }
 
-    const answeredAt =
-      activeCall.call.answeredAt
-        ? new Date(
-            activeCall.call.answeredAt
-          ).getTime()
-        : Date.now();
+    const connectedAt =
+      new Date(
+        activeCall.call.connectedAt
+      ).getTime();
 
     const update = () => {
       const elapsed =
@@ -116,7 +117,7 @@ export default function SecureConnectOverlay() {
           Math.floor(
             (
               Date.now() -
-              answeredAt
+              connectedAt
             ) / 1000
           )
         );
@@ -138,7 +139,7 @@ export default function SecureConnectOverlay() {
   }, [
     activeCall?.call.callId,
     activeCall?.call.status,
-    activeCall?.call.answeredAt,
+    activeCall?.call.connectedAt,
   ]);
 
   if (!activeCall) {

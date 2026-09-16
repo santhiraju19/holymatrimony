@@ -88,6 +88,7 @@ class SecureConnectCallControllerTests {
                         initiatedAt,
                         null,
                         null,
+                        null,
                         0L
                 );
 
@@ -101,6 +102,7 @@ class SecureConnectCallControllerTests {
                         initiatedAt,
                         initiatedAt.plusSeconds(5),
                         null,
+                        null,
                         0L
                 );
 
@@ -112,6 +114,7 @@ class SecureConnectCallControllerTests {
                         CallMediaType.AUDIO,
                         CallStatus.DECLINED,
                         initiatedAt,
+                        null,
                         null,
                         initiatedAt.plusSeconds(10),
                         0L
@@ -126,6 +129,7 @@ class SecureConnectCallControllerTests {
                         CallStatus.CANCELLED,
                         initiatedAt,
                         null,
+                        null,
                         initiatedAt.plusSeconds(10),
                         0L
                 );
@@ -139,7 +143,8 @@ class SecureConnectCallControllerTests {
                         CallStatus.ENDED,
                         initiatedAt,
                         initiatedAt.plusSeconds(5),
-                        initiatedAt.plusSeconds(65),
+                        initiatedAt.plusSeconds(10),
+                        initiatedAt.plusSeconds(70),
                         60L
                 );
     }
@@ -345,6 +350,65 @@ class SecureConnectCallControllerTests {
         verify(callService)
                 .acceptCall(
                         "callee@example.com",
+                        callId
+                );
+    }
+
+    @Test
+    void markConnectedUsesAuthenticatedIdentity() throws Exception {
+        LocalDateTime connectedAt =
+                LocalDateTime.of(
+                        2026,
+                        9,
+                        15,
+                        19,
+                        30,
+                        10
+                );
+
+        SecureConnectCallResponse connectedResponse =
+                new SecureConnectCallResponse(
+                        callId,
+                        callerUserId,
+                        calleeUserId,
+                        CallMediaType.AUDIO,
+                        CallStatus.ACCEPTED,
+                        connectedAt.minusSeconds(10),
+                        connectedAt.minusSeconds(5),
+                        connectedAt,
+                        null,
+                        0L
+                );
+
+        when(callService.markConnected(
+                "caller@example.com",
+                callId
+        )).thenReturn(connectedResponse);
+
+        mockMvc.perform(
+                        post(
+                                "/api/v1/calls/{callId}/connected",
+                                callId
+                        )
+                                .principal(
+                                        authenticated(
+                                                "caller@example.com"
+                                        )
+                                )
+                )
+                .andExpect(status().isOk())
+                .andExpect(
+                        jsonPath("$.status")
+                                .value("ACCEPTED")
+                )
+                .andExpect(
+                        jsonPath("$.connectedAt")
+                                .exists()
+                );
+
+        verify(callService)
+                .markConnected(
+                        "caller@example.com",
                         callId
                 );
     }

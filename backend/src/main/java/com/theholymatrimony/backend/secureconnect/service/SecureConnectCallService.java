@@ -19,6 +19,11 @@ public interface SecureConnectCallService {
             UUID callId
     );
 
+    SecureConnectCallResponse markConnected(
+            String authenticatedEmail,
+            UUID callId
+    );
+
     SecureConnectCallResponse declineCall(
             String authenticatedEmail,
             UUID callId

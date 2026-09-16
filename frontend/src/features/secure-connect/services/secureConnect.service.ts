@@ -14,6 +14,7 @@ function callActionPath(
   callId: string,
   action:
     | "accept"
+    | "connected"
     | "decline"
     | "cancel"
     | "end"
@@ -50,6 +51,20 @@ export const secureConnectService = {
         callActionPath(
           callId,
           "accept"
+        )
+      );
+
+    return response.data;
+  },
+
+  async markConnected(
+    callId: string
+  ): Promise<SecureConnectCall> {
+    const response =
+      await api.post<SecureConnectCall>(
+        callActionPath(
+          callId,
+          "connected"
         )
       );
 

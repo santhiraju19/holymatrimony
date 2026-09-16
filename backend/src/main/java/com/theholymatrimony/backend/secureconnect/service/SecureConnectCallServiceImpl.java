@@ -146,6 +146,49 @@ public class SecureConnectCallServiceImpl
 
     @Override
     @Transactional
+    public SecureConnectCallResponse markConnected(
+            String authenticatedEmail,
+            UUID callId
+    ) {
+        User authenticatedUser =
+                getUserByEmail(authenticatedEmail);
+
+        SecureConnectCallSession call =
+                getCallForUpdate(callId);
+
+        requireParticipant(
+                authenticatedUser,
+                call
+        );
+
+        requireStatus(
+                call,
+                CallStatus.ACCEPTED,
+                "Only an accepted call can be marked as connected."
+        );
+
+        /*
+         * Media-connected reporting is intentionally idempotent.
+         * Both participants may independently observe the WebRTC
+         * connection becoming active and report it to the backend.
+         * The first report establishes the authoritative timestamp.
+         */
+        if (call.getConnectedAt() == null) {
+            LocalDateTime connectedAt =
+                    LocalDateTime.now();
+
+            call.setConnectedAt(connectedAt);
+            call.setUpdatedAt(connectedAt);
+
+            call =
+                    callSessionRepository.save(call);
+        }
+
+        return toResponse(call);
+    }
+
+    @Override
+    @Transactional
     public SecureConnectCallResponse declineCall(
             String authenticatedEmail,
             UUID callId
@@ -298,14 +341,16 @@ public class SecureConnectCallServiceImpl
         LocalDateTime now = LocalDateTime.now();
 
         if (call.getStatus() == CallStatus.ACCEPTED
-                && call.getAnsweredAt() != null) {
+                && call.getConnectedAt() != null) {
             long durationSeconds =
                     calculateDurationSeconds(
-                            call.getAnsweredAt(),
+                            call.getConnectedAt(),
                             now
                     );
 
             call.setDurationSeconds(durationSeconds);
+        } else {
+            call.setDurationSeconds(0L);
         }
 
         call.setStatus(CallStatus.FAILED);
@@ -330,122 +375,138 @@ public class SecureConnectCallServiceImpl
                 getUserByEmail(authenticatedEmail);
 
         /*
-         * Important:
+         * endCall() and usageService.finalizeUsage() both use
+         * Spring's default REQUIRED transaction propagation.
          *
-         * Do not hold the call-session lock here and then call
-         * usageService.finalizeUsage(), because finalizeUsage()
-         * acquires the same authoritative call lock itself.
+         * Therefore finalizeUsage() participates in this same
+         * transaction. Acquiring the authoritative call lock here
+         * is safe, and any later findForUpdate() performed by the
+         * usage service is performed by the same transaction.
          *
-         * We first verify participant/state, calculate duration,
-         * then let the usage engine perform the locked accounting.
+         * This is important because markConnected() also locks the
+         * same call row. /connected and /end therefore serialize
+         * against each other and connectedAt is always evaluated
+         * from the authoritative locked state.
          */
         SecureConnectCallSession call =
-                callSessionRepository
-                        .findById(callId)
-                        .orElseThrow(
-                                () -> new IllegalArgumentException(
-                                        "Secure Connect call was not found."
-                                )
-                        );
+                getCallForUpdate(callId);
 
         requireParticipant(
                 authenticatedUser,
                 call
         );
 
+        /*
+         * Ending an already-ended call is intentionally idempotent.
+         */
+        if (call.getStatus() == CallStatus.ENDED) {
+            realtimePublisher.publishEndedCall(
+                    call,
+                    authenticatedUser
+            );
+
+            return toResponse(call);
+        }
+
         requireStatus(
                 call,
                 CallStatus.ACCEPTED,
-                "Only a connected call can be ended."
+                "Only an accepted call can be ended."
         );
 
-        if (call.getAnsweredAt() == null) {
-            throw new IllegalStateException(
-                    "Connected call does not have an answered time."
+        /*
+         * answeredAt means that the callee accepted the call.
+         * connectedAt means that real WebRTC media was established.
+         *
+         * Accepted-but-never-connected calls are not chargeable.
+         */
+        if (call.getConnectedAt() == null) {
+            LocalDateTime endedAt =
+                    LocalDateTime.now();
+
+            call.setStatus(CallStatus.ENDED);
+            call.setEndedAt(endedAt);
+            call.setDurationSeconds(0L);
+            call.setUpdatedAt(endedAt);
+
+            SecureConnectCallSession savedCall =
+                    callSessionRepository.save(call);
+
+            realtimePublisher.publishEndedCall(
+                    savedCall,
+                    authenticatedUser
             );
+
+            return toResponse(savedCall);
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime accountingAt =
+                LocalDateTime.now();
 
-        long durationSeconds =
+        long connectedDurationSeconds =
                 calculateDurationSeconds(
-                        call.getAnsweredAt(),
-                        now
+                        call.getConnectedAt(),
+                        accountingAt
                 );
 
         /*
-         * The accounting service validates and locks the call,
-         * consumes plan allowance before top-up balance, and
-         * provides idempotency protection.
-         *
-         * A minimum of one second avoids a zero-duration charge
-         * request if both operations happen inside the same second.
+         * Connected media is chargeable for at least one second.
+         * This handles a call that connects and ends inside the
+         * same whole-second Duration interval.
          */
         long chargeableSeconds =
                 Math.max(
                         1L,
-                        durationSeconds
+                        connectedDurationSeconds
                 );
 
+        /*
+         * finalizeUsage() joins this transaction, performs
+         * idempotent accounting, and finalizes the call as ENDED.
+         */
         usageService.finalizeUsage(
                 call.getId(),
                 chargeableSeconds
         );
 
         /*
-         * Re-acquire the authoritative row after accounting.
+         * Because the usage service operates in the same
+         * persistence transaction, this entity reflects the
+         * finalized call state.
+         *
+         * Keep a defensive fallback for implementations/tests that
+         * return without changing the call lifecycle.
          */
-        SecureConnectCallSession lockedCall =
-                getCallForUpdate(callId);
+        if (call.getStatus() != CallStatus.ENDED) {
+            LocalDateTime endedAt =
+                    LocalDateTime.now();
 
-        /*
-         * Another completion path may eventually finalize the row
-         * before we reacquire it. Accept ENDED as idempotent.
-         */
-        if (lockedCall.getStatus() == CallStatus.ENDED) {
-            realtimePublisher.publishEndedCall(
-                    lockedCall,
-                    authenticatedUser
+            long finalDurationSeconds =
+                    calculateDurationSeconds(
+                            call.getConnectedAt(),
+                            endedAt
+                    );
+
+            call.setStatus(CallStatus.ENDED);
+            call.setEndedAt(endedAt);
+            call.setDurationSeconds(
+                    Math.max(
+                            chargeableSeconds,
+                            finalDurationSeconds
+                    )
             );
+            call.setUpdatedAt(endedAt);
 
-            return toResponse(lockedCall);
+            call =
+                    callSessionRepository.save(call);
         }
 
-        requireStatus(
-                lockedCall,
-                CallStatus.ACCEPTED,
-                "Only a connected call can be ended."
-        );
-
-        LocalDateTime endedAt = LocalDateTime.now();
-
-        long finalDurationSeconds =
-                calculateDurationSeconds(
-                        lockedCall.getAnsweredAt(),
-                        endedAt
-                );
-
-        lockedCall.setStatus(CallStatus.ENDED);
-        lockedCall.setEndedAt(endedAt);
-        lockedCall.setDurationSeconds(
-                Math.max(
-                        chargeableSeconds,
-                        finalDurationSeconds
-                )
-        );
-        lockedCall.setUpdatedAt(endedAt);
-
-        SecureConnectCallSession savedCall =
-                callSessionRepository.save(
-                        lockedCall
-                );
-
         realtimePublisher.publishEndedCall(
-                savedCall,
+                call,
                 authenticatedUser
         );
 
-        return toResponse(savedCall);
+        return toResponse(call);
     }
 
     @Override
@@ -589,12 +650,12 @@ public class SecureConnectCallServiceImpl
     }
 
     private long calculateDurationSeconds(
-            LocalDateTime answeredAt,
+            LocalDateTime connectedAt,
             LocalDateTime endedAt
     ) {
-        if (answeredAt == null
+        if (connectedAt == null
                 || endedAt == null
-                || endedAt.isBefore(answeredAt)) {
+                || endedAt.isBefore(connectedAt)) {
             throw new IllegalStateException(
                     "Invalid Secure Connect call timing."
             );
@@ -603,7 +664,7 @@ public class SecureConnectCallServiceImpl
         return Math.max(
                 0L,
                 Duration.between(
-                        answeredAt,
+                        connectedAt,
                         endedAt
                 ).getSeconds()
         );
@@ -620,6 +681,7 @@ public class SecureConnectCallServiceImpl
                 call.getStatus(),
                 call.getInitiatedAt(),
                 call.getAnsweredAt(),
+                call.getConnectedAt(),
                 call.getEndedAt(),
                 call.getDurationSeconds()
         );

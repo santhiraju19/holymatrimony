@@ -55,6 +55,10 @@ interface SecureConnectContextValue {
   endCall:
     () => Promise<void>;
 
+  updateCall: (
+    call: SecureConnectCall
+  ) => void;
+
   clearCall:
     () => void;
 
@@ -90,6 +94,7 @@ function callFromEvent(
       event.eventType === "CALL_ACCEPTED"
         ? event.occurredAt
         : null,
+    connectedAt: null,
     endedAt:
       isTerminalEvent(event)
         ? event.occurredAt
@@ -162,6 +167,36 @@ export function SecureConnectProvider({
     activeCallRef.current =
       activeCall;
   }, [activeCall]);
+
+  /*
+   * Replace the REST-authoritative call payload while
+   * preserving frontend-only direction/member metadata.
+   *
+   * This is used when the media layer reports a successful
+   * LiveKit connection and the backend returns connectedAt.
+   */
+  const updateCall =
+    useCallback(
+      (
+        call: SecureConnectCall
+      ) => {
+        setActiveCall((current) => {
+          if (
+            !current ||
+            current.call.callId !==
+              call.callId
+          ) {
+            return current;
+          }
+
+          return {
+            ...current,
+            call,
+          };
+        });
+      },
+      []
+    );
 
   const clearCall =
     useCallback(() => {
@@ -549,6 +584,7 @@ export function SecureConnectProvider({
         declineCall,
         cancelCall,
         endCall,
+        updateCall,
         clearCall,
         clearError,
       }),
@@ -562,6 +598,7 @@ export function SecureConnectProvider({
         declineCall,
         cancelCall,
         endCall,
+        updateCall,
         clearCall,
         clearError,
       ]

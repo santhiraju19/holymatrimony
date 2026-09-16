@@ -272,6 +272,7 @@ class SecureConnectCallServiceImplTests {
         );
 
         assertNotNull(call.getAnsweredAt());
+        assertNull(call.getConnectedAt());
 
         verify(callSessionRepository)
                 .save(call);
@@ -280,6 +281,87 @@ class SecureConnectCallServiceImplTests {
     
         verify(realtimePublisher)
                 .publishAcceptedCall(call);
+    }
+
+    @Test
+    void participantCanMarkAcceptedCallConnected() {
+        call.setStatus(
+                CallStatus.ACCEPTED
+        );
+
+        call.setAnsweredAt(
+                LocalDateTime.now()
+                        .minusSeconds(5)
+        );
+
+        assertNull(call.getConnectedAt());
+
+        var response =
+                service.markConnected(
+                        "caller@example.com",
+                        call.getId()
+                );
+
+        assertNotNull(call.getConnectedAt());
+        assertEquals(
+                call.getConnectedAt(),
+                response.connectedAt()
+        );
+        assertEquals(
+                CallStatus.ACCEPTED,
+                response.status()
+        );
+        assertEquals(
+                0L,
+                response.durationSeconds()
+        );
+
+        verify(callSessionRepository)
+                .save(call);
+
+        verifyNoInteractions(usageService);
+    }
+
+    @Test
+    void markConnectedIsIdempotent() {
+        call.setStatus(
+                CallStatus.ACCEPTED
+        );
+
+        call.setAnsweredAt(
+                LocalDateTime.now()
+                        .minusSeconds(10)
+        );
+
+        LocalDateTime originalConnectedAt =
+                LocalDateTime.now()
+                        .minusSeconds(5);
+
+        call.setConnectedAt(
+                originalConnectedAt
+        );
+
+        var response =
+                service.markConnected(
+                        "callee@example.com",
+                        call.getId()
+                );
+
+        assertEquals(
+                originalConnectedAt,
+                call.getConnectedAt()
+        );
+        assertEquals(
+                originalConnectedAt,
+                response.connectedAt()
+        );
+
+        verify(
+                callSessionRepository,
+                never()
+        ).save(any());
+
+        verifyNoInteractions(usageService);
     }
 
     @Test
@@ -381,12 +463,52 @@ class SecureConnectCallServiceImplTests {
     }
 
     @Test
+    void acceptedCallCanFailBeforeMediaConnectionWithoutUsage() {
+        call.setStatus(
+                CallStatus.ACCEPTED
+        );
+
+        call.setAnsweredAt(
+                LocalDateTime.now()
+                        .minusSeconds(30)
+        );
+
+        assertNull(call.getConnectedAt());
+
+        service.failCall(
+                call.getId()
+        );
+
+        assertEquals(
+                CallStatus.FAILED,
+                call.getStatus()
+        );
+
+        assertEquals(
+                0L,
+                call.getDurationSeconds()
+        );
+
+        assertNotNull(call.getEndedAt());
+
+        verifyNoInteractions(usageService);
+
+        verify(realtimePublisher)
+                .publishFailedCall(call);
+    }
+
+    @Test
     void acceptedCallCanFailWithDurationButWithoutUsageCharge() {
         call.setStatus(
                 CallStatus.ACCEPTED
         );
 
         call.setAnsweredAt(
+                LocalDateTime.now()
+                        .minusSeconds(35)
+        );
+
+        call.setConnectedAt(
                 LocalDateTime.now()
                         .minusSeconds(30)
         );
@@ -413,6 +535,52 @@ class SecureConnectCallServiceImplTests {
     }
 
     @Test
+    void acceptedCallCanEndBeforeMediaConnectionWithoutUsage() {
+        call.setStatus(
+                CallStatus.ACCEPTED
+        );
+
+        call.setAnsweredAt(
+                LocalDateTime.now()
+                        .minusSeconds(30)
+        );
+
+        assertNull(call.getConnectedAt());
+
+        var response =
+                service.endCall(
+                        "caller@example.com",
+                        call.getId()
+                );
+
+        assertEquals(
+                CallStatus.ENDED,
+                response.status()
+        );
+
+        assertEquals(
+                0L,
+                response.durationSeconds()
+        );
+
+        assertNull(
+                response.connectedAt()
+        );
+
+        assertNotNull(
+                response.endedAt()
+        );
+
+        verifyNoInteractions(usageService);
+
+        verify(realtimePublisher)
+                .publishEndedCall(
+                        call,
+                        caller
+                );
+    }
+
+    @Test
     void acceptedCallEndsThroughUsageService() {
         call.setStatus(
                 CallStatus.ACCEPTED
@@ -420,16 +588,13 @@ class SecureConnectCallServiceImplTests {
 
         call.setAnsweredAt(
                 LocalDateTime.now()
-                        .minusSeconds(45)
+                        .minusSeconds(50)
         );
 
-        when(callSessionRepository.findById(
-                call.getId()
-        ))
-                .thenReturn(
-                        Optional.of(call),
-                        Optional.of(call)
-                );
+        call.setConnectedAt(
+                LocalDateTime.now()
+                        .minusSeconds(45)
+        );
 
         when(usageService.finalizeUsage(
                 eq(call.getId()),
@@ -502,16 +667,13 @@ class SecureConnectCallServiceImplTests {
 
         call.setAnsweredAt(
                 LocalDateTime.now()
-                        .minusSeconds(20)
+                        .minusSeconds(25)
         );
 
-        when(callSessionRepository.findById(
-                call.getId()
-        ))
-                .thenReturn(
-                        Optional.of(call),
-                        Optional.of(call)
-                );
+        call.setConnectedAt(
+                LocalDateTime.now()
+                        .minusSeconds(20)
+        );
 
         when(usageService.finalizeUsage(
                 eq(call.getId()),
@@ -578,12 +740,6 @@ class SecureConnectCallServiceImplTests {
         call.setAnsweredAt(
                 LocalDateTime.now()
                         .minusSeconds(20)
-        );
-
-        when(callSessionRepository.findById(
-                call.getId()
-        )).thenReturn(
-                Optional.of(call)
         );
 
         IllegalStateException exception =
