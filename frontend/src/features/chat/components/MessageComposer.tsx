@@ -39,6 +39,8 @@ const EmojiPicker = dynamic(
   }
 );
 
+import SecureConnectChatActions from "@/features/secure-connect/components/SecureConnectChatActions";
+
 interface MessageComposerProps {
   conversationId: string;
 
@@ -955,6 +957,69 @@ export default function MessageComposer({
       "
     >
       <div className="mx-auto w-full max-w-4xl">
+
+        {/* =====================================================
+            SECURE CONNECT
+            ===================================================== */}
+        {otherUserId && otherUserName && (
+          <div
+            className="
+              mb-2.5
+              flex
+              items-center
+              justify-between
+              gap-3
+              rounded-2xl
+              border
+              border-blue-100
+              bg-gradient-to-r
+              from-blue-50/80
+              via-white
+              to-indigo-50/50
+              px-3
+              py-2
+              shadow-[0_4px_14px_rgba(15,23,42,0.04)]
+              sm:px-4
+            "
+          >
+            <div className="min-w-0">
+              <p
+                className="
+                  truncate
+                  text-[10px]
+                  font-black
+                  uppercase
+                  tracking-[0.08em]
+                  text-[#0B2D5C]
+                "
+              >
+                Secure Connect
+              </p>
+
+              <p
+                className="
+                  mt-0.5
+                  hidden
+                  truncate
+                  text-[9px]
+                  font-medium
+                  text-slate-400
+                  sm:block
+                "
+              >
+                Private audio or video with {otherUserName}
+              </p>
+            </div>
+
+            <SecureConnectChatActions
+              userId={otherUserId}
+              memberName={otherUserName}
+              compact
+              showLabels
+              disabled={disabled}
+            />
+          </div>
+        )}
 
         {/* =====================================================
             REPLY PREVIEW

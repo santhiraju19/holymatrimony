@@ -7,6 +7,8 @@ import com.theholymatrimony.backend.secureconnect.entity.SecureConnectCallSessio
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
@@ -21,7 +23,6 @@ public class SecureConnectRealtimePublisherImpl
             "/queue/secure-connect";
 
     private final SimpMessagingTemplate messagingTemplate;
-
     private final ProfileRepository profileRepository;
 
     @Override
@@ -76,12 +77,6 @@ public class SecureConnectRealtimePublisherImpl
     public void publishMissedCall(
             SecureConnectCallSession call
     ) {
-        /*
-         * The caller needs the authoritative missed state.
-         *
-         * The callee also receives it so another open device/tab can
-         * dismiss the ringing UI.
-         */
         publishToParticipant(
                 call.getCaller(),
                 call.getCallee(),
@@ -144,11 +139,9 @@ public class SecureConnectRealtimePublisherImpl
         if (actorId.equals(caller.getId())) {
             recipient = callee;
             otherMember = caller;
-
         } else if (actorId.equals(callee.getId())) {
             recipient = caller;
             otherMember = callee;
-
         } else {
             return;
         }
@@ -172,9 +165,19 @@ public class SecureConnectRealtimePublisherImpl
                 || call == null
                 || eventType == null
                 || !StringUtils.hasText(recipient.getEmail())) {
-
             return;
         }
+
+        /*
+         * Build every value while the transaction/entity context is
+         * still available. The afterCommit callback therefore carries
+         * only immutable data and never touches JPA entities.
+         */
+        String recipientEmail =
+                recipient
+                        .getEmail()
+                        .trim()
+                        .toLowerCase();
 
         SecureConnectCallEvent event =
                 new SecureConnectCallEvent(
@@ -186,11 +189,53 @@ public class SecureConnectRealtimePublisherImpl
                         LocalDateTime.now()
                 );
 
+        sendAfterCommit(
+                recipientEmail,
+                event
+        );
+    }
+
+    private void sendAfterCommit(
+            String recipientEmail,
+            SecureConnectCallEvent event
+    ) {
+        if (TransactionSynchronizationManager
+                .isActualTransactionActive()
+                && TransactionSynchronizationManager
+                .isSynchronizationActive()) {
+
+            TransactionSynchronizationManager
+                    .registerSynchronization(
+                            new TransactionSynchronization() {
+                                @Override
+                                public void afterCommit() {
+                                    send(
+                                            recipientEmail,
+                                            event
+                                    );
+                                }
+                            }
+                    );
+
+            return;
+        }
+
+        /*
+         * Publisher tests, maintenance operations and any future
+         * non-transactional callers still receive normal delivery.
+         */
+        send(
+                recipientEmail,
+                event
+        );
+    }
+
+    private void send(
+            String recipientEmail,
+            SecureConnectCallEvent event
+    ) {
         messagingTemplate.convertAndSendToUser(
-                recipient
-                        .getEmail()
-                        .trim()
-                        .toLowerCase(),
+                recipientEmail,
                 DESTINATION,
                 event
         );
@@ -208,7 +253,9 @@ public class SecureConnectRealtimePublisherImpl
                         .orElse(null);
 
         String displayName =
-                StringUtils.hasText(user.getFullName())
+                StringUtils.hasText(
+                        user.getFullName()
+                )
                         ? user.getFullName().trim()
                         : null;
 

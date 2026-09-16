@@ -2,7 +2,9 @@ package com.theholymatrimony.backend.secureconnect.controller;
 
 import com.theholymatrimony.backend.secureconnect.dto.SecureConnectCallResponse;
 import com.theholymatrimony.backend.secureconnect.dto.SecureConnectInitiateCallRequest;
+import com.theholymatrimony.backend.secureconnect.dto.SecureConnectMediaCredentials;
 import com.theholymatrimony.backend.secureconnect.service.SecureConnectCallService;
+import com.theholymatrimony.backend.secureconnect.service.SecureConnectMediaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +26,7 @@ import java.util.UUID;
 public class SecureConnectCallController {
 
     private final SecureConnectCallService callService;
+    private final SecureConnectMediaService mediaService;
 
     @PostMapping
     public ResponseEntity<SecureConnectCallResponse> initiateCall(
@@ -91,6 +94,21 @@ public class SecureConnectCallController {
     ) {
         return ResponseEntity.ok(
                 callService.endCall(
+                        getAuthenticatedEmail(authentication),
+                        callId
+                )
+        );
+    }
+
+    @PostMapping("/{callId}/media-token")
+    public ResponseEntity<SecureConnectMediaCredentials>
+    createMediaCredentials(
+            Authentication authentication,
+            @PathVariable
+            UUID callId
+    ) {
+        return ResponseEntity.ok(
+                mediaService.createCredentials(
                         getAuthenticatedEmail(authentication),
                         callId
                 )

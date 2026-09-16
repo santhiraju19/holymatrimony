@@ -1,45 +1,125 @@
-import { CallRequest } from "../types";
+import api from "@/lib/api";
 
-let requests: CallRequest[] = [];
+import {
+  CallMediaType,
+  InitiateSecureConnectCallRequest,
+  SecureConnectCall,
+  SecureConnectMediaCredentials,
+} from "../types";
+
+const CALLS_PATH =
+  "/calls";
+
+function callActionPath(
+  callId: string,
+  action:
+    | "accept"
+    | "decline"
+    | "cancel"
+    | "end"
+): string {
+  return `${CALLS_PATH}/${encodeURIComponent(
+    callId
+  )}/${action}`;
+}
 
 export const secureConnectService = {
-  async create(
-    request: Omit<
-      CallRequest,
-      "id" | "status" | "createdAt"
-    >
-  ) {
-    const newRequest: CallRequest = {
-      ...request,
-      id: crypto.randomUUID(),
-      status: "Pending",
-      createdAt: new Date().toISOString(),
+  async initiateCall(
+    calleeUserId: string,
+    mediaType: CallMediaType
+  ): Promise<SecureConnectCall> {
+    const request: InitiateSecureConnectCallRequest = {
+      calleeUserId,
+      mediaType,
     };
 
-    requests.push(newRequest);
+    const response =
+      await api.post<SecureConnectCall>(
+        CALLS_PATH,
+        request
+      );
 
-    return newRequest;
+    return response.data;
   },
 
-  async list() {
-    return requests;
+  async acceptCall(
+    callId: string
+  ): Promise<SecureConnectCall> {
+    const response =
+      await api.post<SecureConnectCall>(
+        callActionPath(
+          callId,
+          "accept"
+        )
+      );
+
+    return response.data;
   },
 
-  async updateStatus(
-    id: string,
-    status: CallRequest["status"]
-  ) {
-    requests = requests.map((request) =>
-      request.id === id
-        ? {
-            ...request,
-            status,
-          }
-        : request
-    );
+  async declineCall(
+    callId: string
+  ): Promise<SecureConnectCall> {
+    const response =
+      await api.post<SecureConnectCall>(
+        callActionPath(
+          callId,
+          "decline"
+        )
+      );
+
+    return response.data;
   },
 
-  async get(id: string) {
-    return requests.find((request) => request.id === id);
+  async cancelCall(
+    callId: string
+  ): Promise<SecureConnectCall> {
+    const response =
+      await api.post<SecureConnectCall>(
+        callActionPath(
+          callId,
+          "cancel"
+        )
+      );
+
+    return response.data;
+  },
+
+  async endCall(
+    callId: string
+  ): Promise<SecureConnectCall> {
+    const response =
+      await api.post<SecureConnectCall>(
+        callActionPath(
+          callId,
+          "end"
+        )
+      );
+
+    return response.data;
+  },
+
+  async getMediaCredentials(
+    callId: string
+  ): Promise<SecureConnectMediaCredentials> {
+    const response =
+      await api.post<SecureConnectMediaCredentials>(
+        `${CALLS_PATH}/${encodeURIComponent(
+          callId
+        )}/media-token`
+      );
+
+    return response.data;
+  },
+
+  async getHistory():
+    Promise<SecureConnectCall[]> {
+    const response =
+      await api.get<SecureConnectCall[]>(
+        `${CALLS_PATH}/history`
+      );
+
+    return response.data;
   },
 };
+
+export default secureConnectService;

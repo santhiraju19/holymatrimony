@@ -1,29 +1,77 @@
-export type CallType = "audio" | "video";
+export type CallMediaType =
+  | "AUDIO"
+  | "VIDEO";
 
-export type CallRequestStatus =
-  | "Pending"
-  | "Accepted"
-  | "Declined"
-  | "Cancelled"
-  | "Completed"
-  | "Expired";
+export type CallStatus =
+  | "RINGING"
+  | "ACCEPTED"
+  | "DECLINED"
+  | "MISSED"
+  | "CANCELLED"
+  | "ENDED"
+  | "FAILED";
 
-export interface CallRequest {
-  id: string;
+export type SecureConnectCallEventType =
+  | "CALL_INCOMING"
+  | "CALL_ACCEPTED"
+  | "CALL_DECLINED"
+  | "CALL_CANCELLED"
+  | "CALL_ENDED"
+  | "CALL_MISSED"
+  | "CALL_FAILED";
 
-  memberId: number;
-  memberName: string;
+export interface SecureConnectMember {
+  userId: string;
+  memberId: string | null;
+  displayName: string | null;
+}
 
-  type: CallType;
+export interface SecureConnectCall {
+  callId: string;
+  callerUserId: string;
+  calleeUserId: string;
+  mediaType: CallMediaType;
+  status: CallStatus;
+  initiatedAt: string;
+  answeredAt: string | null;
+  endedAt: string | null;
+  durationSeconds: number | null;
+}
 
-  requestedDate: string;
-  requestedTime: string;
+export interface InitiateSecureConnectCallRequest {
+  calleeUserId: string;
+  mediaType: CallMediaType;
+}
 
-  duration: number;
+export interface SecureConnectCallEvent {
+  eventType: SecureConnectCallEventType;
+  callId: string;
+  mediaType: CallMediaType;
+  status: CallStatus;
+  otherMember: SecureConnectMember | null;
+  occurredAt: string;
+}
 
-  message?: string;
+export interface SecureConnectMediaCredentials {
+  serverUrl: string;
+  participantToken: string;
+  roomName: string;
+  participantIdentity: string;
+  mediaType: CallMediaType;
+}
 
-  status: CallRequestStatus;
+export type SecureConnectSocketStatus =
+  | "disconnected"
+  | "connecting"
+  | "connected"
+  | "error";
 
-  createdAt: string;
+export type SecureConnectCallDirection =
+  | "incoming"
+  | "outgoing";
+
+export interface SecureConnectActiveCall {
+  call: SecureConnectCall;
+  direction: SecureConnectCallDirection;
+  otherMember: SecureConnectMember | null;
 }

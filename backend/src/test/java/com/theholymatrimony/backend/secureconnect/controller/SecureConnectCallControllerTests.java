@@ -5,6 +5,7 @@ import com.theholymatrimony.backend.secureconnect.dto.SecureConnectCallResponse;
 import com.theholymatrimony.backend.secureconnect.enums.CallMediaType;
 import com.theholymatrimony.backend.secureconnect.enums.CallStatus;
 import com.theholymatrimony.backend.secureconnect.service.SecureConnectCallService;
+import com.theholymatrimony.backend.secureconnect.service.SecureConnectMediaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -29,6 +30,8 @@ class SecureConnectCallControllerTests {
     private ObjectMapper objectMapper;
     private SecureConnectCallService callService;
 
+    private SecureConnectMediaService mediaService;
+
     private UUID callId;
     private UUID callerUserId;
     private UUID calleeUserId;
@@ -44,9 +47,13 @@ class SecureConnectCallControllerTests {
         callService =
                 mock(SecureConnectCallService.class);
 
+        mediaService =
+                mock(SecureConnectMediaService.class);
+
         SecureConnectCallController controller =
                 new SecureConnectCallController(
-                        callService
+                        callService,
+                        mediaService
                 );
 
         mockMvc =
