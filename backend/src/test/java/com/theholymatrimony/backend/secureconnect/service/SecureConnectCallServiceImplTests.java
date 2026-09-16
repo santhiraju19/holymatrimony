@@ -733,4 +733,102 @@ class SecureConnectCallServiceImplTests {
 
         verifyNoInteractions(usageService);
     }
+
+    @Test
+    void markMissedIfStillRingingMarksRingingCallAsMissed() {
+        UUID callId = UUID.randomUUID();
+
+        SecureConnectCallSession call =
+                SecureConnectCallSession.builder()
+                        .id(callId)
+                        .caller(caller)
+                        .callee(callee)
+                        .mediaType(CallMediaType.AUDIO)
+                        .status(CallStatus.RINGING)
+                        .initiatedAt(LocalDateTime.now().minusMinutes(1))
+                        .createdAt(LocalDateTime.now().minusMinutes(1))
+                        .updatedAt(LocalDateTime.now().minusMinutes(1))
+                        .build();
+
+        when(callSessionRepository.findForUpdate(callId))
+                .thenReturn(Optional.of(call));
+
+        when(callSessionRepository.save(any(SecureConnectCallSession.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        boolean result =
+                service.markMissedIfStillRinging(callId);
+
+        assertTrue(result);
+        assertEquals(
+                CallStatus.MISSED,
+                call.getStatus()
+        );
+        assertNotNull(call.getEndedAt());
+        assertEquals(
+                0L,
+                call.getDurationSeconds()
+        );
+
+        verify(callSessionRepository).save(call);
+        verify(realtimePublisher)
+                .publishMissedCall(call);
+    }
+
+    @Test
+    void markMissedIfStillRingingDoesNothingWhenCallAlreadyAccepted() {
+        UUID callId = UUID.randomUUID();
+
+        SecureConnectCallSession call =
+                SecureConnectCallSession.builder()
+                        .id(callId)
+                        .caller(caller)
+                        .callee(callee)
+                        .mediaType(CallMediaType.VIDEO)
+                        .status(CallStatus.ACCEPTED)
+                        .initiatedAt(LocalDateTime.now().minusMinutes(1))
+                        .answeredAt(LocalDateTime.now())
+                        .createdAt(LocalDateTime.now().minusMinutes(1))
+                        .updatedAt(LocalDateTime.now())
+                        .build();
+
+        when(callSessionRepository.findForUpdate(callId))
+                .thenReturn(Optional.of(call));
+
+        boolean result =
+                service.markMissedIfStillRinging(callId);
+
+        assertFalse(result);
+        assertEquals(
+                CallStatus.ACCEPTED,
+                call.getStatus()
+        );
+
+        verify(callSessionRepository, never())
+                .save(any());
+
+        verify(realtimePublisher, never())
+                .publishMissedCall(any());
+    }
+
+    @Test
+    void markMissedIfStillRingingDoesNothingWhenCallDoesNotExist() {
+        UUID callId = UUID.randomUUID();
+
+        when(callSessionRepository.findForUpdate(callId))
+                .thenReturn(Optional.empty());
+
+        boolean result =
+                service.markMissedIfStillRinging(callId);
+
+        assertFalse(result);
+
+        verify(callSessionRepository, never())
+                .save(any());
+
+        verify(realtimePublisher, never())
+                .publishMissedCall(any());
+    }
+
+
 }

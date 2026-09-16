@@ -247,6 +247,41 @@ public class SecureConnectCallServiceImpl
 
     @Override
     @Transactional
+    public boolean markMissedIfStillRinging(
+            UUID callId
+    ) {
+        if (callId == null) {
+            return false;
+        }
+
+        SecureConnectCallSession call =
+                callSessionRepository
+                        .findForUpdate(callId)
+                        .orElse(null);
+
+        if (call == null
+                || call.getStatus()
+                != CallStatus.RINGING) {
+            return false;
+        }
+
+        finishWithoutUsage(
+                call,
+                CallStatus.MISSED
+        );
+
+        SecureConnectCallSession savedCall =
+                callSessionRepository.save(call);
+
+        realtimePublisher.publishMissedCall(
+                savedCall
+        );
+
+        return true;
+    }
+
+    @Override
+    @Transactional
     public SecureConnectCallResponse failCall(
             UUID callId
     ) {

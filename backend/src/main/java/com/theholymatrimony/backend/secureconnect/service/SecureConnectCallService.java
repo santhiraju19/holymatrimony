@@ -33,6 +33,10 @@ public interface SecureConnectCallService {
             UUID callId
     );
 
+    boolean markMissedIfStillRinging(
+            UUID callId
+    );
+
     SecureConnectCallResponse failCall(
             UUID callId
     );
