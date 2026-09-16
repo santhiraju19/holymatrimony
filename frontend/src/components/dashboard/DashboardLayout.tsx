@@ -228,7 +228,7 @@ export default function DashboardLayout({
           </div>
         </div>
       </div>
-      </NotificationProvider>
+        </NotificationProvider>
     </ProfileProvider>
   );
 }

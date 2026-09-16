@@ -24,6 +24,7 @@ import {
   parseBackendDate,
 } from "@/features/chat/utils/chat.utils";
 
+import SecureConnectChatActions from "@/features/secure-connect/components/SecureConnectChatActions";
 import ChatSafetyMenu from "./ChatSafetyMenu";
 import UserAvatar from "./UserAvatar";
 
@@ -461,6 +462,16 @@ export default function ChatHeader({
 
         Secure
       </div>
+
+      {/* Secure Connect */}
+      <SecureConnectChatActions
+        userId={user.userId}
+        memberName={user.fullName}
+        compact
+        disabled={
+          blockStatus?.messagingBlocked === true
+        }
+      />
 
       {/* View profile */}
 

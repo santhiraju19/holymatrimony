@@ -16,6 +16,7 @@ import ShortlistButton from "@/features/shortlist/components/ShortlistButton";
 import PremiumVerifiedBadge from "../PremiumVerifiedBadge";
 import ProfileTrustBadges from "../ProfileTrustBadges";
 
+import SecureConnectCallButtons from "@/features/secure-connect/components/SecureConnectCallButtons";
 import ProfileContactButton from "./ProfileContactButton";
 import ProfilePhotoGallery from "./ProfilePhotoGallery";
 
@@ -364,6 +365,11 @@ export default function ProfileDetailsHeader({
                 profileId={
                   profile.id
                 }
+              />
+
+              <SecureConnectCallButtons
+                userId={profile.userId}
+                memberName={displayName}
               />
             </div>
           </div>

@@ -57,7 +57,8 @@ public class MembershipEntitlementServiceImpl
                             MembershipFeature.ADVANCED_SEARCH,
                             MembershipFeature.CHAT,
                             MembershipFeature.VIEW_CONTACT_DETAILS,
-                            MembershipFeature.PRIORITY_SEARCH
+                            MembershipFeature.PRIORITY_SEARCH,
+                            MembershipFeature.AUDIO_CALL
                     )
             );
 
@@ -77,7 +78,9 @@ public class MembershipEntitlementServiceImpl
                             MembershipFeature.HIGHLIGHTED_PROFILE,
                             MembershipFeature.WHO_VIEWED_ME,
                             MembershipFeature.COMPATIBILITY_SCORE,
-                            MembershipFeature.PRIORITY_SUPPORT
+                            MembershipFeature.PRIORITY_SUPPORT,
+                            MembershipFeature.AUDIO_CALL,
+                            MembershipFeature.VIDEO_CALL
                     )
             );
 
@@ -102,7 +105,10 @@ public class MembershipEntitlementServiceImpl
                             MembershipFeature.TOP_SEARCH_PLACEMENT,
                             MembershipFeature.VERIFIED_PREMIUM_BADGE,
                             MembershipFeature.PRIORITY_CHURCH_VERIFICATION,
-                            MembershipFeature.EARLY_ACCESS
+                            MembershipFeature.EARLY_ACCESS,
+                            MembershipFeature.AUDIO_CALL,
+                            MembershipFeature.VIDEO_CALL,
+                            MembershipFeature.UNLIMITED_SECURE_CONNECT
                     )
             );
 
