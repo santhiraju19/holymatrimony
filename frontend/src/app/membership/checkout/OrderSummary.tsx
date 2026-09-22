@@ -27,6 +27,7 @@ import {
 
 import {
   paymentService,
+  type CreateOrderResponse,
 } from "@/features/membership/services/payment.service";
 
 
@@ -288,6 +289,18 @@ export default function OrderSummary() {
   ] =
     useState("");
 
+  /*
+   * Server-authoritative checkout pricing.
+   *
+   * This remains null until createOrder() validates the
+   * coupon and calculates the final payable amount.
+   */
+  const [
+    checkoutResult,
+    setCheckoutResult,
+  ] =
+    useState<CreateOrderResponse | null>(null);
+
   if (!plan) {
     return null;
   }
@@ -333,6 +346,7 @@ export default function OrderSummary() {
     setError("");
     setSuccess(false);
     setSuccessMessage("");
+    setCheckoutResult(null);
 
     if (
       !validateBillingDetails()
@@ -356,7 +370,117 @@ export default function OrderSummary() {
       );
 
       /*
-       * Load Razorpay Checkout.
+       * Backend determines:
+       *
+       * - whether the coupon is valid
+       * - the authoritative discount
+       * - the final payable amount
+       * - whether Razorpay is required
+       *
+       * We intentionally create the backend checkout BEFORE
+       * loading Razorpay because HM100 completes entirely on
+       * the backend and must never open Razorpay.
+       */
+      const order =
+        await paymentService
+          .createOrder(
+            checkoutData.plan,
+            billingCycle,
+            checkoutData.fullName,
+            checkoutData.email,
+            checkoutData.phone,
+            checkoutData.coupon
+          );
+
+      /*
+       * From this point onward the backend response is the
+       * authoritative price snapshot for this checkout.
+       */
+      setCheckoutResult(order);
+
+      /*
+       * Fully discounted coupon checkout.
+       *
+       * HM100 is finalized by the backend:
+       *
+       * - payment amount = 0
+       * - payment source = COUPON
+       * - membership activated
+       * - coupon redemption recorded
+       *
+       * Razorpay must NOT be loaded or opened.
+       */
+      if (
+        order.checkoutType === "COUPON" &&
+        order.completed
+      ) {
+        if (
+          order.amount !== 0 ||
+          !order.paymentId
+        ) {
+          throw new Error(
+            "The coupon checkout returned an invalid completion response."
+          );
+        }
+
+        setSuccessMessage(
+          order.couponCode
+            ? `${order.couponCode} was applied successfully. Your membership has been activated.`
+            : "Your membership has been activated successfully."
+        );
+
+        setSuccess(true);
+        setError("");
+        setLoading(false);
+
+        window.setTimeout(
+          () => {
+            resetCheckout();
+
+            router.push(
+              "/dashboard/membership?payment=success"
+            );
+          },
+          2500
+        );
+
+        return;
+      }
+
+      /*
+       * Anything that is not a completed coupon checkout must
+       * be a normal Razorpay checkout.
+       */
+      if (
+        order.checkoutType !== "RAZORPAY"
+      ) {
+        throw new Error(
+          "The checkout type returned by the server is not supported."
+        );
+      }
+
+      /*
+       * A paid Razorpay checkout requires all Razorpay fields.
+       *
+       * amount <= 0 is invalid here because zero-value
+       * checkouts must use the COUPON path above.
+       */
+      if (
+        !order.orderId ||
+        !order.key ||
+        order.amount <= 0 ||
+        !order.currency
+      ) {
+        throw new Error(
+          "The payment order could not be created."
+        );
+      }
+
+      /*
+       * Only now load Razorpay.
+       *
+       * HM100 has already returned above, so a 100% coupon
+       * never downloads or opens Razorpay Checkout.
        */
       const scriptLoaded =
         await loadRazorpayScript();
@@ -367,31 +491,6 @@ export default function OrderSummary() {
       ) {
         throw new Error(
           "Unable to load the secure payment window. Please check your internet connection and try again."
-        );
-      }
-
-      /*
-       * Backend determines
-       * authoritative order amount.
-       */
-      const order =
-        await paymentService
-          .createOrder(
-            checkoutData.plan,
-            billingCycle,
-            checkoutData.fullName,
-            checkoutData.email,
-            checkoutData.phone
-          );
-
-      if (
-        !order.orderId ||
-        !order.key ||
-        !order.amount ||
-        !order.currency
-      ) {
-        throw new Error(
-          "The payment order could not be created."
         );
       }
 
@@ -579,6 +678,48 @@ export default function OrderSummary() {
     }
   }
 
+  const verifiedCoupon =
+    checkoutResult?.couponCode ?? null;
+
+  const verifiedDiscountPercent =
+    checkoutResult?.discountPercent ?? null;
+
+  const verifiedOriginalAmount =
+    checkoutResult?.originalAmount ?? null;
+
+  const verifiedDiscountAmount =
+    checkoutResult?.discountAmount ?? null;
+
+  /*
+   * Backend amounts are paise.
+   * Local MembershipContext values are rupees.
+   */
+  const verifiedFinalAmount =
+    checkoutResult
+      ? checkoutResult.amount / 100
+      : null;
+
+  const verifiedOriginalAmountRupees =
+    verifiedOriginalAmount !== null
+      ? verifiedOriginalAmount / 100
+      : null;
+
+  const verifiedDiscountAmountRupees =
+    verifiedDiscountAmount !== null
+      ? verifiedDiscountAmount / 100
+      : null;
+
+  const displayTotal =
+    verifiedFinalAmount ?? total;
+
+  const hasVerifiedCoupon =
+    Boolean(
+      verifiedCoupon &&
+      verifiedDiscountPercent !== null &&
+      verifiedOriginalAmountRupees !== null &&
+      verifiedDiscountAmountRupees !== null
+    );
+
   return (
     <section className="overflow-hidden rounded-[18px] border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
 
@@ -723,6 +864,39 @@ export default function OrderSummary() {
             )}`}
           />
 
+          {hasVerifiedCoupon && (
+            <>
+              <SummaryRow
+                label={`Coupon (${verifiedCoupon})`}
+                value={`${verifiedDiscountPercent}% OFF`}
+                tone="green"
+              />
+
+              <SummaryRow
+                label="Original Total"
+                value={`₹${verifiedOriginalAmountRupees!.toLocaleString(
+                  "en-IN",
+                  {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 2,
+                  }
+                )}`}
+              />
+
+              <SummaryRow
+                label="Coupon Discount"
+                value={`-₹${verifiedDiscountAmountRupees!.toLocaleString(
+                  "en-IN",
+                  {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 2,
+                  }
+                )}`}
+                tone="green"
+              />
+            </>
+          )}
+
           <div className="flex items-center justify-between gap-4 border-t border-slate-200 bg-gradient-to-r from-blue-50/70 to-amber-50/50 px-3.5 py-3">
             <span className="text-xs font-black text-[#0B2D5C]">
               Total Payable
@@ -730,8 +904,12 @@ export default function OrderSummary() {
 
             <span className="text-lg font-black text-[#0B2D5C]">
               ₹
-              {total.toLocaleString(
-                "en-IN"
+              {displayTotal.toLocaleString(
+                "en-IN",
+                {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+                }
               )}
             </span>
           </div>
@@ -776,8 +954,12 @@ export default function OrderSummary() {
                 />
 
                 Pay ₹
-                {total.toLocaleString(
-                  "en-IN"
+                {displayTotal.toLocaleString(
+                  "en-IN",
+                  {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 2,
+                  }
                 )}
               </span>
             )}

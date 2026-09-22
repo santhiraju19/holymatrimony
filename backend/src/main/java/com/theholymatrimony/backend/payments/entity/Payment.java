@@ -202,6 +202,26 @@ public class Payment {
 
     /*
      * ============================================================
+     * COUPON PRICE SNAPSHOT
+     * ============================================================
+     *
+     * These fields preserve the exact server-side coupon
+     * calculation used when checkout was created.
+     *
+     * They remain null when no coupon was used.
+     */
+
+    @Column(name = "original_amount")
+    private Integer originalAmount;
+
+    @Column(name = "discount_amount")
+    private Integer discountAmount;
+
+    @Column(name = "discount_percent")
+    private Integer discountPercent;
+
+    /*
+     * ============================================================
      * DATES
      * ============================================================
      */

@@ -14,4 +14,12 @@ public class CreateOrderRequest {
     private String email;
 
     private String phone;
+
+    /*
+     * Optional promotional coupon.
+     *
+     * Validation and discount calculation are always performed
+     * by the backend. The client never supplies a discount amount.
+     */
+    private String coupon;
 }

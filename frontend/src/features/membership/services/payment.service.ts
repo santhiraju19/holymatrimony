@@ -10,11 +10,40 @@ import api from "@/lib/api";
  * ============================================================
  */
 
+export type CheckoutType =
+  | "RAZORPAY"
+  | "COUPON";
+
 export interface CreateOrderResponse {
-  orderId: string;
-  key: string;
+  checkoutType: CheckoutType;
+  paymentId: string;
+
+  /*
+   * Null for a fully discounted coupon checkout such as HM100.
+   */
+  orderId: string | null;
+  key: string | null;
+
+  /*
+   * Final authoritative amount from the backend, in paise.
+   */
   amount: number;
   currency: string;
+
+  /*
+   * Coupon snapshot returned by the backend.
+   * Null when no coupon was applied.
+   */
+  couponCode: string | null;
+  discountPercent: number | null;
+  originalAmount: number | null;
+  discountAmount: number | null;
+
+  /*
+   * true when the backend has already completed the checkout.
+   * HM100 returns completed=true and does not require Razorpay.
+   */
+  completed: boolean;
 }
 
 /*
@@ -139,7 +168,8 @@ class PaymentService {
     billingCycle: string,
     fullName: string,
     email: string,
-    phone: string
+    phone: string,
+    coupon?: string
   ): Promise<CreateOrderResponse> {
 
     const response:
@@ -152,6 +182,8 @@ class PaymentService {
           fullName,
           email,
           phone,
+          coupon:
+            coupon?.trim() || undefined,
         }
       );
 

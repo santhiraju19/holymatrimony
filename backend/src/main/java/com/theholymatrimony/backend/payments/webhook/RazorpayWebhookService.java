@@ -3,6 +3,7 @@ package com.theholymatrimony.backend.payments.webhook;
 import com.razorpay.Utils;
 
 import com.theholymatrimony.backend.payments.entity.Payment;
+import com.theholymatrimony.backend.payments.coupon.service.MembershipCouponService;
 
 import com.theholymatrimony.backend.payments.enums.PaymentSource;
 import com.theholymatrimony.backend.payments.enums.PaymentStatus;
@@ -44,6 +45,9 @@ public class RazorpayWebhookService {
 
     private final PaymentFinalizationService
             paymentFinalizationService;
+
+    private final MembershipCouponService
+            membershipCouponService;
 
     @Value("${razorpay.webhook.secret}")
     private String webhookSecret;
@@ -411,11 +415,31 @@ public class RazorpayWebhookService {
          * membership activation
          */
 
-        paymentFinalizationService
-                .finalizeSuccessfulPayment(
-                        payment,
-                        razorpayPaymentId,
-                        payment.getRazorpaySignature()
+        Payment finalizedPayment =
+                paymentFinalizationService
+                        .finalizeSuccessfulPayment(
+                                payment,
+                                razorpayPaymentId,
+                                payment.getRazorpaySignature()
+                        );
+
+        /*
+         * ========================================================
+         * COUPON REDEMPTION
+         * ========================================================
+         *
+         * Normal transactions have couponCode == null and this
+         * becomes a no-op.
+         *
+         * HM30 / HM50 are recorded only after Razorpay confirms
+         * payment.captured.
+         *
+         * Webhook retries remain idempotent because redemption is
+         * unique by local payment ID.
+         */
+        membershipCouponService
+                .recordSuccessfulRedemption(
+                        finalizedPayment
                 );
 
         log.info(

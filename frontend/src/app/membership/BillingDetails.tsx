@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BadgePercent,
   Mail,
   Phone,
   ReceiptText,
@@ -9,7 +10,6 @@ import {
 } from "lucide-react";
 
 import Input from "@/components/ui/Input";
-
 import {
   useMembership,
 } from "@/features/membership/hooks/useMembership";
@@ -45,7 +45,7 @@ export default function BillingDetails() {
             </h2>
 
             <p className="mt-0.5 text-[10px] leading-5 text-slate-500 sm:text-[11px]">
-              Enter your contact information to continue with secure payment.
+              Enter your contact information to continue with secure checkout.
             </p>
           </div>
         </div>
@@ -111,6 +111,43 @@ export default function BillingDetails() {
           </div>
         </div>
 
+        {/* =====================================================
+            Coupon
+            ===================================================== */}
+        <div className="mt-5 border-t border-slate-100 pt-5">
+          <SectionHeading
+            icon={<BadgePercent size={14} />}
+            title="Coupon Code"
+            description="Have a Holy Matrimony coupon? Enter it below. The discount is verified securely before checkout."
+          />
+
+          <div className="mt-3">
+            <Input
+              label="Coupon Code (Optional)"
+              placeholder="Enter coupon code"
+              value={checkoutData.coupon ?? ""}
+              onChange={(event) =>
+                updateCheckout({
+                  coupon:
+                    event.target.value.toUpperCase(),
+                })
+              }
+            />
+
+            <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-100 bg-amber-50/60 px-3 py-2">
+              <BadgePercent
+                size={13}
+                className="mt-0.5 shrink-0 text-[#B38B19]"
+              />
+
+              <p className="text-[9px] leading-4 text-slate-600">
+                Coupon eligibility and the final payable amount are
+                calculated securely when you continue to checkout.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2.5">
           <Mail
             size={15}
@@ -118,7 +155,8 @@ export default function BillingDetails() {
           />
 
           <p className="text-[10px] leading-5 text-slate-600">
-            Your payment confirmation will be sent to the email address provided above.
+            Your membership confirmation will be sent to the email
+            address provided above.
           </p>
         </div>
 
@@ -129,7 +167,8 @@ export default function BillingDetails() {
           />
 
           <p className="text-[10px] leading-5 text-slate-600">
-            Please provide an active phone number for your membership order.
+            Please provide an active phone number for your membership
+            order.
           </p>
         </div>
       </div>

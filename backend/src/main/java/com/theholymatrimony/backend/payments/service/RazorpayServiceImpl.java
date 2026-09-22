@@ -12,6 +12,8 @@ import com.theholymatrimony.backend.payments.dto.CreateOrderResponse;
 import com.theholymatrimony.backend.payments.dto.PaymentHistoryResponse;
 import com.theholymatrimony.backend.payments.dto.PaymentReceiptResponse;
 import com.theholymatrimony.backend.payments.dto.VerifyPaymentRequest;
+import com.theholymatrimony.backend.payments.coupon.dto.CouponCalculation;
+import com.theholymatrimony.backend.payments.coupon.service.MembershipCouponService;
 
 import com.theholymatrimony.backend.payments.entity.Payment;
 
@@ -60,6 +62,8 @@ public class RazorpayServiceImpl
 
     private final UserRepository userRepository;
 
+    private final MembershipCouponService membershipCouponService;
+
     /*
      * Successful payment fulfilment remains centralized
      * in PaymentFinalizationService / Razorpay webhook.
@@ -84,7 +88,6 @@ public class RazorpayServiceImpl
             CreateOrderRequest request,
             String authenticatedEmail
     ) throws Exception {
-
         validateCreateOrderRequest(
                 request
         );
@@ -120,24 +123,183 @@ public class RazorpayServiceImpl
                         request.getBillingCycle()
                 );
 
-        int amountInPaise =
+        /*
+         * ========================================================
+         * SERVER-SIDE PRICE
+         * ========================================================
+         *
+         * Never trust a price or discount supplied by the browser.
+         */
+        int originalAmountInPaise =
                 calculateAmountInPaise(
                         plan,
                         billingCycle
                 );
 
+        CouponCalculation couponCalculation =
+                membershipCouponService.calculate(
+                        request.getCoupon(),
+                        originalAmountInPaise
+                );
+
+        int finalAmountInPaise =
+                couponCalculation == null
+                        ? originalAmountInPaise
+                        : couponCalculation.finalAmount();
+
+        String couponCode =
+                couponCalculation == null
+                        ? null
+                        : couponCalculation.code();
+
+        Integer discountPercent =
+                couponCalculation == null
+                        ? null
+                        : couponCalculation.discountPercent();
+
+        Integer discountAmount =
+                couponCalculation == null
+                        ? null
+                        : couponCalculation.discountAmount();
+
+        Integer originalAmountSnapshot =
+                couponCalculation == null
+                        ? null
+                        : couponCalculation.originalAmount();
+
+        /*
+         * ========================================================
+         * HM100 / ZERO-VALUE COUPON CHECKOUT
+         * ========================================================
+         *
+         * A legitimate 100% coupon never creates a Razorpay order.
+         */
+        if (
+                couponCalculation != null &&
+                finalAmountInPaise == 0
+        ) {
+            Payment payment =
+                    Payment.builder()
+                            .user(
+                                    user
+                            )
+                            .razorpayOrderId(
+                                    null
+                            )
+                            .razorpayPaymentId(
+                                    null
+                            )
+                            .razorpaySignature(
+                                    null
+                            )
+                            .plan(
+                                    plan.name()
+                            )
+                            .billingCycle(
+                                    billingCycle.name()
+                            )
+                            .customerName(
+                                    request
+                                            .getFullName()
+                                            .trim()
+                            )
+                            .email(
+                                    user.getEmail()
+                            )
+                            .phone(
+                                    normalizeNullable(
+                                            request.getPhone()
+                                    )
+                            )
+                            .amount(
+                                    0
+                            )
+                            .currency(
+                                    "INR"
+                            )
+                            .paymentSource(
+                                    PaymentSource.COUPON
+                            )
+                            .paymentMethod(
+                                    "COUPON"
+                            )
+                            .couponCode(
+                                    couponCode
+                            )
+                            .originalAmount(
+                                    originalAmountSnapshot
+                            )
+                            .discountAmount(
+                                    discountAmount
+                            )
+                            .discountPercent(
+                                    discountPercent
+                            )
+                            .status(
+                                    PaymentStatus.PENDING
+                            )
+                            .build();
+
+            /*
+             * Persist first so the payment has an ID for the
+             * redemption audit record.
+             */
+            payment =
+                    paymentRepository.saveAndFlush(
+                            payment
+                    );
+
+            /*
+             * Uses the same centralized membership activation
+             * logic as successful Razorpay payments.
+             */
+            Payment finalizedPayment =
+                    paymentFinalizationService
+                            .finalizeSuccessfulCouponPayment(
+                                    payment
+                            );
+
+            /*
+             * Record the successful coupon redemption only after
+             * successful payment/membership finalization.
+             */
+            membershipCouponService
+                    .recordSuccessfulRedemption(
+                            finalizedPayment
+                    );
+
+            return new CreateOrderResponse(
+                    "COUPON",
+                    finalizedPayment.getId(),
+                    null,
+                    null,
+                    0,
+                    "INR",
+                    couponCode,
+                    discountPercent,
+                    originalAmountSnapshot,
+                    discountAmount,
+                    true
+            );
+        }
+
         /*
          * ========================================================
          * RAZORPAY ORDER
          * ========================================================
+         *
+         * No coupon:
+         *     Razorpay receives the normal server-calculated price.
+         *
+         * HM30 / HM50:
+         *     Razorpay receives only the discounted final price.
          */
-
         JSONObject options =
                 new JSONObject();
 
         options.put(
                 "amount",
-                amountInPaise
+                finalAmountInPaise
         );
 
         options.put(
@@ -169,6 +331,13 @@ public class RazorpayServiceImpl
                 user.getEmail()
         );
 
+        if (couponCode != null) {
+            notes.put(
+                    "coupon",
+                    couponCode
+            );
+        }
+
         options.put(
                 "notes",
                 notes
@@ -191,12 +360,11 @@ public class RazorpayServiceImpl
          * LOCAL PAYMENT RECORD
          * ========================================================
          *
-         * Amount is stored in paise.
+         * amount = actual amount Razorpay must collect.
          *
-         * Payment remains PENDING until Razorpay confirms
-         * capture through the webhook.
+         * originalAmount / discountAmount / discountPercent are
+         * immutable checkout snapshots when a coupon was used.
          */
-
         Payment payment =
                 Payment.builder()
                         .user(
@@ -225,7 +393,7 @@ public class RazorpayServiceImpl
                                 )
                         )
                         .amount(
-                                amountInPaise
+                                finalAmountInPaise
                         )
                         .currency(
                                 "INR"
@@ -237,22 +405,39 @@ public class RazorpayServiceImpl
                                 null
                         )
                         .couponCode(
-                                null
+                                couponCode
+                        )
+                        .originalAmount(
+                                originalAmountSnapshot
+                        )
+                        .discountAmount(
+                                discountAmount
+                        )
+                        .discountPercent(
+                                discountPercent
                         )
                         .status(
                                 PaymentStatus.PENDING
                         )
                         .build();
 
-        paymentRepository.save(
-                payment
-        );
+        payment =
+                paymentRepository.save(
+                        payment
+                );
 
         return new CreateOrderResponse(
+                "RAZORPAY",
+                payment.getId(),
                 razorpayOrderId,
                 keyId,
-                amountInPaise,
-                "INR"
+                finalAmountInPaise,
+                "INR",
+                couponCode,
+                discountPercent,
+                originalAmountSnapshot,
+                discountAmount,
+                false
         );
     }
 

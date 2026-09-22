@@ -5,12 +5,11 @@ import com.theholymatrimony.backend.payments.entity.Payment;
 import com.theholymatrimony.backend.payments.enums.BillingCycle;
 import com.theholymatrimony.backend.payments.enums.MembershipPlan;
 import com.theholymatrimony.backend.payments.enums.MembershipStatus;
+import com.theholymatrimony.backend.payments.enums.PaymentSource;
 import com.theholymatrimony.backend.payments.enums.PaymentStatus;
 import com.theholymatrimony.backend.payments.repository.MembershipRepository;
 import com.theholymatrimony.backend.payments.repository.PaymentRepository;
-
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,16 +22,18 @@ public class PaymentFinalizationService {
     private final PaymentRepository paymentRepository;
     private final MembershipRepository membershipRepository;
 
+    /*
+     * ============================================================
+     * RAZORPAY SUCCESS
+     * ============================================================
+     */
     @Transactional
     public Payment finalizeSuccessfulPayment(
             Payment payment,
             String razorpayPaymentId,
             String razorpaySignature
     ) {
-
         /*
-         * Idempotency:
-         *
          * Browser verification and Razorpay webhook may both
          * attempt to finalize the same payment.
          */
@@ -49,6 +50,10 @@ public class PaymentFinalizationService {
             );
         }
 
+        payment.setPaymentSource(
+                PaymentSource.RAZORPAY
+        );
+
         payment.setRazorpayPaymentId(
                 razorpayPaymentId
         );
@@ -62,6 +67,77 @@ public class PaymentFinalizationService {
             );
         }
 
+        return finalizePaymentAndMembership(
+                payment
+        );
+    }
+
+    /*
+     * ============================================================
+     * 100% COUPON SUCCESS
+     * ============================================================
+     *
+     * A fully discounted checkout never goes to Razorpay.
+     * The payment remains auditable in our own payments table
+     * with amount = 0 and payment_source = COUPON.
+     */
+    @Transactional
+    public Payment finalizeSuccessfulCouponPayment(
+            Payment payment
+    ) {
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            return payment;
+        }
+
+        if (payment.getAmount() == null) {
+            throw new IllegalArgumentException(
+                    "Coupon payment amount is required."
+            );
+        }
+
+        if (payment.getAmount().intValue() != 0) {
+            throw new IllegalArgumentException(
+                    "Direct coupon finalization is only allowed for a zero-value payment."
+            );
+        }
+
+        if (
+                payment.getCouponCode() == null ||
+                payment.getCouponCode().isBlank()
+        ) {
+            throw new IllegalArgumentException(
+                    "Coupon code is required for coupon payment finalization."
+            );
+        }
+
+        payment.setPaymentSource(
+                PaymentSource.COUPON
+        );
+
+        payment.setPaymentMethod(
+                "COUPON"
+        );
+
+        /*
+         * Razorpay identifiers deliberately remain null.
+         */
+        payment.setRazorpayOrderId(null);
+        payment.setRazorpayPaymentId(null);
+        payment.setRazorpaySignature(null);
+
+        return finalizePaymentAndMembership(
+                payment
+        );
+    }
+
+    /*
+     * ============================================================
+     * COMMON FINALIZATION
+     * ============================================================
+     */
+    private Payment finalizePaymentAndMembership(
+            Payment payment
+    ) {
         payment.setStatus(
                 PaymentStatus.SUCCESS
         );
@@ -82,13 +158,15 @@ public class PaymentFinalizationService {
         return savedPayment;
     }
 
+    /*
+     * ============================================================
+     * MEMBERSHIP ACTIVATION
+     * ============================================================
+     */
     private void activateMembership(
             Payment payment
     ) {
-
         /*
-         * Additional idempotency protection.
-         *
          * If this payment already owns a membership,
          * don't create another one.
          */
@@ -102,13 +180,15 @@ public class PaymentFinalizationService {
             return;
         }
 
-       membershipRepository
-        .findFirstByUserIdAndStatusOrderByStartDateDesc(
-                payment.getUser().getId(),
-                MembershipStatus.ACTIVE
-        )
+        /*
+         * Only one membership should remain ACTIVE.
+         */
+        membershipRepository
+                .findFirstByUserIdAndStatusOrderByStartDateDesc(
+                        payment.getUser().getId(),
+                        MembershipStatus.ACTIVE
+                )
                 .ifPresent(existing -> {
-
                     existing.setStatus(
                             MembershipStatus.CANCELLED
                     );
@@ -176,9 +256,7 @@ public class PaymentFinalizationService {
             LocalDateTime startDate,
             BillingCycle billingCycle
     ) {
-
         return switch (billingCycle) {
-
             case MONTHLY ->
                     startDate.plusMonths(1);
 
