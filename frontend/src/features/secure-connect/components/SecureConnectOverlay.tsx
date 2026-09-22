@@ -19,6 +19,9 @@ import {
 import {
   useSecureConnect,
 } from "../context/SecureConnectContext";
+import {
+  secureConnectCallTone,
+} from "../audio/secureConnectCallTone";
 
 import SecureConnectAudioTrack from "../media/SecureConnectAudioTrack";
 import SecureConnectVideoTrack from "../media/SecureConnectVideoTrack";
@@ -105,10 +108,36 @@ export default function SecureConnectOverlay() {
       return;
     }
 
+    /*
+     * Backend call timestamps are persisted in UTC but are currently
+     * serialized as LocalDateTime values without an explicit timezone.
+     *
+     * A browser interprets a timezone-less ISO timestamp as local time.
+     * In IST that shifts the Secure Connect timer by 5h30m.
+     *
+     * Treat timezone-less backend timestamps as UTC. If the backend later
+     * starts returning Z or an explicit offset, preserve that value.
+     */
+    const rawConnectedAt =
+      activeCall.call.connectedAt;
+
+    const hasExplicitTimezone =
+      /(?:Z|[+-]\\d{2}:?\\d{2})$/i.test(
+        rawConnectedAt
+      );
+
+    const normalizedConnectedAt =
+      hasExplicitTimezone
+        ? rawConnectedAt
+        : `${rawConnectedAt}Z`;
+
     const connectedAt =
-      new Date(
-        activeCall.call.connectedAt
-      ).getTime();
+      Date.parse(normalizedConnectedAt);
+
+    if (!Number.isFinite(connectedAt)) {
+      setElapsedSeconds(0);
+      return;
+    }
 
     const update = () => {
       const elapsed =
@@ -140,6 +169,35 @@ export default function SecureConnectOverlay() {
     activeCall?.call.callId,
     activeCall?.call.status,
     activeCall?.call.connectedAt,
+  ]);
+
+  useEffect(() => {
+    const call = activeCall?.call;
+
+    if (
+      !call ||
+      call.status !== "RINGING"
+    ) {
+      secureConnectCallTone.stop();
+      return;
+    }
+
+    const tone =
+      activeCall.direction === "incoming"
+        ? "incoming"
+        : "outgoing";
+
+    void secureConnectCallTone.start(
+      tone
+    );
+
+    return () => {
+      secureConnectCallTone.stop();
+    };
+  }, [
+    activeCall?.call.callId,
+    activeCall?.call.status,
+    activeCall?.direction,
   ]);
 
   if (!activeCall) {
