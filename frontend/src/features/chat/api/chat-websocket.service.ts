@@ -249,6 +249,31 @@ class ChatWebSocketService {
     : () => {},
       });
 
+    /*
+     * Refresh the access token before every STOMP connection.
+     *
+     * The STOMP client automatically reconnects after a socket
+     * disconnect. Without refreshing connectHeaders here, the
+     * client can keep retrying with the token that was captured
+     * when this Client instance was originally created.
+     */
+    client.beforeConnect =
+      async () => {
+        const currentToken =
+          getToken();
+
+        if (!currentToken) {
+          throw new Error(
+            "Authentication token is unavailable."
+          );
+        }
+
+        client.connectHeaders = {
+          Authorization:
+            `Bearer ${currentToken}`,
+        };
+      };
+
     client.onConnect =
       () => {
         this.client =
