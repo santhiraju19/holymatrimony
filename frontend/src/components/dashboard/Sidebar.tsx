@@ -24,6 +24,7 @@ import {
   LockKeyhole,
   LogOut,
   MessageCircle,
+  Phone,
   Search,
   Send,
   ShieldCheck,
@@ -135,6 +136,12 @@ const menuItems: MenuItem[] = [
     href: "/dashboard/membership",
     icon: Crown,
     badge: "Premium",
+  },
+  {
+    name: "My Calling Minutes",
+    description: "Audio and video balance",
+    href: "/calling-minutes",
+    icon: Phone,
   },
   {
     name: "Privacy Settings",
