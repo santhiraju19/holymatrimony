@@ -2,15 +2,14 @@ package com.theholymatrimony.backend.payments.webhook;
 
 import com.razorpay.Utils;
 
-import com.theholymatrimony.backend.payments.entity.Payment;
 import com.theholymatrimony.backend.payments.coupon.service.MembershipCouponService;
-
+import com.theholymatrimony.backend.payments.entity.Payment;
 import com.theholymatrimony.backend.payments.enums.PaymentSource;
 import com.theholymatrimony.backend.payments.enums.PaymentStatus;
-
 import com.theholymatrimony.backend.payments.repository.PaymentRepository;
-
 import com.theholymatrimony.backend.payments.service.PaymentFinalizationService;
+import com.theholymatrimony.backend.secureconnect.topup.repository.SecureConnectTopUpPaymentRepository;
+import com.theholymatrimony.backend.secureconnect.topup.service.SecureConnectTopUpFulfillmentService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +48,12 @@ public class RazorpayWebhookService {
 
     private final MembershipCouponService
             membershipCouponService;
+
+    private final SecureConnectTopUpPaymentRepository
+            secureConnectTopUpPaymentRepository;
+
+    private final SecureConnectTopUpFulfillmentService
+            secureConnectTopUpFulfillmentService;
 
     @Value("${razorpay.webhook.secret}")
     private String webhookSecret;
@@ -200,25 +206,7 @@ public class RazorpayWebhookService {
                 );
 
         /*
-         * ========================================================
-         * ACTUAL RAZORPAY PAYMENT METHOD
-         * ========================================================
-         *
-         * Razorpay normally returns values such as:
-         *
-         * card
-         * upi
-         * netbanking
-         * wallet
-         * emi
-         *
-         * We store a normalized uppercase representation:
-         *
-         * CARD
-         * UPI
-         * NETBANKING
-         * WALLET
-         * EMI
+         * Store the normalized Razorpay payment method.
          */
 
         String paymentMethod =
@@ -278,29 +266,67 @@ public class RazorpayWebhookService {
             );
         }
 
-        Payment payment =
+        /*
+         * ========================================================
+         * ROUTE BY LOCAL ORDER OWNERSHIP
+         * ========================================================
+         *
+         * Membership payments keep the existing finalization flow.
+         *
+         * Secure Connect top-ups are fulfilled separately because
+         * their successful capture credits a persistent media wallet
+         * rather than activating a membership.
+         */
+
+        Optional<Payment> membershipPayment =
                 paymentRepository
                         .findByRazorpayOrderId(
                                 razorpayOrderId
-                        )
-                        .orElseThrow(
-                                () -> {
-
-                                    log.error(
-                                            "Local payment record was not found for captured Razorpay order: orderId={}, paymentId={}",
-                                            razorpayOrderId,
-                                            razorpayPaymentId
-                                    );
-
-                                    return new IllegalArgumentException(
-                                            "Payment order was not found."
-                                    );
-                                }
                         );
+
+        if (membershipPayment.isEmpty()) {
+
+            if (
+                    secureConnectTopUpPaymentRepository
+                            .existsByRazorpayOrderId(
+                                    razorpayOrderId
+                            )
+            ) {
+
+                secureConnectTopUpFulfillmentService
+                        .finalizeCapturedPayment(
+                                razorpayOrderId,
+                                razorpayPaymentId,
+                                paymentMethod
+                        );
+
+                log.info(
+                        "Secure Connect top-up finalized successfully: orderId={}, paymentId={}, paymentMethod={}",
+                        razorpayOrderId,
+                        razorpayPaymentId,
+                        paymentMethod
+                );
+
+                return;
+            }
+
+            log.error(
+                    "No local membership payment or Secure Connect top-up found for captured Razorpay order: orderId={}, paymentId={}",
+                    razorpayOrderId,
+                    razorpayPaymentId
+            );
+
+            throw new IllegalArgumentException(
+                    "Payment order was not found."
+            );
+        }
+
+        Payment payment =
+                membershipPayment.get();
 
         /*
          * ========================================================
-         * DUPLICATE PAYMENT-ID PROTECTION
+         * DUPLICATE MEMBERSHIP PAYMENT-ID PROTECTION
          * ========================================================
          */
 
@@ -364,24 +390,9 @@ public class RazorpayWebhookService {
             );
         }
 
-        /*
-         * ========================================================
-         * STORE PAYMENT SOURCE
-         * ========================================================
-         */
-
         payment.setPaymentSource(
                 PaymentSource.RAZORPAY
         );
-
-        /*
-         * ========================================================
-         * STORE ACTUAL PAYMENT METHOD
-         * ========================================================
-         *
-         * Do this BEFORE finalization so the SUCCESS transaction
-         * and membership are persisted with the gateway method.
-         */
 
         if (
                 paymentMethod != null
@@ -394,26 +405,12 @@ public class RazorpayWebhookService {
         /*
          * Save before finalization.
          *
-         * This also makes the payment method durable if the
-         * finalization method performs a flush.
+         * This keeps the existing membership-payment behavior.
          */
 
         paymentRepository.save(
                 payment
         );
-
-        /*
-         * ========================================================
-         * FINALIZE SUCCESSFUL PAYMENT
-         * ========================================================
-         *
-         * PaymentFinalizationService performs idempotent:
-         *
-         * PENDING -> SUCCESS
-         * paidAt assignment
-         * Razorpay payment ID persistence
-         * membership activation
-         */
 
         Payment finalizedPayment =
                 paymentFinalizationService
@@ -424,19 +421,9 @@ public class RazorpayWebhookService {
                         );
 
         /*
-         * ========================================================
-         * COUPON REDEMPTION
-         * ========================================================
-         *
-         * Normal transactions have couponCode == null and this
-         * becomes a no-op.
-         *
-         * HM30 / HM50 are recorded only after Razorpay confirms
-         * payment.captured.
-         *
-         * Webhook retries remain idempotent because redemption is
-         * unique by local payment ID.
+         * HM30 / HM50 redemption remains membership-only.
          */
+
         membershipCouponService
                 .recordSuccessfulRedemption(
                         finalizedPayment
@@ -508,85 +495,120 @@ public class RazorpayWebhookService {
             return;
         }
 
-        paymentRepository
-                .findByRazorpayOrderId(
-                        razorpayOrderId
-                )
-                .ifPresentOrElse(
-                        payment -> {
+        Optional<Payment> membershipPayment =
+                paymentRepository
+                        .findByRazorpayOrderId(
+                                razorpayOrderId
+                        );
 
-                            /*
-                             * Webhook ordering is not guaranteed.
-                             *
-                             * Never downgrade a transaction already
-                             * confirmed SUCCESS.
-                             */
+        if (membershipPayment.isPresent()) {
 
-                            if (
-                                    payment.getStatus()
-                                            == PaymentStatus.SUCCESS
-                            ) {
+            Payment payment =
+                    membershipPayment.get();
 
-                                log.warn(
-                                        "Ignoring payment.failed because local payment is already SUCCESS: localPaymentId={}, orderId={}, paymentId={}",
-                                        payment.getId(),
-                                        razorpayOrderId,
-                                        razorpayPaymentId
-                                );
+            /*
+             * Webhook ordering is not guaranteed.
+             *
+             * Never downgrade a transaction already confirmed
+             * SUCCESS.
+             */
 
-                                return;
-                            }
+            if (
+                    payment.getStatus()
+                            == PaymentStatus.SUCCESS
+            ) {
 
-                            payment.setPaymentSource(
-                                    PaymentSource.RAZORPAY
-                            );
-
-                            if (
-                                    paymentMethod != null
-                            ) {
-                                payment.setPaymentMethod(
-                                        paymentMethod
-                                );
-                            }
-
-                            if (
-                                    razorpayPaymentId != null &&
-                                    (
-                                            payment.getRazorpayPaymentId()
-                                                    == null ||
-                                            payment.getRazorpayPaymentId()
-                                                    .isBlank()
-                                    )
-                            ) {
-
-                                payment.setRazorpayPaymentId(
-                                        razorpayPaymentId
-                                );
-                            }
-
-                            payment.setStatus(
-                                    PaymentStatus.FAILED
-                            );
-
-                            paymentRepository.save(
-                                    payment
-                            );
-
-                            log.info(
-                                    "Razorpay payment marked FAILED: localPaymentId={}, orderId={}, paymentId={}, paymentMethod={}",
-                                    payment.getId(),
-                                    razorpayOrderId,
-                                    razorpayPaymentId,
-                                    paymentMethod
-                            );
-                        },
-                        () ->
-                                log.warn(
-                                        "No local payment record found for Razorpay payment.failed event: orderId={}, paymentId={}",
-                                        razorpayOrderId,
-                                        razorpayPaymentId
-                                )
+                log.warn(
+                        "Ignoring payment.failed because local payment is already SUCCESS: localPaymentId={}, orderId={}, paymentId={}",
+                        payment.getId(),
+                        razorpayOrderId,
+                        razorpayPaymentId
                 );
+
+                return;
+            }
+
+            payment.setPaymentSource(
+                    PaymentSource.RAZORPAY
+            );
+
+            if (
+                    paymentMethod != null
+            ) {
+                payment.setPaymentMethod(
+                        paymentMethod
+                );
+            }
+
+            if (
+                    razorpayPaymentId != null &&
+                    (
+                            payment.getRazorpayPaymentId()
+                                    == null ||
+                            payment.getRazorpayPaymentId()
+                                    .isBlank()
+                    )
+            ) {
+                payment.setRazorpayPaymentId(
+                        razorpayPaymentId
+                );
+            }
+
+            payment.setStatus(
+                    PaymentStatus.FAILED
+            );
+
+            paymentRepository.save(
+                    payment
+            );
+
+            log.info(
+                    "Razorpay payment marked FAILED: localPaymentId={}, orderId={}, paymentId={}, paymentMethod={}",
+                    payment.getId(),
+                    razorpayOrderId,
+                    razorpayPaymentId,
+                    paymentMethod
+            );
+
+            return;
+        }
+
+        /*
+         * No membership payment owns this order.
+         *
+         * Route a known Secure Connect top-up to its own failure
+         * handler. Wallet balances are never modified here.
+         */
+
+        if (
+                secureConnectTopUpPaymentRepository
+                        .existsByRazorpayOrderId(
+                                razorpayOrderId
+                        )
+        ) {
+
+            secureConnectTopUpFulfillmentService
+                    .markPaymentFailed(
+                            razorpayOrderId,
+                            razorpayPaymentId,
+                            paymentMethod
+                    );
+
+            log.info(
+                    "Secure Connect top-up marked FAILED from Razorpay webhook: orderId={}, paymentId={}, paymentMethod={}",
+                    razorpayOrderId,
+                    razorpayPaymentId,
+                    paymentMethod
+            );
+
+            return;
+        }
+
+        log.warn(
+                "No local membership payment or Secure Connect top-up found for Razorpay payment.failed event: orderId={}, paymentId={}",
+                razorpayOrderId,
+                razorpayPaymentId
+        );
     }
 
     /*

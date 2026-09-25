@@ -10,6 +10,7 @@ import com.theholymatrimony.backend.secureconnect.enums.CallStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -263,6 +264,80 @@ class LiveKitCallProviderTests {
         assertTrue(
                 issuedAt.getTime()
                         <= after + 1_000L
+        );
+    }
+
+
+    @Test
+    void tokenExpiresAtEarlierAuthorizationDeadline()
+            throws Exception {
+
+        Instant deadline = Instant.now().plusSeconds(90L);
+
+        SecureConnectMediaCredentials credentials =
+                provider.createParticipantCredentials(
+                        call(CallMediaType.AUDIO),
+                        participantUserId,
+                        deadline
+                );
+
+        JWTClaimsSet claims = parse(credentials);
+
+        assertEquals(
+                deadline.getEpochSecond(),
+                claims.getExpirationTime()
+                        .toInstant()
+                        .getEpochSecond()
+        );
+
+        assertFalse(
+                claims.getExpirationTime()
+                        .toInstant()
+                        .isAfter(deadline)
+        );
+    }
+
+    @Test
+    void expiredAuthorizationDeadlineIsRejected() {
+
+        Instant deadline = Instant.now().minusSeconds(1L);
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> provider.createParticipantCredentials(
+                        call(CallMediaType.AUDIO),
+                        participantUserId,
+                        deadline
+                )
+        );
+    }
+
+    @Test
+    void laterDeadlineCannotExtendConfiguredTokenTtl()
+            throws Exception {
+
+        Instant before = Instant.now();
+
+        SecureConnectMediaCredentials credentials =
+                provider.createParticipantCredentials(
+                        call(CallMediaType.VIDEO),
+                        participantUserId,
+                        before.plusSeconds(900L)
+                );
+
+        Instant after = Instant.now();
+
+        JWTClaimsSet claims = parse(credentials);
+
+        Instant expiration =
+                claims.getExpirationTime().toInstant();
+
+        assertFalse(
+                expiration.isBefore(before.plusSeconds(299L))
+        );
+
+        assertFalse(
+                expiration.isAfter(after.plusSeconds(301L))
         );
     }
 

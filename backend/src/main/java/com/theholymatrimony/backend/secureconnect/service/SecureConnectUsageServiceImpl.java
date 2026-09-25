@@ -6,6 +6,7 @@ import com.theholymatrimony.backend.membership.entitlement.MembershipFeature;
 import com.theholymatrimony.backend.payments.entity.Membership;
 import com.theholymatrimony.backend.payments.enums.MembershipStatus;
 import com.theholymatrimony.backend.payments.repository.MembershipRepository;
+import com.theholymatrimony.backend.secureconnect.dto.SecureConnectUsageBalance;
 import com.theholymatrimony.backend.secureconnect.dto.SecureConnectUsageResult;
 import com.theholymatrimony.backend.secureconnect.entity.SecureConnectCallSession;
 import com.theholymatrimony.backend.secureconnect.entity.SecureConnectLedgerEntry;
@@ -41,6 +42,109 @@ public class SecureConnectUsageServiceImpl
     private final SecureConnectWalletRepository walletRepository;
     private final MembershipRepository membershipRepository;
     private final MembershipEntitlementService membershipEntitlementService;
+
+    @Override
+    @Transactional
+    public SecureConnectUsageBalance getRemainingBalance(
+            UUID callSessionId
+    ) {
+        if (callSessionId == null) {
+            throw new IllegalArgumentException(
+                    "Call session ID is required."
+            );
+        }
+
+        SecureConnectCallSession call =
+                callSessionRepository.findForUpdate(
+                        callSessionId
+                ).orElseThrow(
+                        () -> new IllegalArgumentException(
+                                "Secure Connect call session was not found."
+                        )
+                );
+
+        User caller = call.getCaller();
+
+        if (caller == null || caller.getId() == null) {
+            throw new IllegalStateException(
+                    "Secure Connect call does not have a valid caller."
+            );
+        }
+
+        if (call.getMediaType() == null) {
+            throw new IllegalStateException(
+                    "Secure Connect call does not have a media type."
+            );
+        }
+
+        UUID callerId = caller.getId();
+        CallMediaType mediaType = call.getMediaType();
+
+        Membership membership = requireConnectedMembership(
+                call,
+                callerId
+        );
+
+        boolean unlimited =
+                membership.getPlan()
+                        == com.theholymatrimony.backend.payments.enums.MembershipPlan.PLATINUM;
+
+        if (unlimited) {
+            return new SecureConnectUsageBalance(
+                    callSessionId,
+                    callerId,
+                    mediaType,
+                    true,
+                    0L,
+                    getTopUpRemainingSeconds(
+                            callerId,
+                            mediaType
+                    ),
+                    Long.MAX_VALUE
+            );
+        }
+
+        SecureConnectPlanAllowance allowance =
+                planAllowanceRepository.findForUpdate(
+                        membership.getId(),
+                        mediaType
+                ).orElse(null);
+
+        SecureConnectWallet wallet =
+                walletRepository.findForUpdate(
+                        callerId,
+                        mediaType
+                ).orElse(null);
+
+        long planRemaining =
+                allowance == null
+                        ? 0L
+                        : Math.max(
+                                0L,
+                                allowance.getRemainingSeconds()
+                        );
+
+        long topUpRemaining =
+                wallet == null
+                        ? 0L
+                        : Math.max(
+                                0L,
+                                wallet.getBalanceSeconds()
+                        );
+
+        return new SecureConnectUsageBalance(
+                callSessionId,
+                callerId,
+                mediaType,
+                false,
+                planRemaining,
+                topUpRemaining,
+                safeAdd(
+                        planRemaining,
+                        topUpRemaining
+                )
+        );
+    }
 
     @Override
     @Transactional
@@ -118,29 +222,14 @@ public class SecureConnectUsageServiceImpl
             );
         }
 
-        Membership membership =
-                membershipRepository
-                        .findFirstByUserIdAndStatusOrderByStartDateDesc(
-                                callerId,
-                                MembershipStatus.ACTIVE
-                        )
-                        .orElseThrow(
-                                () -> new IllegalStateException(
-                                        "An active membership is required to finalize Secure Connect usage."
-                                )
-                        );
-
-        if (!membership.isActive()) {
-            throw new IllegalStateException(
-                    "An active membership is required to finalize Secure Connect usage."
-            );
-        }
+        Membership membership = requireConnectedMembership(
+                call,
+                callerId
+        );
 
         boolean unlimited =
-                membershipEntitlementService.hasFeature(
-                        callerId,
-                        MembershipFeature.UNLIMITED_SECURE_CONNECT
-                );
+                membership.getPlan()
+                        == com.theholymatrimony.backend.payments.enums.MembershipPlan.PLATINUM;
 
         if (unlimited) {
             saveUsageLedger(
@@ -355,13 +444,7 @@ public class SecureConnectUsageServiceImpl
                                                 == BalanceSource.NONE
                         );
 
-        Membership membership =
-                membershipRepository
-                        .findFirstByUserIdAndStatusOrderByStartDateDesc(
-                                callerId,
-                                MembershipStatus.ACTIVE
-                        )
-                        .orElse(null);
+        Membership membership = call.getConnectedMembership();
 
         long planRemaining =
                 membership == null
@@ -394,6 +477,30 @@ public class SecureConnectUsageServiceImpl
                 planRemaining,
                 topUpRemaining
         );
+    }
+
+    private Membership requireConnectedMembership(
+            SecureConnectCallSession call,
+            UUID callerId
+    ) {
+        Membership membership = call.getConnectedMembership();
+
+        if (membership == null
+                || membership.getId() == null
+                || membership.getUser() == null
+                || !callerId.equals(membership.getUser().getId())
+                || membership.getPlan() == null
+                || membership.getExpiryDate() == null
+                || call.getConnectedAt() == null
+                || !call.getConnectedAt().isBefore(
+                        membership.getExpiryDate()
+                )) {
+            throw new IllegalStateException(
+                    "A valid connected membership is required for Secure Connect usage."
+            );
+        }
+
+        return membership;
     }
 
     private void saveUsageLedger(

@@ -33,4 +33,15 @@ public interface SecureConnectRealtimePublisher {
             SecureConnectCallSession call,
             User actor
     );
+
+    /*
+     * Server-authoritative termination has no human actor.
+     *
+     * Both participants must receive CALL_ENDED so both media
+     * sessions close when a limited Secure Connect balance is
+     * exhausted.
+     */
+    void publishServerEndedCall(
+            SecureConnectCallSession call
+    );
 }

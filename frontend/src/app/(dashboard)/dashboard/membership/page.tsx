@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import CurrentMembershipCard from "@/features/membership/components/CurrentMembershipCard";
+import SecureConnectBalanceCard from "@/features/secure-connect/components/SecureConnectBalanceCard";
 import PaymentHistoryCard from "@/features/membership/components/PaymentHistoryCard";
 import PricingSection from "@/features/membership/components/PricingSection";
 
@@ -97,6 +98,8 @@ export default function DashboardMembershipPage() {
       </section>
 
       <CurrentMembershipCard />
+
+      <SecureConnectBalanceCard />
 
       <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.07)]">
         <div className="border-b border-slate-200 bg-gradient-to-r from-amber-50 via-white to-blue-50 px-5 py-5 sm:px-6">

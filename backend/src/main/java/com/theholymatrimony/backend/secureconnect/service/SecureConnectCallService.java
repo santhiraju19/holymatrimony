@@ -42,6 +42,10 @@ public interface SecureConnectCallService {
             UUID callId
     );
 
+    boolean endIfBalanceExhausted(
+            UUID callId
+    );
+
     SecureConnectCallResponse failCall(
             UUID callId
     );

@@ -1,9 +1,17 @@
 package com.theholymatrimony.backend.secureconnect.service;
 
 import com.theholymatrimony.backend.auth.entity.User;
+import com.theholymatrimony.backend.payments.entity.Membership;
+import com.theholymatrimony.backend.secureconnect.balance.dto.SecureConnectMediaBalanceResponse;
+import com.theholymatrimony.backend.secureconnect.balance.service.SecureConnectBalanceService;
+import com.theholymatrimony.backend.payments.enums.MembershipPlan;
+import com.theholymatrimony.backend.payments.enums.MembershipStatus;
+import com.theholymatrimony.backend.payments.repository.MembershipRepository;
+import com.theholymatrimony.backend.secureconnect.enums.CallMediaType;
 import com.theholymatrimony.backend.auth.repository.UserRepository;
 import com.theholymatrimony.backend.safety.repository.UserBlockRepository;
 import com.theholymatrimony.backend.secureconnect.dto.SecureConnectMediaCredentials;
+import com.theholymatrimony.backend.secureconnect.dto.SecureConnectUsageBalance;
 import com.theholymatrimony.backend.secureconnect.entity.SecureConnectCallSession;
 import com.theholymatrimony.backend.secureconnect.enums.CallStatus;
 import com.theholymatrimony.backend.secureconnect.provider.CallProvider;
@@ -12,6 +20,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 @Service
@@ -23,11 +34,20 @@ public class SecureConnectMediaServiceImpl
     private final UserBlockRepository userBlockRepository;
     private final CallProvider callProvider;
 
+    private final SecureConnectUsageService usageService;
+
+    private final MembershipRepository membershipRepository;
+
+    private final SecureConnectBalanceService balanceService;
+
     public SecureConnectMediaServiceImpl(
             UserRepository userRepository,
             SecureConnectCallSessionRepository callSessionRepository,
             UserBlockRepository userBlockRepository,
-            CallProvider callProvider
+            CallProvider callProvider,
+            SecureConnectUsageService usageService,
+            MembershipRepository membershipRepository,
+            SecureConnectBalanceService balanceService
     ) {
         this.userRepository =
                 userRepository;
@@ -40,6 +60,15 @@ public class SecureConnectMediaServiceImpl
 
         this.callProvider =
                 callProvider;
+
+        this.usageService =
+                usageService;
+
+        this.membershipRepository =
+                membershipRepository;
+
+        this.balanceService =
+                balanceService;
     }
 
     @Override
@@ -159,6 +188,125 @@ public class SecureConnectMediaServiceImpl
             );
         }
 
+        /*
+         * The call-row lock serializes this check with call termination.
+         * Never issue another provider token after the connected call's
+         * original membership or purchased-time boundary.
+         *
+         * Before media connects, connectedAt is null. Membership
+         * validation for that transition belongs to markConnected().
+         */
+        LocalDateTime authorizationDeadline;
+
+        if (call.getConnectedAt() == null) {
+        // Lock the caller after the call row and before
+        // membership, plan allowance and wallet authorization.
+        userRepository.findForUpdate(caller.getId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Caller account was not found."
+                ));
+
+
+            Membership membership = membershipRepository
+                    .findFirstByUserIdAndStatusOrderByStartDateDesc(
+                            caller.getId(),
+                            MembershipStatus.ACTIVE
+                    )
+                    .orElseThrow(() ->
+                            new IllegalStateException(
+                                    "An active paid membership is required for Secure Connect."
+                            )
+                    );
+
+            LocalDateTime now = LocalDateTime.now();
+
+            if (membership.getUser() == null
+                    || !caller.getId().equals(
+                            membership.getUser().getId()
+                    )
+                    || membership.getPlan() == null
+                    || membership.getPlan() == MembershipPlan.FREE
+                    || membership.getStartDate() == null
+                    || membership.getExpiryDate() == null
+                    || now.isBefore(membership.getStartDate())
+                    || !now.isBefore(membership.getExpiryDate())) {
+                throw new IllegalStateException(
+                        "The caller's paid membership is not currently valid."
+                );
+            }
+
+            if (call.getMediaType() == CallMediaType.VIDEO
+                    && membership.getPlan() == MembershipPlan.SILVER) {
+                throw new IllegalStateException(
+                        "Silver members cannot initiate video calls."
+                );
+            }
+
+            SecureConnectMediaBalanceResponse mediaBalance =
+                    balanceService.getLockedBalanceForMembership(
+                            caller,
+                            membership,
+                            call.getMediaType()
+                    );
+
+            if (!mediaBalance.isCanInitiate()
+                    || (!mediaBalance.isUnlimited()
+                    && mediaBalance.getTotalRemainingSeconds() <= 0L)) {
+                throw new IllegalStateException(
+                        "No available Secure Connect calling minutes."
+                );
+            }
+
+            authorizationDeadline = membership.getExpiryDate();
+        }
+
+        else {
+            if (call.getEndedAt() != null
+                    || call.getConnectedMembership() == null
+                    || call.getConnectedMembership().getExpiryDate() == null) {
+                throw new IllegalStateException(
+                        "Connected call membership or state is invalid."
+                );
+            }
+
+            SecureConnectUsageBalance balance =
+                    usageService.getRemainingBalance(callId);
+
+            if (balance == null) {
+                throw new IllegalStateException(
+                        "Connected call balance is unavailable."
+                );
+            }
+
+            LocalDateTime boundary =
+                    call.getConnectedMembership().getExpiryDate();
+
+            if (!balance.unlimited()) {
+                if (balance.totalRemainingSeconds() <= 0L) {
+                    throw new IllegalStateException(
+                            "Secure Connect call time has been exhausted."
+                    );
+                }
+
+                LocalDateTime paidBoundary =
+                        call.getConnectedAt().plusSeconds(
+                                balance.totalRemainingSeconds()
+                        );
+
+                if (paidBoundary.isBefore(boundary)) {
+                    boundary = paidBoundary;
+                }
+            }
+
+            if (!LocalDateTime.now().isBefore(boundary)) {
+                throw new IllegalStateException(
+                        "Secure Connect call time or membership has expired."
+                );
+            }
+
+            authorizationDeadline = boundary;
+        }
+
         String providerName =
                 callProvider.providerName();
 
@@ -205,10 +353,15 @@ public class SecureConnectMediaServiceImpl
                 call
         );
 
+        Instant tokenDeadline = authorizationDeadline
+                .atZone(ZoneId.systemDefault())
+                .toInstant();
+
         return callProvider
                 .createParticipantCredentials(
                         call,
-                        authenticatedUserId
+                        authenticatedUserId,
+                        tokenDeadline
                 );
     }
 }

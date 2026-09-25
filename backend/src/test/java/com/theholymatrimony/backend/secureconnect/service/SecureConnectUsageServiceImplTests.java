@@ -119,6 +119,11 @@ class SecureConnectUsageServiceImplTests {
                 .answeredAt(LocalDateTime.now().minusMinutes(4))
                 .build();
 
+        call.setConnectedAt(
+                LocalDateTime.now().minusMinutes(4)
+        );
+        call.setConnectedMembership(membership);
+
         when(callSessionRepository.findForUpdate(call.getId()))
                 .thenReturn(Optional.of(call));
 
@@ -510,6 +515,155 @@ class SecureConnectUsageServiceImplTests {
 
         verify(callSessionRepository, never())
                 .findForUpdate(any());
+    }
+
+    @Test
+    void remainingBalanceCombinesPlanAndTopUp() {
+        SecureConnectPlanAllowance allowance =
+                allowance(3600L, 1200L);
+
+        SecureConnectWallet wallet =
+                wallet(900L);
+
+        when(planAllowanceRepository.findForUpdate(
+                membership.getId(),
+                CallMediaType.AUDIO
+        )).thenReturn(Optional.of(allowance));
+
+        when(walletRepository.findForUpdate(
+                callerId,
+                CallMediaType.AUDIO
+        )).thenReturn(Optional.of(wallet));
+
+        var result =
+                service.getRemainingBalance(
+                        call.getId()
+                );
+
+        assertFalse(result.unlimited());
+        assertEquals(2400L, result.planRemainingSeconds());
+        assertEquals(900L, result.topUpRemainingSeconds());
+        assertEquals(3300L, result.totalRemainingSeconds());
+
+        verify(planAllowanceRepository).findForUpdate(
+                membership.getId(),
+                CallMediaType.AUDIO
+        );
+
+        verify(walletRepository).findForUpdate(
+                callerId,
+                CallMediaType.AUDIO
+        );
+
+        verify(planAllowanceRepository, never()).save(any());
+        verify(walletRepository, never()).save(any());
+        verify(ledgerRepository, never())
+                .save(any(SecureConnectLedgerEntry.class));
+    }
+
+    @Test
+    void remainingBalanceCanBeZero() {
+        SecureConnectPlanAllowance allowance =
+                allowance(3600L, 3600L);
+
+        SecureConnectWallet wallet =
+                wallet(0L);
+
+        when(planAllowanceRepository.findForUpdate(
+                membership.getId(),
+                CallMediaType.AUDIO
+        )).thenReturn(Optional.of(allowance));
+
+        when(walletRepository.findForUpdate(
+                callerId,
+                CallMediaType.AUDIO
+        )).thenReturn(Optional.of(wallet));
+
+        var result =
+                service.getRemainingBalance(
+                        call.getId()
+                );
+
+        assertFalse(result.unlimited());
+        assertEquals(0L, result.planRemainingSeconds());
+        assertEquals(0L, result.topUpRemainingSeconds());
+        assertEquals(0L, result.totalRemainingSeconds());
+
+        verify(planAllowanceRepository, never()).save(any());
+        verify(walletRepository, never()).save(any());
+        verify(ledgerRepository, never())
+                .save(any(SecureConnectLedgerEntry.class));
+    }
+
+    @Test
+    void platinumRemainingBalanceIsUnlimited() {
+        membership.setPlan(MembershipPlan.PLATINUM);
+
+        when(membershipEntitlementService.hasFeature(
+                callerId,
+                MembershipFeature.UNLIMITED_SECURE_CONNECT
+        )).thenReturn(true);
+
+        when(walletRepository.findByUserIdAndMediaType(
+                callerId,
+                CallMediaType.AUDIO
+        )).thenReturn(
+                Optional.of(
+                        wallet(1200L)
+                )
+        );
+
+        var result =
+                service.getRemainingBalance(
+                        call.getId()
+                );
+
+        assertTrue(result.unlimited());
+        assertEquals(0L, result.planRemainingSeconds());
+        assertEquals(1200L, result.topUpRemainingSeconds());
+        assertEquals(
+                Long.MAX_VALUE,
+                result.totalRemainingSeconds()
+        );
+
+        verify(planAllowanceRepository, never())
+                .findForUpdate(any(), any());
+
+        verify(walletRepository, never())
+                .findForUpdate(any(), any());
+
+        verify(planAllowanceRepository, never()).save(any());
+        verify(walletRepository, never()).save(any());
+        verify(ledgerRepository, never())
+                .save(any(SecureConnectLedgerEntry.class));
+    }
+
+    @Test
+    void expiredBoundMembershipRetainsAccountingAccess() {
+        membership.setExpiryDate(
+                LocalDateTime.now().minusMinutes(1)
+        );
+
+        call.setConnectedAt(
+                LocalDateTime.now().minusDays(1)
+        );
+
+        when(planAllowanceRepository.findForUpdate(
+                membership.getId(),
+                CallMediaType.AUDIO
+        )).thenReturn(
+                Optional.of(allowance(1000L, 500L))
+        );
+
+        var balance = service.getRemainingBalance(
+                call.getId()
+        );
+
+        assertFalse(balance.unlimited());
+        assertEquals(
+                500L,
+                balance.planRemainingSeconds()
+        );
     }
 
     private SecureConnectPlanAllowance allowance(

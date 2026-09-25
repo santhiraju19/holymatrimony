@@ -154,6 +154,41 @@ public class SecureConnectRealtimePublisherImpl
         );
     }
 
+    @Override
+    public void publishServerEndedCall(
+            SecureConnectCallSession call
+    ) {
+        if (call == null) {
+            return;
+        }
+
+        User caller = call.getCaller();
+        User callee = call.getCallee();
+
+        if (caller == null || callee == null) {
+            return;
+        }
+
+        /*
+         * A balance-expiry termination is performed by the
+         * server rather than either participant. Both clients
+         * therefore need the terminal event.
+         */
+        publishToParticipant(
+                caller,
+                callee,
+                call,
+                SecureConnectCallEventType.CALL_ENDED
+        );
+
+        publishToParticipant(
+                callee,
+                caller,
+                call,
+                SecureConnectCallEventType.CALL_ENDED
+        );
+    }
+
     private void publishToParticipant(
             User recipient,
             User otherMember,

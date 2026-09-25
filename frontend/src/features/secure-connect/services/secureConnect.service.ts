@@ -3,8 +3,13 @@ import api from "@/lib/api";
 import {
   CallMediaType,
   InitiateSecureConnectCallRequest,
+  CreateSecureConnectTopUpResponse,
+  SecureConnectBalance,
   SecureConnectCall,
   SecureConnectMediaCredentials,
+  SecureConnectTopUpPackage,
+  SecureConnectTopUpStatus,
+  VerifySecureConnectTopUpRequest,
 } from "../types";
 
 const CALLS_PATH =
@@ -25,6 +30,61 @@ function callActionPath(
 }
 
 export const secureConnectService = {
+  async getBalance(): Promise<SecureConnectBalance> {
+    const response =
+      await api.get<SecureConnectBalance>(
+        "/secure-connect/balance"
+      );
+
+    return response.data;
+  },
+
+  async getTopUpPackages():
+    Promise<SecureConnectTopUpPackage[]> {
+    const response =
+      await api.get<SecureConnectTopUpPackage[]>(
+        "/secure-connect/topups/packages"
+      );
+
+    return response.data;
+  },
+
+  async createTopUpOrder(
+    packageCode: string
+  ): Promise<CreateSecureConnectTopUpResponse> {
+    const response =
+      await api.post<CreateSecureConnectTopUpResponse>(
+        "/secure-connect/topups/create-order",
+        {
+          packageCode,
+        }
+      );
+
+    return response.data;
+  },
+
+  async verifyTopUpPayment(
+    request: VerifySecureConnectTopUpRequest
+  ): Promise<void> {
+    await api.post(
+      "/secure-connect/topups/verify",
+      request
+    );
+  },
+
+  async getTopUpStatus(
+    topUpPaymentId: string
+  ): Promise<SecureConnectTopUpStatus> {
+    const response =
+      await api.get<SecureConnectTopUpStatus>(
+        `/secure-connect/topups/${encodeURIComponent(
+          topUpPaymentId
+        )}`
+      );
+
+    return response.data;
+  },
+
   async initiateCall(
     calleeUserId: string,
     mediaType: CallMediaType

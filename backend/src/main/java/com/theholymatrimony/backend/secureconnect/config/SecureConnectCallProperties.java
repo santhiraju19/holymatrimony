@@ -10,6 +10,9 @@ public class SecureConnectCallProperties {
     private long ringTimeoutSeconds = 45;
     private long missedScanIntervalMillis = 5000;
 
+    private long balanceScanIntervalMillis = 1000;
+
+
     public long getRingTimeoutSeconds() {
         return ringTimeoutSeconds;
     }
@@ -43,4 +46,22 @@ public class SecureConnectCallProperties {
         this.missedScanIntervalMillis =
                 missedScanIntervalMillis;
     }
+
+    public long getBalanceScanIntervalMillis() {
+        return balanceScanIntervalMillis;
+    }
+
+    public void setBalanceScanIntervalMillis(
+            long balanceScanIntervalMillis
+    ) {
+        if (balanceScanIntervalMillis < 500) {
+            throw new IllegalArgumentException(
+                    "Secure Connect balance scan interval must be at least 500 ms."
+            );
+        }
+
+        this.balanceScanIntervalMillis =
+                balanceScanIntervalMillis;
+    }
+
 }

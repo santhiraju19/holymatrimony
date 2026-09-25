@@ -1,6 +1,7 @@
 package com.theholymatrimony.backend.secureconnect.entity;
 
 import com.theholymatrimony.backend.auth.entity.User;
+import com.theholymatrimony.backend.payments.entity.Membership;
 import com.theholymatrimony.backend.secureconnect.enums.CallMediaType;
 import com.theholymatrimony.backend.secureconnect.enums.CallStatus;
 import jakarta.persistence.*;
@@ -52,6 +53,10 @@ public class SecureConnectCallSession {
 
     @Column(name = "connected_at")
     private LocalDateTime connectedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "connected_membership_id")
+    private Membership connectedMembership;
 
     @Column(name = "ended_at")
     private LocalDateTime endedAt;

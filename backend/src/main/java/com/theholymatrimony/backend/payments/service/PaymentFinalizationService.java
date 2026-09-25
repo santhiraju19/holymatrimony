@@ -8,7 +8,10 @@ import com.theholymatrimony.backend.payments.enums.MembershipStatus;
 import com.theholymatrimony.backend.payments.enums.PaymentSource;
 import com.theholymatrimony.backend.payments.enums.PaymentStatus;
 import com.theholymatrimony.backend.payments.repository.MembershipRepository;
+import com.theholymatrimony.backend.auth.repository.UserRepository;
 import com.theholymatrimony.backend.payments.repository.PaymentRepository;
+import com.theholymatrimony.backend.secureconnect.service.SecureConnectAllowanceProvisioningService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +23,11 @@ import java.time.LocalDateTime;
 public class PaymentFinalizationService {
 
     private final PaymentRepository paymentRepository;
+    private final UserRepository userRepository;
     private final MembershipRepository membershipRepository;
+
+    private final SecureConnectAllowanceProvisioningService
+            secureConnectAllowanceProvisioningService;
 
     /*
      * ============================================================
@@ -166,6 +173,13 @@ public class PaymentFinalizationService {
     private void activateMembership(
             Payment payment
     ) {
+
+        // Serialize membership activation for this user.
+        userRepository.findForUpdate(payment.getUser().getId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Payment user was not found."
+                ));
+
         /*
          * If this payment already owns a membership,
          * don't create another one.
@@ -247,9 +261,15 @@ public class PaymentFinalizationService {
                         .autoRenew(false)
                         .build();
 
-        membershipRepository.save(
-                membership
-        );
+        Membership savedMembership =
+                membershipRepository.save(
+                        membership
+                );
+
+        secureConnectAllowanceProvisioningService
+                .provisionForMembership(
+                        savedMembership
+                );
     }
 
     private LocalDateTime calculateExpiryDate(

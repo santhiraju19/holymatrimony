@@ -11,7 +11,24 @@ import {
   Sparkles,
 } from "lucide-react";
 
-const features = [
+type FeatureValue =
+  | boolean
+  | string;
+
+interface ComparisonItem {
+  name: string;
+  free: FeatureValue;
+  silver: FeatureValue;
+  gold: FeatureValue;
+  platinum: FeatureValue;
+}
+
+interface ComparisonGroup {
+  category: string;
+  items: ComparisonItem[];
+}
+
+const features: ComparisonGroup[] = [
   {
     category: "Profile",
     items: [
@@ -38,7 +55,6 @@ const features = [
       },
     ],
   },
-
   {
     category: "Search",
     items: [
@@ -65,7 +81,6 @@ const features = [
       },
     ],
   },
-
   {
     category: "Communication",
     items: [
@@ -90,9 +105,29 @@ const features = [
         gold: true,
         platinum: true,
       },
+      {
+        name: "Secure Audio Calling",
+        free: false,
+        silver: "120 min",
+        gold: "60 min",
+        platinum: "Unlimited",
+      },
+      {
+        name: "Secure Video Calling",
+        free: false,
+        silver: "Receive only",
+        gold: "60 min",
+        platinum: "Unlimited",
+      },
+      {
+        name: "Secure Call Top-Ups",
+        free: false,
+        silver: "Audio",
+        gold: "Audio + Video",
+        platinum: "Not needed",
+      },
     ],
   },
-
   {
     category: "Premium",
     items: [
@@ -125,7 +160,7 @@ function Cell({
   value,
   emphasized = false,
 }: {
-  value: boolean;
+  value: FeatureValue;
   emphasized?: boolean;
 }) {
   return (
@@ -137,7 +172,11 @@ function Cell({
           : "",
       ].join(" ")}
     >
-      {value ? (
+      {typeof value === "string" ? (
+        <span className="inline-flex min-h-6 items-center justify-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[9px] font-black text-slate-700 sm:text-[10px]">
+          {value}
+        </span>
+      ) : value ? (
         <span className="mx-auto flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
           <Check
             size={13}
@@ -275,6 +314,10 @@ export default function FeatureComparison() {
             </table>
           </div>
         </div>
+
+        <p className="mx-auto mt-4 max-w-3xl text-center text-[10px] leading-5 text-slate-400 sm:text-xs">
+          Secure Connect allowances apply to calls you initiate. Silver members may receive secure video calls from eligible Gold or Platinum members. Purchased top-up minutes are separate from included plan minutes.
+        </p>
       </div>
     </section>
   );

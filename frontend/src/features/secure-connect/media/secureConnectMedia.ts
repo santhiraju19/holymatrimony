@@ -1,4 +1,5 @@
 import {
+  DisconnectReason,
   LocalAudioTrack,
   LocalVideoTrack,
   RemoteParticipant,
@@ -192,10 +193,22 @@ export async function createSecureConnectMediaSession(
     refreshRemoteTracks();
   };
 
-  const handleDisconnected = () => {
-    onStatusChange?.("disconnected");
+  const handleDisconnected = (
+    reason?: DisconnectReason
+  ) => {
+    microphoneTrack?.stop();
+    cameraTrack?.stop();
+
     onRemoteAudioTrack?.(null);
     onRemoteVideoTrack?.(null);
+
+    if (reason === DisconnectReason.ROOM_DELETED) {
+      onError?.(
+        "This call has been ended by the server."
+      );
+    }
+
+    onStatusChange?.("disconnected");
   };
 
   room.on(

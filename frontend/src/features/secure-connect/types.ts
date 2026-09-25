@@ -76,3 +76,70 @@ export interface SecureConnectActiveCall {
   direction: SecureConnectCallDirection;
   otherMember: SecureConnectMember | null;
 }
+
+export interface SecureConnectMediaBalance {
+  mediaType: CallMediaType;
+  canInitiate: boolean;
+  unlimited: boolean;
+  planAllowanceSeconds: number;
+  planConsumedSeconds: number;
+  planRemainingSeconds: number;
+  topUpRemainingSeconds: number;
+  totalRemainingSeconds: number;
+}
+
+export interface SecureConnectBalance {
+  plan:
+    | "FREE"
+    | "SILVER"
+    | "GOLD"
+    | "PLATINUM";
+
+  activeMembership: boolean;
+
+  audio: SecureConnectMediaBalance;
+
+  video: SecureConnectMediaBalance;
+}
+
+export type SecureConnectTopUpPaymentStatus =
+  | "PENDING"
+  | "SUCCESS"
+  | "FAILED";
+
+export interface SecureConnectTopUpPackage {
+  packageCode: string;
+  mediaType: CallMediaType;
+  minutes: number;
+  seconds: number;
+  amount: number;
+  currency: string;
+}
+
+export interface CreateSecureConnectTopUpResponse {
+  topUpPaymentId: string;
+  packageCode: string;
+  mediaType: CallMediaType;
+  minutes: number;
+  seconds: number;
+  amount: number;
+  currency: string;
+  orderId: string;
+  key: string;
+}
+
+export interface SecureConnectTopUpStatus {
+  topUpPaymentId: string;
+  mediaType: CallMediaType;
+  minutes: number;
+  seconds: number;
+  amount: number;
+  currency: string;
+  status: SecureConnectTopUpPaymentStatus;
+}
+
+export interface VerifySecureConnectTopUpRequest {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}

@@ -22,6 +22,11 @@ public interface SecureConnectCallSessionRepository
             UUID calleeId
     );
 
+    boolean existsByCallerIdAndStatusIn(
+            UUID callerId,
+            List<CallStatus> statuses
+    );
+
     boolean existsByCallerIdAndCalleeIdAndStatus(
             UUID callerId,
             UUID calleeId,
@@ -39,6 +44,17 @@ public interface SecureConnectCallSessionRepository
     List<UUID> findIdsByStatusAndInitiatedAtBefore(
             @Param("status") CallStatus status,
             @Param("cutoff") LocalDateTime cutoff
+    );
+
+    @Query("""
+            select c.id
+            from SecureConnectCallSession c
+            where c.status = :status
+              and c.connectedAt is not null
+            order by c.connectedAt asc
+            """)
+    List<UUID> findIdsByStatusAndConnectedAtIsNotNull(
+            @Param("status") CallStatus status
     );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

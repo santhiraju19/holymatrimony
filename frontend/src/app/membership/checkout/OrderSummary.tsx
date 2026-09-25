@@ -107,10 +107,17 @@ interface RazorpayConstructor {
   ): RazorpayInstance;
 }
 
-declare global {
-  interface Window {
-    Razorpay?: RazorpayConstructor;
+function getRazorpayConstructor():
+  RazorpayConstructor | undefined {
+  if (typeof window === "undefined") {
+    return undefined;
   }
+
+  return (
+    window as unknown as {
+      Razorpay?: RazorpayConstructor;
+    }
+  ).Razorpay;
 }
 
 /*
@@ -172,7 +179,7 @@ function loadRazorpayScript():
       }
 
       if (
-        window.Razorpay
+        getRazorpayConstructor()
       ) {
         resolve(true);
         return;
@@ -485,9 +492,12 @@ export default function OrderSummary() {
       const scriptLoaded =
         await loadRazorpayScript();
 
+      const Razorpay =
+        getRazorpayConstructor();
+
       if (
         !scriptLoaded ||
-        !window.Razorpay
+        !Razorpay
       ) {
         throw new Error(
           "Unable to load the secure payment window. Please check your internet connection and try again."
@@ -627,7 +637,7 @@ export default function OrderSummary() {
         };
 
       const razorpay =
-        new window.Razorpay(
+        new Razorpay(
           options
         );
 

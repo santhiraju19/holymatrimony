@@ -55,6 +55,8 @@ export const membershipPlans: MembershipPlan[] = [
       "View Phone Number",
       "Chat Access",
       "Priority Search",
+      "120 min Secure Audio Calling",
+      "Audio Call Top-Ups Available",
     ],
   },
 
@@ -76,13 +78,16 @@ export const membershipPlans: MembershipPlan[] = [
     buttonText: "Choose Gold",
 
     features: [
-      "Everything in Silver",
+      "Silver Features (with Gold Calling Allowances)",
       "Highlighted Profile",
       "Unlimited Chat",
       "Who's Viewed Me",
       "Advanced Filters",
       "Compatibility Score",
       "Priority Customer Support",
+      "60 min Secure Audio Calling",
+      "60 min Secure Video Calling",
+      "Audio & Video Call Top-Ups Available",
     ],
   },
 
@@ -102,7 +107,8 @@ export const membershipPlans: MembershipPlan[] = [
     buttonText: "Choose Platinum",
 
     features: [
-      "Everything in Gold",
+      "Gold Features (with Unlimited Calling)",
+      "Unlimited Secure Audio & Video Calling",
       "Dedicated Relationship Manager",
       "Top Search Placement",
       "Verified Premium Badge",

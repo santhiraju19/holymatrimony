@@ -2,13 +2,21 @@ package com.theholymatrimony.backend.secureconnect.service;
 
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.auth.repository.UserRepository;
+import com.theholymatrimony.backend.payments.entity.Membership;
+import com.theholymatrimony.backend.payments.enums.MembershipPlan;
+import com.theholymatrimony.backend.payments.enums.MembershipStatus;
+import com.theholymatrimony.backend.payments.repository.MembershipRepository;
 import com.theholymatrimony.backend.secureconnect.dto.SecureConnectAuthorizationResponse;
 import com.theholymatrimony.backend.secureconnect.dto.SecureConnectCallResponse;
+import com.theholymatrimony.backend.secureconnect.dto.SecureConnectUsageBalance;
+import com.theholymatrimony.backend.secureconnect.balance.service.SecureConnectBalanceService;
+import com.theholymatrimony.backend.secureconnect.balance.dto.SecureConnectMediaBalanceResponse;
 import com.theholymatrimony.backend.secureconnect.entity.SecureConnectCallSession;
 import com.theholymatrimony.backend.secureconnect.enums.CallMediaType;
 import com.theholymatrimony.backend.secureconnect.enums.CallStatus;
 import com.theholymatrimony.backend.secureconnect.repository.SecureConnectCallSessionRepository;
 import com.theholymatrimony.backend.secureconnect.realtime.SecureConnectRealtimePublisher;
+import com.theholymatrimony.backend.secureconnect.termination.SecureConnectMediaTerminationQueue;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +36,10 @@ public class SecureConnectCallServiceImpl
     private final SecureConnectAuthorizationService authorizationService;
     private final SecureConnectUsageService usageService;
     private final SecureConnectRealtimePublisher realtimePublisher;
+    private final SecureConnectMediaTerminationQueue terminationQueue;
+
+    private final MembershipRepository membershipRepository;
+    private final SecureConnectBalanceService balanceService;
 
     @Override
     @Transactional
@@ -70,6 +82,22 @@ public class SecureConnectCallServiceImpl
                                 "Recipient account was not found."
                         )
                 );
+
+        boolean hasActiveOutgoingCall =
+                callSessionRepository
+                        .existsByCallerIdAndStatusIn(
+                                caller.getId(),
+                                java.util.List.of(
+                                        CallStatus.RINGING,
+                                        CallStatus.ACCEPTED
+                                )
+                        );
+
+        if (hasActiveOutgoingCall) {
+            throw new IllegalStateException(
+                    "You already have an active outgoing Secure Connect call."
+            );
+        }
 
         boolean alreadyRinging =
                 callSessionRepository
@@ -174,14 +202,63 @@ public class SecureConnectCallServiceImpl
          * The first report establishes the authoritative timestamp.
          */
         if (call.getConnectedAt() == null) {
-            LocalDateTime connectedAt =
-                    LocalDateTime.now();
 
+            // Serialize first connection with membership activation.
+            userRepository.findForUpdate(call.getCaller().getId())
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Caller account was not found."
+                    ));
+
+            LocalDateTime connectedAt = LocalDateTime.now();
+
+            Membership membership = membershipRepository
+                    .findFirstByUserIdAndStatusOrderByStartDateDesc(
+                            call.getCaller().getId(),
+                            MembershipStatus.ACTIVE
+                    )
+                    .orElseThrow(() -> new IllegalStateException(
+                            "An active membership is required to connect."
+                    ));
+
+            if (membership.getId() == null
+                    || membership.getUser() == null
+                    || !call.getCaller().getId().equals(
+                            membership.getUser().getId()
+                    )
+                    || membership.getPlan() == null
+                    || membership.getPlan() == MembershipPlan.FREE
+                    || membership.getStartDate() == null
+                    || membership.getStartDate().isAfter(connectedAt)
+                    || membership.getExpiryDate() == null
+                    || !membership.getExpiryDate().isAfter(connectedAt)
+                    || (call.getMediaType() == CallMediaType.VIDEO
+                        && membership.getPlan() == MembershipPlan.SILVER)) {
+                throw new IllegalStateException(
+                        "The caller's membership does not permit this connection."
+                );
+            }
+
+            SecureConnectMediaBalanceResponse availableBalance =
+                    balanceService.getLockedBalanceForMembership(
+                            call.getCaller(),
+                            membership,
+                            call.getMediaType()
+                    );
+
+            if (availableBalance == null
+                    || !availableBalance.isCanInitiate()
+                    || (!availableBalance.isUnlimited()
+                        && availableBalance.getTotalRemainingSeconds() <= 0L)) {
+                throw new IllegalStateException(
+                        "No available Secure Connect calling minutes."
+                );
+            }
+
+            call.setConnectedMembership(membership);
             call.setConnectedAt(connectedAt);
             call.setUpdatedAt(connectedAt);
 
-            call =
-                    callSessionRepository.save(call);
+            call = callSessionRepository.save(call);
         }
 
         return toResponse(call);
@@ -218,6 +295,8 @@ public class SecureConnectCallServiceImpl
 
         SecureConnectCallSession savedCall =
                 callSessionRepository.save(call);
+
+        terminationQueue.enqueue(savedCall);
 
         realtimePublisher.publishDeclinedCall(savedCall);
 
@@ -256,6 +335,8 @@ public class SecureConnectCallServiceImpl
         SecureConnectCallSession savedCall =
                 callSessionRepository.save(call);
 
+        terminationQueue.enqueue(savedCall);
+
         realtimePublisher.publishCancelledCall(savedCall);
 
         return toResponse(savedCall);
@@ -282,6 +363,8 @@ public class SecureConnectCallServiceImpl
 
         SecureConnectCallSession savedCall =
                 callSessionRepository.save(call);
+
+        terminationQueue.enqueue(savedCall);
 
         realtimePublisher.publishMissedCall(savedCall);
 
@@ -316,9 +399,83 @@ public class SecureConnectCallServiceImpl
         SecureConnectCallSession savedCall =
                 callSessionRepository.save(call);
 
+        terminationQueue.enqueue(savedCall);
+
         realtimePublisher.publishMissedCall(
                 savedCall
         );
+
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public boolean endIfBalanceExhausted(
+            UUID callId
+    ) {
+        if (callId == null) {
+            return false;
+        }
+
+        SecureConnectCallSession call =
+                callSessionRepository.findForUpdate(callId)
+                        .orElse(null);
+
+        /*
+         * A normal participant /end request may have won the race.
+         * In that case the scheduler must do nothing.
+         */
+        if (call == null
+                || call.getStatus() != CallStatus.ACCEPTED
+                || call.getConnectedAt() == null
+                || call.getEndedAt() != null) {
+            return false;
+        }
+
+        if (call.getConnectedMembership() == null
+                || call.getConnectedMembership().getExpiryDate() == null) {
+            throw new IllegalStateException(
+                    "Connected call membership is missing."
+            );
+        }
+
+        SecureConnectUsageBalance balance =
+                usageService.getRemainingBalance(callId);
+
+        LocalDateTime connectedAt = call.getConnectedAt();
+
+        LocalDateTime boundary =
+                calculateTerminationBoundary(call, balance);
+
+        if (LocalDateTime.now().isBefore(boundary)) {
+            return false;
+        }
+
+        long permittedSeconds = Math.max(
+                0L,
+                java.time.Duration.between(
+                        connectedAt,
+                        boundary
+                ).getSeconds()
+        );
+
+        if (permittedSeconds > 0L) {
+            usageService.finalizeUsage(
+                    callId,
+                    permittedSeconds
+            );
+        }
+
+        call.setEndedAt(boundary);
+        call.setDurationSeconds(permittedSeconds);
+        call.setStatus(CallStatus.ENDED);
+
+        SecureConnectCallSession saved =
+                callSessionRepository.save(call);
+
+        terminationQueue.enqueue(saved);
+
+        realtimePublisher.publishServerEndedCall(saved);
 
         return true;
     }
@@ -342,23 +499,63 @@ public class SecureConnectCallServiceImpl
 
         if (call.getStatus() == CallStatus.ACCEPTED
                 && call.getConnectedAt() != null) {
-            long durationSeconds =
+
+            SecureConnectUsageBalance balance =
+                    usageService.getRemainingBalance(call.getId());
+
+            LocalDateTime boundary =
+                    calculateTerminationBoundary(call, balance);
+
+            LocalDateTime effectiveEnd =
+                    now.isBefore(boundary)
+                            ? now
+                            : boundary;
+
+            long chargeableSeconds = Math.max(
+                    0L,
                     calculateDurationSeconds(
                             call.getConnectedAt(),
-                            now
-                    );
+                            effectiveEnd
+                    )
+            );
 
-            call.setDurationSeconds(durationSeconds);
+            if (chargeableSeconds == 0L
+                    && effectiveEnd.isAfter(call.getConnectedAt())
+                    && (balance.unlimited()
+                        || balance.totalRemainingSeconds() > 0L)
+                    && !boundary.isBefore(
+                            call.getConnectedAt().plusSeconds(1)
+                    )) {
+                chargeableSeconds = 1L;
+            }
+
+            if (chargeableSeconds > 0L) {
+                usageService.finalizeUsage(
+                        call.getId(),
+                        chargeableSeconds
+                );
+            }
+
+            call.setDurationSeconds(chargeableSeconds);
+            call.setStatus(CallStatus.FAILED);
+            call.setEndedAt(effectiveEnd);
+            call.setUpdatedAt(now);
+
         } else {
+            /*
+             * Ringing calls and accepted calls that never established
+             * media consumed no Secure Connect allowance.
+             */
             call.setDurationSeconds(0L);
+            call.setStatus(CallStatus.FAILED);
+            call.setEndedAt(now);
+            call.setUpdatedAt(now);
         }
-
-        call.setStatus(CallStatus.FAILED);
-        call.setEndedAt(now);
-        call.setUpdatedAt(now);
 
         SecureConnectCallSession savedCall =
                 callSessionRepository.save(call);
+
+        terminationQueue.enqueue(savedCall);
 
         realtimePublisher.publishFailedCall(savedCall);
 
@@ -432,6 +629,8 @@ public class SecureConnectCallServiceImpl
             SecureConnectCallSession savedCall =
                     callSessionRepository.save(call);
 
+            terminationQueue.enqueue(savedCall);
+
             realtimePublisher.publishEndedCall(
                     savedCall,
                     authenticatedUser
@@ -440,66 +639,57 @@ public class SecureConnectCallServiceImpl
             return toResponse(savedCall);
         }
 
-        LocalDateTime accountingAt =
-                LocalDateTime.now();
+        SecureConnectUsageBalance balance =
+                usageService.getRemainingBalance(call.getId());
 
-        long connectedDurationSeconds =
+        LocalDateTime accountingAt = LocalDateTime.now();
+
+        LocalDateTime boundary =
+                calculateTerminationBoundary(call, balance);
+
+        LocalDateTime effectiveEnd =
+                accountingAt.isBefore(boundary)
+                        ? accountingAt
+                        : boundary;
+
+        long chargeableSeconds = Math.max(
+                0L,
                 calculateDurationSeconds(
                         call.getConnectedAt(),
-                        accountingAt
-                );
-
-        /*
-         * Connected media is chargeable for at least one second.
-         * This handles a call that connects and ends inside the
-         * same whole-second Duration interval.
-         */
-        long chargeableSeconds =
-                Math.max(
-                        1L,
-                        connectedDurationSeconds
-                );
-
-        /*
-         * finalizeUsage() joins this transaction, performs
-         * idempotent accounting, and finalizes the call as ENDED.
-         */
-        usageService.finalizeUsage(
-                call.getId(),
-                chargeableSeconds
+                        effectiveEnd
+                )
         );
 
         /*
-         * Because the usage service operates in the same
-         * persistence transaction, this entity reflects the
-         * finalized call state.
-         *
-         * Keep a defensive fallback for implementations/tests that
-         * return without changing the call lifecycle.
+         * Connected calls ending within their first second
+         * consume one second only when at least one full
+         * permitted second remains.
          */
-        if (call.getStatus() != CallStatus.ENDED) {
-            LocalDateTime endedAt =
-                    LocalDateTime.now();
-
-            long finalDurationSeconds =
-                    calculateDurationSeconds(
-                            call.getConnectedAt(),
-                            endedAt
-                    );
-
-            call.setStatus(CallStatus.ENDED);
-            call.setEndedAt(endedAt);
-            call.setDurationSeconds(
-                    Math.max(
-                            chargeableSeconds,
-                            finalDurationSeconds
-                    )
-            );
-            call.setUpdatedAt(endedAt);
-
-            call =
-                    callSessionRepository.save(call);
+        if (chargeableSeconds == 0L
+                && effectiveEnd.isAfter(call.getConnectedAt())
+                && (balance.unlimited()
+                    || balance.totalRemainingSeconds() > 0L)
+                && !boundary.isBefore(
+                        call.getConnectedAt().plusSeconds(1)
+                )) {
+            chargeableSeconds = 1L;
         }
+
+        if (chargeableSeconds > 0L) {
+            usageService.finalizeUsage(
+                    call.getId(),
+                    chargeableSeconds
+            );
+        }
+
+        call.setStatus(CallStatus.ENDED);
+        call.setEndedAt(effectiveEnd);
+        call.setDurationSeconds(chargeableSeconds);
+        call.setUpdatedAt(accountingAt);
+
+        call = callSessionRepository.save(call);
+
+        terminationQueue.enqueue(call);
 
         realtimePublisher.publishEndedCall(
                 call,
@@ -647,6 +837,51 @@ public class SecureConnectCallServiceImpl
         call.setEndedAt(now);
         call.setDurationSeconds(0L);
         call.setUpdatedAt(now);
+    }
+
+    /**
+     * Calculates the latest permitted media termination time.
+     *
+     * Balance represents the available seconds for this call,
+     * measured from its authoritative connectedAt timestamp.
+     *
+     * Platinum has unlimited minutes, but its membership still
+     * has an expiry date.
+     */
+    private LocalDateTime calculateTerminationBoundary(
+            SecureConnectCallSession call,
+            SecureConnectUsageBalance balance
+    ) {
+        if (call.getConnectedAt() == null
+                || call.getConnectedMembership() == null
+                || call.getConnectedMembership().getExpiryDate() == null) {
+            throw new IllegalStateException(
+                    "Connected call membership timing is missing."
+            );
+        }
+
+        LocalDateTime connectedAt = call.getConnectedAt();
+
+        LocalDateTime boundary =
+                call.getConnectedMembership().getExpiryDate();
+
+        if (!balance.unlimited()) {
+            long availableSeconds = Math.max(
+                    0L,
+                    balance.totalRemainingSeconds()
+            );
+
+            LocalDateTime balanceBoundary =
+                    connectedAt.plusSeconds(availableSeconds);
+
+            if (balanceBoundary.isBefore(boundary)) {
+                boundary = balanceBoundary;
+            }
+        }
+
+        return boundary.isBefore(connectedAt)
+                ? connectedAt
+                : boundary;
     }
 
     private long calculateDurationSeconds(

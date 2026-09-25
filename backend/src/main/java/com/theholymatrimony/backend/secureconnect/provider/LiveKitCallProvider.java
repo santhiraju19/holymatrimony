@@ -54,6 +54,18 @@ public class LiveKitCallProvider implements CallProvider {
             SecureConnectCallSession call,
             UUID participantUserId
     ) {
+        return createParticipantCredentials(
+                call,
+                participantUserId,
+                null
+        );
+    }
+
+    public SecureConnectMediaCredentials createParticipantCredentials(
+            SecureConnectCallSession call,
+            UUID participantUserId,
+            Instant deadline
+    ) {
         properties.validate();
 
         if (call == null || call.getId() == null) {
@@ -77,6 +89,18 @@ public class LiveKitCallProvider implements CallProvider {
                 now.plusSeconds(
                         properties.getTokenTtlSeconds()
                 );
+
+        if (deadline != null) {
+            if (!deadline.isAfter(now)) {
+                throw new IllegalStateException(
+                        "Secure Connect media authorization has expired."
+                );
+            }
+
+            if (deadline.isBefore(expiresAt)) {
+                expiresAt = deadline;
+            }
+        }
 
         Map<String, Object> videoGrant =
                 buildVideoGrant(
