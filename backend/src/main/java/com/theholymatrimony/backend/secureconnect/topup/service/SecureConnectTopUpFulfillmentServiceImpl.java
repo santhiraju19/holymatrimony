@@ -59,7 +59,7 @@ public class SecureConnectTopUpFulfillmentServiceImpl
 
         SecureConnectTopUpPayment topUpPayment =
                 topUpPaymentRepository
-                        .findByRazorpayOrderId(
+                        .findByRazorpayOrderIdForUpdate(
                                 razorpayOrderId
                         )
                         .orElseThrow(
@@ -293,7 +293,7 @@ public class SecureConnectTopUpFulfillmentServiceImpl
         }
 
         topUpPaymentRepository
-                .findByRazorpayOrderId(
+                .findByRazorpayOrderIdForUpdate(
                         razorpayOrderId
                 )
                 .ifPresent(

@@ -93,7 +93,7 @@ class SecureConnectTopUpFulfillmentServiceImplTests {
 
         when(
                 topUpPaymentRepository
-                        .findByRazorpayOrderId(
+                        .findByRazorpayOrderIdForUpdate(
                                 payment.getRazorpayOrderId()
                         )
         ).thenReturn(
@@ -214,7 +214,7 @@ class SecureConnectTopUpFulfillmentServiceImplTests {
 
         when(
                 topUpPaymentRepository
-                        .findByRazorpayOrderId(
+                        .findByRazorpayOrderIdForUpdate(
                                 payment.getRazorpayOrderId()
                         )
         ).thenReturn(
@@ -303,7 +303,7 @@ class SecureConnectTopUpFulfillmentServiceImplTests {
 
         when(
                 topUpPaymentRepository
-                        .findByRazorpayOrderId(
+                        .findByRazorpayOrderIdForUpdate(
                                 payment.getRazorpayOrderId()
                         )
         ).thenReturn(
@@ -364,7 +364,7 @@ class SecureConnectTopUpFulfillmentServiceImplTests {
 
         when(
                 topUpPaymentRepository
-                        .findByRazorpayOrderId(
+                        .findByRazorpayOrderIdForUpdate(
                                 payment.getRazorpayOrderId()
                         )
         ).thenReturn(
@@ -440,7 +440,7 @@ class SecureConnectTopUpFulfillmentServiceImplTests {
 
         when(
                 topUpPaymentRepository
-                        .findByRazorpayOrderId(
+                        .findByRazorpayOrderIdForUpdate(
                                 payment.getRazorpayOrderId()
                         )
         ).thenReturn(
@@ -497,7 +497,7 @@ class SecureConnectTopUpFulfillmentServiceImplTests {
 
         when(
                 topUpPaymentRepository
-                        .findByRazorpayOrderId(
+                        .findByRazorpayOrderIdForUpdate(
                                 payment.getRazorpayOrderId()
                         )
         ).thenReturn(
@@ -549,7 +549,7 @@ class SecureConnectTopUpFulfillmentServiceImplTests {
 
         when(
                 topUpPaymentRepository
-                        .findByRazorpayOrderId(
+                        .findByRazorpayOrderIdForUpdate(
                                 payment.getRazorpayOrderId()
                         )
         ).thenReturn(
