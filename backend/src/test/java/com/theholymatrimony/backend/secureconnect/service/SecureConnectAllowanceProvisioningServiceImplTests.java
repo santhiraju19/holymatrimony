@@ -2,6 +2,7 @@ package com.theholymatrimony.backend.secureconnect.service;
 
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.payments.entity.Membership;
+import com.theholymatrimony.backend.payments.enums.BillingCycle;
 import com.theholymatrimony.backend.payments.enums.MembershipPlan;
 import com.theholymatrimony.backend.secureconnect.entity.SecureConnectLedgerEntry;
 import com.theholymatrimony.backend.secureconnect.entity.SecureConnectPlanAllowance;
@@ -290,6 +291,92 @@ class SecureConnectAllowanceProvisioningServiceImplTests {
                 .save(any());
     }
 
+
+    @Test
+    void silverQuarterlyGets360AudioMinutes() {
+        Membership membership = membership(MembershipPlan.SILVER);
+        membership.setBillingCycle(BillingCycle.QUARTERLY);
+
+        service.provisionForMembership(membership);
+
+        ArgumentCaptor<SecureConnectPlanAllowance> captor =
+                ArgumentCaptor.forClass(SecureConnectPlanAllowance.class);
+
+        verify(allowanceRepository).save(captor.capture());
+        assertEquals(360L * 60L, captor.getValue().getAllowanceSeconds());
+        assertEquals(CallMediaType.AUDIO, captor.getValue().getMediaType());
+        assertSinglePlanCredit(membership, CallMediaType.AUDIO, 360L * 60L);
+    }
+
+    @Test
+    void silverYearlyGets1440AudioMinutes() {
+        Membership membership = membership(MembershipPlan.SILVER);
+        membership.setBillingCycle(BillingCycle.YEARLY);
+
+        service.provisionForMembership(membership);
+
+        ArgumentCaptor<SecureConnectPlanAllowance> captor =
+                ArgumentCaptor.forClass(SecureConnectPlanAllowance.class);
+
+        verify(allowanceRepository).save(captor.capture());
+        assertEquals(1440L * 60L, captor.getValue().getAllowanceSeconds());
+        assertEquals(CallMediaType.AUDIO, captor.getValue().getMediaType());
+        assertSinglePlanCredit(membership, CallMediaType.AUDIO, 1440L * 60L);
+    }
+
+    @Test
+    void goldQuarterlyGets180MinutesForEachMediaType() {
+        assertGoldAllowanceForCycle(BillingCycle.QUARTERLY, 180L * 60L);
+    }
+
+    @Test
+    void goldYearlyGets720MinutesForEachMediaType() {
+        assertGoldAllowanceForCycle(BillingCycle.YEARLY, 720L * 60L);
+    }
+
+    private void assertGoldAllowanceForCycle(
+            BillingCycle cycle,
+            long expectedSeconds
+    ) {
+        Membership membership = membership(MembershipPlan.GOLD);
+        membership.setBillingCycle(cycle);
+
+        service.provisionForMembership(membership);
+
+        ArgumentCaptor<SecureConnectPlanAllowance> captor =
+                ArgumentCaptor.forClass(SecureConnectPlanAllowance.class);
+
+        verify(allowanceRepository, times(2)).save(captor.capture());
+
+        var allowances = captor.getAllValues();
+
+        assertEquals(2, allowances.size());
+
+        for (CallMediaType mediaType :
+                new CallMediaType[]{CallMediaType.AUDIO, CallMediaType.VIDEO}) {
+            assertTrue(allowances.stream().anyMatch(
+                    allowance -> allowance.getMediaType() == mediaType
+                            && allowance.getAllowanceSeconds() == expectedSeconds
+                            && allowance.getConsumedSeconds() == 0L
+            ));
+        }
+
+        ArgumentCaptor<SecureConnectLedgerEntry> ledgerCaptor =
+                ArgumentCaptor.forClass(SecureConnectLedgerEntry.class);
+
+        verify(ledgerRepository, times(2)).save(ledgerCaptor.capture());
+
+        for (CallMediaType mediaType :
+                new CallMediaType[]{CallMediaType.AUDIO, CallMediaType.VIDEO}) {
+            assertTrue(ledgerCaptor.getAllValues().stream().anyMatch(
+                    entry -> entry.getMediaType() == mediaType
+                            && entry.getSeconds() == expectedSeconds
+                            && entry.getTransactionType()
+                                    == LedgerTransactionType.PLAN_CREDIT
+            ));
+        }
+    }
+
     private Membership membership(
             MembershipPlan plan
     ) {
@@ -298,6 +385,7 @@ class SecureConnectAllowanceProvisioningServiceImplTests {
                 .id(UUID.randomUUID())
                 .user(user)
                 .plan(plan)
+                .billingCycle(BillingCycle.MONTHLY)
                 .build();
     }
 
