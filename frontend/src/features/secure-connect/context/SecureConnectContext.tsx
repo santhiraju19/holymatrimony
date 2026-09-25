@@ -15,6 +15,7 @@ import { getApiErrorMessage } from "@/lib/api";
 
 import secureConnectWebSocketService from "../api/secure-connect-websocket.service";
 import secureConnectService from "../services/secureConnect.service";
+import SecureConnectMembershipModal from "../components/SecureConnectMembershipModal";
 
 import {
   CallMediaType,
@@ -158,6 +159,13 @@ export function SecureConnectProvider({
    * latest call without forcing the socket
    * connection to be recreated.
    */
+  const [membershipModalOpen, setMembershipModalOpen] =
+    useState(false);
+
+  const closeMembershipModal = useCallback(() => {
+    setMembershipModalOpen(false);
+  }, []);
+
   const activeCallRef =
     useRef<
       SecureConnectActiveCall | null
@@ -382,7 +390,16 @@ export function SecureConnectProvider({
               "Unable to start the secure call."
             );
 
-          setError(message);
+          if (
+            message.toLowerCase().includes(
+              "active membership"
+            )
+          ) {
+            setError(null);
+            setMembershipModalOpen(true);
+          } else {
+            setError(message);
+          }
 
           throw requestError;
         } finally {
@@ -609,6 +626,10 @@ export function SecureConnectProvider({
       value={value}
     >
       {children}
+    <SecureConnectMembershipModal
+        open={membershipModalOpen}
+        onClose={closeMembershipModal}
+      />
     </SecureConnectContext.Provider>
   );
 }

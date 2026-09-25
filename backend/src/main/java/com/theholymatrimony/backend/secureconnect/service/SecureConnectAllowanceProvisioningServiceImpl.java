@@ -2,6 +2,7 @@ package com.theholymatrimony.backend.secureconnect.service;
 
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.payments.entity.Membership;
+import com.theholymatrimony.backend.payments.enums.BillingCycle;
 import com.theholymatrimony.backend.payments.enums.MembershipPlan;
 import com.theholymatrimony.backend.secureconnect.entity.SecureConnectLedgerEntry;
 import com.theholymatrimony.backend.secureconnect.entity.SecureConnectPlanAllowance;
@@ -47,25 +48,29 @@ public class SecureConnectAllowanceProvisioningServiceImpl
             );
         }
 
+        long multiplier = billingCycleMultiplier(
+                membership.getBillingCycle()
+        );
+
         switch (membership.getPlan()) {
 
             case SILVER -> provisionAllowance(
                     membership,
                     CallMediaType.AUDIO,
-                    SILVER_AUDIO_SECONDS
+                    SILVER_AUDIO_SECONDS * multiplier
             );
 
             case GOLD -> {
                 provisionAllowance(
                         membership,
                         CallMediaType.AUDIO,
-                        GOLD_AUDIO_SECONDS
+                        GOLD_AUDIO_SECONDS * multiplier
                 );
 
                 provisionAllowance(
                         membership,
                         CallMediaType.VIDEO,
-                        GOLD_VIDEO_SECONDS
+                        GOLD_VIDEO_SECONDS * multiplier
                 );
             }
 
@@ -84,6 +89,22 @@ public class SecureConnectAllowanceProvisioningServiceImpl
                  */
             }
         }
+    }
+
+    private long billingCycleMultiplier(
+            BillingCycle billingCycle
+    ) {
+        if (billingCycle == null) {
+            throw new IllegalArgumentException(
+                    "Membership billing cycle is required."
+            );
+        }
+
+        return switch (billingCycle) {
+            case MONTHLY -> 1L;
+            case QUARTERLY -> 3L;
+            case YEARLY -> 12L;
+        };
     }
 
     private void provisionAllowance(
