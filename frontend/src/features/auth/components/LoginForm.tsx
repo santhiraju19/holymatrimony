@@ -52,12 +52,23 @@ export default function LoginForm() {
         redirectTo
       );
     } catch (error: unknown) {
-      setError(
-        getApiErrorMessage(
-          error,
-          "Login failed. Please check your email and password."
-        )
+      const message = getApiErrorMessage(
+        error,
+        "Login failed. Please check your email and password."
       );
+
+      if (
+        message ===
+        "Please verify your email address before signing in."
+      ) {
+        window.location.href =
+          `/verify-email?email=${encodeURIComponent(
+            email.trim().toLowerCase()
+          )}`;
+        return;
+      }
+
+      setError(message);
     }
   }
 

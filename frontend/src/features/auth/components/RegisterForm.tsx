@@ -201,11 +201,24 @@ export default function RegisterForm() {
         requestError
       );
 
-      setError(
+      const message =
         getErrorMessage(
           requestError
-        )
-      );
+        );
+
+      if (
+        message ===
+        "An account with this email is awaiting email verification."
+      ) {
+        router.push(
+          `/verify-email?email=${encodeURIComponent(
+            normalizedEmail
+          )}`
+        );
+        return;
+      }
+
+      setError(message);
     } finally {
       setLoading(false);
     }

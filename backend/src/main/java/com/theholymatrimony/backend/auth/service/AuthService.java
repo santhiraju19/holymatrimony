@@ -80,11 +80,23 @@ public class AuthService {
                         request.getMobile()
                 );
 
-        if (
-                userRepository.existsByEmail(
-                        normalizedEmail
-                )
-        ) {
+        User existingUser =
+                userRepository
+                        .findByEmail(
+                                normalizedEmail
+                        )
+                        .orElse(null);
+
+        if (existingUser != null) {
+
+            if (
+                    !existingUser.isEmailVerificationComplete()
+            ) {
+
+                throw new IllegalArgumentException(
+                        "An account with this email is awaiting email verification."
+                );
+            }
 
             throw new IllegalArgumentException(
                     "An account already exists with this email."
@@ -218,19 +230,10 @@ public class AuthService {
         );
 
         /*
-         * Existing email-verification behaviour.
-         */
-        if (
-                !user.isEmailVerificationComplete()
-        ) {
-
-            throw new IllegalArgumentException(
-                    "Please verify your email address before signing in."
-            );
-        }
-
-        /*
          * Password authentication.
+         *
+         * Authenticate credentials before revealing that the account
+         * still requires email verification.
          *
          * CustomUserDetailsService still checks
          * enabled=false as an additional security layer.
@@ -243,6 +246,21 @@ public class AuthService {
                                         request.getPassword()
                                 )
                         );
+
+        /*
+         * Email verification is checked only after the password has
+         * been authenticated. This allows a legitimate unverified
+         * member to resume verification without exposing account
+         * verification state to someone who only knows the email.
+         */
+        if (
+                !user.isEmailVerificationComplete()
+        ) {
+
+            throw new IllegalArgumentException(
+                    "Please verify your email address before signing in."
+            );
+        }
 
         List<String> authorities =
                 authentication
