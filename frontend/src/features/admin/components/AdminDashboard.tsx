@@ -5,9 +5,11 @@ import {
   useCallback,
   useEffect,
   useState,
+  type ReactNode,
 } from "react";
 import {
   AlertCircle,
+  ArrowRight,
   BadgeIndianRupee,
   CalendarClock,
   CheckCircle2,
@@ -24,21 +26,18 @@ import {
   UserRoundCheck,
   Users,
   XCircle,
+  type LucideIcon,
 } from "lucide-react";
 
-import {
-  getApiErrorMessage,
-} from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/api";
 
-import {
-  adminService,
-} from "../api/admin.service";
-
-import type {
-  AdminDashboardData,
-} from "../types";
+import { adminService } from "../api/admin.service";
+import type { AdminDashboardData } from "../types";
 
 import AdminStatCard from "./AdminStatCard";
+import AdminButton from "./ui/AdminButton";
+import AdminPageHeader from "./ui/AdminPageHeader";
+import AdminSectionCard from "./ui/AdminSectionCard";
 
 function formatCurrency(
   value: number
@@ -66,6 +65,8 @@ function formatPercent(
 ): string {
   return `${Number(value ?? 0).toFixed(1)}%`;
 }
+
+type DashboardIcon = LucideIcon;
 
 export default function AdminDashboard() {
   const [
@@ -125,14 +126,18 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="flex min-h-[520px] items-center justify-center">
-        <div className="text-center">
+        <div className="rounded-2xl border border-slate-200 bg-white px-8 py-10 text-center shadow-sm">
           <Loader2
-            size={40}
-            className="mx-auto animate-spin text-blue-700"
+            size={36}
+            className="mx-auto animate-spin text-[#0B2D5C]"
           />
 
-          <p className="mt-4 font-semibold text-slate-600">
-            Loading business analytics...
+          <p className="mt-4 font-semibold text-slate-700">
+            Loading business dashboard...
+          </p>
+
+          <p className="mt-1 text-sm text-slate-500">
+            Preparing the latest platform metrics.
           </p>
         </div>
       </div>
@@ -144,32 +149,39 @@ export default function AdminDashboard() {
     !dashboard
   ) {
     return (
-      <section className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center">
-        <AlertCircle
-          size={40}
-          className="mx-auto text-red-600"
-        />
+      <AdminSectionCard
+        className="border-red-200"
+        contentClassName="py-12"
+      >
+        <div className="mx-auto max-w-lg text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+            <AlertCircle size={24} />
+          </div>
 
-        <h2 className="mt-4 text-xl font-bold text-red-700">
-          Unable to load dashboard
-        </h2>
+          <h2 className="mt-4 text-xl font-bold text-slate-900">
+            Unable to load dashboard
+          </h2>
 
-        <p className="mt-2 text-red-600">
-          {error ??
-            "The dashboard data is unavailable."}
-        </p>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            {error ??
+              "The dashboard data is unavailable."}
+          </p>
 
-        <button
-          type="button"
-          onClick={() =>
-            void loadDashboard()
-          }
-          className="mt-5 inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-3 font-semibold text-white transition hover:bg-red-700"
-        >
-          <RefreshCw size={17} />
-          Try Again
-        </button>
-      </section>
+          <div className="mt-5 flex justify-center">
+            <AdminButton
+              variant="danger"
+              icon={
+                <RefreshCw size={16} />
+              }
+              onClick={() =>
+                void loadDashboard()
+              }
+            >
+              Try Again
+            </AdminButton>
+          </div>
+        </div>
+      </AdminSectionCard>
     );
   }
 
@@ -215,41 +227,50 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <main className="space-y-8">
-      <section className="overflow-hidden rounded-3xl bg-gradient-to-r from-[#071B36] via-[#0B2D5C] to-indigo-700 p-7 text-white shadow-xl sm:p-9">
-        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#E8CB6A]">
-              Holy Matrimony Administration
-            </p>
-
-            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-              Business Dashboard
-            </h1>
-
-            <p className="mt-3 max-w-3xl text-blue-100">
-              Monitor registrations,
-              profile completion,
-              memberships, payments,
-              revenue and customer
-              conversion from one place.
-            </p>
-          </div>
-
-          <button
-            type="button"
+    <div className="space-y-6">
+      <AdminPageHeader
+        eyebrow="Overview"
+        title="Business Dashboard"
+        description="Monitor registrations, profile completion, memberships, payments, revenue and customer conversion from one operational view."
+        actions={
+          <AdminButton
+            variant="primary"
+            icon={
+              <RefreshCw size={16} />
+            }
             onClick={() =>
               void loadDashboard()
             }
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-5 py-3 font-semibold text-white transition hover:bg-white/20"
           >
-            <RefreshCw size={18} />
             Refresh
-          </button>
-        </div>
-      </section>
+          </AdminButton>
+        }
+      >
+        <div className="flex flex-wrap gap-2">
+          <DashboardPill
+            label="Users"
+            value={formatNumber(
+              dashboard.totalUsers
+            )}
+          />
 
-      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          <DashboardPill
+            label="Paid Members"
+            value={formatNumber(
+              dashboard.activePaidMemberships
+            )}
+          />
+
+          <DashboardPill
+            label="Profile Completion"
+            value={formatPercent(
+              dashboard.profileCompletionRate
+            )}
+          />
+        </div>
+      </AdminPageHeader>
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {primaryCards.map(
           (card) => (
             <AdminStatCard
@@ -387,19 +408,20 @@ export default function AdminDashboard() {
             />
           </MetricGrid>
 
-          <div className="mt-5 flex items-center justify-between rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <div className="flex items-center gap-3">
-              <CalendarClock
-                size={21}
-                className="text-amber-700"
-              />
+          <div className="mt-5 flex flex-col gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-amber-700 shadow-sm">
+                <CalendarClock
+                  size={19}
+                />
+              </div>
 
               <div>
                 <p className="font-semibold text-amber-900">
                   Expiring in 7 days
                 </p>
 
-                <p className="text-sm text-amber-700">
+                <p className="mt-0.5 text-sm text-amber-700">
                   Paid memberships needing
                   renewal attention.
                 </p>
@@ -520,26 +542,12 @@ export default function AdminDashboard() {
         </DashboardSection>
       </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700">
-            <TrendingUp size={22} />
-          </div>
-
-          <div>
-            <h2 className="text-xl font-black text-[#0B2D5C]">
-              Customer Conversion Funnel
-            </h2>
-
-            <p className="mt-1 text-sm text-slate-500">
-              See how registered customers
-              progress into complete profiles
-              and paid members.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-7 space-y-5">
+      <AdminSectionCard
+        title="Customer Conversion Funnel"
+        description="See how registered customers progress into complete profiles and paid members."
+        icon={TrendingUp}
+      >
+        <div className="space-y-5">
           <FunnelRow
             label="Registered Users"
             value={
@@ -572,7 +580,7 @@ export default function AdminDashboard() {
           />
         </div>
 
-        <div className="mt-7 grid gap-4 sm:grid-cols-2">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <ConversionCard
             label="Registration → Profile"
             value={
@@ -589,72 +597,75 @@ export default function AdminDashboard() {
             }
           />
         </div>
-      </section>
-    </main>
+      </AdminSectionCard>
+    </div>
+  );
+}
+
+function DashboardPill({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5">
+      <span className="text-xs font-medium text-slate-500">
+        {label}
+      </span>
+
+      <span className="text-xs font-bold text-[#0B2D5C]">
+        {value}
+      </span>
+    </div>
   );
 }
 
 function DashboardSection({
   title,
   description,
-  icon: Icon,
+  icon,
   href,
   hrefLabel,
   children,
 }: {
   title: string;
   description: string;
-  icon: React.ComponentType<{
-    size?: number;
-    className?: string;
-  }>;
+  icon: DashboardIcon;
   href?: string;
   hrefLabel?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
-    <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
-            <Icon size={21} />
-          </div>
-
-          <div>
-            <h2 className="text-xl font-bold text-[#0B2D5C]">
-              {title}
-            </h2>
-
-            <p className="mt-1 text-sm leading-6 text-slate-500">
-              {description}
-            </p>
-          </div>
-        </div>
-
-        {href && hrefLabel && (
+    <AdminSectionCard
+      title={title}
+      description={description}
+      icon={icon}
+      actions={
+        href && hrefLabel ? (
           <Link
             href={href}
-            className="shrink-0 text-sm font-bold text-blue-700 transition hover:text-blue-900"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-[#0B2D5C]/30 hover:bg-slate-50 hover:text-[#0B2D5C]"
           >
-            {hrefLabel} →
+            {hrefLabel}
+            <ArrowRight size={14} />
           </Link>
-        )}
-      </div>
-
-      <div className="mt-6">
-        {children}
-      </div>
-    </article>
+        ) : undefined
+      }
+    >
+      {children}
+    </AdminSectionCard>
   );
 }
 
 function MetricGrid({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid gap-3 sm:grid-cols-2">
       {children}
     </div>
   );
@@ -679,13 +690,16 @@ function Metric({
         : "text-slate-900";
 
   return (
-    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+    <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-4">
+      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
         {label}
       </p>
 
       <p
-        className={`mt-2 text-2xl font-black ${valueClass}`}
+        className={[
+          "mt-2 text-2xl font-black tracking-tight",
+          valueClass,
+        ].join(" ")}
       >
         {value}
       </p>
@@ -710,8 +724,8 @@ function ProgressMetric({
     );
 
   return (
-    <div className="mt-5">
-      <div className="mb-2 flex items-center justify-between text-sm">
+    <div className="mt-5 rounded-xl border border-slate-200/80 p-4">
+      <div className="mb-2.5 flex items-center justify-between gap-4 text-sm">
         <span className="font-semibold text-slate-600">
           {label}
         </span>
@@ -721,9 +735,9 @@ function ProgressMetric({
         </span>
       </div>
 
-      <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all"
+          className="h-full rounded-full bg-[#0B2D5C] transition-all"
           style={{
             width: `${safeValue}%`,
           }}
@@ -741,10 +755,7 @@ function StatusMetric({
 }: {
   label: string;
   value: number;
-  icon: React.ComponentType<{
-    size?: number;
-    className?: string;
-  }>;
+  icon: DashboardIcon;
   type:
     | "success"
     | "warning"
@@ -761,11 +772,16 @@ function StatusMetric({
 
   return (
     <div
-      className={`rounded-2xl border p-4 ${styles[type]}`}
+      className={[
+        "rounded-xl border p-4",
+        styles[type],
+      ].join(" ")}
     >
-      <Icon size={21} />
+      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/70">
+        <Icon size={19} />
+      </div>
 
-      <p className="mt-4 text-2xl font-black">
+      <p className="mt-4 text-2xl font-black tracking-tight">
         {formatNumber(value)}
       </p>
 
@@ -781,21 +797,17 @@ function ActivityMetric({
   label,
   value,
 }: {
-  icon: React.ComponentType<{
-    size?: number;
-    className?: string;
-  }>;
+  icon: DashboardIcon;
   label: string;
   value: number;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5">
-      <Icon
-        size={22}
-        className="text-blue-700"
-      />
+    <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-5">
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#0B2D5C] shadow-sm">
+        <Icon size={20} />
+      </div>
 
-      <p className="mt-4 text-3xl font-black text-[#0B2D5C]">
+      <p className="mt-4 text-3xl font-black tracking-tight text-[#0B2D5C]">
         {formatNumber(value)}
       </p>
 
@@ -825,8 +837,8 @@ function FunnelRow({
     );
 
   return (
-    <div>
-      <div className="mb-2 flex items-center justify-between gap-4">
+    <div className="rounded-xl border border-slate-200/80 p-4">
+      <div className="mb-3 flex items-center justify-between gap-4">
         <span className="font-semibold text-slate-700">
           {label}
         </span>
@@ -842,9 +854,9 @@ function FunnelRow({
         </div>
       </div>
 
-      <div className="h-4 overflow-hidden rounded-full bg-slate-100">
+      <div className="h-3 overflow-hidden rounded-full bg-slate-100">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-[#0B2D5C] to-indigo-600"
+          className="h-full rounded-full bg-[#0B2D5C]"
           style={{
             width: `${safePercent}%`,
           }}
@@ -862,12 +874,12 @@ function ConversionCard({
   value: number;
 }) {
   return (
-    <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-5">
-      <p className="text-sm font-semibold text-indigo-700">
+    <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-5">
+      <p className="text-sm font-semibold text-[#0B2D5C]">
         {label}
       </p>
 
-      <p className="mt-2 text-3xl font-black text-indigo-900">
+      <p className="mt-2 text-3xl font-black tracking-tight text-[#0B2D5C]">
         {formatPercent(value)}
       </p>
     </div>
