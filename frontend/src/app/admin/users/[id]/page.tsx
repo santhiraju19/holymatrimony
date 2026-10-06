@@ -3,6 +3,18 @@
 import Link from "next/link";
 
 import {
+  ArrowLeft,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  KeyRound,
+  Mail,
+  RefreshCw,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
+
+import {
   useCallback,
   useEffect,
   useState,
@@ -12,6 +24,9 @@ import {
   usePathname,
 } from "next/navigation";
 
+import AdminButton from "@/features/admin/components/ui/AdminButton";
+import AdminPageHeader from "@/features/admin/components/ui/AdminPageHeader";
+import AdminSectionCard from "@/features/admin/components/ui/AdminSectionCard";
 import ConfirmStatusModal from "@/features/admin/users/components/ConfirmStatusModal";
 import UserStatusBadge from "@/features/admin/users/components/UserStatusBadge";
 
@@ -99,12 +114,12 @@ function InfoItem({
   value,
 }: InfoItemProps) {
   return (
-    <div>
-      <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+    <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3.5">
+      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
         {label}
       </p>
 
-      <p className="mt-2 break-words text-sm font-medium text-slate-800">
+      <p className="mt-1.5 break-words text-sm font-semibold leading-6 text-slate-800">
         {value}
       </p>
     </div>
@@ -531,47 +546,57 @@ export default function AdminUserDetailPage() {
   return (
     <>
       <div className="mx-auto max-w-6xl">
-        {/* Back */}
+        <AdminPageHeader
+          eyebrow="Member Administration"
+          title={user.fullName}
+          description={user.email}
+          actions={
+            <div className="flex flex-wrap items-center gap-3">
+              <UserStatusBadge status={user.status} />
 
-        <div className="mb-7">
-          <Link
-            href="/admin/users"
-            className="text-sm font-semibold text-[#0B2D5C] transition hover:underline"
-          >
-            ← Back to User Management
-          </Link>
-        </div>
-
-        {/* User header */}
-
-        <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 text-2xl font-bold text-[#0B2D5C]">
-              {user.fullName
-                ?.charAt(0)
-                .toUpperCase() ||
-                "U"}
+              <Link
+                href="/admin/users"
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-[#0B2D5C] shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
+              >
+                <ArrowLeft size={16} />
+                Back to Users
+              </Link>
+            </div>
+          }
+        >
+          <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-5">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-lg font-black text-[#0B2D5C] ring-1 ring-blue-100">
+              {user.fullName?.charAt(0).toUpperCase() || "U"}
             </div>
 
-            <div>
-              <p className="text-sm font-semibold text-[#B78A22]">
-                Member Account
-              </p>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-slate-500">
+                <span className="inline-flex items-center gap-1.5">
+                  <UserRound size={14} />
+                  {user.role === "ROLE_ADMIN"
+                    ? "Administrator"
+                    : "Member"}
+                </span>
 
-              <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">
-                {user.fullName}
-              </h1>
+                <span className="inline-flex items-center gap-1.5">
+                  <Mail size={14} />
+                  {user.emailVerified
+                    ? "Email verified"
+                    : "Email verification pending"}
+                </span>
 
-              <p className="mt-1 text-sm text-slate-500">
-                {user.email}
+                <span className="inline-flex items-center gap-1.5">
+                  <ShieldCheck size={14} />
+                  {user.membershipType || "FREE"} Membership
+                </span>
+              </div>
+
+              <p className="mt-1.5 font-mono text-[11px] text-slate-400">
+                Member ID: {user.id}
               </p>
             </div>
           </div>
-
-          <UserStatusBadge
-            status={user.status}
-          />
-        </div>
+        </AdminPageHeader>
 
         {/* Error */}
 
@@ -603,12 +628,12 @@ export default function AdminUserDetailPage() {
           <div className="space-y-6">
             {/* Account */}
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-bold text-slate-900">
-                Account Information
-              </h2>
-
-              <div className="mt-6 grid gap-6 sm:grid-cols-2">
+            <AdminSectionCard
+              title="Account Information"
+              description="Core member identity, access and membership information."
+              icon={UserRound}
+            >
+              <div className="grid gap-3 sm:grid-cols-2">
                 <InfoItem
                   label="Full Name"
                   value={user.fullName}
@@ -671,16 +696,16 @@ export default function AdminUserDetailPage() {
                   }
                 />
               </div>
-            </section>
+            </AdminSectionCard>
 
             {/* Activity */}
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-bold text-slate-900">
-                Activity & Verification
-              </h2>
-
-              <div className="mt-6 grid gap-6 sm:grid-cols-2">
+            <AdminSectionCard
+              title="Activity & Verification"
+              description="Account activity timestamps and email verification history."
+              icon={CalendarDays}
+            >
+              <div className="grid gap-3 sm:grid-cols-2">
                 <InfoItem
                   label="Joined"
                   value={formatDateTime(
@@ -709,22 +734,19 @@ export default function AdminUserDetailPage() {
                   )}
                 />
               </div>
-            </section>
+            </AdminSectionCard>
 
             {/* Status history */}
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <h2 className="text-lg font-bold text-slate-900">
-                  Status History
-                </h2>
-
-                <UserStatusBadge
-                  status={user.status}
-                />
-              </div>
-
-              <div className="mt-6 grid gap-6 sm:grid-cols-2">
+            <AdminSectionCard
+              title="Status History"
+              description="Current account state and the most recent administrative status change."
+              icon={Clock3}
+              actions={
+                <UserStatusBadge status={user.status} />
+              }
+            >
+              <div className="grid gap-3 sm:grid-cols-2">
                 <InfoItem
                   label="Current Status"
                   value={labelStatus(
@@ -757,28 +779,20 @@ export default function AdminUserDetailPage() {
                   />
                 </div>
               </div>
-            </section>
+            </AdminSectionCard>
           </div>
 
           {/* Admin action */}
 
-          <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-28">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#B78A22]">
-              Administrative Action
-            </p>
+          <aside className="h-fit lg:sticky lg:top-28">
+            <AdminSectionCard
+              title="Change Account Status"
+              description="Suspend, block, deactivate or reactivate this member account."
+              icon={ShieldCheck}
+            >
+              {/* Status selector */}
 
-            <h2 className="mt-2 text-xl font-bold text-slate-900">
-              Change Account Status
-            </h2>
-
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Suspend, block, deactivate,
-              or reactivate a member account.
-            </p>
-
-            {/* Status selector */}
-
-            <div className="mt-6">
+              <div>
               <label
                 htmlFor="account-status"
                 className="mb-2 block text-sm font-semibold text-slate-700"
@@ -940,67 +954,77 @@ export default function AdminUserDetailPage() {
                         : "Update Status"}
             </button>
 
-            {/* Account recovery */}
+            </AdminSectionCard>
 
-            <div className="mt-7 border-t border-slate-200 pt-6">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#B78A22]">
-                Account Recovery
-              </p>
-
-              <h3 className="mt-2 text-lg font-bold text-slate-900">
-                Email Actions
-              </h3>
-
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Help this member complete email verification or recover access
-                to their account.
-              </p>
-
-              <div className="mt-5 space-y-3">
-                <button
-                  type="button"
-                  disabled={
-                    user.emailVerified ||
-                    emailAction !== null
-                  }
-                  onClick={
-                    handleSendVerificationEmail
-                  }
-                  className="w-full rounded-xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-bold text-[#0B2D5C] transition hover:border-blue-300 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {user.emailVerified
-                    ? "Email Already Verified"
-                    : emailAction ===
-                        "verification"
-                      ? "Sending Verification Email..."
+            <div className="mt-6">
+              <AdminSectionCard
+                title="Account Recovery"
+                description="Help this member complete email verification or securely recover account access."
+                icon={KeyRound}
+              >
+                <div className="space-y-3">
+                  <AdminButton
+                    type="button"
+                    variant="secondary"
+                    className="w-full"
+                    icon={
+                      user.emailVerified ? (
+                        <CheckCircle2 size={16} />
+                      ) : (
+                        <Mail size={16} />
+                      )
+                    }
+                    disabled={
+                      user.emailVerified ||
+                      emailAction !== null
+                    }
+                    loading={
+                      emailAction === "verification"
+                    }
+                    onClick={
+                      handleSendVerificationEmail
+                    }
+                  >
+                    {user.emailVerified
+                      ? "Email Already Verified"
                       : "Send Verification Email"}
-                </button>
+                  </AdminButton>
 
-                <button
-                  type="button"
-                  disabled={
-                    emailAction !== null
-                  }
-                  onClick={
-                    handleSendPasswordResetEmail
-                  }
-                  className="w-full rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-[#0B2D5C] hover:text-[#0B2D5C] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {emailAction ===
-                  "password-reset"
-                    ? "Sending Password Reset Email..."
-                    : "Send Password Reset Email"}
-                </button>
-              </div>
+                  <AdminButton
+                    type="button"
+                    variant="secondary"
+                    className="w-full"
+                    icon={<KeyRound size={16} />}
+                    disabled={
+                      emailAction !== null
+                    }
+                    loading={
+                      emailAction === "password-reset"
+                    }
+                    onClick={
+                      handleSendPasswordResetEmail
+                    }
+                  >
+                    Send Password Reset Email
+                  </AdminButton>
+                </div>
 
-              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs leading-5 text-slate-500">
-                  Verification emails contain a fresh verification OTP.
-                  Password reset emails contain a secure password-reset OTP.
-                  Administrators cannot view or change the member&apos;s
-                  password from this screen.
-                </p>
-              </div>
+                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex gap-3">
+                    <ShieldCheck
+                      size={17}
+                      className="mt-0.5 shrink-0 text-slate-400"
+                    />
+
+                    <p className="text-xs leading-5 text-slate-500">
+                      Verification emails contain a fresh verification OTP.
+                      Password reset emails contain a secure password-reset OTP.
+                      Administrators cannot view or change the member&apos;s
+                      password from this screen.
+                    </p>
+                  </div>
+                </div>
+              </AdminSectionCard>
             </div>
           </aside>
         </div>
