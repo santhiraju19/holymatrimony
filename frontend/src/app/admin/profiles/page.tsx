@@ -16,6 +16,9 @@ import {
 } from "lucide-react";
 
 import AdminProfileTable from "@/features/admin/profiles/components/AdminProfileTable";
+import AdminButton from "@/features/admin/components/ui/AdminButton";
+import AdminPageHeader from "@/features/admin/components/ui/AdminPageHeader";
+import AdminSectionCard from "@/features/admin/components/ui/AdminSectionCard";
 
 import {
   getAdminProfiles,
@@ -186,50 +189,30 @@ export default function AdminProfilesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-
-      <section className="rounded-3xl border border-blue-100 bg-gradient-to-br from-[#071B36] via-[#0B2D5C] to-[#174A87] px-6 py-7 text-white shadow-lg">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-blue-100">
-              <ShieldCheck
-                size={14}
-              />
-
-              Verification
-            </div>
-
-            <h1 className="mt-4 text-3xl font-black tracking-tight">
-              Profile Verifications
-            </h1>
-
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-blue-100">
-              Review submitted
-              member profiles and
-              approve or reject
-              verification
-              requests.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/10 px-5 py-4 backdrop-blur">
-            <p className="text-xs font-bold uppercase tracking-wide text-blue-200">
+      <AdminPageHeader
+        eyebrow="Member Administration"
+        title="Profile Management"
+        description="Review member profiles, manage verification status and control homepage visibility."
+        actions={
+          <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-right">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-blue-500">
               Matching Profiles
             </p>
 
-            <p className="mt-1 text-3xl font-black">
-              {
-                data?.totalElements ??
-                0
-              }
+            <p className="mt-1 text-2xl font-black text-[#0B2D5C]">
+              {data?.totalElements ?? 0}
             </p>
           </div>
-        </div>
-      </section>
+        }
+      />
 
       {/* Filters */}
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <AdminSectionCard
+        title="Search & Filters"
+        description="Find member profiles and narrow the verification queue by status."
+        icon={ShieldCheck}
+      >
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px_auto]">
           <div className="relative">
             <Search
@@ -300,38 +283,43 @@ export default function AdminProfilesPage() {
           </select>
 
           <div className="flex gap-2">
-            <button
+            <AdminButton
               type="button"
+              size="md"
+              icon={<Search size={16} />}
               onClick={
                 handleSearch
               }
-              className="h-12 rounded-xl bg-[#0B2D5C] px-5 text-sm font-bold text-white transition hover:bg-[#123F78]"
             >
               Search
-            </button>
+            </AdminButton>
 
-            <button
+            <AdminButton
               type="button"
-              onClick={() =>
-                void loadProfiles()
+              variant="secondary"
+              size="md"
+              icon={
+                <RefreshCw
+                  size={16}
+                  className={
+                    loading
+                      ? "animate-spin"
+                      : ""
+                  }
+                />
               }
               disabled={
                 loading
               }
-              className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-300 text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+              onClick={() =>
+                void loadProfiles()
+              }
             >
-              <RefreshCw
-                size={18}
-                className={
-                  loading
-                    ? "animate-spin"
-                    : ""
-                }
-              />
-            </button>
+              Refresh
+            </AdminButton>
           </div>
         </div>
-      </section>
+      </AdminSectionCard>
 
       {error && (
         <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm font-semibold text-red-700">

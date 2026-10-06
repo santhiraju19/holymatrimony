@@ -131,7 +131,24 @@ export default function AdminProfileTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex flex-col gap-2 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-bold text-[#0B2D5C]">
+            Member Profiles
+          </p>
+
+          <p className="mt-1 text-xs text-slate-500">
+            Review profile readiness, visibility, homepage placement and verification.
+          </p>
+        </div>
+
+        <div className="inline-flex w-fit items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600">
+          <UserRound size={14} />
+          {profiles.length} on this page
+        </div>
+      </div>
+
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50">
@@ -211,22 +228,31 @@ export default function AdminProfileTable({
                     className="align-top transition hover:bg-slate-50/70"
                   >
                     <td className="px-5 py-4">
-                      <div className="min-w-[180px]">
-                        <p className="font-bold text-slate-900">
-                          {profile.fullName ||
-                            "Unnamed member"}
-                        </p>
+                      <div className="flex min-w-[220px] items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-sm font-black text-[#0B2D5C] ring-1 ring-blue-100">
+                          {(profile.fullName ||
+                            "U")
+                            .charAt(0)
+                            .toUpperCase()}
+                        </div>
 
-                        <p className="mt-1 text-xs text-slate-500">
-                          {profile.email ||
-                            "—"}
-                        </p>
-
-                        {profile.mobile && (
-                          <p className="mt-1 text-xs text-slate-400">
-                            {profile.mobile}
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-900">
+                            {profile.fullName ||
+                              "Unnamed member"}
                           </p>
-                        )}
+
+                          <p className="mt-1 max-w-[190px] truncate text-xs text-slate-500">
+                            {profile.email ||
+                              "—"}
+                          </p>
+
+                          {profile.mobile && (
+                            <p className="mt-1 text-xs text-slate-400">
+                              {profile.mobile}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </td>
 
@@ -313,8 +339,9 @@ export default function AdminProfileTable({
                     <td className="px-5 py-4 text-right">
                       <Link
                         href={`/admin/profiles/${profile.profileId}`}
-                        className="inline-flex items-center justify-center rounded-xl bg-[#0B2D5C] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#123f78]"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-bold text-[#0B2D5C] transition hover:border-blue-200 hover:bg-blue-100"
                       >
+                        <Eye size={14} />
                         Review
                       </Link>
                     </td>
