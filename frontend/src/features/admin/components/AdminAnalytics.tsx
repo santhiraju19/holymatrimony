@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  type ComponentType,
   type FormEvent,
   useCallback,
   useEffect,
@@ -24,6 +23,7 @@ import {
   Users,
   WalletCards,
   XCircle,
+  type LucideIcon,
 } from "lucide-react";
 
 import {
@@ -41,11 +41,11 @@ import type {
   AdminAnalyticsMetric,
 } from "../types";
 
-type IconType =
-  ComponentType<{
-    size?: number;
-    className?: string;
-  }>;
+import AdminButton from "./ui/AdminButton";
+import AdminPageHeader from "./ui/AdminPageHeader";
+import AdminSectionCard from "./ui/AdminSectionCard";
+
+type IconType = LucideIcon;
 
 function localDateValue(
   date: Date
@@ -471,66 +471,50 @@ export default function AdminAnalytics() {
 
   return (
     <main className="space-y-5 sm:space-y-8">
-      <section className="overflow-hidden rounded-2xl bg-gradient-to-r from-[#071B36] via-[#0B2D5C] to-indigo-700 p-5 text-white shadow-xl sm:rounded-3xl sm:p-9">
-        <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#E8CB6A]">
-          Business Intelligence
-        </p>
+      <AdminPageHeader
+        eyebrow="Business Intelligence"
+        title="Analytics & Details"
+        description="Analyze customer growth, profile completion, membership sales, payments and revenue. Select any metric to inspect the underlying records."
+      >
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600">
+            {appliedFrom} → {appliedTo}
+          </span>
 
-        <h1 className="mt-3 text-2xl font-black tracking-tight sm:text-4xl">
-          Analytics & Details
-        </h1>
-
-        <p className="mt-3 max-w-3xl text-blue-100">
-          Analyze customer growth,
-          profile completion,
-          membership sales,
-          payments and revenue.
-          Click any metric to view
-          the underlying records.
-        </p>
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <h2 className="text-xl font-black text-[#0B2D5C]">
-              Reporting Period
-            </h2>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Select the period used
-              for analytics and
-              customer drill-down data.
-            </p>
-          </div>
-
-          <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end xl:w-auto">
-            <DateInput
-              label="From"
-              value={from}
-              onChange={setFrom}
-            />
-
-            <DateInput
-              label="To"
-              value={to}
-              onChange={setTo}
-            />
-
-            <button
-              type="button"
-              onClick={applyRange}
-              className="inline-flex h-[46px] w-full items-center justify-center gap-2 rounded-xl bg-[#0B2D5C] px-5 font-bold text-white transition hover:bg-[#123e78] sm:w-auto"
-            >
-              <RefreshCw
-                size={17}
-              />
-
-              Apply
-            </button>
-          </div>
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600">
+            Interactive drill-down
+          </span>
         </div>
-      </section>
+      </AdminPageHeader>
+
+      <AdminSectionCard
+        title="Reporting Period"
+        description="Select the period used for analytics and customer drill-down data."
+        icon={Clock3}
+      >
+        <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end xl:max-w-3xl">
+          <DateInput
+            label="From"
+            value={from}
+            onChange={setFrom}
+          />
+
+          <DateInput
+            label="To"
+            value={to}
+            onChange={setTo}
+          />
+
+          <AdminButton
+            type="button"
+            onClick={applyRange}
+            icon={<RefreshCw size={17} />}
+            className="h-[46px] w-full sm:w-auto"
+          >
+            Apply
+          </AdminButton>
+        </div>
+      </AdminSectionCard>
 
       {error && (
         <ErrorBox
@@ -906,24 +890,22 @@ export default function AdminAnalytics() {
 
       <section
         id="analytics-details"
-        className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-3xl"
+        className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
       >
-        <div className="border-b border-slate-200 p-4 sm:p-7">
+        <div className="border-b border-slate-200 p-5 sm:p-6">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
-                  <Eye
-                    size={21}
-                  />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-[#0B2D5C]">
+                  <Eye size={19} />
                 </div>
 
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#B38A22]">
                     Drill-down
                   </p>
 
-                  <h2 className="text-xl font-black text-[#0B2D5C] sm:text-2xl">
+                  <h2 className="truncate text-xl font-black text-[#0B2D5C] sm:text-2xl">
                     {details?.title ??
                       "Analytics Details"}
                   </h2>
@@ -941,9 +923,7 @@ export default function AdminAnalytics() {
             </div>
 
             <form
-              onSubmit={
-                submitSearch
-              }
+              onSubmit={submitSearch}
               className="flex w-full max-w-xl flex-col gap-2 sm:flex-row"
             >
               <div className="relative flex-1">
@@ -955,24 +935,23 @@ export default function AdminAnalytics() {
                 <input
                   type="search"
                   value={search}
-                  onChange={(
-                    event
-                  ) =>
+                  onChange={(event) =>
                     setSearch(
                       event.target.value
                     )
                   }
                   placeholder="Search name, email, mobile, plan..."
-                  className="h-11 w-full rounded-xl border border-slate-300 bg-white pl-10 pr-4 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="h-11 w-full rounded-xl border border-slate-300 bg-white pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#0B2D5C] focus:ring-2 focus:ring-blue-100"
                 />
               </div>
 
-              <button
+              <AdminButton
                 type="submit"
-                className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[#0B2D5C] px-5 text-sm font-bold text-white transition hover:bg-[#123e78] sm:w-auto"
+                icon={<Search size={17} />}
+                className="h-11 w-full sm:w-auto"
               >
                 Search
-              </button>
+              </AdminButton>
             </form>
           </div>
         </div>
@@ -1091,10 +1070,10 @@ function SummaryCard({
     <button
       type="button"
       onClick={onClick}
-      className={`group w-full rounded-2xl border bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:rounded-3xl sm:p-6 ${
+      className={`group w-full rounded-2xl border bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
         active
-          ? "border-blue-400 ring-2 ring-blue-100"
-          : "border-slate-200"
+          ? "border-[#0B2D5C] ring-2 ring-blue-100"
+          : "border-slate-200 hover:border-slate-300"
       }`}
     >
       <div className="flex items-start justify-between gap-4">
@@ -1109,10 +1088,10 @@ function SummaryCard({
         </div>
 
         <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition ${
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition ${
             active
-              ? "bg-blue-600 text-white"
-              : "bg-blue-50 text-blue-600 group-hover:bg-blue-100"
+              ? "bg-[#0B2D5C] text-white"
+              : "bg-slate-100 text-[#0B2D5C] group-hover:bg-blue-50"
           }`}
         >
           <Icon
@@ -1125,7 +1104,7 @@ function SummaryCard({
         {description}
       </p>
 
-      <p className="mt-4 text-xs font-bold uppercase tracking-wide text-blue-600">
+      <p className="mt-4 text-xs font-bold uppercase tracking-[0.12em] text-[#0B2D5C]">
         View details →
       </p>
     </button>
@@ -1143,23 +1122,15 @@ function AnalyticsPanel({
     React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-7">
-      <div className="mb-5 flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
-          <Icon
-            size={21}
-          />
-        </div>
-
-        <h2 className="text-xl font-black text-[#0B2D5C] sm:text-2xl">
-          {title}
-        </h2>
-      </div>
-
+    <AdminSectionCard
+      title={title}
+      icon={Icon}
+      contentClassName="pt-1"
+    >
       <div className="divide-y divide-slate-100">
         {children}
       </div>
-    </section>
+    </AdminSectionCard>
   );
 }
 
@@ -1180,10 +1151,10 @@ function MetricRow({
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center justify-between gap-3 rounded-xl px-1 py-4 text-left transition ${
+      className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3.5 text-left transition ${
         active
-          ? "bg-blue-50 px-3"
-          : "hover:bg-slate-50 hover:px-3"
+          ? "bg-slate-100"
+          : "hover:bg-slate-50"
       }`}
     >
       <div className="flex min-w-0 items-center gap-2">
@@ -1192,7 +1163,7 @@ function MetricRow({
             size={17}
             className={
               active
-                ? "text-blue-700"
+                ? "text-[#0B2D5C]"
                 : "text-slate-400"
             }
           />
@@ -1201,8 +1172,8 @@ function MetricRow({
         <span
           className={`font-semibold ${
             active
-              ? "text-blue-800"
-              : "text-slate-500"
+              ? "text-[#0B2D5C]"
+              : "text-slate-600"
           }`}
         >
           {label}
@@ -1218,7 +1189,7 @@ function MetricRow({
           size={16}
           className={
             active
-              ? "text-blue-700"
+              ? "text-[#0B2D5C]"
               : "text-slate-300"
           }
         />
