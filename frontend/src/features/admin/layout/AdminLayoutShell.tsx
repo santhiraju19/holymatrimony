@@ -29,15 +29,15 @@ export default function AdminLayoutShell({
 
   return (
     <AdminGuard>
-      <div className="min-h-screen overflow-x-hidden bg-slate-50">
+      <div className="min-h-screen overflow-x-hidden bg-[#F8FAFC]">
         <div className="flex min-h-screen min-w-0">
           <AdminSidebar />
 
           <div className="min-w-0 flex-1">
             <AdminHeader />
 
-            <main className="min-w-0 p-3 sm:p-4 lg:p-5 xl:p-6">
-              <div className="mx-auto w-full max-w-[1360px]">
+            <main className="min-w-0 px-3 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6 xl:px-8">
+              <div className="mx-auto w-full max-w-[1400px]">
                 {children}
               </div>
             </main>
