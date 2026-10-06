@@ -24,4 +24,12 @@ public interface AdminUserService {
             UUID userId,
             UpdateUserStatusRequest request
     );
+
+    void sendVerificationEmail(
+            UUID userId
+    );
+
+    void sendPasswordResetEmail(
+            UUID userId
+    );
 }

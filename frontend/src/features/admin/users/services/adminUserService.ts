@@ -155,3 +155,81 @@ export async function updateAdminUserStatus(
     );
   }
 }
+
+export async function sendAdminVerificationEmail(
+  userId: string
+): Promise<void> {
+  if (
+    !userId ||
+    userId === "undefined" ||
+    userId === "null"
+  ) {
+    throw new Error(
+      "Invalid user ID."
+    );
+  }
+
+  try {
+    const response =
+      await api.post<
+        ApiResponse<null>
+      >(
+        `/admin/users/${encodeURIComponent(
+          userId
+        )}/send-verification-email`
+      );
+
+    if (!response.data.success) {
+      throw new Error(
+        response.data.message ||
+          "Unable to send verification email."
+      );
+    }
+  } catch (error) {
+    throw new Error(
+      getApiErrorMessage(
+        error,
+        "Unable to send verification email."
+      )
+    );
+  }
+}
+
+export async function sendAdminPasswordResetEmail(
+  userId: string
+): Promise<void> {
+  if (
+    !userId ||
+    userId === "undefined" ||
+    userId === "null"
+  ) {
+    throw new Error(
+      "Invalid user ID."
+    );
+  }
+
+  try {
+    const response =
+      await api.post<
+        ApiResponse<null>
+      >(
+        `/admin/users/${encodeURIComponent(
+          userId
+        )}/send-password-reset-email`
+      );
+
+    if (!response.data.success) {
+      throw new Error(
+        response.data.message ||
+          "Unable to send password reset email."
+      );
+    }
+  } catch (error) {
+    throw new Error(
+      getApiErrorMessage(
+        error,
+        "Unable to send password reset email."
+      )
+    );
+  }
+}

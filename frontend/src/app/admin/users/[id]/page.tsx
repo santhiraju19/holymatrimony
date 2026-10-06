@@ -17,6 +17,8 @@ import UserStatusBadge from "@/features/admin/users/components/UserStatusBadge";
 
 import {
   getAdminUser,
+  sendAdminPasswordResetEmail,
+  sendAdminVerificationEmail,
   updateAdminUserStatus,
 } from "@/features/admin/users/services/adminUserService";
 
@@ -162,6 +164,16 @@ export default function AdminUserDetailPage() {
     setActionLoading,
   ] =
     useState(false);
+
+  const [
+    emailAction,
+    setEmailAction,
+  ] =
+    useState<
+      "verification" |
+      "password-reset" |
+      null
+    >(null);
 
   const [
     error,
@@ -353,6 +365,81 @@ export default function AdminUserDetailPage() {
       );
     } finally {
       setActionLoading(false);
+    }
+  }
+
+  /*
+   * -------------------------------------------------------
+   * Account recovery email actions
+   * -------------------------------------------------------
+   */
+
+  async function handleSendVerificationEmail() {
+    if (
+      !user ||
+      user.emailVerified ||
+      emailAction !== null
+    ) {
+      return;
+    }
+
+    try {
+      setEmailAction(
+        "verification"
+      );
+
+      setError(null);
+      setSuccessMessage(null);
+
+      await sendAdminVerificationEmail(
+        user.id
+      );
+
+      setSuccessMessage(
+        "Verification email sent successfully."
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to send verification email."
+      );
+    } finally {
+      setEmailAction(null);
+    }
+  }
+
+  async function handleSendPasswordResetEmail() {
+    if (
+      !user ||
+      emailAction !== null
+    ) {
+      return;
+    }
+
+    try {
+      setEmailAction(
+        "password-reset"
+      );
+
+      setError(null);
+      setSuccessMessage(null);
+
+      await sendAdminPasswordResetEmail(
+        user.id
+      );
+
+      setSuccessMessage(
+        "Password reset email sent successfully."
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to send password reset email."
+      );
+    } finally {
+      setEmailAction(null);
     }
   }
 
@@ -852,6 +939,69 @@ export default function AdminUserDetailPage() {
                         ? "Deactivate Account"
                         : "Update Status"}
             </button>
+
+            {/* Account recovery */}
+
+            <div className="mt-7 border-t border-slate-200 pt-6">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#B78A22]">
+                Account Recovery
+              </p>
+
+              <h3 className="mt-2 text-lg font-bold text-slate-900">
+                Email Actions
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Help this member complete email verification or recover access
+                to their account.
+              </p>
+
+              <div className="mt-5 space-y-3">
+                <button
+                  type="button"
+                  disabled={
+                    user.emailVerified ||
+                    emailAction !== null
+                  }
+                  onClick={
+                    handleSendVerificationEmail
+                  }
+                  className="w-full rounded-xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-bold text-[#0B2D5C] transition hover:border-blue-300 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {user.emailVerified
+                    ? "Email Already Verified"
+                    : emailAction ===
+                        "verification"
+                      ? "Sending Verification Email..."
+                      : "Send Verification Email"}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={
+                    emailAction !== null
+                  }
+                  onClick={
+                    handleSendPasswordResetEmail
+                  }
+                  className="w-full rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-[#0B2D5C] hover:text-[#0B2D5C] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {emailAction ===
+                  "password-reset"
+                    ? "Sending Password Reset Email..."
+                    : "Send Password Reset Email"}
+                </button>
+              </div>
+
+              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs leading-5 text-slate-500">
+                  Verification emails contain a fresh verification OTP.
+                  Password reset emails contain a secure password-reset OTP.
+                  Administrators cannot view or change the member&apos;s
+                  password from this screen.
+                </p>
+              </div>
+            </div>
           </aside>
         </div>
       </div>

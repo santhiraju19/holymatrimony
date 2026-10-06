@@ -4,8 +4,11 @@ import com.theholymatrimony.backend.admin.dto.AdminUserDetailResponse;
 import com.theholymatrimony.backend.admin.dto.AdminUserPageResponse;
 import com.theholymatrimony.backend.admin.dto.AdminUserResponse;
 import com.theholymatrimony.backend.admin.dto.UpdateUserStatusRequest;
+import com.theholymatrimony.backend.auth.emailotp.EmailOtpService;
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.auth.enums.UserStatus;
+import com.theholymatrimony.backend.auth.passwordreset.PasswordResetService;
+import com.theholymatrimony.backend.auth.passwordreset.dto.ForgotPasswordRequest;
 import com.theholymatrimony.backend.auth.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -33,6 +36,10 @@ public class AdminUserServiceImpl
     private static final int MAX_PAGE_SIZE = 100;
 
     private final UserRepository userRepository;
+
+    private final EmailOtpService emailOtpService;
+
+    private final PasswordResetService passwordResetService;
 
     @Override
     public AdminUserPageResponse getUsers(
@@ -120,6 +127,44 @@ public class AdminUserServiceImpl
                 userRepository.save(targetUser);
 
         return toDetailResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public void sendVerificationEmail(
+            UUID userId
+    ) {
+
+        User targetUser =
+                findUser(userId);
+
+        if (
+                targetUser.isEmailVerificationComplete()
+        ) {
+            throw new IllegalStateException(
+                    "This user's email address is already verified."
+            );
+        }
+
+        emailOtpService.resend(
+                targetUser.getEmail()
+        );
+    }
+
+    @Override
+    @Transactional
+    public void sendPasswordResetEmail(
+            UUID userId
+    ) {
+
+        User targetUser =
+                findUser(userId);
+
+        passwordResetService.requestOtp(
+                new ForgotPasswordRequest(
+                        targetUser.getEmail()
+                )
+        );
     }
 
     private User findUser(

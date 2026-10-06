@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -105,4 +106,47 @@ public class AdminUserController {
                 )
         );
     }
+
+    @PostMapping("/{userId}/send-verification-email")
+    public ResponseEntity<ApiResponse<Void>>
+    sendVerificationEmail(
+
+            @PathVariable
+            UUID userId
+
+    ) {
+
+        adminUserService.sendVerificationEmail(
+                userId
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Verification email sent successfully",
+                        null
+                )
+        );
+    }
+
+    @PostMapping("/{userId}/send-password-reset-email")
+    public ResponseEntity<ApiResponse<Void>>
+    sendPasswordResetEmail(
+
+            @PathVariable
+            UUID userId
+
+    ) {
+
+        adminUserService.sendPasswordResetEmail(
+                userId
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Password reset email sent successfully",
+                        null
+                )
+        );
+    }
+
 }
