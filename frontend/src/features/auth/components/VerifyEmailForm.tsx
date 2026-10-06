@@ -575,6 +575,17 @@ export default function VerifyEmailForm() {
         </div>
       </form>
 
+      <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center">
+        <p className="text-sm font-semibold text-slate-700">
+          Didn&apos;t receive the email?
+        </p>
+        <p className="mt-1 text-xs leading-5 text-slate-600">
+          Please check your <span className="font-bold">Spam</span> or{" "}
+          <span className="font-bold">Junk</span> folder. You can request a new
+          OTP using the resend option above.
+        </p>
+      </div>
+
       <p className="mt-7 text-center text-sm text-slate-500">
         Entered the wrong email?{" "}
         <Link
