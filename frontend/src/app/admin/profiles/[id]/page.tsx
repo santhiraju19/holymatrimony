@@ -21,6 +21,7 @@ import {
   UserRound,
   UsersRound,
   XCircle,
+  type LucideIcon,
 } from "lucide-react";
 
 import {
@@ -29,6 +30,9 @@ import {
 
 import ProfileVerificationBadge from "@/features/admin/profiles/components/ProfileVerificationBadge";
 import VerificationDecisionModal from "@/features/admin/profiles/components/VerificationDecisionModal";
+import AdminButton from "@/features/admin/components/ui/AdminButton";
+import AdminPageHeader from "@/features/admin/components/ui/AdminPageHeader";
+import AdminSectionCard from "@/features/admin/components/ui/AdminSectionCard";
 
 import {
   getAdminProfile,
@@ -122,31 +126,22 @@ function DetailItem({
 
 function DetailSection({
   title,
-  icon,
+  icon: Icon,
   children,
 }: {
   title: string;
-  icon:
-    React.ReactNode;
+  icon: LucideIcon;
   children:
     React.ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0B2D5C] text-white">
-          {icon}
-        </div>
-
-        <h2 className="text-lg font-black text-[#0B2D5C]">
-          {title}
-        </h2>
-      </div>
-
-      <div className="grid gap-3 p-5 sm:grid-cols-2">
-        {children}
-      </div>
-    </section>
+    <AdminSectionCard
+      title={title}
+      icon={Icon}
+      contentClassName="grid gap-3 sm:grid-cols-2"
+    >
+      {children}
+    </AdminSectionCard>
   );
 }
 
@@ -369,168 +364,147 @@ export default function AdminProfileDetailPage() {
 
   return (
     <div className="space-y-6 pb-10">
-      <Link
-        href="/admin/profiles"
-        className="inline-flex items-center gap-2 text-sm font-bold text-[#0B2D5C] transition hover:underline"
+      <AdminPageHeader
+        eyebrow="Member Administration"
+        title={profile.fullName || "Member Profile"}
+        description="Review profile information, photos and verification status."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {pending && (
+              <>
+                <AdminButton
+                  type="button"
+                  variant="danger"
+                  icon={<XCircle size={16} />}
+                  onClick={() => {
+                    setDecisionError(null);
+                    setDecision("REJECTED");
+                  }}
+                >
+                  Reject
+                </AdminButton>
+
+                <AdminButton
+                  type="button"
+                  variant="success"
+                  icon={<CheckCircle2 size={16} />}
+                  onClick={() => {
+                    setDecisionError(null);
+                    setDecision("APPROVED");
+                  }}
+                >
+                  Approve
+                </AdminButton>
+              </>
+            )}
+
+            <Link
+              href="/admin/profiles"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              <ArrowLeft size={16} />
+              Back
+            </Link>
+          </div>
+        }
       >
-        <ArrowLeft
-          size={17}
-        />
-
-        Back to Profiles
-      </Link>
-
-      {/* Header */}
-
-      <section className="overflow-hidden rounded-3xl border border-blue-100 bg-gradient-to-br from-[#071B36] via-[#0B2D5C] to-[#174A87] px-6 py-7 text-white shadow-lg">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/10">
-              {profile.photos?.find(
-                (photo) =>
-                  photo.primaryPhoto
-              ) ? (
-                <img
-                  src={
-                    profile.photos.find(
-                      (photo) =>
-                        photo.primaryPhoto
-                    )!
-                      .imageUrl
-                  }
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <UserRound
-                  size={30}
-                />
-              )}
-            </div>
-
-            <div>
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-3xl font-black">
-                  {
-                    profile.fullName
-                  }
-                </h1>
-
-                <ProfileVerificationBadge
-                  status={
-                    profile.verificationStatus
-                  }
-                />
-              </div>
-
-              <p className="mt-2 text-sm text-blue-100">
-                {
-                  profile.email
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 text-[#0B2D5C]">
+            {profile.photos?.find(
+              (photo) =>
+                photo.primaryPhoto
+            ) ? (
+              <img
+                src={
+                  profile.photos.find(
+                    (photo) =>
+                      photo.primaryPhoto
+                  )!.imageUrl
                 }
-              </p>
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <UserRound size={28} />
+            )}
+          </div>
 
-              <p className="mt-2 text-xs text-blue-200">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <ProfileVerificationBadge
+                status={
+                  profile.verificationStatus
+                }
+              />
+
+              <span className="text-xs font-semibold text-slate-500">
                 Submitted:{" "}
                 {formatDate(
                   profile.verificationSubmittedAt
                 )}
-              </p>
+              </span>
             </div>
-          </div>
 
-          <div className="flex flex-wrap gap-3">
-            {pending && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDecisionError(
-                      null
-                    );
-
-                    setDecision(
-                      "REJECTED"
-                    );
-                  }}
-                  className="inline-flex items-center gap-2 rounded-xl border border-red-300 bg-white px-5 py-3 text-sm font-bold text-red-700 transition hover:bg-red-50"
-                >
-                  <XCircle
-                    size={18}
-                  />
-
-                  Reject
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDecisionError(
-                      null
-                    );
-
-                    setDecision(
-                      "APPROVED"
-                    );
-                  }}
-                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
-                >
-                  <CheckCircle2
-                    size={18}
-                  />
-
-                  Approve
-                </button>
-              </>
-            )}
+            <p className="mt-2 break-all text-sm font-medium text-slate-600">
+              {profile.email}
+            </p>
           </div>
         </div>
-      </section>
+      </AdminPageHeader>
 
       {/* Completion */}
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-slate-500">
-              Profile
-              Completion
-            </p>
+      <AdminSectionCard
+        title="Profile Completion"
+        description="Current readiness of the member profile."
+        icon={ShieldCheck}
+      >
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-end justify-between gap-4">
+              <p className="text-3xl font-black text-[#0B2D5C]">
+                {profile.completionPercentage ?? 0}%
+              </p>
 
-            <p className="mt-1 text-3xl font-black text-[#0B2D5C]">
-              {
-                profile.completionPercentage ??
-                0
-              }
-              %
-            </p>
-          </div>
+              <div className="flex items-center gap-2">
+                <ShieldCheck
+                  size={18}
+                  className={
+                    profile.profileCompleted
+                      ? "text-emerald-600"
+                      : "text-amber-600"
+                  }
+                />
 
-          <div className="flex items-center gap-2">
-            <ShieldCheck
-              size={20}
-              className={
-                profile.profileCompleted
-                  ? "text-emerald-600"
-                  : "text-amber-600"
-              }
-            />
+                <span className="text-sm font-bold text-slate-700">
+                  {profile.profileCompleted
+                    ? "Profile information complete"
+                    : "Profile incomplete"}
+                </span>
+              </div>
+            </div>
 
-            <span className="text-sm font-bold text-slate-700">
-              {profile.profileCompleted
-                ? "Profile information complete"
-                : "Profile incomplete"}
-            </span>
+            <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-[#0B2D5C] transition-all"
+                style={{
+                  width: `${Math.max(
+                    0,
+                    Math.min(
+                      100,
+                      profile.completionPercentage ?? 0
+                    )
+                  )}%`,
+                }}
+              />
+            </div>
           </div>
         </div>
-      </section>
+      </AdminSectionCard>
 
       <DetailSection
         title="Basic Information"
-        icon={
-          <UserRound
-            size={20}
-          />
-        }
+        icon={UserRound}
       >
         <DetailItem
           label="Mobile"
@@ -600,11 +574,7 @@ export default function AdminProfileDetailPage() {
 
       <DetailSection
         title="Church Information"
-        icon={
-          <Church
-            size={20}
-          />
-        }
+        icon={Church}
       >
         <DetailItem
           label="Denomination"
@@ -652,11 +622,7 @@ export default function AdminProfileDetailPage() {
 
       <DetailSection
         title="Education & Career"
-        icon={
-          <BriefcaseBusiness
-            size={20}
-          />
-        }
+        icon={BriefcaseBusiness}
       >
         <DetailItem
           label="Highest Education"
@@ -689,11 +655,7 @@ export default function AdminProfileDetailPage() {
 
       <DetailSection
         title="Family Information"
-        icon={
-          <UsersRound
-            size={20}
-          />
-        }
+        icon={UsersRound}
       >
         <DetailItem
           label="Father's Name"
@@ -726,11 +688,7 @@ export default function AdminProfileDetailPage() {
 
       <DetailSection
         title="Partner Preferences"
-        icon={
-          <Heart
-            size={20}
-          />
-        }
+        icon={Heart}
       >
         <DetailItem
           label="Preferred Age From"
@@ -763,99 +721,114 @@ export default function AdminProfileDetailPage() {
 
       {/* Photos */}
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0B2D5C] text-white">
-            <MapPin
-              size={20}
-            />
-          </div>
-
-          <h2 className="text-lg font-black text-[#0B2D5C]">
-            Profile Photos
-          </h2>
-        </div>
-
-        <div className="p-5">
-          {profile.photos &&
-          profile.photos.length >
-            0 ? (
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {profile.photos.map(
-                (photo) => (
-                  <div
-                    key={
-                      photo.id
+      <AdminSectionCard
+        title="Profile Photos"
+        description="Photos submitted by the member with the primary profile photo identified."
+        icon={MapPin}
+      >
+        {profile.photos &&
+        profile.photos.length > 0 ? (
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {profile.photos.map(
+              (photo) => (
+                <div
+                  key={
+                    photo.id
+                  }
+                  className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100"
+                >
+                  <img
+                    src={
+                      photo.imageUrl
                     }
-                    className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-slate-100"
-                  >
-                    <img
-                      src={
-                        photo.imageUrl
-                      }
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
+                    alt=""
+                    className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                  />
 
-                    {photo.primaryPhoto && (
-                      <span className="absolute left-2 top-2 rounded-full bg-[#0B2D5C] px-2.5 py-1 text-[10px] font-bold uppercase text-white">
-                        Primary
-                      </span>
-                    )}
-                  </div>
-                )
-              )}
-            </div>
-          ) : (
-            <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-center text-sm text-slate-500">
-              No photos uploaded.
-              Photos are optional
-              for verification.
-            </div>
-          )}
-        </div>
-      </section>
+                  {photo.primaryPhoto && (
+                    <span className="absolute left-3 top-3 rounded-full bg-[#0B2D5C] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
+                      Primary
+                    </span>
+                  )}
+                </div>
+              )
+            )}
+          </div>
+        ) : (
+          <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-center">
+            <UserRound
+              size={28}
+              className="mx-auto text-slate-300"
+            />
+
+            <p className="mt-3 text-sm font-bold text-slate-600">
+              No photos uploaded
+            </p>
+
+            <p className="mt-1 text-xs text-slate-500">
+              Photos are optional for verification.
+            </p>
+          </div>
+        )}
+      </AdminSectionCard>
 
       {/* Existing review result */}
 
       {profile.verificationStatus ===
         "REJECTED" &&
         profile.verificationReason && (
-          <section className="rounded-3xl border border-red-200 bg-red-50 p-5">
-            <h3 className="font-black text-red-900">
-              Rejection Reason
-            </h3>
+          <AdminSectionCard
+            title="Verification Result"
+            description="The most recent administrative verification decision."
+            icon={ShieldCheck}
+          >
+            <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+              <XCircle
+                size={21}
+                className="mt-0.5 shrink-0 text-red-600"
+              />
 
-            <p className="mt-2 text-sm leading-6 text-red-700">
-              {
-                profile.verificationReason
-              }
-            </p>
-          </section>
+              <div>
+                <p className="font-black text-red-900">
+                  Profile Rejected
+                </p>
+
+                <p className="mt-2 text-sm leading-6 text-red-700">
+                  {profile.verificationReason}
+                </p>
+              </div>
+            </div>
+          </AdminSectionCard>
         )}
 
       {profile.verificationStatus ===
         "APPROVED" && (
-        <section className="flex items-start gap-3 rounded-3xl border border-emerald-200 bg-emerald-50 p-5">
-          <CheckCircle2
-            size={22}
-            className="mt-0.5 shrink-0 text-emerald-600"
-          />
+          <AdminSectionCard
+            title="Verification Result"
+            description="The most recent administrative verification decision."
+            icon={ShieldCheck}
+          >
+            <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <CheckCircle2
+                size={21}
+                className="mt-0.5 shrink-0 text-emerald-600"
+              />
 
-          <div>
-            <h3 className="font-black text-emerald-900">
-              Profile Verified
-            </h3>
+              <div>
+                <p className="font-black text-emerald-900">
+                  Profile Verified
+                </p>
 
-            <p className="mt-1 text-sm text-emerald-700">
-              Reviewed{" "}
-              {formatDate(
-                profile.verificationReviewedAt
-              )}
-            </p>
-          </div>
-        </section>
-      )}
+                <p className="mt-1 text-sm text-emerald-700">
+                  Reviewed{" "}
+                  {formatDate(
+                    profile.verificationReviewedAt
+                  )}
+                </p>
+              </div>
+            </div>
+          </AdminSectionCard>
+        )}
 
       <VerificationDecisionModal
         open={
