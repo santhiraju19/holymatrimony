@@ -20,6 +20,9 @@ import {
 } from "lucide-react";
 
 import AdminMembershipTable from "@/features/admin/memberships/components/AdminMembershipTable";
+import AdminButton from "@/features/admin/components/ui/AdminButton";
+import AdminPageHeader from "@/features/admin/components/ui/AdminPageHeader";
+import AdminSectionCard from "@/features/admin/components/ui/AdminSectionCard";
 
 import {
   getAdminMemberships,
@@ -176,141 +179,117 @@ export default function AdminMembershipsPage() {
     <div className="space-y-6">
       {/* Header */}
 
-      <section className="rounded-3xl border border-blue-100 bg-gradient-to-br from-[#071B36] via-[#0B2D5C] to-[#174A87] px-6 py-7 text-white shadow-lg">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-blue-100">
-              <Crown
-                size={14}
-              />
-
-              Memberships
-            </div>
-
-            <h1 className="mt-4 text-3xl font-black tracking-tight">
-              Membership Management
-            </h1>
-
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-blue-100">
-              Review premium
-              memberships, billing
-              cycles, payment-linked
-              subscriptions,
-              expirations and
-              membership history.
-            </p>
+      <AdminPageHeader
+        eyebrow="Commerce"
+        title="Membership Management"
+        description="Review premium memberships, billing cycles, payment-linked subscriptions, expirations and membership history."
+      >
+        <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:w-fit">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#0B2D5C]">
+            <Crown size={21} />
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/10 px-5 py-4 backdrop-blur">
-            <p className="text-xs font-bold uppercase tracking-wide text-blue-200">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
               Membership Records
             </p>
 
-            <p className="mt-1 text-3xl font-black">
-              {
-                data?.totalElements ??
-                0
-              }
+            <p className="mt-0.5 text-2xl font-black text-[#0B2D5C]">
+              {data?.totalElements ?? 0}
             </p>
           </div>
         </div>
-      </section>
+      </AdminPageHeader>
 
       {/* Stats */}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                Visible
-              </p>
+      <AdminSectionCard
+        title="Membership Snapshot"
+        description="Summary of the membership records currently visible on this page."
+        icon={CreditCard}
+      >
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Visible
+                </p>
 
-              <p className="mt-2 text-2xl font-black text-slate-900">
-                {
-                  stats.visible
-                }
-              </p>
+                <p className="mt-2 text-2xl font-black text-slate-900">
+                  {stats.visible}
+                </p>
+              </div>
+
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                <CreditCard size={21} />
+              </div>
             </div>
+          </div>
 
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-              <CreditCard
-                size={21}
-              />
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">
+                  Active
+                </p>
+
+                <p className="mt-2 text-2xl font-black text-emerald-900">
+                  {stats.active}
+                </p>
+              </div>
+
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                <ShieldCheck size={21} />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
+                  Expiring ≤ 7 Days
+                </p>
+
+                <p className="mt-2 text-2xl font-black text-amber-900">
+                  {stats.expiringSoon}
+                </p>
+              </div>
+
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                <TimerReset size={21} />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Cancelled
+                </p>
+
+                <p className="mt-2 text-2xl font-black text-slate-900">
+                  {stats.cancelled}
+                </p>
+              </div>
+
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-200 text-slate-600">
+                <CreditCard size={21} />
+              </div>
             </div>
           </div>
         </div>
-
-        <div className="rounded-3xl border border-emerald-200 bg-emerald-50/50 p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-emerald-600">
-                Active
-              </p>
-
-              <p className="mt-2 text-2xl font-black text-emerald-900">
-                {
-                  stats.active
-                }
-              </p>
-            </div>
-
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-              <ShieldCheck
-                size={21}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-amber-200 bg-amber-50/50 p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-amber-600">
-                Expiring ≤ 7 Days
-              </p>
-
-              <p className="mt-2 text-2xl font-black text-amber-900">
-                {
-                  stats.expiringSoon
-                }
-              </p>
-            </div>
-
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-              <TimerReset
-                size={21}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                Cancelled
-              </p>
-
-              <p className="mt-2 text-2xl font-black text-slate-900">
-                {
-                  stats.cancelled
-                }
-              </p>
-            </div>
-
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-              <CreditCard
-                size={21}
-              />
-            </div>
-          </div>
-        </div>
-      </section>
+      </AdminSectionCard>
 
       {/* Filters */}
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <AdminSectionCard
+        title="Search & Filters"
+        description="Find memberships by member details, membership status or plan."
+        icon={Search}
+      >
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_190px_190px_auto]">
           <div className="relative">
             <Search
@@ -319,20 +298,13 @@ export default function AdminMembershipsPage() {
             />
 
             <input
-              value={
-                searchInput
-              }
-              onChange={(
-                event
-              ) =>
+              value={searchInput}
+              onChange={(event) =>
                 setSearchInput(
-                  event.target
-                    .value
+                  event.target.value
                 )
               }
-              onKeyDown={(
-                event
-              ) => {
+              onKeyDown={(event) => {
                 if (
                   event.key ===
                   "Enter"
@@ -347,12 +319,9 @@ export default function AdminMembershipsPage() {
 
           <select
             value={status}
-            onChange={(
-              event
-            ) => {
+            onChange={(event) => {
               setStatus(
-                event.target
-                  .value as
+                event.target.value as
                   | MembershipStatus
                   | ""
               );
@@ -380,12 +349,9 @@ export default function AdminMembershipsPage() {
 
           <select
             value={plan}
-            onChange={(
-              event
-            ) => {
+            onChange={(event) => {
               setPlan(
-                event.target
-                  .value as
+                event.target.value as
                   | MembershipPlan
                   | ""
               );
@@ -412,38 +378,34 @@ export default function AdminMembershipsPage() {
           </select>
 
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={
-                handleSearch
-              }
-              className="h-12 rounded-xl bg-[#0B2D5C] px-5 text-sm font-bold text-white transition hover:bg-[#123F78]"
+            <AdminButton
+              variant="primary"
+              icon={<Search size={16} />}
+              onClick={handleSearch}
+              className="h-12"
             >
               Search
-            </button>
+            </AdminButton>
 
-            <button
-              type="button"
+            <AdminButton
+              variant="secondary"
+              loading={loading}
+              disabled={loading}
+              icon={
+                loading
+                  ? undefined
+                  : <RefreshCw size={16} />
+              }
               onClick={() =>
                 void loadMemberships()
               }
-              disabled={
-                loading
-              }
-              className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-300 text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+              className="h-12"
             >
-              <RefreshCw
-                size={18}
-                className={
-                  loading
-                    ? "animate-spin"
-                    : ""
-                }
-              />
-            </button>
+              Refresh
+            </AdminButton>
           </div>
         </div>
-      </section>
+      </AdminSectionCard>
 
       {error && (
         <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm font-semibold text-red-700">
@@ -458,20 +420,34 @@ export default function AdminMembershipsPage() {
         </div>
       )}
 
-      {loading &&
-      !data ? (
-        <div className="rounded-3xl border border-slate-200 bg-white px-6 py-16 text-center text-sm font-semibold text-slate-500 shadow-sm">
-          Loading
-          memberships...
-        </div>
-      ) : (
-        <AdminMembershipTable
-          memberships={
-            data?.content ??
-            []
-          }
-        />
-      )}
+      <AdminSectionCard
+        title="Membership Records"
+        description={
+          data
+            ? `${data.totalElements} membership record${
+                data.totalElements === 1
+                  ? ""
+                  : "s"
+              } found.`
+            : "Premium membership records and subscription details."
+        }
+        icon={CreditCard}
+        contentClassName="p-0"
+      >
+        {loading &&
+        !data ? (
+          <div className="px-6 py-16 text-center text-sm font-semibold text-slate-500">
+            Loading memberships...
+          </div>
+        ) : (
+          <AdminMembershipTable
+            memberships={
+              data?.content ??
+              []
+            }
+          />
+        )}
+      </AdminSectionCard>
 
       {/* Pagination */}
 
@@ -493,8 +469,9 @@ export default function AdminMembershipsPage() {
             </p>
 
             <div className="flex gap-2">
-              <button
-                type="button"
+              <AdminButton
+                variant="secondary"
+                size="sm"
                 disabled={
                   data.first ||
                   loading
@@ -504,22 +481,18 @@ export default function AdminMembershipsPage() {
                     (current) =>
                       Math.max(
                         0,
-                        current -
-                          1
+                        current - 1
                       )
                   )
                 }
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                icon={<ChevronLeft size={16} />}
               >
-                <ChevronLeft
-                  size={16}
-                />
-
                 Previous
-              </button>
+              </AdminButton>
 
-              <button
-                type="button"
+              <AdminButton
+                variant="secondary"
+                size="sm"
                 disabled={
                   data.last ||
                   loading
@@ -527,18 +500,13 @@ export default function AdminMembershipsPage() {
                 onClick={() =>
                   setPage(
                     (current) =>
-                      current +
-                      1
+                      current + 1
                   )
                 }
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                icon={<ChevronRight size={16} />}
               >
                 Next
-
-                <ChevronRight
-                  size={16}
-                />
-              </button>
+              </AdminButton>
             </div>
           </div>
         )}

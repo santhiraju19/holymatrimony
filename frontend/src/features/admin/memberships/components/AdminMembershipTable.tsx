@@ -87,7 +87,7 @@ export default function AdminMembershipTable({
     memberships.length === 0
   ) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
+      <div className="px-6 py-16 text-center">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
           <CreditCard
             size={27}
@@ -108,8 +108,7 @@ export default function AdminMembershipTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="overflow-x-auto">
+    <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50">
             <tr>
@@ -280,7 +279,6 @@ export default function AdminMembershipTable({
             )}
           </tbody>
         </table>
-      </div>
     </div>
   );
 }
