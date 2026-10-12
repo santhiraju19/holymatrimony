@@ -37,6 +37,10 @@ import type {
   VerificationType,
 } from "@/features/admin/verifications/types/adminVerification";
 
+import AdminButton from "@/features/admin/components/ui/AdminButton";
+import AdminPageHeader from "@/features/admin/components/ui/AdminPageHeader";
+import AdminSectionCard from "@/features/admin/components/ui/AdminSectionCard";
+
 /*
  * ============================================================
  * Formatting
@@ -766,102 +770,28 @@ export default function AdminVerificationDetailPage() {
   return (
     <div className="space-y-6">
 
-      <button
-        type="button"
-        onClick={() =>
-          router.push(
-            "/admin/verifications"
-          )
+      <AdminPageHeader
+        eyebrow="Member Administration"
+        title={`${formatVerificationType(
+          verification.verificationType
+        )} Verification`}
+        description="Review the member submission and update its verification status."
+        actions={
+          <AdminButton
+            variant="secondary"
+            size="sm"
+            icon={<ArrowLeft size={16} />}
+            onClick={() =>
+              router.push(
+                "/admin/verifications"
+              )
+            }
+          >
+            Back to Verifications
+          </AdminButton>
         }
-        className="inline-flex items-center gap-2 text-sm font-bold text-[#0B2D5C] transition hover:text-[#D4AF37]"
       >
-
-        <ArrowLeft
-          size={17}
-        />
-
-        Back to Verifications
-
-      </button>
-
-      {/* ========================================================
-          Header
-         ======================================================== */}
-
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-
-        <div className="border-b border-slate-200 bg-gradient-to-r from-[#0B2D5C] to-[#123f75] px-6 py-7 text-white sm:px-8">
-
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-
-            <div className="flex items-start gap-4">
-
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10">
-
-                <ShieldCheck
-                  size={24}
-                />
-
-              </div>
-
-              <div>
-
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-100">
-                  Member Verification
-                </p>
-
-                <h1 className="mt-1 text-2xl font-black">
-                  {formatVerificationType(
-                    verification.verificationType
-                  )}{" "}
-                  Verification
-                </h1>
-
-                <p className="mt-2 text-sm text-blue-100">
-                  Review the member submission and update its verification status.
-                </p>
-
-              </div>
-
-            </div>
-
-            <div className="flex flex-col items-start gap-2 sm:items-end">
-
-              <span
-                className={`inline-flex w-fit items-center rounded-full border px-4 py-2 text-xs font-black ${getStatusClasses(
-                  verification.verificationStatus
-                )}`}
-              >
-                {verification
-                  .verificationStatus
-                  .replaceAll(
-                    "_",
-                    " "
-                  )}
-              </span>
-
-              {isPriorityChurchVerification && (
-
-                <span className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-100 px-4 py-2 text-xs font-black text-amber-900 shadow-sm">
-
-                  <Crown
-                    size={15}
-                  />
-
-                  Priority Church Verification
-
-                </span>
-
-              )}
-
-            </div>
-
-          </div>
-
-        </div>
-
-        <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3 sm:p-8">
-
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <DetailCard
             label="Member"
             value={
@@ -913,103 +843,78 @@ export default function AdminVerificationDetailPage() {
               )
             }
           />
-
         </div>
 
-      </section>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span
+            className={`inline-flex w-fit items-center rounded-full border px-3 py-1.5 text-xs font-black ${getStatusClasses(
+              verification.verificationStatus
+            )}`}
+          >
+            {verification.verificationStatus.replaceAll(
+              "_",
+              " "
+            )}
+          </span>
+
+          {isPriorityChurchVerification && (
+            <span className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-black text-amber-900">
+              <Crown size={14} />
+              Priority Church Verification
+            </span>
+          )}
+        </div>
+      </AdminPageHeader>
 
       {/* ========================================================
           Member Note
          ======================================================== */}
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-
-        <h2 className="text-lg font-black text-[#0B2D5C]">
-          Member Note
-        </h2>
-
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700">
+      <AdminSectionCard
+        title="Member Note"
+        description="Additional information provided by the member with this verification request."
+        icon={FileText}
+      >
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700">
           {verification.memberNote ||
             "No note was provided by the member."}
         </div>
-
-      </section>
+      </AdminSectionCard>
 
       {/* ========================================================
           Identity Verification
          ======================================================== */}
 
       {isIdentity && (
-
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-
-            <div className="flex items-start gap-3">
-
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#0B2D5C]">
-
-                <FileText
-                  size={21}
-                />
-
-              </div>
-
-              <div>
-
-                <h2 className="text-lg font-black text-[#0B2D5C]">
-                  Identity Document
-                </h2>
-
-                <p className="mt-1 text-sm text-slate-500">
-                  Private document submitted by the member for identity verification.
-                </p>
-
-              </div>
-
-            </div>
-
-            {verification.hasIdentityDocument && (
-
-              <button
-                type="button"
-                disabled={
+        <AdminSectionCard
+          title="Identity Document"
+          description="Private document submitted by the member for identity verification."
+          icon={FileText}
+          actions={
+            verification.hasIdentityDocument ? (
+              <AdminButton
+                variant="primary"
+                size="sm"
+                loading={documentLoading}
+                disabled={documentLoading}
+                icon={
                   documentLoading
+                    ? undefined
+                    : <Eye size={16} />
                 }
                 onClick={() => {
                   void handleViewIdentityDocument();
                 }}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0B2D5C] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#123f75] disabled:cursor-not-allowed disabled:opacity-50"
               >
-
-                {documentLoading ? (
-
-                  <Loader2
-                    size={17}
-                    className="animate-spin"
-                  />
-
-                ) : (
-
-                  <Eye
-                    size={17}
-                  />
-
-                )}
-
                 {documentLoading
                   ? "Opening..."
                   : "View Document"}
-
-              </button>
-            )}
-
-          </div>
-
+              </AdminButton>
+            ) : undefined
+          }
+        >
           {verification.hasIdentityDocument ? (
-
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-
+            <div className="grid gap-4 md:grid-cols-2">
               <DetailCard
                 label="Document Type"
                 value={
@@ -1043,26 +948,19 @@ export default function AdminVerificationDetailPage() {
                   )
                 }
               />
-
             </div>
-
           ) : (
-
-            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
               No identity document is attached to this verification request.
             </div>
-
           )}
 
           {documentError && (
-
             <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
               {documentError}
             </div>
-
           )}
-
-        </section>
+        </AdminSectionCard>
       )}
 
       {/* ========================================================
@@ -1070,91 +968,43 @@ export default function AdminVerificationDetailPage() {
          ======================================================== */}
 
       {isChurch && (
-
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-
-            <div className="flex items-start gap-3">
-
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#0B2D5C]">
-
-                <Church
-                  size={21}
-                />
-
-              </div>
-
-              <div>
-
-                <h2 className="text-lg font-black text-[#0B2D5C]">
-                  Church Verification Submission
-                </h2>
-
-                {isPriorityChurchVerification && (
-
-                  <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black text-amber-800">
-
-                    <Crown
-                      size={13}
-                    />
-
-                    Platinum Priority Review
-
-                  </div>
-
-                )}
-
-                <p className="mt-1 text-sm text-slate-500">
-                  Review how the member has chosen to verify their church affiliation.
-                </p>
-
-              </div>
-
-            </div>
-
-            {verification.hasChurchDocument && (
-
-              <button
-                type="button"
-                disabled={
+        <AdminSectionCard
+          title="Church Verification Submission"
+          description="Review how the member has chosen to verify their church affiliation."
+          icon={Church}
+          actions={
+            verification.hasChurchDocument ? (
+              <AdminButton
+                variant="primary"
+                size="sm"
+                loading={churchDocumentLoading}
+                disabled={churchDocumentLoading}
+                icon={
                   churchDocumentLoading
+                    ? undefined
+                    : <Eye size={16} />
                 }
                 onClick={() => {
                   void handleViewChurchDocument();
                 }}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0B2D5C] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#123f75] disabled:cursor-not-allowed disabled:opacity-50"
               >
-
-                {churchDocumentLoading ? (
-
-                  <Loader2
-                    size={17}
-                    className="animate-spin"
-                  />
-
-                ) : (
-
-                  <Eye
-                    size={17}
-                  />
-
-                )}
-
                 {churchDocumentLoading
                   ? "Opening..."
                   : "View Church Proof"}
-
-              </button>
-            )}
-
-          </div>
+              </AdminButton>
+            ) : undefined
+          }
+        >
+          {isPriorityChurchVerification && (
+            <div className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-800">
+              <Crown size={13} />
+              Platinum Priority Review
+            </div>
+          )}
 
           {verification.hasChurchSubmission ? (
-
             <>
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-
+              <div className="grid gap-4 md:grid-cols-2">
                 <DetailCard
                   label="Verification Method"
                   value={
@@ -1207,19 +1057,15 @@ export default function AdminVerificationDetailPage() {
                     }
                   />
                 )}
-
               </div>
 
               {verification.hasChurchDocument && (
-
-                <div className="mt-5">
-
-                  <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">
+                <div className="mt-6 border-t border-slate-200 pt-5">
+                  <h3 className="text-xs font-black uppercase tracking-wide text-slate-500">
                     Supporting Document
                   </h3>
 
                   <div className="mt-3 grid gap-4 md:grid-cols-3">
-
                     <DetailCard
                       label="File Name"
                       value={
@@ -1244,56 +1090,44 @@ export default function AdminVerificationDetailPage() {
                         )
                       }
                     />
-
                   </div>
-
                 </div>
               )}
 
               {churchMethod ===
                 "DOCUMENT" &&
                 !verification.hasChurchDocument && (
-
-                <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
-                  This request selected document verification, but no church document is attached.
-                </div>
-              )}
+                  <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+                    This request selected document verification, but no church document is attached.
+                  </div>
+                )}
 
               {churchMethod ===
                 "PASTOR_CONTACT" && (
-
-                <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-800">
-                  Verify the member&apos;s affiliation using the church phone or email before approving this request.
-                </div>
-              )}
+                  <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-800">
+                    Verify the member&apos;s affiliation using the church phone or email before approving this request.
+                  </div>
+                )}
 
               {churchMethod ===
                 "MEMBERSHIP_ID" && (
-
-                <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-800">
-                  Review the membership number and any optional supporting document before approving this request.
-                </div>
-              )}
-
+                  <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-800">
+                    Review the membership number and any optional supporting document before approving this request.
+                  </div>
+                )}
             </>
-
           ) : (
-
-            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
               No Church verification submission is attached to this request.
             </div>
-
           )}
 
           {churchDocumentError && (
-
             <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
               {churchDocumentError}
             </div>
-
           )}
-
-        </section>
+        </AdminSectionCard>
       )}
 
       {/* ========================================================
@@ -1301,15 +1135,18 @@ export default function AdminVerificationDetailPage() {
          ======================================================== */}
 
       {verification.reviewedAt && (
-
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-
-          <h2 className="text-lg font-black text-[#0B2D5C]">
-            Review Result
-          </h2>
-
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-
+        <AdminSectionCard
+          title="Review Result"
+          description="Final administrative review information for this verification request."
+          icon={
+            verification.verificationStatus === "APPROVED"
+              ? CheckCircle2
+              : verification.verificationStatus === "REJECTED"
+                ? XCircle
+                : ShieldCheck
+          }
+        >
+          <div className="grid gap-4 md:grid-cols-2">
             <DetailCard
               label="Reviewed At"
               value={
@@ -1326,24 +1163,19 @@ export default function AdminVerificationDetailPage() {
                 "—"
               }
             />
-
           </div>
 
           {verification.reviewReason && (
-
             <div className="mt-4">
-
               <DetailCard
                 label="Review Reason / Note"
                 value={
                   verification.reviewReason
                 }
               />
-
             </div>
           )}
-
-        </section>
+        </AdminSectionCard>
       )}
 
       {/* ========================================================
@@ -1351,39 +1183,26 @@ export default function AdminVerificationDetailPage() {
          ======================================================== */}
 
       {isPending && (
-
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-
-          <div>
-
-            <h2 className="text-lg font-black text-[#0B2D5C]">
-              Review Verification
-            </h2>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Approve the request or provide a reason and reject it.
-            </p>
-
-          </div>
-
+        <AdminSectionCard
+          title="Review Verification"
+          description="Approve the request or provide a reason and reject it."
+          icon={ShieldCheck}
+        >
           {isIdentity &&
             !verification.hasIdentityDocument && (
-
-            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
-              This identity request has no document attached. Approval is disabled.
-            </div>
-          )}
+              <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+                This identity request has no document attached. Approval is disabled.
+              </div>
+            )}
 
           {isChurch &&
             !verification.hasChurchSubmission && (
+              <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+                This Church request has no Church verification submission. Approval is disabled.
+              </div>
+            )}
 
-            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
-              This Church request has no Church verification submission. Approval is disabled.
-            </div>
-          )}
-
-          <div className="mt-5">
-
+          <div>
             <label
               htmlFor="review-reason"
               className="text-sm font-bold text-slate-700"
@@ -1406,105 +1225,77 @@ export default function AdminVerificationDetailPage() {
               placeholder="Add an optional approval note, or enter the required reason when rejecting..."
               className="mt-2 w-full resize-none rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0B2D5C] focus:ring-4 focus:ring-blue-100"
             />
-
           </div>
 
           {actionError && (
-
             <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
               {actionError}
             </div>
-
           )}
 
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-
-            <button
-              type="button"
+            <AdminButton
+              variant="success"
               disabled={
-                actionLoading !==
-                  null ||
+                actionLoading !== null ||
                 approvalBlocked
+              }
+              loading={
+                actionLoading === "APPROVED"
+              }
+              icon={
+                actionLoading === "APPROVED"
+                  ? undefined
+                  : <CheckCircle2 size={17} />
               }
               onClick={() => {
                 void handleReview(
                   "APPROVED"
                 );
               }}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-
-              {actionLoading ===
-              "APPROVED" ? (
-
-                <Loader2
-                  size={17}
-                  className="animate-spin"
-                />
-
-              ) : (
-
-                <CheckCircle2
-                  size={17}
-                />
-
-              )}
-
-              {actionLoading ===
-              "APPROVED"
+              {actionLoading === "APPROVED"
                 ? "Approving..."
                 : "Approve"}
+            </AdminButton>
 
-            </button>
-
-            <button
-              type="button"
+            <AdminButton
+              variant="danger"
               disabled={
-                actionLoading !==
-                null
+                actionLoading !== null
+              }
+              loading={
+                actionLoading === "REJECTED"
+              }
+              icon={
+                actionLoading === "REJECTED"
+                  ? undefined
+                  : <XCircle size={17} />
               }
               onClick={() => {
                 void handleReview(
                   "REJECTED"
                 );
               }}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-
-              {actionLoading ===
-              "REJECTED" ? (
-
-                <Loader2
-                  size={17}
-                  className="animate-spin"
-                />
-
-              ) : (
-
-                <XCircle
-                  size={17}
-                />
-
-              )}
-
-              {actionLoading ===
-              "REJECTED"
+              {actionLoading === "REJECTED"
                 ? "Rejecting..."
                 : "Reject"}
-
-            </button>
-
+            </AdminButton>
           </div>
-
-        </section>
+        </AdminSectionCard>
       )}
 
       {!isPending && (
-
-        <section className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-600">
-          This verification request has already been reviewed and can no longer be changed.
-        </section>
-
+        <AdminSectionCard
+          title="Review Complete"
+          description="This verification request has already been reviewed and can no longer be changed."
+          icon={ShieldCheck}
+        >
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-600">
+            The verification decision is read-only. Review the result above for the recorded decision and administrative notes.
+          </div>
+        </AdminSectionCard>
       )}
 
     </div>
