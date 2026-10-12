@@ -26,6 +26,9 @@ import {
 } from "next/navigation";
 
 import MembershipStatusBadge from "@/features/admin/memberships/components/MembershipStatusBadge";
+import AdminButton from "@/features/admin/components/ui/AdminButton";
+import AdminPageHeader from "@/features/admin/components/ui/AdminPageHeader";
+import AdminSectionCard from "@/features/admin/components/ui/AdminSectionCard";
 
 import {
   getAdminMembership,
@@ -297,124 +300,110 @@ export default function AdminMembershipDetailPage() {
 
   return (
     <div className="space-y-6 pb-10">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href="/admin/memberships"
-          className="inline-flex items-center gap-2 text-sm font-bold text-[#0B2D5C] transition hover:underline"
-        >
-          <ArrowLeft
-            size={17}
-          />
+      <AdminPageHeader
+        eyebrow="Commerce / Memberships"
+        title={membership.fullName}
+        description={membership.email}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/admin/memberships"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:border-[#0B2D5C] hover:text-[#0B2D5C]"
+            >
+              <ArrowLeft size={16} />
+              Back
+            </Link>
 
-          Back to
-          Memberships
-        </Link>
+            <AdminButton
+              variant="secondary"
+              size="sm"
+              loading={refreshing}
+              disabled={refreshing}
+              icon={
+                refreshing
+                  ? undefined
+                  : <RefreshCw size={16} />
+              }
+              onClick={() =>
+                void loadMembership(false)
+              }
+            >
+              Refresh
+            </AdminButton>
+          </div>
+        }
+      >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#0B2D5C]">
+              <UserRound size={20} />
+            </div>
 
-        <button
-          type="button"
-          disabled={
-            refreshing
-          }
-          onClick={() =>
-            void loadMembership(
-              false
-            )
-          }
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-        >
-          <RefreshCw
-            size={16}
-            className={
-              refreshing
-                ? "animate-spin"
-                : ""
-            }
-          />
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Membership Plan
+              </p>
 
-          Refresh
-        </button>
-      </div>
+              <span
+                className={[
+                  "mt-1 inline-flex rounded-full px-3 py-1 text-xs font-black",
+                  planClasses(
+                    membership.plan
+                  ),
+                ].join(" ")}
+              >
+                {membership.plan}
+              </span>
+            </div>
+          </div>
 
-      {/* Header */}
-
-      <section className="rounded-3xl border border-blue-100 bg-gradient-to-br from-[#071B36] via-[#0B2D5C] to-[#174A87] px-6 py-7 text-white shadow-lg">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10">
-              <UserRound
-                size={30}
-              />
+          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+              <Crown size={20} />
             </div>
 
             <div>
-              <h1 className="text-3xl font-black">
-                {
-                  membership.fullName
-                }
-              </h1>
-
-              <p className="mt-2 text-sm text-blue-100">
-                {
-                  membership.email
-                }
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Status
               </p>
 
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <span
-                  className={[
-                    "inline-flex rounded-full px-3 py-1 text-xs font-black",
-                    planClasses(
-                      membership.plan
-                    ),
-                  ].join(
-                    " "
-                  )}
-                >
-                  {
-                    membership.plan
-                  }
-                </span>
-
+              <div className="mt-1">
                 <MembershipStatusBadge
-                  status={
-                    membership.status
-                  }
+                  status={membership.status}
                 />
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/10 px-5 py-4 backdrop-blur">
-            <p className="text-xs font-bold uppercase tracking-wide text-blue-200">
-              Remaining
-            </p>
+          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:col-span-2 lg:col-span-1">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+              <CalendarDays size={20} />
+            </div>
 
-            <p className="mt-1 text-3xl font-black">
-              {membership.status ===
-              "ACTIVE"
-                ? `${membership.daysRemaining} days`
-                : "—"}
-            </p>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Remaining
+              </p>
+
+              <p className="mt-1 text-lg font-black text-slate-900">
+                {membership.status ===
+                "ACTIVE"
+                  ? `${membership.daysRemaining} days`
+                  : "—"}
+              </p>
+            </div>
           </div>
         </div>
-      </section>
+      </AdminPageHeader>
 
       {/* Member */}
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
-          <UserRound
-            size={20}
-            className="text-[#0B2D5C]"
-          />
-
-          <h2 className="text-lg font-black text-[#0B2D5C]">
-            Member
-            Information
-          </h2>
-        </div>
-
-        <div className="grid gap-3 p-5 sm:grid-cols-2">
+      <AdminSectionCard
+        title="Member Information"
+        description="Account details associated with this membership."
+        icon={UserRound}
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
           <DetailItem
             label="Full Name"
             value={
@@ -443,24 +432,16 @@ export default function AdminMembershipDetailPage() {
             }
           />
         </div>
-      </section>
+      </AdminSectionCard>
 
       {/* Membership */}
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
-          <Crown
-            size={20}
-            className="text-[#B38B19]"
-          />
-
-          <h2 className="text-lg font-black text-[#0B2D5C]">
-            Membership
-            Details
-          </h2>
-        </div>
-
-        <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-3">
+      <AdminSectionCard
+        title="Membership Details"
+        description="Plan, billing, lifecycle and renewal information."
+        icon={Crown}
+      >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <DetailItem
             label="Plan"
             value={
@@ -520,86 +501,58 @@ export default function AdminMembershipDetailPage() {
             }
           />
         </div>
-      </section>
+      </AdminSectionCard>
 
       {/* Payment */}
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
-          <CreditCard
-            size={20}
-            className="text-[#0B2D5C]"
-          />
+      <AdminSectionCard
+        title="Payment Information"
+        description="Payment association for this membership record."
+        icon={CreditCard}
+      >
+        {membership.paymentId ? (
+          <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4">
+            <CheckCircle2
+              size={20}
+              className="mt-0.5 shrink-0 text-emerald-600"
+            />
 
-          <h2 className="text-lg font-black text-[#0B2D5C]">
-            Payment
-            Information
-          </h2>
-        </div>
-
-        <div className="p-5">
-          {membership.paymentId ? (
-            <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4">
-              <CheckCircle2
-                size={20}
-                className="mt-0.5 shrink-0 text-emerald-600"
-              />
-
-              <div>
-                <p className="font-bold text-emerald-900">
-                  Payment linked
-                </p>
-
-                <p className="mt-1 break-all text-sm text-emerald-700">
-                  {
-                    membership.paymentId
-                  }
-                </p>
-
-                <p className="mt-2 text-xs text-emerald-700">
-                  We can link this
-                  directly to the
-                  admin Payments
-                  page in the next
-                  module.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4">
-              <p className="font-bold text-blue-900">
-                No payment linked
+            <div className="min-w-0">
+              <p className="font-bold text-emerald-900">
+                Payment linked
               </p>
 
-              <p className="mt-1 text-sm leading-6 text-blue-700">
-                This membership
-                may have been
-                activated through
-                a waiver, coupon,
-                promotional or
-                manual flow.
+              <p className="mt-1 break-all text-sm text-emerald-700">
+                {membership.paymentId}
+              </p>
+
+              <p className="mt-2 text-xs leading-5 text-emerald-700">
+                This membership is associated with a recorded payment.
               </p>
             </div>
-          )}
-        </div>
-      </section>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4">
+            <p className="font-bold text-blue-900">
+              No payment linked
+            </p>
+
+            <p className="mt-1 text-sm leading-6 text-blue-700">
+              This membership may have been activated through a waiver,
+              coupon, promotional or manual flow.
+            </p>
+          </div>
+        )}
+      </AdminSectionCard>
 
       {/* Audit */}
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
-          <Clock3
-            size={20}
-            className="text-[#0B2D5C]"
-          />
-
-          <h2 className="text-lg font-black text-[#0B2D5C]">
-            Audit
-            Information
-          </h2>
-        </div>
-
-        <div className="grid gap-3 p-5 sm:grid-cols-2">
+      <AdminSectionCard
+        title="Audit Information"
+        description="Creation and most recent update timestamps for this membership."
+        icon={Clock3}
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
           <DetailItem
             label="Created"
             value={formatDateTime(
@@ -614,7 +567,7 @@ export default function AdminMembershipDetailPage() {
             )}
           />
         </div>
-      </section>
+      </AdminSectionCard>
 
       {membership.status ===
         "ACTIVE" &&
