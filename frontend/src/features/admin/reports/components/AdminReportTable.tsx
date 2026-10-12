@@ -52,7 +52,7 @@ export default function AdminReportTable({
 }: AdminReportTableProps) {
   if (!reports?.length) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
+      <div className="px-6 py-16 text-center">
         <h3 className="font-semibold text-slate-900">
           No reports found
         </h3>
@@ -66,8 +66,7 @@ export default function AdminReportTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="overflow-x-auto">
+    <div className="overflow-x-auto">
         <table className="min-w-full">
           <thead className="border-b border-slate-200 bg-slate-50">
             <tr>
@@ -172,8 +171,7 @@ export default function AdminReportTable({
               )
             )}
           </tbody>
-        </table>
-      </div>
+      </table>
     </div>
   );
 }

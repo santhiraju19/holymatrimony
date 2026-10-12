@@ -7,6 +7,17 @@ import {
   useState,
 } from "react";
 
+import {
+  AlertTriangle,
+  RefreshCw,
+  Search,
+  ShieldAlert,
+  X,
+} from "lucide-react";
+
+import AdminButton from "@/features/admin/components/ui/AdminButton";
+import AdminPageHeader from "@/features/admin/components/ui/AdminPageHeader";
+import AdminSectionCard from "@/features/admin/components/ui/AdminSectionCard";
 import AdminReportTable from "@/features/admin/reports/components/AdminReportTable";
 
 import {
@@ -146,35 +157,69 @@ export default function AdminReportsPage() {
 
   return (
     <div className="mx-auto max-w-[1500px]">
-      <div className="mb-8 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-[#B78A22]">
-            Trust & Safety
-          </p>
+      <AdminPageHeader
+        eyebrow="Safety"
+        title="Member Reports"
+        description="Review member safety reports and take appropriate action."
+        actions={
+          <AdminButton
+            variant="secondary"
+            size="sm"
+            icon={<RefreshCw size={16} />}
+            disabled={loading}
+            onClick={() =>
+              void loadReports()
+            }
+          >
+            Refresh
+          </AdminButton>
+        }
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 text-red-700">
+                <ShieldAlert size={19} />
+              </div>
 
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-            Member Reports
-          </h1>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-red-500">
+                  Total Reports
+                </p>
 
-          <p className="mt-2 text-sm text-slate-500">
-            Review member safety reports
-            and take appropriate action.
-          </p>
+                <p className="mt-1 text-2xl font-black text-red-700">
+                  {data?.totalElements ?? "—"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                <AlertTriangle size={19} />
+              </div>
+
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-amber-600">
+                  Safety Queue
+                </p>
+
+                <p className="mt-1 text-sm font-bold text-amber-900">
+                  Review and resolve member concerns
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
+      </AdminPageHeader>
 
-        <div className="rounded-xl border border-red-100 bg-red-50 px-5 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-red-500">
-            Total Reports
-          </p>
-
-          <p className="mt-1 text-2xl font-bold text-red-700">
-            {data?.totalElements ??
-              "—"}
-          </p>
-        </div>
-      </div>
-
-      <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <AdminSectionCard
+        title="Search & Filters"
+        description="Find reports by member and narrow the safety queue by status or reason."
+        icon={Search}
+        className="mt-6"
+      >
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
           <form
             onSubmit={
@@ -197,12 +242,12 @@ export default function AdminReportsPage() {
               className="h-11 min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
             />
 
-            <button
+            <AdminButton
               type="submit"
-              className="h-11 rounded-xl bg-[#0B2D5C] px-5 text-sm font-semibold text-white transition hover:bg-[#123C73]"
+              icon={<Search size={16} />}
             >
               Search
-            </button>
+            </AdminButton>
           </form>
 
           <select
@@ -288,38 +333,47 @@ export default function AdminReportsPage() {
           </select>
 
           {hasFilters && (
-            <button
+            <AdminButton
               type="button"
-              onClick={
-                clearFilters
-              }
-              className="h-11 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+              variant="secondary"
+              icon={<X size={16} />}
+              onClick={clearFilters}
             >
               Clear
-            </button>
+            </AdminButton>
           )}
         </div>
-      </div>
+      </AdminSectionCard>
 
       {error && (
-        <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-5">
-          <p className="font-semibold text-red-700">
-            Unable to load reports
-          </p>
+        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-5">
+          <AlertTriangle
+            size={21}
+            className="mt-0.5 shrink-0 text-red-600"
+          />
 
-          <p className="mt-1 text-sm text-red-600">
-            {error}
-          </p>
+          <div className="min-w-0 flex-1">
+            <p className="font-bold text-red-800">
+              Unable to load reports
+            </p>
 
-          <button
-            type="button"
-            onClick={() =>
-              void loadReports()
-            }
-            className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white"
-          >
-            Retry
-          </button>
+            <p className="mt-1 text-sm text-red-600">
+              {error}
+            </p>
+
+            <AdminButton
+              type="button"
+              variant="danger"
+              size="sm"
+              className="mt-4"
+              icon={<RefreshCw size={16} />}
+              onClick={() =>
+                void loadReports()
+              }
+            >
+              Retry
+            </AdminButton>
+          </div>
         </div>
       )}
 
@@ -333,14 +387,20 @@ export default function AdminReportsPage() {
         </div>
       ) : (
         data && (
-          <>
+          <AdminSectionCard
+            title="Report Results"
+            description={`${data.totalElements} report${
+              data.totalElements === 1 ? "" : "s"
+            } found across the safety queue.`}
+            icon={ShieldAlert}
+            className="mt-6"
+            contentClassName="p-0"
+          >
             <AdminReportTable
-              reports={
-                data.content
-              }
+              reports={data.content}
             />
 
-            <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-slate-500">
                 Page{" "}
                 <span className="font-semibold text-slate-900">
@@ -356,18 +416,16 @@ export default function AdminReportsPage() {
 
                 {" · "}
 
-                {
-                  data.totalElements
-                }{" "}
+                {data.totalElements}{" "}
                 reports
               </p>
 
               <div className="flex gap-2">
-                <button
+                <AdminButton
                   type="button"
-                  disabled={
-                    data.first
-                  }
+                  variant="secondary"
+                  size="sm"
+                  disabled={data.first}
                   onClick={() =>
                     setPage(
                       (current) =>
@@ -377,29 +435,26 @@ export default function AdminReportsPage() {
                         )
                     )
                   }
-                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Previous
-                </button>
+                </AdminButton>
 
-                <button
+                <AdminButton
                   type="button"
-                  disabled={
-                    data.last
-                  }
+                  size="sm"
+                  disabled={data.last}
                   onClick={() =>
                     setPage(
                       (current) =>
                         current + 1
                     )
                   }
-                  className="rounded-lg bg-[#0B2D5C] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#123C73] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Next
-                </button>
+                </AdminButton>
               </div>
             </div>
-          </>
+          </AdminSectionCard>
         )
       )}
     </div>
