@@ -9,6 +9,7 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
@@ -19,6 +20,9 @@ import java.util.UUID;
         "/api/v1/admin/verifications"
 )
 @RequiredArgsConstructor
+@PreAuthorize(
+        "@adminAuthorization.hasPermission(authentication, 'VERIFICATIONS_MANAGE')"
+)
 public class AdminIdentityDocumentController {
 
     private final IdentityDocumentService

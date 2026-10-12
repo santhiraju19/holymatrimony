@@ -1,5 +1,6 @@
 package com.theholymatrimony.backend.auth.entity;
 
+import com.theholymatrimony.backend.admin.access.AdminAccessLevel;
 import com.theholymatrimony.backend.auth.enums.Role;
 import com.theholymatrimony.backend.auth.enums.UserStatus;
 import jakarta.persistence.Column;
@@ -89,6 +90,19 @@ public class User {
     @Builder.Default
     @Column(nullable = false, length = 30)
     private Role role = Role.ROLE_USER;
+
+    /*
+     * Administrative access level.
+     *
+     * Normal ROLE_USER accounts keep this value null.
+     * ROLE_ADMIN accounts are either SUPER_ADMIN or SUB_ADMIN.
+     *
+     * Existing administrators are backfilled to SUPER_ADMIN
+     * by Flyway migration V41.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "admin_access_level", length = 30)
+    private AdminAccessLevel adminAccessLevel;
 
     /*
      * Administrative account status.

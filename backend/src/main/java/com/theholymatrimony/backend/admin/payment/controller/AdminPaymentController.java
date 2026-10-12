@@ -17,6 +17,7 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,6 +39,9 @@ import java.util.UUID;
         "/api/v1/admin/payments"
 )
 @RequiredArgsConstructor
+@PreAuthorize(
+        "@adminAuthorization.hasPermission(authentication, 'PAYMENTS_VIEW')"
+)
 public class AdminPaymentController {
 
     private final AdminPaymentService

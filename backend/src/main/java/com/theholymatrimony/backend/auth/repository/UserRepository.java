@@ -1,6 +1,8 @@
 package com.theholymatrimony.backend.auth.repository;
 
+import com.theholymatrimony.backend.admin.access.AdminAccessLevel;
 import com.theholymatrimony.backend.auth.entity.User;
+import com.theholymatrimony.backend.auth.enums.Role;
 import com.theholymatrimony.backend.auth.enums.UserStatus;
 
 import org.springframework.data.domain.Page;
@@ -72,6 +74,47 @@ public interface UserRepository
             UserStatus status,
 
             Pageable pageable
+    );
+
+    @Query("""
+            SELECT u
+            FROM User u
+            WHERE u.role = :role
+              AND u.adminAccessLevel = :accessLevel
+              AND (
+                    :search IS NULL
+                    OR :search = ''
+                    OR LOWER(u.fullName)
+                        LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(u.email)
+                        LIKE LOWER(CONCAT('%', :search, '%'))
+                  )
+              AND (
+                    :status IS NULL
+                    OR u.status = :status
+                  )
+            """)
+    Page<User> searchSubAdmins(
+
+            @Param("role")
+            Role role,
+
+            @Param("accessLevel")
+            AdminAccessLevel accessLevel,
+
+            @Param("search")
+            String search,
+
+            @Param("status")
+            UserStatus status,
+
+            Pageable pageable
+    );
+
+    Optional<User> findByIdAndRoleAndAdminAccessLevel(
+            UUID id,
+            Role role,
+            AdminAccessLevel adminAccessLevel
     );
 
     /*

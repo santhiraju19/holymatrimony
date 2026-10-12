@@ -16,6 +16,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -30,6 +31,9 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/admin/profiles")
 @RequiredArgsConstructor
+@PreAuthorize(
+        "@adminAuthorization.hasPermission(authentication, 'PROFILES_MANAGE')"
+)
 public class AdminProfileVerificationController {
 
     private final AdminProfileVerificationService
