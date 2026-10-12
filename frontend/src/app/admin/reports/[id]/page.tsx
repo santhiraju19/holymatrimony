@@ -13,6 +13,22 @@ import {
   useParams,
 } from "next/navigation";
 
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CheckCircle2,
+  Clock3,
+  FileWarning,
+  RefreshCw,
+  ShieldAlert,
+  UserRound,
+  UsersRound,
+  XCircle,
+} from "lucide-react";
+
+import AdminButton from "@/features/admin/components/ui/AdminButton";
+import AdminPageHeader from "@/features/admin/components/ui/AdminPageHeader";
+import AdminSectionCard from "@/features/admin/components/ui/AdminSectionCard";
 import ReportReasonBadge from "@/features/admin/reports/components/ReportReasonBadge";
 import ReportStatusBadge from "@/features/admin/reports/components/ReportStatusBadge";
 
@@ -167,119 +183,119 @@ export default function AdminReportDetailPage() {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-16 text-center shadow-sm">
-        <div className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-slate-200 border-t-[#0B2D5C]" />
+      <AdminSectionCard
+        title="Loading Report"
+        description="Retrieving the report and member information."
+        icon={ShieldAlert}
+      >
+        <div className="flex min-h-64 flex-col items-center justify-center text-center">
+          <div className="h-9 w-9 animate-spin rounded-full border-4 border-slate-200 border-t-[#0B2D5C]" />
 
-        <p className="mt-4 text-sm font-medium text-slate-500">
-          Loading report...
-        </p>
-      </div>
+          <p className="mt-4 text-sm font-medium text-slate-500">
+            Loading report...
+          </p>
+        </div>
+      </AdminSectionCard>
     );
   }
 
   if (!report) {
     return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-8">
-        <h2 className="font-bold text-red-700">
-          Report unavailable
-        </h2>
+      <AdminSectionCard
+        title="Report Unavailable"
+        description="The requested safety report could not be loaded."
+        icon={AlertTriangle}
+        className="border-red-200"
+      >
+        <div className="rounded-xl border border-red-200 bg-red-50 p-5">
+          <p className="text-sm font-medium text-red-700">
+            {error || "The requested report could not be found."}
+          </p>
 
-        <p className="mt-2 text-sm text-red-600">
-          {error ||
-            "The requested report could not be found."}
-        </p>
-
-        <Link
-          href="/admin/reports"
-          className="mt-5 inline-flex rounded-lg bg-[#0B2D5C] px-4 py-2 text-sm font-semibold text-white"
-        >
-          Back to Reports
-        </Link>
-      </div>
+          <Link href="/admin/reports" className="mt-5 inline-flex">
+            <AdminButton
+              variant="secondary"
+              icon={<ArrowLeft size={16} />}
+            >
+              Back to Reports
+            </AdminButton>
+          </Link>
+        </div>
+      </AdminSectionCard>
     );
   }
 
   return (
-    <div className="mx-auto max-w-[1300px]">
-      <div className="mb-6">
-        <Link
-          href="/admin/reports"
-          className="text-sm font-semibold text-[#0B2D5C] hover:underline"
-        >
-          ← Back to Reports
-        </Link>
-      </div>
+    <div>
+      <AdminPageHeader
+        eyebrow="Safety / Reports"
+        title="Review Member Report"
+        description={`Report ID: ${report.id}`}
+        actions={
+          <>
+            <Link href="/admin/reports">
+              <AdminButton
+                variant="secondary"
+                icon={<ArrowLeft size={16} />}
+              >
+                Back to Reports
+              </AdminButton>
+            </Link>
 
-      <div className="mb-8 flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-[#B78A22]">
-            Trust & Safety
-          </p>
-
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-            Review Member Report
-          </h1>
-
-          <p className="mt-2 text-sm text-slate-500">
-            Report ID: {report.id}
-          </p>
+            <AdminButton
+              variant="secondary"
+              icon={<RefreshCw size={16} />}
+              disabled={loading || updating}
+              onClick={() => void loadReport()}
+            >
+              Refresh
+            </AdminButton>
+          </>
+        }
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <ReportReasonBadge reason={report.reason} />
+          <ReportStatusBadge status={report.status} />
         </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <ReportReasonBadge
-            reason={report.reason}
-          />
-
-          <ReportStatusBadge
-            status={report.status}
-          />
-        </div>
-      </div>
+      </AdminPageHeader>
 
       {error && (
-        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-          {error}
+        <div className="mt-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          <AlertTriangle
+            size={18}
+            className="mt-0.5 shrink-0"
+          />
+          <span>{error}</span>
         </div>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-6">
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900">
-              Report Details
-            </h2>
-
-            <div className="mt-5">
+          <AdminSectionCard
+            title="Report Details"
+            description="Review the submitted reason, context, and member-provided report."
+            icon={FileWarning}
+          >
+            <div className="grid gap-x-8 md:grid-cols-3">
               <InfoRow
                 label="Reason"
-                value={
-                  report.reason.replaceAll(
-                    "_",
-                    " "
-                  )
-                }
+                value={report.reason.replaceAll("_", " ")}
               />
 
               <InfoRow
                 label="Submitted"
-                value={
-                  formatDate(
-                    report.createdAt
-                  )
-                }
+                value={formatDate(report.createdAt)}
               />
 
               <InfoRow
                 label="Conversation ID"
-                value={
-                  report.conversationId
-                }
+                value={report.conversationId}
               />
             </div>
 
             <div className="mt-6">
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Member's Report
+                Member&apos;s Report
               </p>
 
               <div className="mt-2 min-h-32 whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
@@ -287,183 +303,154 @@ export default function AdminReportDetailPage() {
                   "No additional details were provided."}
               </div>
             </div>
-          </section>
+          </AdminSectionCard>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-500">
-                Reporter
-              </p>
+            <AdminSectionCard
+              title="Reporter"
+              description={report.reporterName}
+              icon={UserRound}
+            >
+              <InfoRow
+                label="Email"
+                value={report.reporterEmail}
+              />
 
-              <h2 className="mt-2 text-lg font-bold text-slate-900">
-                {report.reporterName}
-              </h2>
+              <InfoRow
+                label="Mobile"
+                value={report.reporterMobile}
+              />
 
-              <div className="mt-4">
-                <InfoRow
-                  label="Email"
-                  value={
-                    report.reporterEmail
-                  }
-                />
-
-                <InfoRow
-                  label="Mobile"
-                  value={
-                    report.reporterMobile
-                  }
-                />
-
-                <InfoRow
-                  label="User ID"
-                  value={
-                    report.reporterId
-                  }
-                />
-              </div>
+              <InfoRow
+                label="User ID"
+                value={report.reporterId}
+              />
 
               <Link
                 href={`/admin/users/${report.reporterId}`}
-                className="mt-5 inline-flex rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-[#0B2D5C] transition hover:border-[#0B2D5C] hover:bg-blue-50"
+                className="mt-5 inline-flex"
               >
-                View Reporter
+                <AdminButton
+                  variant="secondary"
+                  icon={<UserRound size={16} />}
+                >
+                  View Reporter
+                </AdminButton>
               </Link>
-            </section>
+            </AdminSectionCard>
 
-            <section className="rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-red-500">
-                Reported Member
-              </p>
+            <AdminSectionCard
+              title="Reported Member"
+              description={report.reportedUserName}
+              icon={UsersRound}
+              className="border-red-200"
+            >
+              <InfoRow
+                label="Email"
+                value={report.reportedUserEmail}
+              />
 
-              <h2 className="mt-2 text-lg font-bold text-slate-900">
-                {report.reportedUserName}
-              </h2>
+              <InfoRow
+                label="Mobile"
+                value={report.reportedUserMobile}
+              />
 
-              <div className="mt-4">
-                <InfoRow
-                  label="Email"
-                  value={
-                    report.reportedUserEmail
-                  }
-                />
-
-                <InfoRow
-                  label="Mobile"
-                  value={
-                    report.reportedUserMobile
-                  }
-                />
-
-                <InfoRow
-                  label="User ID"
-                  value={
-                    report.reportedUserId
-                  }
-                />
-              </div>
+              <InfoRow
+                label="User ID"
+                value={report.reportedUserId}
+              />
 
               <Link
                 href={`/admin/users/${report.reportedUserId}`}
-                className="mt-5 inline-flex rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50"
+                className="mt-5 inline-flex"
               >
-                View Reported Member
+                <AdminButton
+                  variant="danger"
+                  icon={<UsersRound size={16} />}
+                >
+                  View Reported Member
+                </AdminButton>
               </Link>
-            </section>
+            </AdminSectionCard>
           </div>
 
           {report.reviewedAt && (
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-bold text-slate-900">
-                Review Information
-              </h2>
-
-              <div className="mt-4">
+            <AdminSectionCard
+              title="Review Information"
+              description="Administrative review metadata for this report."
+              icon={Clock3}
+            >
+              <div className="grid gap-x-8 md:grid-cols-3">
                 <InfoRow
                   label="Reviewed At"
-                  value={
-                    formatDate(
-                      report.reviewedAt
-                    )
-                  }
+                  value={formatDate(report.reviewedAt)}
                 />
 
                 <InfoRow
                   label="Reviewed By"
-                  value={
-                    report.reviewedByName
-                  }
+                  value={report.reviewedByName}
                 />
 
                 <InfoRow
                   label="Administrator Email"
-                  value={
-                    report.reviewedByEmail
-                  }
+                  value={report.reviewedByEmail}
                 />
               </div>
-            </section>
+            </AdminSectionCard>
           )}
         </div>
 
         <aside>
-          <div className="sticky top-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900">
-              Moderation Action
-            </h2>
-
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Update the investigation status
-              after reviewing the report and
-              member information.
-            </p>
-
-            <div className="mt-6 space-y-3">
-              {report.status !==
-                "UNDER_REVIEW" && (
-                <button
-                  type="button"
+          <AdminSectionCard
+            title="Moderation Action"
+            description="Update the investigation status after reviewing the report and member information."
+            icon={ShieldAlert}
+            className="xl:sticky xl:top-6"
+          >
+            <div className="space-y-3">
+              {report.status !== "UNDER_REVIEW" && (
+                <AdminButton
+                  variant="primary"
+                  className="w-full"
+                  icon={<Clock3 size={16} />}
                   disabled={updating}
+                  loading={updating}
                   onClick={() =>
-                    void changeStatus(
-                      "UNDER_REVIEW"
-                    )
+                    void changeStatus("UNDER_REVIEW")
                   }
-                  className="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Mark Under Review
-                </button>
+                </AdminButton>
               )}
 
-              {report.status !==
-                "RESOLVED" && (
-                <button
-                  type="button"
+              {report.status !== "RESOLVED" && (
+                <AdminButton
+                  variant="success"
+                  className="w-full"
+                  icon={<CheckCircle2 size={16} />}
                   disabled={updating}
+                  loading={updating}
                   onClick={() =>
-                    void changeStatus(
-                      "RESOLVED"
-                    )
+                    void changeStatus("RESOLVED")
                   }
-                  className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Resolve Report
-                </button>
+                </AdminButton>
               )}
 
-              {report.status !==
-                "DISMISSED" && (
-                <button
-                  type="button"
+              {report.status !== "DISMISSED" && (
+                <AdminButton
+                  variant="secondary"
+                  className="w-full"
+                  icon={<XCircle size={16} />}
                   disabled={updating}
+                  loading={updating}
                   onClick={() =>
-                    void changeStatus(
-                      "DISMISSED"
-                    )
+                    void changeStatus("DISMISSED")
                   }
-                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Dismiss Report
-                </button>
+                </AdminButton>
               )}
             </div>
 
@@ -472,7 +459,17 @@ export default function AdminReportDetailPage() {
                 Updating report...
               </p>
             )}
-          </div>
+
+            <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Current Status
+              </p>
+
+              <div className="mt-2">
+                <ReportStatusBadge status={report.status} />
+              </div>
+            </div>
+          </AdminSectionCard>
         </aside>
       </div>
     </div>
