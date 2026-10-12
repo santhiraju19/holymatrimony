@@ -26,6 +26,9 @@ import type {
   VerificationType,
 } from "@/features/admin/verifications/types/adminVerification";
 
+import AdminPageHeader from "@/features/admin/components/ui/AdminPageHeader";
+import AdminSectionCard from "@/features/admin/components/ui/AdminSectionCard";
+
 function formatDate(
   value?: string | null
 ): string {
@@ -174,29 +177,33 @@ export default function AdminVerificationsPage() {
 
   return (
     <div className="space-y-6 pb-10">
-      <section className="overflow-hidden rounded-3xl border border-blue-100 bg-gradient-to-br from-[#071B36] via-[#0B2D5C] to-[#174A87] px-6 py-7 text-white shadow-lg">
-        <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10">
-            <ShieldCheck size={28} />
+      <AdminPageHeader
+        eyebrow="Member Administration"
+        title="Trust & Verification"
+        description="Review church and identity verification requests."
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-[#0B2D5C]">
+            <ShieldCheck size={22} />
           </div>
 
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.15em] text-[#F2D675]">
-              Admin Review
+            <p className="text-sm font-bold text-slate-800">
+              Verification Review Queue
             </p>
 
-            <h1 className="mt-1 text-3xl font-black">
-              Trust & Verification
-            </h1>
-
-            <p className="mt-2 text-sm text-blue-100">
-              Review church and identity verification requests.
+            <p className="mt-0.5 text-xs text-slate-500">
+              Review submitted member trust and verification requests.
             </p>
           </div>
         </div>
-      </section>
+      </AdminPageHeader>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <AdminSectionCard
+        title="Search & Filters"
+        description="Narrow the verification review queue by member, status or verification type."
+        icon={Search}
+      >
         <div className="grid gap-4 md:grid-cols-3">
           <div className="relative">
             <Search
@@ -212,7 +219,7 @@ export default function AdminVerificationsPage() {
                 )
               }
               placeholder="Search member..."
-              className="h-12 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
             />
           </div>
 
@@ -225,7 +232,7 @@ export default function AdminVerificationsPage() {
                   | ""
               )
             }
-            className="h-12 rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-blue-500"
+            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
           >
             <option value="">
               All statuses
@@ -253,7 +260,7 @@ export default function AdminVerificationsPage() {
                   | ""
               )
             }
-            className="h-12 rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-blue-500"
+            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
           >
             <option value="">
               All types
@@ -268,7 +275,7 @@ export default function AdminVerificationsPage() {
             </option>
           </select>
         </div>
-      </section>
+      </AdminSectionCard>
 
       {error && (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
@@ -276,33 +283,39 @@ export default function AdminVerificationsPage() {
         </div>
       )}
 
-      {loading ? (
-        <div className="flex min-h-[300px] items-center justify-center">
-          <Loader2
-            size={30}
-            className="animate-spin text-[#0B2D5C]"
-          />
-        </div>
-      ) : verifications.length === 0 ? (
-        <div className="rounded-3xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
-          <ShieldCheck
-            size={30}
-            className="mx-auto text-slate-400"
-          />
+      <AdminSectionCard
+        title="Verification Requests"
+        description={`${verifications.length} request${
+          verifications.length === 1 ? "" : "s"
+        } in the current review queue.`}
+        icon={ShieldCheck}
+        contentClassName="p-0"
+      >
+        {loading ? (
+          <div className="flex min-h-[280px] items-center justify-center">
+            <Loader2
+              size={30}
+              className="animate-spin text-[#0B2D5C]"
+            />
+          </div>
+        ) : verifications.length === 0 ? (
+          <div className="px-6 py-14 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <ShieldCheck size={24} />
+            </div>
 
-          <h3 className="mt-4 font-black text-slate-800">
-            No verification requests
-          </h3>
+            <h3 className="mt-4 font-black text-slate-800">
+              No verification requests
+            </h3>
 
-          <p className="mt-2 text-sm text-slate-500">
-            No requests match the current filters.
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <p className="mt-2 text-sm text-slate-500">
+              No requests match the current filters.
+            </p>
+          </div>
+        ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
+              <thead className="bg-slate-50/80">
                 <tr>
                   <th className="px-5 py-4 text-left text-xs font-black uppercase tracking-wide text-slate-500">
                     Member
@@ -330,7 +343,7 @@ export default function AdminVerificationsPage() {
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 bg-white">
                 {verifications.map(
                   (verification) => {
                     const priority =
@@ -345,30 +358,24 @@ export default function AdminVerificationsPage() {
                         }
                         className={
                           priority
-                            ? "bg-amber-50/40 hover:bg-amber-50/70"
-                            : "hover:bg-slate-50"
+                            ? "bg-amber-50/40 transition hover:bg-amber-50/70"
+                            : "transition hover:bg-slate-50"
                         }
                       >
                         <td className="px-5 py-4">
                           <p className="font-bold text-slate-900">
-                            {
-                              verification.fullName
-                            }
+                            {verification.fullName}
                           </p>
 
                           <p className="mt-1 text-xs text-slate-500">
-                            {
-                              verification.email
-                            }
+                            {verification.email}
                           </p>
                         </td>
 
                         <td className="px-5 py-4 text-sm font-bold text-[#0B2D5C]">
-                          {
-                            formatVerificationType(
-                              verification.verificationType
-                            )
-                          }
+                          {formatVerificationType(
+                            verification.verificationType
+                          )}
                         </td>
 
                         <td className="px-5 py-4">
@@ -378,23 +385,16 @@ export default function AdminVerificationsPage() {
                               statusClasses(
                                 verification.verificationStatus
                               ),
-                            ].join(
-                              " "
-                            )}
+                            ].join(" ")}
                           >
-                            {
-                              verification.verificationStatus
-                            }
+                            {verification.verificationStatus}
                           </span>
                         </td>
 
                         <td className="px-5 py-4">
                           {priority ? (
                             <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-xs font-black text-amber-800 shadow-sm">
-                              <Crown
-                                size={14}
-                              />
-
+                              <Crown size={14} />
                               Priority
                             </span>
                           ) : verification.verificationType ===
@@ -409,7 +409,7 @@ export default function AdminVerificationsPage() {
                           )}
                         </td>
 
-                        <td className="px-5 py-4 text-sm text-slate-500">
+                        <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-500">
                           {formatDate(
                             verification.submittedAt
                           )}
@@ -423,12 +423,9 @@ export default function AdminVerificationsPage() {
                               priority
                                 ? "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
                                 : "border-slate-200 text-[#0B2D5C] hover:border-[#0B2D5C] hover:bg-blue-50",
-                            ].join(
-                              " "
-                            )}
+                            ].join(" ")}
                           >
                             <Eye size={15} />
-
                             Review
                           </Link>
                         </td>
@@ -439,8 +436,9 @@ export default function AdminVerificationsPage() {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
+      </AdminSectionCard>
+
     </div>
   );
 }
