@@ -7,6 +7,7 @@ import com.theholymatrimony.backend.admin.adminuser.dto.UpdateSubAdminPermission
 import com.theholymatrimony.backend.admin.adminuser.dto.UpdateSubAdminStatusRequest;
 import com.theholymatrimony.backend.admin.adminuser.service.SubAdminManagementService;
 import com.theholymatrimony.backend.auth.enums.UserStatus;
+import com.theholymatrimony.backend.common.response.ApiResponse;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -47,7 +48,7 @@ public class AdminUserManagementController {
             subAdminManagementService;
 
     @GetMapping
-    public ResponseEntity<SubAdminPageResponse>
+    public ResponseEntity<ApiResponse<SubAdminPageResponse>>
     getSubAdmins(
             @RequestParam(
                     defaultValue = "0"
@@ -91,31 +92,35 @@ public class AdminUserManagementController {
                 );
 
         return ResponseEntity.ok(
+                ApiResponse.success(
                 subAdminManagementService
                         .getSubAdmins(
                                 search,
                                 status,
                                 pageable
                         )
+                )
         );
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<SubAdminResponse>
+    public ResponseEntity<ApiResponse<SubAdminResponse>>
     getSubAdmin(
             @PathVariable
             UUID userId
     ) {
         return ResponseEntity.ok(
+                ApiResponse.success(
                 subAdminManagementService
                         .getSubAdmin(
                                 userId
                         )
+                )
         );
     }
 
     @PostMapping
-    public ResponseEntity<SubAdminResponse>
+    public ResponseEntity<ApiResponse<SubAdminResponse>>
     createSubAdmin(
             @Valid
             @RequestBody
@@ -126,15 +131,17 @@ public class AdminUserManagementController {
                         HttpStatus.CREATED
                 )
                 .body(
-                        subAdminManagementService
-                                .createSubAdmin(
-                                        request
-                                )
+                        ApiResponse.success(
+                                subAdminManagementService
+                                        .createSubAdmin(
+                                                request
+                                        )
+                        )
                 );
     }
 
     @PatchMapping("/{userId}/permissions")
-    public ResponseEntity<SubAdminResponse>
+    public ResponseEntity<ApiResponse<SubAdminResponse>>
     updatePermissions(
             @PathVariable
             UUID userId,
@@ -144,16 +151,18 @@ public class AdminUserManagementController {
             UpdateSubAdminPermissionsRequest request
     ) {
         return ResponseEntity.ok(
+                ApiResponse.success(
                 subAdminManagementService
                         .updatePermissions(
                                 userId,
                                 request
                         )
+                )
         );
     }
 
     @PatchMapping("/{userId}/status")
-    public ResponseEntity<SubAdminResponse>
+    public ResponseEntity<ApiResponse<SubAdminResponse>>
     updateStatus(
             @PathVariable
             UUID userId,
@@ -165,6 +174,7 @@ public class AdminUserManagementController {
             HttpServletRequest httpRequest
     ) {
         return ResponseEntity.ok(
+                ApiResponse.success(
                 subAdminManagementService
                         .updateStatus(
                                 userId,
@@ -173,11 +183,12 @@ public class AdminUserManagementController {
                                         httpRequest
                                 )
                         )
+                )
         );
     }
 
     @PostMapping("/{userId}/resend-setup-otp")
-    public ResponseEntity<Map<String, String>>
+    public ResponseEntity<ApiResponse<Map<String, String>>>
     resendSetupOtp(
             @PathVariable
             UUID userId
@@ -188,9 +199,12 @@ public class AdminUserManagementController {
                 );
 
         return ResponseEntity.ok(
-                Map.of(
-                        "message",
-                        "Password setup OTP sent successfully."
+                ApiResponse.success(
+                        "Password setup OTP sent successfully.",
+                        Map.of(
+                                "message",
+                                "Password setup OTP sent successfully."
+                        )
                 )
         );
     }

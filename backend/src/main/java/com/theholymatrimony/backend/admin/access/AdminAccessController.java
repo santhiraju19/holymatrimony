@@ -2,6 +2,7 @@ package com.theholymatrimony.backend.admin.access;
 
 import com.theholymatrimony.backend.admin.access.dto.AdminAccessResponse;
 import com.theholymatrimony.backend.auth.entity.User;
+import com.theholymatrimony.backend.common.response.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,7 +22,7 @@ public class AdminAccessController {
     private final AdminAccessService adminAccessService;
 
     @GetMapping("/me")
-    public ResponseEntity<AdminAccessResponse>
+    public ResponseEntity<ApiResponse<AdminAccessResponse>>
     getCurrentAdminAccess(
             Authentication authentication
     ) {
@@ -55,7 +56,7 @@ public class AdminAccessController {
                 );
 
         return ResponseEntity.ok(
-                response
+                ApiResponse.success(response)
         );
     }
 }
