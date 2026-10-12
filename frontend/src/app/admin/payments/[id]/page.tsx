@@ -22,7 +22,6 @@ import {
   ReceiptText,
   RefreshCw,
   UserRound,
-  WalletCards,
 } from "lucide-react";
 
 import {
@@ -33,6 +32,9 @@ import api, {
   getApiErrorMessage,
 } from "@/lib/api";
 
+import AdminButton from "@/features/admin/components/ui/AdminButton";
+import AdminPageHeader from "@/features/admin/components/ui/AdminPageHeader";
+import AdminSectionCard from "@/features/admin/components/ui/AdminSectionCard";
 import PaymentStatusBadge from "@/features/admin/payments/components/PaymentStatusBadge";
 
 import {
@@ -507,74 +509,89 @@ export default function AdminPaymentDetailPage() {
 
   return (
     <div className="space-y-6 pb-10">
-      {/* Top actions */}
+      {/* Header */}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href="/admin/payments"
-          className="inline-flex items-center gap-2 text-sm font-bold text-[#0B2D5C] transition hover:underline"
-        >
-          <ArrowLeft
-            size={17}
-          />
+      <AdminPageHeader
+        eyebrow="Commerce / Payments"
+        title={payment.fullName}
+        description={payment.accountEmail}
+        actions={
+          <>
+            <Link href="/admin/payments">
+              <AdminButton
+                variant="secondary"
+                size="sm"
+                icon={<ArrowLeft size={16} />}
+              >
+                Back to Payments
+              </AdminButton>
+            </Link>
 
-          Back to Payments
-        </Link>
+            {successful && (
+              <AdminButton
+                variant="success"
+                size="sm"
+                loading={downloadingReceipt}
+                disabled={downloadingReceipt}
+                icon={
+                  downloadingReceipt
+                    ? undefined
+                    : <Download size={16} />
+                }
+                onClick={() =>
+                  void downloadReceipt()
+                }
+              >
+                Download Receipt
+              </AdminButton>
+            )}
 
-        <div className="flex flex-wrap gap-2">
-          {successful && (
-            <button
-              type="button"
-              onClick={() =>
-                void downloadReceipt()
-              }
-              disabled={
-                downloadingReceipt
-              }
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {downloadingReceipt ? (
-                <Loader2
-                  size={16}
-                  className="animate-spin"
-                />
-              ) : (
-                <Download
-                  size={16}
-                />
-              )}
-
-              {downloadingReceipt
-                ? "Downloading..."
-                : "Download Receipt"}
-            </button>
-          )}
-
-          <button
-            type="button"
-            disabled={
-              refreshing
-            }
-            onClick={() =>
-              void loadPayment(
-                false
-              )
-            }
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-          >
-            <RefreshCw
-              size={16}
-              className={
+            <AdminButton
+              variant="secondary"
+              size="sm"
+              loading={refreshing}
+              disabled={refreshing}
+              icon={
                 refreshing
-                  ? "animate-spin"
-                  : ""
+                  ? undefined
+                  : <RefreshCw size={16} />
               }
-            />
+              onClick={() =>
+                void loadPayment(false)
+              }
+            >
+              Refresh
+            </AdminButton>
+          </>
+        }
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Payment Status
+            </p>
 
-            Refresh
-          </button>
+            <div className="mt-2">
+              <PaymentStatusBadge
+                status={payment.status}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Amount
+            </p>
+
+            <p className="mt-1 text-2xl font-black text-slate-900">
+              {formatMoney(
+                payment.amountInRupees,
+                payment.currency
+              )}
+            </p>
+          </div>
         </div>
-      </div>
+      </AdminPageHeader>
 
       {/* Receipt error */}
 
@@ -591,129 +608,39 @@ export default function AdminPaymentDetailPage() {
         </div>
       )}
 
-      {/* Header */}
-
-      <section className="rounded-3xl border border-blue-100 bg-gradient-to-br from-[#071B36] via-[#0B2D5C] to-[#174A87] px-6 py-7 text-white shadow-lg">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10">
-              <WalletCards
-                size={30}
-              />
-            </div>
-
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-200">
-                Payment Record
-              </p>
-
-              <h1 className="mt-2 text-3xl font-black">
-                {
-                  payment.fullName
-                }
-              </h1>
-
-              <p className="mt-2 text-sm text-blue-100">
-                {
-                  payment.accountEmail
-                }
-              </p>
-
-              <div className="mt-4">
-                <PaymentStatusBadge
-                  status={
-                    payment.status
-                  }
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/10 px-5 py-4 backdrop-blur">
-            <p className="text-xs font-bold uppercase tracking-wide text-blue-200">
-              Amount
-            </p>
-
-            <p className="mt-1 text-3xl font-black">
-              {formatMoney(
-                payment.amountInRupees,
-                payment.currency
-              )}
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* Success status */}
 
       {successful && (
-        <section className="flex flex-col gap-4 rounded-3xl border border-emerald-200 bg-emerald-50 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            <CheckCircle2
-              size={22}
-              className="mt-0.5 shrink-0 text-emerald-600"
-            />
+        <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4">
+          <CheckCircle2
+            size={22}
+            className="mt-0.5 shrink-0 text-emerald-600"
+          />
 
-            <div>
-              <h3 className="font-black text-emerald-900">
-                Payment successful
-              </h3>
+          <div>
+            <h3 className="font-black text-emerald-900">
+              Payment successful
+            </h3>
 
-              <p className="mt-1 text-sm leading-6 text-emerald-700">
-                Razorpay payment
-                was completed
-                successfully on{" "}
-                {formatDateTime(
-                  payment.paidAt
-                )}
-                .
-              </p>
-            </div>
+            <p className="mt-1 text-sm leading-6 text-emerald-700">
+              Razorpay payment was completed successfully on{" "}
+              {formatDateTime(
+                payment.paidAt
+              )}
+              .
+            </p>
           </div>
-
-          <button
-            type="button"
-            onClick={() =>
-              void downloadReceipt()
-            }
-            disabled={
-              downloadingReceipt
-            }
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {downloadingReceipt ? (
-              <Loader2
-                size={17}
-                className="animate-spin"
-              />
-            ) : (
-              <Download
-                size={17}
-              />
-            )}
-
-            {downloadingReceipt
-              ? "Downloading..."
-              : "Download Receipt"}
-          </button>
-        </section>
+        </div>
       )}
 
       {/* Member Information */}
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
-          <UserRound
-            size={20}
-            className="text-[#0B2D5C]"
-          />
-
-          <h2 className="text-lg font-black text-[#0B2D5C]">
-            Member Information
-          </h2>
-        </div>
-
-        <div className="grid gap-3 p-5 sm:grid-cols-2">
+      <AdminSectionCard
+        title="Member Information"
+        description="Account and customer details associated with this transaction."
+        icon={UserRound}
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
           <DetailItem
             label="Account Name"
             value={
@@ -757,23 +684,16 @@ export default function AdminPaymentDetailPage() {
             }
           />
         </div>
-      </section>
+      </AdminSectionCard>
 
       {/* Transaction Details */}
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
-          <CreditCard
-            size={20}
-            className="text-[#0B2D5C]"
-          />
-
-          <h2 className="text-lg font-black text-[#0B2D5C]">
-            Transaction Details
-          </h2>
-        </div>
-
-        <div className="grid gap-3 p-5 sm:grid-cols-2">
+      <AdminSectionCard
+        title="Transaction Details"
+        description="Payment identifiers and gateway transaction status."
+        icon={CreditCard}
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
           <DetailItem
             label="Payment Record ID"
             value={
@@ -805,23 +725,16 @@ export default function AdminPaymentDetailPage() {
             }
           />
         </div>
-      </section>
+      </AdminSectionCard>
 
       {/* Purchase Details */}
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
-          <ReceiptText
-            size={20}
-            className="text-[#B38B19]"
-          />
-
-          <h2 className="text-lg font-black text-[#0B2D5C]">
-            Purchase Details
-          </h2>
-        </div>
-
-        <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-3">
+      <AdminSectionCard
+        title="Purchase Details"
+        description="Plan, billing cycle and transaction amount information."
+        icon={ReceiptText}
+      >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <DetailItem
             label="Plan"
             value={
@@ -865,85 +778,55 @@ export default function AdminPaymentDetailPage() {
             )}
           />
         </div>
-      </section>
+      </AdminSectionCard>
 
       {/* Receipt */}
 
       {successful && (
-        <section className="overflow-hidden rounded-3xl border border-emerald-200 bg-white shadow-sm">
-          <div className="flex items-center gap-3 border-b border-emerald-100 bg-emerald-50 px-5 py-4">
-            <ReceiptText
-              size={20}
-              className="text-emerald-700"
-            />
+        <AdminSectionCard
+          title="Payment Receipt"
+          description="Official Holy Matrimony receipt for this successful transaction."
+          icon={ReceiptText}
+        >
+          <div className="flex flex-col gap-4 rounded-2xl border border-emerald-200 bg-emerald-50/60 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-bold text-emerald-900">
+                Receipt ready
+              </p>
 
-            <h2 className="text-lg font-black text-emerald-900">
-              Payment Receipt
-            </h2>
-          </div>
-
-          <div className="p-5">
-            <div className="flex flex-col gap-4 rounded-2xl border border-emerald-200 bg-emerald-50/60 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-bold text-emerald-900">
-                  Receipt ready
-                </p>
-
-                <p className="mt-1 text-sm leading-6 text-emerald-700">
-                  Download the
-                  official Holy
-                  Matrimony PDF
-                  receipt generated
-                  from this payment
-                  transaction.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  void downloadReceipt()
-                }
-                disabled={
-                  downloadingReceipt
-                }
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {downloadingReceipt ? (
-                  <Loader2
-                    size={17}
-                    className="animate-spin"
-                  />
-                ) : (
-                  <Download
-                    size={17}
-                  />
-                )}
-
-                {downloadingReceipt
-                  ? "Downloading..."
-                  : "Download PDF"}
-              </button>
+              <p className="mt-1 text-sm leading-6 text-emerald-700">
+                Download the official Holy Matrimony PDF receipt generated
+                from this payment transaction.
+              </p>
             </div>
+
+            <AdminButton
+              variant="success"
+              loading={downloadingReceipt}
+              disabled={downloadingReceipt}
+              icon={
+                downloadingReceipt
+                  ? undefined
+                  : <Download size={17} />
+              }
+              onClick={() =>
+                void downloadReceipt()
+              }
+            >
+              Download PDF
+            </AdminButton>
           </div>
-        </section>
+        </AdminSectionCard>
       )}
 
       {/* Timeline */}
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
-          <Clock3
-            size={20}
-            className="text-[#0B2D5C]"
-          />
-
-          <h2 className="text-lg font-black text-[#0B2D5C]">
-            Transaction Timeline
-          </h2>
-        </div>
-
-        <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-3">
+      <AdminSectionCard
+        title="Transaction Timeline"
+        description="Creation, payment and latest update timestamps."
+        icon={Clock3}
+      >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <DetailItem
             label="Created"
             value={formatDateTime(
@@ -965,7 +848,7 @@ export default function AdminPaymentDetailPage() {
             )}
           />
         </div>
-      </section>
+      </AdminSectionCard>
 
       {/* Pending state */}
 
@@ -998,7 +881,11 @@ export default function AdminPaymentDetailPage() {
 
       {/* Amount summary */}
 
-      <section className="rounded-3xl border border-blue-100 bg-gradient-to-r from-blue-50 via-white to-amber-50 p-5">
+      <AdminSectionCard
+        title="Transaction Amount"
+        description="Final recorded amount for this payment."
+        icon={Banknote}
+      >
         <div className="flex items-center gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0B2D5C] text-white">
             <Banknote
@@ -1019,7 +906,7 @@ export default function AdminPaymentDetailPage() {
             </p>
           </div>
         </div>
-      </section>
+      </AdminSectionCard>
     </div>
   );
 }
