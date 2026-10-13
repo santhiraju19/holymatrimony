@@ -16,13 +16,28 @@ import { authService } from "@/features/auth/services/auth.service";
 import { clearAuthStorage } from "@/lib/auth";
 
 import {
-  adminNavigation,
+  getAccessibleAdminNavigation,
   isAdminNavigationActive,
 } from "./adminNavigation";
+
+import {
+  useAdminAccess,
+} from "../access/AdminAccessProvider";
 
 export default function AdminHeader() {
   const { user } = useAuthContext();
   const pathname = usePathname();
+
+  const {
+    access,
+  } = useAdminAccess();
+
+  const navigation =
+    access
+      ? getAccessibleAdminNavigation(
+          access
+        )
+      : [];
 
   const [loggingOut, setLoggingOut] =
     useState(false);
@@ -214,7 +229,7 @@ export default function AdminHeader() {
 
             <nav className="flex-1 overflow-y-auto px-4 py-5">
               <div className="space-y-6">
-                {adminNavigation.map((group) => (
+                {navigation.map((group) => (
                   <div key={group.label}>
                     <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
                       {group.label}

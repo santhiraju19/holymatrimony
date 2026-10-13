@@ -3,6 +3,9 @@
 import { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
+import AdminAccessBoundary from "@/features/admin/access/AdminAccessBoundary";
+import { AdminAccessProvider } from "@/features/admin/access/AdminAccessProvider";
+import AdminRouteAccessBoundary from "@/features/admin/access/AdminRouteAccessBoundary";
 import AdminGuard from "@/features/admin/auth/AdminGuard";
 import AdminHeader from "@/features/admin/layout/AdminHeader";
 import AdminSidebar from "@/features/admin/layout/AdminSidebar";
@@ -29,21 +32,27 @@ export default function AdminLayoutShell({
 
   return (
     <AdminGuard>
-      <div className="min-h-screen overflow-x-hidden bg-[#F8FAFC]">
-        <div className="flex min-h-screen min-w-0">
-          <AdminSidebar />
+      <AdminAccessProvider>
+        <AdminAccessBoundary>
+          <AdminRouteAccessBoundary>
+            <div className="min-h-screen overflow-x-hidden bg-[#F8FAFC]">
+              <div className="flex min-h-screen min-w-0">
+                <AdminSidebar />
 
-          <div className="min-w-0 flex-1">
-            <AdminHeader />
+                <div className="min-w-0 flex-1">
+                  <AdminHeader />
 
-            <main className="min-w-0 px-3 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6 xl:px-8">
-              <div className="mx-auto w-full max-w-[1400px]">
-                {children}
+                  <main className="min-w-0 px-3 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6 xl:px-8">
+                    <div className="mx-auto w-full max-w-[1400px]">
+                      {children}
+                    </div>
+                  </main>
+                </div>
               </div>
-            </main>
-          </div>
-        </div>
-      </div>
+            </div>
+          </AdminRouteAccessBoundary>
+        </AdminAccessBoundary>
+      </AdminAccessProvider>
     </AdminGuard>
   );
 }
