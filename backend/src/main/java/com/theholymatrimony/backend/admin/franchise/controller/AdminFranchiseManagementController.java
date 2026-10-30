@@ -1,0 +1,176 @@
+package com.theholymatrimony.backend.admin.franchise.controller;
+
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseResponse;
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchisePageResponse;
+import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseRequest;
+import com.theholymatrimony.backend.admin.franchise.service.AdminFranchiseManagementService;
+import com.theholymatrimony.backend.franchise.enums.FranchiseStatus;
+import com.theholymatrimony.backend.common.response.ApiResponse;
+
+import jakarta.validation.Valid;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * HQ management endpoints for District Franchises.
+ *
+ * Franchise provisioning is intentionally restricted to SUPER_ADMIN.
+ * Geographic state scope is never accepted independently from the client;
+ * the service derives state from the selected district.
+ */
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/admin/franchises")
+@RequiredArgsConstructor
+@PreAuthorize("@adminAuthorization.isSuperAdmin(authentication)")
+public class AdminFranchiseManagementController {
+
+    private final AdminFranchiseManagementService
+            adminFranchiseManagementService;
+
+    /**
+     * Provisions one District Franchise and its initial owner account.
+     *
+     * The authenticated administrator identity is obtained from Spring
+     * Security and passed to the service for server-side authorization.
+     */
+    @PostMapping
+    public ResponseEntity<ApiResponse<AdminFranchiseResponse>>
+    createDistrictFranchise(
+            Authentication authentication,
+
+            @Valid
+            @RequestBody
+            CreateDistrictFranchiseRequest request
+    ) {
+        if (
+                authentication == null
+                        || !authentication.isAuthenticated()
+                        || authentication.getName() == null
+                        || authentication.getName().isBlank()
+        ) {
+            throw new IllegalStateException(
+                    "Authenticated administrator not found."
+            );
+        }
+
+        AdminFranchiseResponse response =
+                adminFranchiseManagementService
+                        .createDistrictFranchise(
+                                authentication.getName(),
+                                request
+                        );
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(
+                        ApiResponse.success(
+                                response
+                        )
+                );
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<AdminFranchisePageResponse>>
+    listFranchises(
+            Authentication authentication,
+
+            @RequestParam(
+                    required = false
+            )
+            String search,
+
+            @RequestParam(
+                    required = false
+            )
+            FranchiseStatus status,
+
+            @RequestParam(
+                    defaultValue = "0"
+            )
+            int page,
+
+            @RequestParam(
+                    defaultValue = "20"
+            )
+            int size
+    ) {
+        String administratorEmail =
+                requireAdministratorEmail(
+                        authentication
+                );
+
+        AdminFranchisePageResponse response =
+                adminFranchiseManagementService
+                        .listFranchises(
+                                administratorEmail,
+                                search,
+                                status,
+                                page,
+                                size
+                        );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        response
+                )
+        );
+    }
+
+    @GetMapping("/{franchiseId}")
+    public ResponseEntity<ApiResponse<AdminFranchiseResponse>> getFranchise(
+            Authentication authentication,
+            @PathVariable UUID franchiseId
+    ) {
+        String administratorEmail =
+                requireAdministratorEmail(
+                        authentication
+                );
+
+        AdminFranchiseResponse response =
+                adminFranchiseManagementService.getFranchise(
+                        administratorEmail,
+                        franchiseId
+                );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        response
+                )
+        );
+    }
+
+
+    private String requireAdministratorEmail(
+            Authentication authentication
+    ) {
+        if (
+                authentication == null
+                        || !authentication.isAuthenticated()
+                        || authentication.getName() == null
+                        || authentication.getName().isBlank()
+        ) {
+            throw new IllegalStateException(
+                    "Authenticated administrator identity is required."
+            );
+        }
+
+        return authentication.getName();
+    }
+
+}

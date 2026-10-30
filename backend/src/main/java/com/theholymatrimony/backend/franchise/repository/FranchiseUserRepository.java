@@ -54,6 +54,19 @@ public interface FranchiseUserRepository
             FranchiseUserStatus status
     );
 
+    @EntityGraph(
+            attributePaths = {
+                    "user",
+                    "franchise"
+            }
+    )
+    Optional<FranchiseUser>
+    findByFranchiseIdAndStaffRoleAndStatus(
+            UUID franchiseId,
+            FranchiseStaffRole staffRole,
+            FranchiseUserStatus status
+    );
+
     boolean existsByFranchiseIdAndStaffRoleAndStatus(
             UUID franchiseId,
             FranchiseStaffRole staffRole,
