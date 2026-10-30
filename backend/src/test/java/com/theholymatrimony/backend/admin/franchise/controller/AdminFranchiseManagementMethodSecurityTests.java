@@ -3,7 +3,9 @@ package com.theholymatrimony.backend.admin.franchise.controller;
 import com.theholymatrimony.backend.admin.access.AdminAccessService;
 import com.theholymatrimony.backend.admin.access.AdminAuthorization;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseResponse;
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseTerritoryResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseRequest;
+import com.theholymatrimony.backend.admin.franchise.dto.CreateFranchiseTerritoryRequest;
 import com.theholymatrimony.backend.admin.franchise.service.AdminFranchiseManagementService;
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.common.response.ApiResponse;
@@ -747,4 +749,301 @@ class AdminFranchiseManagementMethodSecurityTests {
             );
         }
     }
+
+    @Test
+    void createTerritoryAllowsSuperAdminAndInvokesService() {
+        context =
+                createContext();
+
+        AdminAccessService accessService =
+                context.getBean(
+                        AdminAccessService.class
+                );
+
+        AdminFranchiseManagementService managementService =
+                context.getBean(
+                        AdminFranchiseManagementService.class
+                );
+
+        AdminFranchiseManagementController controller =
+                context.getBean(
+                        AdminFranchiseManagementController.class
+                );
+
+        String administratorEmail =
+                "primary@example.com";
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        Authentication authentication =
+                authenticate(
+                        administratorEmail
+                );
+
+        CreateFranchiseTerritoryRequest request =
+                mock(
+                        CreateFranchiseTerritoryRequest.class
+                );
+
+        AdminFranchiseTerritoryResponse serviceResponse =
+                mock(
+                        AdminFranchiseTerritoryResponse.class
+                );
+
+        when(
+                accessService.requireSuperAdmin(
+                        administratorEmail
+                )
+        ).thenReturn(
+                mock(
+                        User.class
+                )
+        );
+
+        when(
+                managementService.createTerritory(
+                        administratorEmail,
+                        franchiseId,
+                        request
+                )
+        ).thenReturn(
+                serviceResponse
+        );
+
+        ResponseEntity<ApiResponse<AdminFranchiseTerritoryResponse>> result =
+                controller.createTerritory(
+                        authentication,
+                        franchiseId,
+                        request
+                );
+
+        assertEquals(
+                HttpStatus.CREATED,
+                result.getStatusCode()
+        );
+
+        assertNotNull(
+                result.getBody()
+        );
+
+        assertSame(
+                serviceResponse,
+                extractEnvelopeData(
+                        result.getBody()
+                )
+        );
+
+        verify(
+                accessService
+        ).requireSuperAdmin(
+                administratorEmail
+        );
+
+        verify(
+                managementService
+        ).createTerritory(
+                administratorEmail,
+                franchiseId,
+                request
+        );
+    }
+
+    @Test
+    void createTerritoryDeniesSubAdminBeforeServiceInvocation() {
+        context =
+                createContext();
+
+        AdminAccessService accessService =
+                context.getBean(
+                        AdminAccessService.class
+                );
+
+        AdminFranchiseManagementService managementService =
+                context.getBean(
+                        AdminFranchiseManagementService.class
+                );
+
+        AdminFranchiseManagementController controller =
+                context.getBean(
+                        AdminFranchiseManagementController.class
+                );
+
+        String administratorEmail =
+                "subadmin@example.com";
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        Authentication authentication =
+                authenticate(
+                        administratorEmail
+                );
+
+        CreateFranchiseTerritoryRequest request =
+                mock(
+                        CreateFranchiseTerritoryRequest.class
+                );
+
+        when(
+                accessService.requireSuperAdmin(
+                        administratorEmail
+                )
+        ).thenThrow(
+                new AccessDeniedException(
+                        "Super administrator access is required."
+                )
+        );
+
+        assertThrows(
+                AccessDeniedException.class,
+                () ->
+                        controller.createTerritory(
+                                authentication,
+                                franchiseId,
+                                request
+                        )
+        );
+
+        verify(
+                accessService
+        ).requireSuperAdmin(
+                administratorEmail
+        );
+
+        verify(
+                managementService,
+                never()
+        ).createTerritory(
+                any(),
+                any(),
+                any()
+        );
+    }
+
+    @Test
+    void listTerritoriesDeniesSubAdminBeforeServiceInvocation() {
+        context =
+                createContext();
+
+        AdminAccessService accessService =
+                context.getBean(
+                        AdminAccessService.class
+                );
+
+        AdminFranchiseManagementService managementService =
+                context.getBean(
+                        AdminFranchiseManagementService.class
+                );
+
+        AdminFranchiseManagementController controller =
+                context.getBean(
+                        AdminFranchiseManagementController.class
+                );
+
+        String administratorEmail =
+                "subadmin@example.com";
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        Authentication authentication =
+                authenticate(
+                        administratorEmail
+                );
+
+        when(
+                accessService.requireSuperAdmin(
+                        administratorEmail
+                )
+        ).thenThrow(
+                new AccessDeniedException(
+                        "Super administrator access is required."
+                )
+        );
+
+        assertThrows(
+                AccessDeniedException.class,
+                () ->
+                        controller.listTerritories(
+                                authentication,
+                                franchiseId
+                        )
+        );
+
+        verify(
+                accessService
+        ).requireSuperAdmin(
+                administratorEmail
+        );
+
+        verify(
+                managementService,
+                never()
+        ).listTerritories(
+                any(),
+                any()
+        );
+    }
+
+    @Test
+    void getTerritoryDeniesUnauthenticatedInvocationBeforeService() {
+        context =
+                createContext();
+
+        AdminAccessService accessService =
+                context.getBean(
+                        AdminAccessService.class
+                );
+
+        AdminFranchiseManagementService managementService =
+                context.getBean(
+                        AdminFranchiseManagementService.class
+                );
+
+        AdminFranchiseManagementController controller =
+                context.getBean(
+                        AdminFranchiseManagementController.class
+                );
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        UUID territoryId =
+                UUID.randomUUID();
+
+        SecurityContextHolder.clearContext();
+
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                controller.getTerritory(
+                                        null,
+                                        franchiseId,
+                                        territoryId
+                                )
+                );
+
+        assertNotNull(
+                exception.getCause()
+        );
+
+        verify(
+                accessService,
+                never()
+        ).requireSuperAdmin(
+                any()
+        );
+
+        verify(
+                managementService,
+                never()
+        ).getTerritory(
+                any(),
+                any(),
+                any()
+        );
+    }
+
 }

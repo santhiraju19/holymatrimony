@@ -3,6 +3,8 @@ package com.theholymatrimony.backend.admin.franchise.service;
 import com.theholymatrimony.backend.admin.access.AdminAccessService;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchisePageResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseResponse;
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseTerritoryResponse;
+import com.theholymatrimony.backend.admin.franchise.dto.CreateFranchiseTerritoryRequest;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseRequest;
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.auth.enums.Role;
@@ -13,6 +15,7 @@ import com.theholymatrimony.backend.auth.repository.UserRepository;
 import com.theholymatrimony.backend.common.exception.ResourceAlreadyExistsException;
 import com.theholymatrimony.backend.franchise.entity.Franchise;
 import com.theholymatrimony.backend.franchise.entity.FranchiseDistrictAllocation;
+import com.theholymatrimony.backend.franchise.entity.FranchiseTerritory;
 import com.theholymatrimony.backend.franchise.entity.FranchiseUser;
 import com.theholymatrimony.backend.franchise.entity.GeoDistrict;
 import com.theholymatrimony.backend.franchise.entity.GeoState;
@@ -21,6 +24,7 @@ import com.theholymatrimony.backend.franchise.enums.FranchiseStatus;
 import com.theholymatrimony.backend.franchise.enums.FranchiseUserStatus;
 import com.theholymatrimony.backend.franchise.repository.FranchiseDistrictAllocationRepository;
 import com.theholymatrimony.backend.franchise.repository.FranchiseRepository;
+import com.theholymatrimony.backend.franchise.repository.FranchiseTerritoryRepository;
 import com.theholymatrimony.backend.franchise.repository.FranchiseUserRepository;
 import com.theholymatrimony.backend.franchise.repository.GeoDistrictRepository;
 
@@ -64,6 +68,7 @@ public class AdminFranchiseManagementServiceImpl
     private final FranchiseDistrictAllocationRepository
             franchiseDistrictAllocationRepository;
     private final FranchiseUserRepository franchiseUserRepository;
+    private final FranchiseTerritoryRepository franchiseTerritoryRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final PasswordResetService passwordResetService;
@@ -653,6 +658,334 @@ public class AdminFranchiseManagementServiceImpl
                 franchise.getCreatedAt(),
                 franchise.getUpdatedAt()
         );
+    }
+
+
+    @Override
+    @Transactional
+    public AdminFranchiseTerritoryResponse createTerritory(
+            String administratorEmail,
+            UUID franchiseId,
+            CreateFranchiseTerritoryRequest request
+    ) {
+        String normalizedAdministratorEmail =
+                normalizeRequiredEmail(
+                        administratorEmail,
+                        "Administrator email is required."
+                );
+
+        if (franchiseId == null) {
+            throw new IllegalArgumentException(
+                    "Franchise ID is required."
+            );
+        }
+
+        adminAccessService.requireSuperAdmin(
+                normalizedAdministratorEmail
+        );
+
+        if (request == null) {
+            throw new IllegalArgumentException(
+                    "Territory creation request is required."
+            );
+        }
+
+        Franchise franchise =
+                franchiseRepository
+                        .findById(franchiseId)
+                        .orElseThrow(
+                                () ->
+                                        new IllegalArgumentException(
+                                                "Franchise was not found."
+                                        )
+                        );
+
+        FranchiseDistrictAllocation allocation =
+                franchiseDistrictAllocationRepository
+                        .findByFranchiseIdAndActiveTrue(
+                                franchise.getId()
+                        )
+                        .orElseThrow(
+                                () ->
+                                        new IllegalStateException(
+                                                "Active district allocation was not found for franchise."
+                                        )
+                        );
+
+        String territoryCode =
+                normalizeTerritoryCode(
+                        request.territoryCode()
+                );
+
+        String territoryName =
+                normalizeRequiredText(
+                        request.name(),
+                        "Territory name is required."
+                );
+
+        if (territoryName.length() > 180) {
+            throw new IllegalArgumentException(
+                    "Territory name must not exceed 180 characters."
+            );
+        }
+
+        if (request.territoryType() == null) {
+            throw new IllegalArgumentException(
+                    "Territory type is required."
+            );
+        }
+
+        String coverageDescription =
+                normalizeOptionalText(
+                        request.coverageDescription()
+                );
+
+        if (
+                franchiseTerritoryRepository
+                        .existsByDistrictAllocationIdAndTerritoryCode(
+                                allocation.getId(),
+                                territoryCode
+                        )
+        ) {
+            throw new ResourceAlreadyExistsException(
+                    "A territory already exists with this code for the franchise."
+            );
+        }
+
+        if (
+                franchiseTerritoryRepository
+                        .existsByDistrictAllocationIdAndName(
+                                allocation.getId(),
+                                territoryName
+                        )
+        ) {
+            throw new ResourceAlreadyExistsException(
+                    "A territory already exists with this name for the franchise."
+            );
+        }
+
+        LocalDateTime now =
+                LocalDateTime.now();
+
+        FranchiseTerritory territory =
+                FranchiseTerritory
+                        .builder()
+                        .districtAllocation(allocation)
+                        .territoryCode(territoryCode)
+                        .name(territoryName)
+                        .territoryType(request.territoryType())
+                        .coverageDescription(coverageDescription)
+                        .active(true)
+                        .createdAt(now)
+                        .updatedAt(now)
+                        .build();
+
+        FranchiseTerritory savedTerritory =
+                franchiseTerritoryRepository.save(
+                        territory
+                );
+
+        return toAdminFranchiseTerritoryResponse(
+                savedTerritory
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AdminFranchiseTerritoryResponse> listTerritories(
+            String administratorEmail,
+            UUID franchiseId
+    ) {
+        String normalizedAdministratorEmail =
+                normalizeRequiredEmail(
+                        administratorEmail,
+                        "Administrator email is required."
+                );
+
+        if (franchiseId == null) {
+            throw new IllegalArgumentException(
+                    "Franchise ID is required."
+            );
+        }
+
+        adminAccessService.requireSuperAdmin(
+                normalizedAdministratorEmail
+        );
+
+        franchiseRepository
+                .findById(franchiseId)
+                .orElseThrow(
+                        () ->
+                                new IllegalArgumentException(
+                                        "Franchise was not found."
+                                )
+                );
+
+        franchiseDistrictAllocationRepository
+                .findByFranchiseIdAndActiveTrue(
+                        franchiseId
+                )
+                .orElseThrow(
+                        () ->
+                                new IllegalStateException(
+                                        "Active district allocation was not found for franchise."
+                                )
+                );
+
+        return franchiseTerritoryRepository
+                .findAllForAdminFranchise(
+                        franchiseId
+                )
+                .stream()
+                .map(
+                        this::toAdminFranchiseTerritoryResponse
+                )
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AdminFranchiseTerritoryResponse getTerritory(
+            String administratorEmail,
+            UUID franchiseId,
+            UUID territoryId
+    ) {
+        String normalizedAdministratorEmail =
+                normalizeRequiredEmail(
+                        administratorEmail,
+                        "Administrator email is required."
+                );
+
+        if (franchiseId == null) {
+            throw new IllegalArgumentException(
+                    "Franchise ID is required."
+            );
+        }
+
+        if (territoryId == null) {
+            throw new IllegalArgumentException(
+                    "Territory ID is required."
+            );
+        }
+
+        adminAccessService.requireSuperAdmin(
+                normalizedAdministratorEmail
+        );
+
+        franchiseRepository
+                .findById(franchiseId)
+                .orElseThrow(
+                        () ->
+                                new IllegalArgumentException(
+                                        "Franchise was not found."
+                                )
+                );
+
+        FranchiseTerritory territory =
+                franchiseTerritoryRepository
+                        .findForAdminFranchise(
+                                franchiseId,
+                                territoryId
+                        )
+                        .orElseThrow(
+                                () ->
+                                        new IllegalArgumentException(
+                                                "Territory was not found for this franchise."
+                                        )
+                        );
+
+        return toAdminFranchiseTerritoryResponse(
+                territory
+        );
+    }
+
+    private AdminFranchiseTerritoryResponse
+    toAdminFranchiseTerritoryResponse(
+            FranchiseTerritory territory
+    ) {
+        FranchiseDistrictAllocation allocation =
+                territory.getDistrictAllocation();
+
+        if (allocation == null) {
+            throw new IllegalStateException(
+                    "Territory does not have a district allocation."
+            );
+        }
+
+        Franchise franchise =
+                allocation.getFranchise();
+
+        if (franchise == null) {
+            throw new IllegalStateException(
+                    "Territory allocation does not have a franchise."
+            );
+        }
+
+        GeoDistrict district =
+                allocation.getDistrict();
+
+        if (district == null) {
+            throw new IllegalStateException(
+                    "Territory allocation does not have a district."
+            );
+        }
+
+        GeoState state =
+                district.getState();
+
+        if (state == null) {
+            throw new IllegalStateException(
+                    "Territory district does not have a state."
+            );
+        }
+
+        return new AdminFranchiseTerritoryResponse(
+                territory.getId(),
+
+                territory.getTerritoryCode(),
+                territory.getName(),
+                territory.getTerritoryType(),
+                territory.getCoverageDescription(),
+                territory.getActive(),
+
+                franchise.getId(),
+                franchise.getFranchiseCode(),
+                franchise.getDisplayName(),
+
+                allocation.getId(),
+
+                state.getId(),
+                state.getLgdCode(),
+                state.getName(),
+
+                district.getId(),
+                district.getLgdCode(),
+                district.getName(),
+
+                territory.getCreatedAt(),
+                territory.getUpdatedAt()
+        );
+    }
+
+    private String normalizeTerritoryCode(
+            String value
+    ) {
+        String normalized =
+                normalizeRequiredText(
+                        value,
+                        "Territory code is required."
+                )
+                        .toUpperCase(
+                                Locale.ROOT
+                        );
+
+        if (normalized.length() > 60) {
+            throw new IllegalArgumentException(
+                    "Territory code must not exceed 60 characters."
+            );
+        }
+
+        return normalized;
     }
 
     private String normalizeOptionalSearch(

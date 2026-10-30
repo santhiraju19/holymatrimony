@@ -1,8 +1,10 @@
 package com.theholymatrimony.backend.admin.franchise.controller;
 
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseResponse;
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseTerritoryResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchisePageResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseRequest;
+import com.theholymatrimony.backend.admin.franchise.dto.CreateFranchiseTerritoryRequest;
 import com.theholymatrimony.backend.admin.franchise.service.AdminFranchiseManagementService;
 import com.theholymatrimony.backend.franchise.enums.FranchiseStatus;
 import com.theholymatrimony.backend.common.response.ApiResponse;
@@ -32,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Geographic state scope is never accepted independently from the client;
  * the service derives state from the selected district.
  */
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -155,6 +158,75 @@ public class AdminFranchiseManagementController {
         );
     }
 
+
+
+    @PostMapping("/{franchiseId}/territories")
+    public ResponseEntity<ApiResponse<AdminFranchiseTerritoryResponse>>
+    createTerritory(
+            Authentication authentication,
+            @PathVariable UUID franchiseId,
+            @Valid
+            @RequestBody
+            CreateFranchiseTerritoryRequest request
+    ) {
+        AdminFranchiseTerritoryResponse response =
+                adminFranchiseManagementService.createTerritory(
+                        requireAdministratorEmail(authentication),
+                        franchiseId,
+                        request
+                );
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(
+                        ApiResponse.success(
+                                "Franchise territory created successfully.",
+                                response
+                        )
+                );
+    }
+
+    @GetMapping("/{franchiseId}/territories")
+    public ResponseEntity<ApiResponse<List<AdminFranchiseTerritoryResponse>>>
+    listTerritories(
+            Authentication authentication,
+            @PathVariable UUID franchiseId
+    ) {
+        List<AdminFranchiseTerritoryResponse> response =
+                adminFranchiseManagementService.listTerritories(
+                        requireAdministratorEmail(authentication),
+                        franchiseId
+                );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Franchise territories fetched successfully.",
+                        response
+                )
+        );
+    }
+
+    @GetMapping("/{franchiseId}/territories/{territoryId}")
+    public ResponseEntity<ApiResponse<AdminFranchiseTerritoryResponse>>
+    getTerritory(
+            Authentication authentication,
+            @PathVariable UUID franchiseId,
+            @PathVariable UUID territoryId
+    ) {
+        AdminFranchiseTerritoryResponse response =
+                adminFranchiseManagementService.getTerritory(
+                        requireAdministratorEmail(authentication),
+                        franchiseId,
+                        territoryId
+                );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Franchise territory fetched successfully.",
+                        response
+                )
+        );
+    }
 
     private String requireAdministratorEmail(
             Authentication authentication

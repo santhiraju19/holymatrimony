@@ -2,8 +2,10 @@ package com.theholymatrimony.backend.admin.franchise.service;
 
 import com.theholymatrimony.backend.admin.access.AdminAccessService;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseResponse;
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseTerritoryResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchisePageResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseRequest;
+import com.theholymatrimony.backend.admin.franchise.dto.CreateFranchiseTerritoryRequest;
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.auth.enums.Role;
 import com.theholymatrimony.backend.auth.enums.UserStatus;
@@ -13,14 +15,17 @@ import com.theholymatrimony.backend.auth.repository.UserRepository;
 import com.theholymatrimony.backend.common.exception.ResourceAlreadyExistsException;
 import com.theholymatrimony.backend.franchise.entity.Franchise;
 import com.theholymatrimony.backend.franchise.entity.FranchiseDistrictAllocation;
+import com.theholymatrimony.backend.franchise.entity.FranchiseTerritory;
 import com.theholymatrimony.backend.franchise.entity.FranchiseUser;
 import com.theholymatrimony.backend.franchise.entity.GeoDistrict;
 import com.theholymatrimony.backend.franchise.entity.GeoState;
 import com.theholymatrimony.backend.franchise.enums.FranchiseStaffRole;
 import com.theholymatrimony.backend.franchise.enums.FranchiseStatus;
+import com.theholymatrimony.backend.franchise.enums.FranchiseTerritoryType;
 import com.theholymatrimony.backend.franchise.enums.FranchiseUserStatus;
 import com.theholymatrimony.backend.franchise.repository.FranchiseDistrictAllocationRepository;
 import com.theholymatrimony.backend.franchise.repository.FranchiseRepository;
+import com.theholymatrimony.backend.franchise.repository.FranchiseTerritoryRepository;
 import com.theholymatrimony.backend.franchise.repository.FranchiseUserRepository;
 import com.theholymatrimony.backend.franchise.repository.GeoDistrictRepository;
 
@@ -60,6 +65,7 @@ class AdminFranchiseManagementServiceImplTests {
     private GeoDistrictRepository geoDistrictRepository;
     private FranchiseRepository franchiseRepository;
     private FranchiseDistrictAllocationRepository allocationRepository;
+    private FranchiseTerritoryRepository franchiseTerritoryRepository;
     private UserRepository userRepository;
     private FranchiseUserRepository franchiseUserRepository;
     private AdminAccessService adminAccessService;
@@ -78,6 +84,9 @@ class AdminFranchiseManagementServiceImplTests {
 
         allocationRepository =
                 mock(FranchiseDistrictAllocationRepository.class);
+
+        franchiseTerritoryRepository =
+                mock(FranchiseTerritoryRepository.class);
 
         userRepository =
                 mock(UserRepository.class);
@@ -101,6 +110,7 @@ class AdminFranchiseManagementServiceImplTests {
                         franchiseRepository,
                         allocationRepository,
                         franchiseUserRepository,
+                        franchiseTerritoryRepository,
                         userRepository,
                         passwordEncoder,
                         passwordResetService
@@ -1705,4 +1715,735 @@ class AdminFranchiseManagementServiceImplTests {
         );
     }
 
+    @Test
+    void createTerritoryCreatesNormalizedTerritoryForOnboardingFranchise() {
+        String administratorEmail =
+                "admin@theholymatrimony.com";
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        UUID allocationId =
+                UUID.randomUUID();
+
+        UUID territoryId =
+                UUID.randomUUID();
+
+        Franchise franchise =
+                territoryFranchise(
+                        franchiseId,
+                        FranchiseStatus.ONBOARDING
+                );
+
+        FranchiseDistrictAllocation allocation =
+                territoryAllocation(
+                        allocationId,
+                        franchise
+                );
+
+        CreateFranchiseTerritoryRequest request =
+                new CreateFranchiseTerritoryRequest(
+                        " gnt-city ",
+                        " Guntur City ",
+                        FranchiseTerritoryType.CITY,
+                        " Urban Guntur "
+                );
+
+        when(
+                franchiseRepository.findById(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(franchise)
+        );
+
+        when(
+                allocationRepository.findByFranchiseIdAndActiveTrue(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(allocation)
+        );
+
+        when(
+                franchiseTerritoryRepository
+                        .existsByDistrictAllocationIdAndTerritoryCode(
+                                allocationId,
+                                "GNT-CITY"
+                        )
+        ).thenReturn(false);
+
+        when(
+                franchiseTerritoryRepository
+                        .existsByDistrictAllocationIdAndName(
+                                allocationId,
+                                "Guntur City"
+                        )
+        ).thenReturn(false);
+
+        when(
+                franchiseTerritoryRepository.save(
+                        any(FranchiseTerritory.class)
+                )
+        ).thenAnswer(
+                invocation -> {
+                    FranchiseTerritory territory =
+                            invocation.getArgument(0);
+
+                    territory.setId(territoryId);
+
+                    return territory;
+                }
+        );
+
+        AdminFranchiseTerritoryResponse response =
+                service.createTerritory(
+                        administratorEmail,
+                        franchiseId,
+                        request
+                );
+
+        verify(
+                adminAccessService
+        ).requireSuperAdmin(
+                administratorEmail
+        );
+
+        verify(
+                franchiseTerritoryRepository
+        ).save(
+                argThat(
+                        territory ->
+                                territory.getDistrictAllocation()
+                                        == allocation
+                                        && "GNT-CITY".equals(
+                                        territory.getTerritoryCode()
+                                )
+                                        && "Guntur City".equals(
+                                        territory.getName()
+                                )
+                                        && territory.getTerritoryType()
+                                        == FranchiseTerritoryType.CITY
+                                        && "Urban Guntur".equals(
+                                        territory.getCoverageDescription()
+                                )
+                                        && Boolean.TRUE.equals(
+                                        territory.getActive()
+                                )
+                )
+        );
+
+        assertEquals(
+                territoryId,
+                response.territoryId()
+        );
+
+        assertEquals(
+                franchiseId,
+                response.franchiseId()
+        );
+
+        assertEquals(
+                allocationId,
+                response.allocationId()
+        );
+
+        assertEquals(
+                "GNT-CITY",
+                response.territoryCode()
+        );
+
+        assertEquals(
+                "Guntur City",
+                response.name()
+        );
+
+        assertEquals(
+                FranchiseTerritoryType.CITY,
+                response.territoryType()
+        );
+
+        assertEquals(
+                "Urban Guntur",
+                response.coverageDescription()
+        );
+
+        assertTrue(
+                response.active()
+        );
+    }
+
+    @Test
+    void createTerritoryRequiresSuperAdminBeforeRepositoryAccess() {
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        doThrow(
+                new AccessDeniedException(
+                        "Forbidden"
+                )
+        ).when(
+                adminAccessService
+        ).requireSuperAdmin(
+                "admin@theholymatrimony.com"
+        );
+
+        assertThrows(
+                AccessDeniedException.class,
+                () ->
+                        service.createTerritory(
+                                " ADMIN@THEHOLYMATRIMONY.COM ",
+                                franchiseId,
+                                territoryRequest()
+                        )
+        );
+
+        verify(
+                adminAccessService
+        ).requireSuperAdmin(
+                "admin@theholymatrimony.com"
+        );
+
+        verifyNoInteractions(
+                franchiseRepository,
+                allocationRepository,
+                franchiseTerritoryRepository
+        );
+    }
+
+    @Test
+    void createTerritoryRejectsMissingActiveAllocationBeforeTerritoryAccess() {
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        Franchise franchise =
+                territoryFranchise(
+                        franchiseId,
+                        FranchiseStatus.ONBOARDING
+                );
+
+        when(
+                franchiseRepository.findById(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(franchise)
+        );
+
+        when(
+                allocationRepository.findByFranchiseIdAndActiveTrue(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.empty()
+        );
+
+        IllegalStateException exception =
+                assertThrows(
+                        IllegalStateException.class,
+                        () ->
+                                service.createTerritory(
+                                        "admin@theholymatrimony.com",
+                                        franchiseId,
+                                        territoryRequest()
+                                )
+                );
+
+        assertEquals(
+                "Active district allocation was not found for franchise.",
+                exception.getMessage()
+        );
+
+        verifyNoInteractions(
+                franchiseTerritoryRepository
+        );
+    }
+
+    @Test
+    void createTerritoryRejectsDuplicateTerritoryCodeBeforeSave() {
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        UUID allocationId =
+                UUID.randomUUID();
+
+        Franchise franchise =
+                territoryFranchise(
+                        franchiseId,
+                        FranchiseStatus.ONBOARDING
+                );
+
+        FranchiseDistrictAllocation allocation =
+                territoryAllocation(
+                        allocationId,
+                        franchise
+                );
+
+        when(
+                franchiseRepository.findById(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(franchise)
+        );
+
+        when(
+                allocationRepository.findByFranchiseIdAndActiveTrue(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(allocation)
+        );
+
+        when(
+                franchiseTerritoryRepository
+                        .existsByDistrictAllocationIdAndTerritoryCode(
+                                allocationId,
+                                "GNT-CITY"
+                        )
+        ).thenReturn(true);
+
+        assertThrows(
+                ResourceAlreadyExistsException.class,
+                () ->
+                        service.createTerritory(
+                                "admin@theholymatrimony.com",
+                                franchiseId,
+                                territoryRequest()
+                        )
+        );
+
+        verify(
+                franchiseTerritoryRepository,
+                never()
+        ).save(
+                any(FranchiseTerritory.class)
+        );
+    }
+
+    @Test
+    void createTerritoryRejectsDuplicateTerritoryNameBeforeSave() {
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        UUID allocationId =
+                UUID.randomUUID();
+
+        Franchise franchise =
+                territoryFranchise(
+                        franchiseId,
+                        FranchiseStatus.ONBOARDING
+                );
+
+        FranchiseDistrictAllocation allocation =
+                territoryAllocation(
+                        allocationId,
+                        franchise
+                );
+
+        when(
+                franchiseRepository.findById(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(franchise)
+        );
+
+        when(
+                allocationRepository.findByFranchiseIdAndActiveTrue(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(allocation)
+        );
+
+        when(
+                franchiseTerritoryRepository
+                        .existsByDistrictAllocationIdAndTerritoryCode(
+                                allocationId,
+                                "GNT-CITY"
+                        )
+        ).thenReturn(false);
+
+        when(
+                franchiseTerritoryRepository
+                        .existsByDistrictAllocationIdAndName(
+                                allocationId,
+                                "Guntur City"
+                        )
+        ).thenReturn(true);
+
+        assertThrows(
+                ResourceAlreadyExistsException.class,
+                () ->
+                        service.createTerritory(
+                                "admin@theholymatrimony.com",
+                                franchiseId,
+                                territoryRequest()
+                        )
+        );
+
+        verify(
+                franchiseTerritoryRepository,
+                never()
+        ).save(
+                any(FranchiseTerritory.class)
+        );
+    }
+
+    @Test
+    void listTerritoriesReturnsActiveAndInactiveTerritoriesInFranchiseScope() {
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        UUID allocationId =
+                UUID.randomUUID();
+
+        Franchise franchise =
+                territoryFranchise(
+                        franchiseId,
+                        FranchiseStatus.ONBOARDING
+                );
+
+        FranchiseDistrictAllocation allocation =
+                territoryAllocation(
+                        allocationId,
+                        franchise
+                );
+
+        FranchiseTerritory activeTerritory =
+                territory(
+                        UUID.randomUUID(),
+                        allocation,
+                        "GNT-CITY",
+                        "Guntur City",
+                        true
+                );
+
+        FranchiseTerritory inactiveTerritory =
+                territory(
+                        UUID.randomUUID(),
+                        allocation,
+                        "GNT-RURAL",
+                        "Guntur Rural",
+                        false
+                );
+
+        when(
+                franchiseRepository.findById(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(franchise)
+        );
+
+        when(
+                allocationRepository.findByFranchiseIdAndActiveTrue(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(allocation)
+        );
+
+        when(
+                franchiseTerritoryRepository.findAllForAdminFranchise(
+                        franchiseId
+                )
+        ).thenReturn(
+                java.util.List.of(
+                        activeTerritory,
+                        inactiveTerritory
+                )
+        );
+
+        java.util.List<AdminFranchiseTerritoryResponse> response =
+                service.listTerritories(
+                        "admin@theholymatrimony.com",
+                        franchiseId
+                );
+
+        assertEquals(
+                2,
+                response.size()
+        );
+
+        assertTrue(
+                response.get(0).active()
+        );
+
+        assertEquals(
+                false,
+                response.get(1).active()
+        );
+
+        verify(
+                franchiseTerritoryRepository
+        ).findAllForAdminFranchise(
+                franchiseId
+        );
+    }
+
+    @Test
+    void listTerritoriesRequiresActiveDistrictAllocation() {
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        Franchise franchise =
+                territoryFranchise(
+                        franchiseId,
+                        FranchiseStatus.ONBOARDING
+                );
+
+        when(
+                franchiseRepository.findById(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(franchise)
+        );
+
+        when(
+                allocationRepository.findByFranchiseIdAndActiveTrue(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.empty()
+        );
+
+        assertThrows(
+                IllegalStateException.class,
+                () ->
+                        service.listTerritories(
+                                "admin@theholymatrimony.com",
+                                franchiseId
+                        )
+        );
+
+        verify(
+                franchiseTerritoryRepository,
+                never()
+        ).findAllForAdminFranchise(
+                any()
+        );
+    }
+
+    @Test
+    void getTerritoryReturnsTerritoryInsideRequestedFranchiseScope() {
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        UUID allocationId =
+                UUID.randomUUID();
+
+        UUID territoryId =
+                UUID.randomUUID();
+
+        Franchise franchise =
+                territoryFranchise(
+                        franchiseId,
+                        FranchiseStatus.ONBOARDING
+                );
+
+        FranchiseDistrictAllocation allocation =
+                territoryAllocation(
+                        allocationId,
+                        franchise
+                );
+
+        FranchiseTerritory territory =
+                territory(
+                        territoryId,
+                        allocation,
+                        "GNT-CITY",
+                        "Guntur City",
+                        true
+                );
+
+        when(
+                franchiseRepository.findById(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(franchise)
+        );
+
+        when(
+                allocationRepository.findByFranchiseIdAndActiveTrue(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(allocation)
+        );
+
+        when(
+                franchiseTerritoryRepository.findForAdminFranchise(
+                        franchiseId,
+                        territoryId
+                )
+        ).thenReturn(
+                Optional.of(territory)
+        );
+
+        AdminFranchiseTerritoryResponse response =
+                service.getTerritory(
+                        "admin@theholymatrimony.com",
+                        franchiseId,
+                        territoryId
+                );
+
+        assertEquals(
+                territoryId,
+                response.territoryId()
+        );
+
+        assertEquals(
+                franchiseId,
+                response.franchiseId()
+        );
+
+        assertEquals(
+                allocationId,
+                response.allocationId()
+        );
+
+        assertEquals(
+                "Guntur City",
+                response.name()
+        );
+    }
+
+    @Test
+    void getTerritoryRejectsTerritoryOutsideRequestedFranchiseScope() {
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        UUID allocationId =
+                UUID.randomUUID();
+
+        UUID territoryId =
+                UUID.randomUUID();
+
+        Franchise franchise =
+                territoryFranchise(
+                        franchiseId,
+                        FranchiseStatus.ONBOARDING
+                );
+
+        FranchiseDistrictAllocation allocation =
+                territoryAllocation(
+                        allocationId,
+                        franchise
+                );
+
+        when(
+                franchiseRepository.findById(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(franchise)
+        );
+
+        when(
+                allocationRepository.findByFranchiseIdAndActiveTrue(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(allocation)
+        );
+
+        when(
+                franchiseTerritoryRepository.findForAdminFranchise(
+                        franchiseId,
+                        territoryId
+                )
+        ).thenReturn(
+                Optional.empty()
+        );
+
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                service.getTerritory(
+                                        "admin@theholymatrimony.com",
+                                        franchiseId,
+                                        territoryId
+                                )
+                );
+
+        assertEquals(
+                "Territory was not found for this franchise.",
+                exception.getMessage()
+        );
+    }
+
+    private CreateFranchiseTerritoryRequest territoryRequest() {
+        return new CreateFranchiseTerritoryRequest(
+                " gnt-city ",
+                " Guntur City ",
+                FranchiseTerritoryType.CITY,
+                " Urban Guntur "
+        );
+    }
+
+    private Franchise territoryFranchise(
+            UUID franchiseId,
+            FranchiseStatus status
+    ) {
+        return Franchise.builder()
+                .id(franchiseId)
+                .franchiseCode("HM-GNT-001")
+                .legalName("Holy Matrimony Guntur")
+                .displayName("Holy Matrimony Guntur")
+                .status(status)
+                .build();
+    }
+
+    private FranchiseDistrictAllocation territoryAllocation(
+            UUID allocationId,
+            Franchise franchise
+    ) {
+        GeoState state =
+                GeoState.builder()
+                        .id(UUID.randomUUID())
+                        .lgdCode(28)
+                        .name("Andhra Pradesh")
+                        .countryCode("IN")
+                        .active(true)
+                        .build();
+
+        GeoDistrict district =
+                GeoDistrict.builder()
+                        .id(UUID.randomUUID())
+                        .state(state)
+                        .lgdCode(506)
+                        .name("Guntur")
+                        .active(true)
+                        .build();
+
+        return FranchiseDistrictAllocation.builder()
+                .id(allocationId)
+                .franchise(franchise)
+                .district(district)
+                .active(true)
+                .build();
+    }
+
+    private FranchiseTerritory territory(
+            UUID territoryId,
+            FranchiseDistrictAllocation allocation,
+            String territoryCode,
+            String name,
+            boolean active
+    ) {
+        return FranchiseTerritory.builder()
+                .id(territoryId)
+                .districtAllocation(allocation)
+                .territoryCode(territoryCode)
+                .name(name)
+                .territoryType(FranchiseTerritoryType.CITY)
+                .coverageDescription("Coverage")
+                .active(active)
+                .build();
+    }
 }

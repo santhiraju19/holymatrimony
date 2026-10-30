@@ -1,9 +1,11 @@
 package com.theholymatrimony.backend.franchise.repository;
 
 import com.theholymatrimony.backend.franchise.entity.FranchiseTerritory;
+
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
@@ -16,6 +18,70 @@ public interface FranchiseTerritoryRepository
     List<FranchiseTerritory>
     findAllByDistrictAllocationIdAndActiveTrueOrderByNameAsc(
             UUID districtAllocationId
+    );
+
+    /**
+     * HQ territory list for the franchise's active district allocation.
+     *
+     * Geographic ownership is derived through the persisted allocation.
+     */
+    @EntityGraph(
+            attributePaths = {
+                    "districtAllocation",
+                    "districtAllocation.franchise",
+                    "districtAllocation.district",
+                    "districtAllocation.district.state"
+            }
+    )
+    @Query("""
+            SELECT territory
+            FROM FranchiseTerritory territory
+            WHERE territory.districtAllocation.franchise.id = :franchiseId
+              AND territory.districtAllocation.active = true
+            ORDER BY territory.name ASC
+            """)
+    List<FranchiseTerritory> findAllForAdminFranchise(
+            @Param("franchiseId")
+            UUID franchiseId
+    );
+
+    /**
+     * HQ territory detail lookup.
+     *
+     * The territory must belong to the franchise's active district allocation.
+     * Both active and inactive territories may be returned to HQ.
+     */
+    @EntityGraph(
+            attributePaths = {
+                    "districtAllocation",
+                    "districtAllocation.franchise",
+                    "districtAllocation.district",
+                    "districtAllocation.district.state"
+            }
+    )
+    @Query("""
+            SELECT territory
+            FROM FranchiseTerritory territory
+            WHERE territory.id = :territoryId
+              AND territory.districtAllocation.franchise.id = :franchiseId
+              AND territory.districtAllocation.active = true
+            """)
+    Optional<FranchiseTerritory> findForAdminFranchise(
+            @Param("franchiseId")
+            UUID franchiseId,
+
+            @Param("territoryId")
+            UUID territoryId
+    );
+
+    boolean existsByDistrictAllocationIdAndTerritoryCode(
+            UUID districtAllocationId,
+            String territoryCode
+    );
+
+    boolean existsByDistrictAllocationIdAndName(
+            UUID districtAllocationId,
+            String name
     );
 
     @EntityGraph(

@@ -1,10 +1,13 @@
 package com.theholymatrimony.backend.admin.franchise.controller;
 
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseResponse;
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseTerritoryResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchisePageResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseRequest;
+import com.theholymatrimony.backend.admin.franchise.dto.CreateFranchiseTerritoryRequest;
 import com.theholymatrimony.backend.admin.franchise.service.AdminFranchiseManagementService;
 import com.theholymatrimony.backend.franchise.enums.FranchiseStatus;
+import com.theholymatrimony.backend.franchise.enums.FranchiseTerritoryType;
 import com.theholymatrimony.backend.common.response.ApiResponse;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -800,6 +803,197 @@ class AdminFranchiseManagementControllerTests {
         ).getFranchise(
                 any(),
                 any()
+        );
+    }
+
+
+    @Test
+    void createTerritoryUsesAuthenticatedAdministratorAndReturnsCreatedEnvelope() {
+        String administratorEmail =
+                "admin@theholymatrimony.com";
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        Authentication authentication =
+                authenticated(
+                        administratorEmail
+                );
+
+        CreateFranchiseTerritoryRequest request =
+                new CreateFranchiseTerritoryRequest(
+                        "GNT-CITY",
+                        "Guntur City",
+                        FranchiseTerritoryType.CITY,
+                        "Guntur urban coverage"
+                );
+
+        AdminFranchiseTerritoryResponse serviceResponse =
+                mock(
+                        AdminFranchiseTerritoryResponse.class
+                );
+
+        when(
+                service.createTerritory(
+                        administratorEmail,
+                        franchiseId,
+                        request
+                )
+        ).thenReturn(
+                serviceResponse
+        );
+
+        ResponseEntity<ApiResponse<AdminFranchiseTerritoryResponse>> result =
+                controller.createTerritory(
+                        authentication,
+                        franchiseId,
+                        request
+                );
+
+        assertEquals(
+                HttpStatus.CREATED,
+                result.getStatusCode()
+        );
+
+        assertNotNull(
+                result.getBody()
+        );
+
+        assertSame(
+                serviceResponse,
+                extractEnvelopeData(
+                        result.getBody()
+                )
+        );
+
+        verify(
+                service
+        ).createTerritory(
+                administratorEmail,
+                franchiseId,
+                request
+        );
+    }
+
+    @Test
+    void listTerritoriesUsesAuthenticatedAdministratorAndReturnsOkEnvelope() {
+        String administratorEmail =
+                "admin@theholymatrimony.com";
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        Authentication authentication =
+                authenticated(
+                        administratorEmail
+                );
+
+        java.util.List<AdminFranchiseTerritoryResponse> serviceResponse =
+                java.util.List.of(
+                        mock(
+                                AdminFranchiseTerritoryResponse.class
+                        )
+                );
+
+        when(
+                service.listTerritories(
+                        administratorEmail,
+                        franchiseId
+                )
+        ).thenReturn(
+                serviceResponse
+        );
+
+        ResponseEntity<ApiResponse<java.util.List<AdminFranchiseTerritoryResponse>>> result =
+                controller.listTerritories(
+                        authentication,
+                        franchiseId
+                );
+
+        assertEquals(
+                HttpStatus.OK,
+                result.getStatusCode()
+        );
+
+        assertNotNull(
+                result.getBody()
+        );
+
+        assertSame(
+                serviceResponse,
+                extractEnvelopeData(
+                        result.getBody()
+                )
+        );
+
+        verify(
+                service
+        ).listTerritories(
+                administratorEmail,
+                franchiseId
+        );
+    }
+
+    @Test
+    void getTerritoryUsesAuthenticatedAdministratorAndReturnsOkEnvelope() {
+        String administratorEmail =
+                "admin@theholymatrimony.com";
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        UUID territoryId =
+                UUID.randomUUID();
+
+        Authentication authentication =
+                authenticated(
+                        administratorEmail
+                );
+
+        AdminFranchiseTerritoryResponse serviceResponse =
+                mock(
+                        AdminFranchiseTerritoryResponse.class
+                );
+
+        when(
+                service.getTerritory(
+                        administratorEmail,
+                        franchiseId,
+                        territoryId
+                )
+        ).thenReturn(
+                serviceResponse
+        );
+
+        ResponseEntity<ApiResponse<AdminFranchiseTerritoryResponse>> result =
+                controller.getTerritory(
+                        authentication,
+                        franchiseId,
+                        territoryId
+                );
+
+        assertEquals(
+                HttpStatus.OK,
+                result.getStatusCode()
+        );
+
+        assertNotNull(
+                result.getBody()
+        );
+
+        assertSame(
+                serviceResponse,
+                extractEnvelopeData(
+                        result.getBody()
+                )
+        );
+
+        verify(
+                service
+        ).getTerritory(
+                administratorEmail,
+                franchiseId,
+                territoryId
         );
     }
 

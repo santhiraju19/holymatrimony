@@ -3,8 +3,11 @@ package com.theholymatrimony.backend.admin.franchise.service;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchisePageResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseRequest;
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseTerritoryResponse;
+import com.theholymatrimony.backend.admin.franchise.dto.CreateFranchiseTerritoryRequest;
 import com.theholymatrimony.backend.franchise.enums.FranchiseStatus;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -63,6 +66,38 @@ public interface AdminFranchiseManagementService {
     AdminFranchiseResponse getFranchise(
             String administratorEmail,
             UUID franchiseId
+    );
+
+
+    /**
+     * Creates a territory under the franchise's active district allocation.
+     *
+     * Franchise and geographic scope are derived server-side from franchiseId.
+     */
+    AdminFranchiseTerritoryResponse createTerritory(
+            String administratorEmail,
+            UUID franchiseId,
+            CreateFranchiseTerritoryRequest request
+    );
+
+    /**
+     * Lists territories under the franchise's active district allocation.
+     *
+     * HQ may see both active and inactive territories.
+     */
+    List<AdminFranchiseTerritoryResponse> listTerritories(
+            String administratorEmail,
+            UUID franchiseId
+    );
+
+    /**
+     * Returns one territory only when it belongs to the franchise's
+     * active district allocation.
+     */
+    AdminFranchiseTerritoryResponse getTerritory(
+            String administratorEmail,
+            UUID franchiseId,
+            UUID territoryId
     );
 
 }
