@@ -2,9 +2,11 @@ package com.theholymatrimony.backend.admin.franchise.service;
 
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchisePageResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseResponse;
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseStatusResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseRequest;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseTerritoryResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateFranchiseTerritoryRequest;
+import com.theholymatrimony.backend.admin.franchise.dto.UpdateFranchiseStatusRequest;
 import com.theholymatrimony.backend.franchise.enums.FranchiseStatus;
 
 import java.util.List;
@@ -98,6 +100,28 @@ public interface AdminFranchiseManagementService {
             String administratorEmail,
             UUID franchiseId,
             UUID territoryId
+    );
+
+    /**
+     * Changes the operational lifecycle status of a District Franchise.
+     *
+     * The implementation must enforce the server-side transition matrix;
+     * accepting a FranchiseStatus value does not make every transition valid.
+     *
+     * Current operational lifecycle:
+     * ONBOARDING -> ACTIVE
+     * ACTIVE -> SUSPENDED
+     * SUSPENDED -> ACTIVE
+     *
+     * Terminal lifecycle changes are intentionally handled separately
+     * because franchise closure must coordinate district allocation release.
+     *
+     * Authorization remains SUPER_ADMIN-only for this HQ slice.
+     */
+    AdminFranchiseStatusResponse updateFranchiseStatus(
+            String administratorEmail,
+            UUID franchiseId,
+            UpdateFranchiseStatusRequest request
     );
 
 }

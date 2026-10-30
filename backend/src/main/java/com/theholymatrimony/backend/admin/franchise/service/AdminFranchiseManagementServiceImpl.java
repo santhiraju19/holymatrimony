@@ -3,8 +3,10 @@ package com.theholymatrimony.backend.admin.franchise.service;
 import com.theholymatrimony.backend.admin.access.AdminAccessService;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchisePageResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseResponse;
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseStatusResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseTerritoryResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateFranchiseTerritoryRequest;
+import com.theholymatrimony.backend.admin.franchise.dto.UpdateFranchiseStatusRequest;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseRequest;
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.auth.enums.Role;
@@ -59,6 +61,164 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminFranchiseManagementServiceImpl
         implements AdminFranchiseManagementService {
+
+
+    @Override
+    @Transactional
+    public AdminFranchiseStatusResponse updateFranchiseStatus(
+            String administratorEmail,
+            UUID franchiseId,
+            UpdateFranchiseStatusRequest request
+    ) {
+
+        String normalizedAdministratorEmail =
+                normalizeRequiredEmail(
+                        administratorEmail,
+                        "Administrator email is required."
+                );
+
+        if (franchiseId == null) {
+            throw new IllegalArgumentException(
+                    "Franchise id is required."
+            );
+        }
+
+        if (request == null) {
+            throw new IllegalArgumentException(
+                    "Franchise status request is required."
+            );
+        }
+
+        if (request.status() == null) {
+            throw new IllegalArgumentException(
+                    "Franchise status is required."
+            );
+        }
+
+        adminAccessService.requireSuperAdmin(
+                normalizedAdministratorEmail
+        );
+
+        Franchise franchise =
+                franchiseRepository
+                        .findById(franchiseId)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Franchise not found."
+                                )
+                        );
+
+        FranchiseStatus currentStatus =
+                franchise.getStatus();
+
+        FranchiseStatus requestedStatus =
+                request.status();
+
+        validateLifecycleTransition(
+                currentStatus,
+                requestedStatus
+        );
+
+        LocalDateTime now =
+                LocalDateTime.now();
+
+        switch (requestedStatus) {
+
+            case ACTIVE -> {
+                franchise.setStatus(
+                        FranchiseStatus.ACTIVE
+                );
+
+                if (franchise.getActivatedAt() == null) {
+                    franchise.setActivatedAt(now);
+                }
+
+                franchise.setSuspendedAt(null);
+            }
+
+            case SUSPENDED -> {
+                franchise.setStatus(
+                        FranchiseStatus.SUSPENDED
+                );
+
+                franchise.setSuspendedAt(now);
+            }
+
+            default -> throw new IllegalArgumentException(
+                    "Unsupported operational franchise status: "
+                            + requestedStatus
+            );
+        }
+
+        Franchise saved =
+                franchiseRepository.save(franchise);
+
+        return toStatusResponse(saved);
+    }
+
+    private void validateLifecycleTransition(
+            FranchiseStatus currentStatus,
+            FranchiseStatus requestedStatus
+    ) {
+
+        if (currentStatus == null) {
+            throw new IllegalStateException(
+                    "Franchise lifecycle status is not configured."
+            );
+        }
+
+        if (currentStatus == requestedStatus) {
+            throw new IllegalArgumentException(
+                    "Franchise is already in status "
+                            + requestedStatus
+                            + "."
+            );
+        }
+
+        boolean allowed =
+                switch (currentStatus) {
+
+                    case ONBOARDING ->
+                            requestedStatus
+                                    == FranchiseStatus.ACTIVE;
+
+                    case ACTIVE ->
+                            requestedStatus
+                                    == FranchiseStatus.SUSPENDED;
+
+                    case SUSPENDED ->
+                            requestedStatus
+                                    == FranchiseStatus.ACTIVE;
+
+                    default -> false;
+                };
+
+        if (!allowed) {
+            throw new IllegalArgumentException(
+                    "Invalid franchise lifecycle transition: "
+                            + currentStatus
+                            + " -> "
+                            + requestedStatus
+                            + "."
+            );
+        }
+    }
+
+    private AdminFranchiseStatusResponse toStatusResponse(
+            Franchise franchise
+    ) {
+
+        return new AdminFranchiseStatusResponse(
+                franchise.getId(),
+                franchise.getFranchiseCode(),
+                franchise.getDisplayName(),
+                franchise.getStatus(),
+                franchise.getActivatedAt(),
+                franchise.getSuspendedAt(),
+                franchise.getTerminatedAt(),
+                franchise.getUpdatedAt()
+        );
+    }
 
     private static final int BOOTSTRAP_SECRET_BYTES = 48;
 

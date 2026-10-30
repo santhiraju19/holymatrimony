@@ -6,6 +6,7 @@ import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseTerritoryR
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchisePageResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseRequest;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateFranchiseTerritoryRequest;
+import com.theholymatrimony.backend.admin.franchise.dto.UpdateFranchiseStatusRequest;
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.auth.enums.Role;
 import com.theholymatrimony.backend.auth.enums.UserStatus;
@@ -40,11 +41,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -2446,4 +2449,404 @@ class AdminFranchiseManagementServiceImplTests {
                 .active(active)
                 .build();
     }
+
+    @Test
+    void updateFranchiseStatusActivatesOnboardingFranchise() {
+
+        UUID franchiseId = UUID.randomUUID();
+
+        Franchise franchise = new Franchise();
+        franchise.setId(franchiseId);
+        franchise.setFranchiseCode("HM-GNT");
+        franchise.setDisplayName("Guntur District Franchise");
+        franchise.setStatus(FranchiseStatus.ONBOARDING);
+
+        when(franchiseRepository.findById(franchiseId))
+                .thenReturn(Optional.of(franchise));
+
+        when(franchiseRepository.save(franchise))
+                .thenReturn(franchise);
+
+        var response =
+                service.updateFranchiseStatus(
+                        "admin@theholymatrimony.com",
+                        franchiseId,
+                        new UpdateFranchiseStatusRequest(
+                                FranchiseStatus.ACTIVE,
+                                "Onboarding completed"
+                        )
+                );
+
+        verify(adminAccessService)
+                .requireSuperAdmin(
+                        "admin@theholymatrimony.com"
+                );
+
+        verify(franchiseRepository)
+                .save(franchise);
+
+        assertEquals(
+                FranchiseStatus.ACTIVE,
+                franchise.getStatus()
+        );
+
+        assertNotNull(
+                franchise.getActivatedAt()
+        );
+
+        assertNull(
+                franchise.getSuspendedAt()
+        );
+
+        assertEquals(
+                FranchiseStatus.ACTIVE,
+                response.status()
+        );
+
+        assertEquals(
+                franchiseId,
+                response.franchiseId()
+        );
+    }
+
+    @Test
+    void updateFranchiseStatusSuspendsActiveFranchise() {
+
+        UUID franchiseId = UUID.randomUUID();
+
+        LocalDateTime activatedAt =
+                LocalDateTime.now().minusDays(10);
+
+        Franchise franchise = new Franchise();
+        franchise.setId(franchiseId);
+        franchise.setFranchiseCode("HM-GNT");
+        franchise.setDisplayName("Guntur District Franchise");
+        franchise.setStatus(FranchiseStatus.ACTIVE);
+        franchise.setActivatedAt(activatedAt);
+
+        when(franchiseRepository.findById(franchiseId))
+                .thenReturn(Optional.of(franchise));
+
+        when(franchiseRepository.save(franchise))
+                .thenReturn(franchise);
+
+        var response =
+                service.updateFranchiseStatus(
+                        "admin@theholymatrimony.com",
+                        franchiseId,
+                        new UpdateFranchiseStatusRequest(
+                                FranchiseStatus.SUSPENDED,
+                                "Temporary suspension"
+                        )
+                );
+
+        assertEquals(
+                FranchiseStatus.SUSPENDED,
+                franchise.getStatus()
+        );
+
+        assertEquals(
+                activatedAt,
+                franchise.getActivatedAt()
+        );
+
+        assertNotNull(
+                franchise.getSuspendedAt()
+        );
+
+        assertEquals(
+                FranchiseStatus.SUSPENDED,
+                response.status()
+        );
+    }
+
+    @Test
+    void updateFranchiseStatusReactivatesSuspendedFranchiseWithoutResettingActivationTime() {
+
+        UUID franchiseId = UUID.randomUUID();
+
+        LocalDateTime activatedAt =
+                LocalDateTime.now().minusDays(20);
+
+        Franchise franchise = new Franchise();
+        franchise.setId(franchiseId);
+        franchise.setFranchiseCode("HM-GNT");
+        franchise.setDisplayName("Guntur District Franchise");
+        franchise.setStatus(FranchiseStatus.SUSPENDED);
+        franchise.setActivatedAt(activatedAt);
+        franchise.setSuspendedAt(
+                LocalDateTime.now().minusDays(2)
+        );
+
+        when(franchiseRepository.findById(franchiseId))
+                .thenReturn(Optional.of(franchise));
+
+        when(franchiseRepository.save(franchise))
+                .thenReturn(franchise);
+
+        service.updateFranchiseStatus(
+                "admin@theholymatrimony.com",
+                franchiseId,
+                new UpdateFranchiseStatusRequest(
+                        FranchiseStatus.ACTIVE,
+                        "Suspension cleared"
+                )
+        );
+
+        assertEquals(
+                FranchiseStatus.ACTIVE,
+                franchise.getStatus()
+        );
+
+        assertEquals(
+                activatedAt,
+                franchise.getActivatedAt()
+        );
+
+        assertNull(
+                franchise.getSuspendedAt()
+        );
+    }
+
+    @Test
+    void updateFranchiseStatusRejectsTerminationFromActive() {
+
+        UUID franchiseId = UUID.randomUUID();
+
+        Franchise franchise = new Franchise();
+        franchise.setId(franchiseId);
+        franchise.setFranchiseCode("HM-GNT");
+        franchise.setDisplayName("Guntur District Franchise");
+        franchise.setStatus(FranchiseStatus.ACTIVE);
+        franchise.setActivatedAt(
+                LocalDateTime.now().minusDays(30)
+        );
+
+        when(franchiseRepository.findById(franchiseId))
+                .thenReturn(Optional.of(franchise));
+
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                service.updateFranchiseStatus(
+                                        "admin@theholymatrimony.com",
+                                        franchiseId,
+                                        new UpdateFranchiseStatusRequest(
+                                                FranchiseStatus.TERMINATED,
+                                                "Agreement terminated"
+                                        )
+                                )
+                );
+
+        assertTrue(
+                exception.getMessage().contains(
+                        "ACTIVE -> TERMINATED"
+                )
+        );
+
+        assertEquals(
+                FranchiseStatus.ACTIVE,
+                franchise.getStatus()
+        );
+
+        assertNull(
+                franchise.getTerminatedAt()
+        );
+
+        verify(franchiseRepository, never())
+                .save(any(Franchise.class));
+    }
+
+    @Test
+    void updateFranchiseStatusRejectsTerminationFromSuspended() {
+
+        UUID franchiseId = UUID.randomUUID();
+
+        Franchise franchise = new Franchise();
+        franchise.setId(franchiseId);
+        franchise.setFranchiseCode("HM-GNT");
+        franchise.setDisplayName("Guntur District Franchise");
+        franchise.setStatus(FranchiseStatus.SUSPENDED);
+        franchise.setActivatedAt(
+                LocalDateTime.now().minusDays(30)
+        );
+        franchise.setSuspendedAt(
+                LocalDateTime.now().minusDays(5)
+        );
+
+        when(franchiseRepository.findById(franchiseId))
+                .thenReturn(Optional.of(franchise));
+
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                service.updateFranchiseStatus(
+                                        "admin@theholymatrimony.com",
+                                        franchiseId,
+                                        new UpdateFranchiseStatusRequest(
+                                                FranchiseStatus.TERMINATED,
+                                                "Agreement terminated"
+                                        )
+                                )
+                );
+
+        assertTrue(
+                exception.getMessage().contains(
+                        "SUSPENDED -> TERMINATED"
+                )
+        );
+
+        assertEquals(
+                FranchiseStatus.SUSPENDED,
+                franchise.getStatus()
+        );
+
+        assertNull(
+                franchise.getTerminatedAt()
+        );
+
+        verify(franchiseRepository, never())
+                .save(any(Franchise.class));
+    }
+
+    @Test
+    void updateFranchiseStatusRejectsInvalidTransition() {
+
+        UUID franchiseId = UUID.randomUUID();
+
+        Franchise franchise = new Franchise();
+        franchise.setId(franchiseId);
+        franchise.setFranchiseCode("HM-GNT");
+        franchise.setDisplayName("Guntur District Franchise");
+        franchise.setStatus(FranchiseStatus.ONBOARDING);
+
+        when(franchiseRepository.findById(franchiseId))
+                .thenReturn(Optional.of(franchise));
+
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                service.updateFranchiseStatus(
+                                        "admin@theholymatrimony.com",
+                                        franchiseId,
+                                        new UpdateFranchiseStatusRequest(
+                                                FranchiseStatus.SUSPENDED,
+                                                "Invalid transition"
+                                        )
+                                )
+                );
+
+        assertTrue(
+                exception.getMessage().contains(
+                        "ONBOARDING -> SUSPENDED"
+                )
+        );
+
+        verify(franchiseRepository, never())
+                .save(any(Franchise.class));
+    }
+
+    @Test
+    void updateFranchiseStatusRejectsSameStatus() {
+
+        UUID franchiseId = UUID.randomUUID();
+
+        Franchise franchise = new Franchise();
+        franchise.setId(franchiseId);
+        franchise.setFranchiseCode("HM-GNT");
+        franchise.setDisplayName("Guntur District Franchise");
+        franchise.setStatus(FranchiseStatus.ACTIVE);
+
+        when(franchiseRepository.findById(franchiseId))
+                .thenReturn(Optional.of(franchise));
+
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                service.updateFranchiseStatus(
+                                        "admin@theholymatrimony.com",
+                                        franchiseId,
+                                        new UpdateFranchiseStatusRequest(
+                                                FranchiseStatus.ACTIVE,
+                                                null
+                                        )
+                                )
+                );
+
+        assertTrue(
+                exception.getMessage().contains(
+                        "already in status ACTIVE"
+                )
+        );
+
+        verify(franchiseRepository, never())
+                .save(any(Franchise.class));
+    }
+
+    @Test
+    void updateFranchiseStatusRejectsUnsupportedPreOperationalTransition() {
+
+        UUID franchiseId = UUID.randomUUID();
+
+        Franchise franchise = new Franchise();
+        franchise.setId(franchiseId);
+        franchise.setFranchiseCode("HM-GNT");
+        franchise.setDisplayName("Guntur District Franchise");
+        franchise.setStatus(FranchiseStatus.APPROVED);
+
+        when(franchiseRepository.findById(franchiseId))
+                .thenReturn(Optional.of(franchise));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        service.updateFranchiseStatus(
+                                "admin@theholymatrimony.com",
+                                franchiseId,
+                                new UpdateFranchiseStatusRequest(
+                                        FranchiseStatus.ACTIVE,
+                                        null
+                                )
+                        )
+        );
+
+        verify(franchiseRepository, never())
+                .save(any(Franchise.class));
+    }
+
+    @Test
+    void updateFranchiseStatusRejectsMissingFranchise() {
+
+        UUID franchiseId = UUID.randomUUID();
+
+        when(franchiseRepository.findById(franchiseId))
+                .thenReturn(Optional.empty());
+
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                service.updateFranchiseStatus(
+                                        "admin@theholymatrimony.com",
+                                        franchiseId,
+                                        new UpdateFranchiseStatusRequest(
+                                                FranchiseStatus.ACTIVE,
+                                                null
+                                        )
+                                )
+                );
+
+        assertEquals(
+                "Franchise not found.",
+                exception.getMessage()
+        );
+
+        verify(franchiseRepository, never())
+                .save(any(Franchise.class));
+    }
+
 }

@@ -1,10 +1,12 @@
 package com.theholymatrimony.backend.admin.franchise.controller;
 
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseResponse;
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseStatusResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseTerritoryResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchisePageResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseRequest;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateFranchiseTerritoryRequest;
+import com.theholymatrimony.backend.admin.franchise.dto.UpdateFranchiseStatusRequest;
 import com.theholymatrimony.backend.admin.franchise.service.AdminFranchiseManagementService;
 import com.theholymatrimony.backend.franchise.enums.FranchiseStatus;
 import com.theholymatrimony.backend.common.response.ApiResponse;
@@ -20,6 +22,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -158,6 +161,42 @@ public class AdminFranchiseManagementController {
         );
     }
 
+
+
+    /**
+     * Updates the operational lifecycle status of a District Franchise.
+     *
+     * Supported transitions are enforced by the service:
+     * ONBOARDING -> ACTIVE,
+     * ACTIVE -> SUSPENDED,
+     * SUSPENDED -> ACTIVE.
+     *
+     * Terminal lifecycle changes are intentionally excluded because
+     * franchise closure must coordinate district allocation release.
+     */
+    @PatchMapping("/{franchiseId}/status")
+    public ResponseEntity<ApiResponse<AdminFranchiseStatusResponse>>
+    updateFranchiseStatus(
+            Authentication authentication,
+            @PathVariable UUID franchiseId,
+            @Valid
+            @RequestBody
+            UpdateFranchiseStatusRequest request
+    ) {
+        AdminFranchiseStatusResponse response =
+                adminFranchiseManagementService.updateFranchiseStatus(
+                        requireAdministratorEmail(authentication),
+                        franchiseId,
+                        request
+                );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Franchise status updated successfully.",
+                        response
+                )
+        );
+    }
 
 
     @PostMapping("/{franchiseId}/territories")

@@ -6,6 +6,9 @@ import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseTerritoryResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseRequest;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateFranchiseTerritoryRequest;
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseStatusResponse;
+import com.theholymatrimony.backend.admin.franchise.dto.UpdateFranchiseStatusRequest;
+import com.theholymatrimony.backend.franchise.enums.FranchiseStatus;
 import com.theholymatrimony.backend.admin.franchise.service.AdminFranchiseManagementService;
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.common.response.ApiResponse;
@@ -749,6 +752,228 @@ class AdminFranchiseManagementMethodSecurityTests {
             );
         }
     }
+
+    @Test
+    void updateFranchiseStatusAllowsSuperAdmin() {
+        context =
+                createContext();
+
+        AdminAccessService accessService =
+                context.getBean(
+                        AdminAccessService.class
+                );
+
+        AdminFranchiseManagementService managementService =
+                context.getBean(
+                        AdminFranchiseManagementService.class
+                );
+
+        AdminFranchiseManagementController controller =
+                context.getBean(
+                        AdminFranchiseManagementController.class
+                );
+
+        String administratorEmail =
+                "primary@example.com";
+
+        Authentication authentication =
+                authenticate(
+                        administratorEmail
+                );
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        UpdateFranchiseStatusRequest request =
+                new UpdateFranchiseStatusRequest(
+                        FranchiseStatus.ACTIVE,
+                        "Onboarding completed"
+                );
+
+        AdminFranchiseStatusResponse serviceResponse =
+                mock(
+                        AdminFranchiseStatusResponse.class
+                );
+
+        when(
+                accessService.requireSuperAdmin(
+                        administratorEmail
+                )
+        ).thenReturn(
+                mock(
+                        User.class
+                )
+        );
+
+        when(
+                managementService.updateFranchiseStatus(
+                        administratorEmail,
+                        franchiseId,
+                        request
+                )
+        ).thenReturn(
+                serviceResponse
+        );
+
+        ResponseEntity<ApiResponse<AdminFranchiseStatusResponse>> result =
+                controller.updateFranchiseStatus(
+                        authentication,
+                        franchiseId,
+                        request
+                );
+
+        assertEquals(
+                HttpStatus.OK,
+                result.getStatusCode()
+        );
+
+        assertNotNull(
+                result.getBody()
+        );
+
+        assertSame(
+                serviceResponse,
+                extractEnvelopeData(
+                        result.getBody()
+                )
+        );
+
+        verify(
+                accessService
+        ).requireSuperAdmin(
+                administratorEmail
+        );
+
+        verify(
+                managementService
+        ).updateFranchiseStatus(
+                administratorEmail,
+                franchiseId,
+                request
+        );
+    }
+
+
+    @Test
+    void updateFranchiseStatusRejectsSubAdmin() {
+        context =
+                createContext();
+
+        AdminAccessService accessService =
+                context.getBean(
+                        AdminAccessService.class
+                );
+
+        AdminFranchiseManagementService managementService =
+                context.getBean(
+                        AdminFranchiseManagementService.class
+                );
+
+        AdminFranchiseManagementController controller =
+                context.getBean(
+                        AdminFranchiseManagementController.class
+                );
+
+        String administratorEmail =
+                "subadmin@example.com";
+
+        Authentication authentication =
+                authenticate(
+                        administratorEmail
+                );
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        UpdateFranchiseStatusRequest request =
+                new UpdateFranchiseStatusRequest(
+                        FranchiseStatus.ACTIVE,
+                        "Onboarding completed"
+                );
+
+        when(
+                accessService.requireSuperAdmin(
+                        administratorEmail
+                )
+        ).thenThrow(
+                new AccessDeniedException(
+                        "SUPER_ADMIN access required."
+                )
+        );
+
+        assertThrows(
+                AccessDeniedException.class,
+                () ->
+                        controller.updateFranchiseStatus(
+                                authentication,
+                                franchiseId,
+                                request
+                        )
+        );
+
+        verify(
+                accessService
+        ).requireSuperAdmin(
+                administratorEmail
+        );
+
+        verify(
+                managementService,
+                never()
+        ).updateFranchiseStatus(
+                any(),
+                any(),
+                any()
+        );
+    }
+
+
+    @Test
+    void updateFranchiseStatusRejectsUnauthenticatedAdministrator() {
+        context =
+                createContext();
+
+        AdminFranchiseManagementService managementService =
+                context.getBean(
+                        AdminFranchiseManagementService.class
+                );
+
+        AdminFranchiseManagementController controller =
+                context.getBean(
+                        AdminFranchiseManagementController.class
+                );
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        UpdateFranchiseStatusRequest request =
+                new UpdateFranchiseStatusRequest(
+                        FranchiseStatus.ACTIVE,
+                        "Onboarding completed"
+                );
+
+        SecurityContextHolder.clearContext();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        controller.updateFranchiseStatus(
+                                null,
+                                franchiseId,
+                                request
+                        )
+        );
+
+        verify(
+                managementService,
+                never()
+        ).updateFranchiseStatus(
+                any(),
+                any(),
+                any()
+        );
+    }
+
 
     @Test
     void createTerritoryAllowsSuperAdminAndInvokesService() {

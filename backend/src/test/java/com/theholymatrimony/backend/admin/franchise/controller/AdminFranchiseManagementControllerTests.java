@@ -1,10 +1,12 @@
 package com.theholymatrimony.backend.admin.franchise.controller;
 
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseResponse;
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseStatusResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseTerritoryResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchisePageResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseRequest;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateFranchiseTerritoryRequest;
+import com.theholymatrimony.backend.admin.franchise.dto.UpdateFranchiseStatusRequest;
 import com.theholymatrimony.backend.admin.franchise.service.AdminFranchiseManagementService;
 import com.theholymatrimony.backend.franchise.enums.FranchiseStatus;
 import com.theholymatrimony.backend.franchise.enums.FranchiseTerritoryType;
@@ -801,6 +803,111 @@ class AdminFranchiseManagementControllerTests {
                 service,
                 never()
         ).getFranchise(
+                any(),
+                any()
+        );
+    }
+
+
+    @Test
+    void updateFranchiseStatusUsesAuthenticatedAdministratorAndReturnsOkEnvelope() {
+        String administratorEmail =
+                "admin@theholymatrimony.com";
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        Authentication authentication =
+                authenticated(
+                        administratorEmail
+                );
+
+        UpdateFranchiseStatusRequest request =
+                new UpdateFranchiseStatusRequest(
+                        FranchiseStatus.ACTIVE,
+                        "Onboarding completed"
+                );
+
+        AdminFranchiseStatusResponse serviceResponse =
+                mock(
+                        AdminFranchiseStatusResponse.class
+                );
+
+        when(
+                service.updateFranchiseStatus(
+                        administratorEmail,
+                        franchiseId,
+                        request
+                )
+        ).thenReturn(
+                serviceResponse
+        );
+
+        ResponseEntity<ApiResponse<AdminFranchiseStatusResponse>> result =
+                controller.updateFranchiseStatus(
+                        authentication,
+                        franchiseId,
+                        request
+                );
+
+        assertEquals(
+                HttpStatus.OK,
+                result.getStatusCode()
+        );
+
+        assertNotNull(
+                result.getBody()
+        );
+
+        assertSame(
+                serviceResponse,
+                extractEnvelopeData(
+                        result.getBody()
+                )
+        );
+
+        verify(
+                service
+        ).updateFranchiseStatus(
+                administratorEmail,
+                franchiseId,
+                request
+        );
+    }
+
+
+    @Test
+    void updateFranchiseStatusRejectsNullAuthenticationBeforeServiceInvocation() {
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        UpdateFranchiseStatusRequest request =
+                new UpdateFranchiseStatusRequest(
+                        FranchiseStatus.ACTIVE,
+                        "Onboarding completed"
+                );
+
+        IllegalStateException exception =
+                assertThrows(
+                        IllegalStateException.class,
+                        () ->
+                                controller.updateFranchiseStatus(
+                                        null,
+                                        franchiseId,
+                                        request
+                                )
+                );
+
+        assertEquals(
+                "Authenticated administrator identity is required.",
+                exception.getMessage()
+        );
+
+        verify(
+                service,
+                never()
+        ).updateFranchiseStatus(
+                any(),
                 any(),
                 any()
         );
