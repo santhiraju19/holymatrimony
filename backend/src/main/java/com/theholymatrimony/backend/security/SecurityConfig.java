@@ -171,6 +171,21 @@ public class SecurityConfig {
 
                         /*
                          * =====================================================
+                         * Franchise API
+                         * =====================================================
+                         *
+                         * Requires the platform ROLE_FRANCHISE authority.
+                         * Franchise membership, lifecycle, permissions, and
+                         * geographic scope are enforced separately by the
+                         * database-authoritative FranchiseAccessService.
+                         */
+                        .requestMatchers(
+                                "/api/v1/franchise/**"
+                        )
+                        .hasRole("FRANCHISE")
+
+                        /*
+                         * =====================================================
                          * All Remaining API Requests
                          * =====================================================
                          *
