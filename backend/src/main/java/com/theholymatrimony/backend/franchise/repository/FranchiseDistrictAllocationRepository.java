@@ -1,14 +1,32 @@
 package com.theholymatrimony.backend.franchise.repository;
 
+import jakarta.persistence.LockModeType;
+
 import com.theholymatrimony.backend.franchise.entity.FranchiseDistrictAllocation;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 import java.util.UUID;
 
 public interface FranchiseDistrictAllocationRepository
         extends JpaRepository<FranchiseDistrictAllocation, UUID> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            SELECT allocation
+            FROM FranchiseDistrictAllocation allocation
+            WHERE allocation.franchise.id = :franchiseId
+              AND allocation.active = true
+            """)
+    Optional<FranchiseDistrictAllocation> findActiveForUpdateByFranchiseId(
+            @Param("franchiseId")
+            UUID franchiseId
+    );
 
     @EntityGraph(
             attributePaths = {

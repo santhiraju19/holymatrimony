@@ -1,12 +1,14 @@
 package com.theholymatrimony.backend.admin.franchise.controller;
 
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseResponse;
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseClosureResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseStatusResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseTerritoryResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchisePageResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseRequest;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateFranchiseTerritoryRequest;
 import com.theholymatrimony.backend.admin.franchise.dto.UpdateFranchiseStatusRequest;
+import com.theholymatrimony.backend.admin.franchise.dto.TerminateFranchiseRequest;
 import com.theholymatrimony.backend.admin.franchise.service.AdminFranchiseManagementService;
 import com.theholymatrimony.backend.franchise.enums.FranchiseStatus;
 import com.theholymatrimony.backend.common.response.ApiResponse;
@@ -193,6 +195,38 @@ public class AdminFranchiseManagementController {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Franchise status updated successfully.",
+                        response
+                )
+        );
+    }
+
+
+    /**
+     * Permanently terminates an ACTIVE or SUSPENDED District Franchise.
+     *
+     * This endpoint is intentionally separate from the generic status endpoint.
+     * The service performs coordinated closure of the franchise, active district
+     * allocation, territories, franchise-user memberships, and lifecycle audit.
+     */
+    @PostMapping("/{franchiseId}/terminate")
+    public ResponseEntity<ApiResponse<AdminFranchiseClosureResponse>>
+    terminateFranchise(
+            Authentication authentication,
+            @PathVariable UUID franchiseId,
+            @Valid
+            @RequestBody
+            TerminateFranchiseRequest request
+    ) {
+        AdminFranchiseClosureResponse response =
+                adminFranchiseManagementService.terminateFranchise(
+                        requireAdministratorEmail(authentication),
+                        franchiseId,
+                        request
+                );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Franchise terminated successfully.",
                         response
                 )
         );

@@ -1,12 +1,14 @@
 package com.theholymatrimony.backend.admin.franchise.service;
 
 import com.theholymatrimony.backend.admin.access.AdminAccessService;
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseClosureResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchisePageResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseStatusResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseTerritoryResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateFranchiseTerritoryRequest;
 import com.theholymatrimony.backend.admin.franchise.dto.UpdateFranchiseStatusRequest;
+import com.theholymatrimony.backend.admin.franchise.dto.TerminateFranchiseRequest;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseRequest;
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.auth.enums.Role;
@@ -17,14 +19,17 @@ import com.theholymatrimony.backend.auth.repository.UserRepository;
 import com.theholymatrimony.backend.common.exception.ResourceAlreadyExistsException;
 import com.theholymatrimony.backend.franchise.entity.Franchise;
 import com.theholymatrimony.backend.franchise.entity.FranchiseDistrictAllocation;
+import com.theholymatrimony.backend.franchise.entity.FranchiseLifecycleEvent;
 import com.theholymatrimony.backend.franchise.entity.FranchiseTerritory;
 import com.theholymatrimony.backend.franchise.entity.FranchiseUser;
 import com.theholymatrimony.backend.franchise.entity.GeoDistrict;
 import com.theholymatrimony.backend.franchise.entity.GeoState;
 import com.theholymatrimony.backend.franchise.enums.FranchiseStaffRole;
+import com.theholymatrimony.backend.franchise.enums.FranchiseLifecycleEventType;
 import com.theholymatrimony.backend.franchise.enums.FranchiseStatus;
 import com.theholymatrimony.backend.franchise.enums.FranchiseUserStatus;
 import com.theholymatrimony.backend.franchise.repository.FranchiseDistrictAllocationRepository;
+import com.theholymatrimony.backend.franchise.repository.FranchiseLifecycleEventRepository;
 import com.theholymatrimony.backend.franchise.repository.FranchiseRepository;
 import com.theholymatrimony.backend.franchise.repository.FranchiseTerritoryRepository;
 import com.theholymatrimony.backend.franchise.repository.FranchiseUserRepository;
@@ -62,6 +67,172 @@ import java.util.List;
 public class AdminFranchiseManagementServiceImpl
         implements AdminFranchiseManagementService {
 
+
+    @Override
+    @Transactional
+    public AdminFranchiseClosureResponse terminateFranchise(
+            String administratorEmail,
+            UUID franchiseId,
+            TerminateFranchiseRequest request
+    ) {
+
+        String normalizedAdministratorEmail =
+                normalizeRequiredEmail(
+                        administratorEmail,
+                        "Administrator email is required."
+                );
+
+        if (franchiseId == null) {
+            throw new IllegalArgumentException(
+                    "Franchise id is required."
+            );
+        }
+
+        if (request == null) {
+            throw new IllegalArgumentException(
+                    "Franchise termination request is required."
+            );
+        }
+
+        String reason =
+                normalizeRequiredText(
+                        request.reason(),
+                        "Termination reason is required."
+                );
+
+        if (reason.length() > 500) {
+            throw new IllegalArgumentException(
+                    "Termination reason must not exceed 500 characters."
+            );
+        }
+
+        adminAccessService.requireSuperAdmin(
+                normalizedAdministratorEmail
+        );
+
+        User performedByUser =
+                userRepository
+                        .findByEmail(
+                                normalizedAdministratorEmail
+                        )
+                        .orElseThrow(
+                                () ->
+                                        new IllegalStateException(
+                                                "Administrator account was not found."
+                                        )
+                        );
+
+        Franchise franchise =
+                franchiseRepository
+                        .findForUpdate(franchiseId)
+                        .orElseThrow(
+                                () ->
+                                        new IllegalArgumentException(
+                                                "Franchise not found."
+                                        )
+                        );
+
+        FranchiseStatus previousStatus =
+                franchise.getStatus();
+
+        if (
+                previousStatus != FranchiseStatus.ACTIVE
+                        && previousStatus != FranchiseStatus.SUSPENDED
+        ) {
+            throw new IllegalStateException(
+                    "Only ACTIVE or SUSPENDED franchises can be terminated."
+            );
+        }
+
+        FranchiseDistrictAllocation allocation =
+                franchiseDistrictAllocationRepository
+                        .findActiveForUpdateByFranchiseId(
+                                franchiseId
+                        )
+                        .orElseThrow(
+                                () ->
+                                        new IllegalStateException(
+                                                "Franchise does not have an active district allocation."
+                                        )
+                        );
+
+        LocalDateTime now =
+                LocalDateTime.now();
+
+        List<FranchiseTerritory> activeTerritories =
+                franchiseTerritoryRepository
+                        .findAllByDistrictAllocationIdAndActiveTrueOrderByNameAsc(
+                                allocation.getId()
+                        );
+
+        List<FranchiseUser> activeMemberships =
+                franchiseUserRepository
+                        .findAllByFranchiseIdAndStatusOrderByJoinedAtAsc(
+                                franchiseId,
+                                FranchiseUserStatus.ACTIVE
+                        );
+
+        /*
+         * Preserve all historical rows. Closure changes only their
+         * operational state.
+         */
+        for (FranchiseTerritory territory : activeTerritories) {
+            territory.setActive(false);
+        }
+
+        for (FranchiseUser membership : activeMemberships) {
+            membership.setStatus(
+                    FranchiseUserStatus.DEACTIVATED
+            );
+            membership.setDeactivatedAt(now);
+        }
+
+        allocation.setActive(false);
+        allocation.setEndedAt(now);
+
+        franchise.setStatus(
+                FranchiseStatus.TERMINATED
+        );
+        franchise.setTerminatedAt(now);
+
+        FranchiseLifecycleEvent lifecycleEvent =
+                franchiseLifecycleEventRepository.save(
+                        new FranchiseLifecycleEvent(
+                                franchise,
+                                FranchiseLifecycleEventType.FRANCHISE_TERMINATED,
+                                previousStatus,
+                                FranchiseStatus.TERMINATED,
+                                reason,
+                                performedByUser,
+                                now
+                        )
+                );
+
+        /*
+         * Platform User accounts intentionally remain unchanged.
+         * Operational access is removed through the terminated franchise,
+         * inactive district allocation, and deactivated memberships.
+         */
+
+        return new AdminFranchiseClosureResponse(
+                franchise.getId(),
+                franchise.getFranchiseCode(),
+                franchise.getDisplayName(),
+                previousStatus,
+                franchise.getStatus(),
+                franchise.getTerminatedAt(),
+                allocation.getId(),
+                allocation.getDistrict().getId(),
+                allocation.getDistrict().getName(),
+                allocation.getEndedAt(),
+                activeTerritories.size(),
+                activeMemberships.size(),
+                lifecycleEvent.getId(),
+                lifecycleEvent.getReason(),
+                performedByUser.getId(),
+                lifecycleEvent.getOccurredAt()
+        );
+    }
 
     @Override
     @Transactional
@@ -227,6 +398,7 @@ public class AdminFranchiseManagementServiceImpl
     private final FranchiseRepository franchiseRepository;
     private final FranchiseDistrictAllocationRepository
             franchiseDistrictAllocationRepository;
+    private final FranchiseLifecycleEventRepository franchiseLifecycleEventRepository;
     private final FranchiseUserRepository franchiseUserRepository;
     private final FranchiseTerritoryRepository franchiseTerritoryRepository;
     private final UserRepository userRepository;

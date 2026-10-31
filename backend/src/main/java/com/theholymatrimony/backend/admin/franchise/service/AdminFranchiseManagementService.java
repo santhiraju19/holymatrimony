@@ -1,5 +1,6 @@
 package com.theholymatrimony.backend.admin.franchise.service;
 
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseClosureResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchisePageResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseStatusResponse;
@@ -7,6 +8,7 @@ import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseR
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseTerritoryResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateFranchiseTerritoryRequest;
 import com.theholymatrimony.backend.admin.franchise.dto.UpdateFranchiseStatusRequest;
+import com.theholymatrimony.backend.admin.franchise.dto.TerminateFranchiseRequest;
 import com.theholymatrimony.backend.franchise.enums.FranchiseStatus;
 
 import java.util.List;
@@ -122,6 +124,35 @@ public interface AdminFranchiseManagementService {
             String administratorEmail,
             UUID franchiseId,
             UpdateFranchiseStatusRequest request
+    );
+
+
+    /**
+     * Permanently closes an operational District Franchise.
+     *
+     * This is intentionally separate from updateFranchiseStatus because
+     * termination is an atomic business operation that must:
+     * - terminate the franchise;
+     * - release its active district allocation;
+     * - deactivate active territories;
+     * - deactivate active franchise memberships;
+     * - preserve all historical rows;
+     * - record the immutable HQ lifecycle audit event.
+     *
+     * Only ACTIVE or SUSPENDED franchises may be terminated by this
+     * workflow. Platform User accounts are intentionally not deactivated.
+     *
+     * Authorization remains SUPER_ADMIN-only.
+     *
+     * @param administratorEmail authenticated HQ administrator identity
+     * @param franchiseId franchise being permanently closed
+     * @param request mandatory closure reason
+     * @return persisted closure result and audit-event details
+     */
+    AdminFranchiseClosureResponse terminateFranchise(
+            String administratorEmail,
+            UUID franchiseId,
+            TerminateFranchiseRequest request
     );
 
 }

@@ -1,12 +1,14 @@
 package com.theholymatrimony.backend.admin.franchise.controller;
 
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseResponse;
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseClosureResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseStatusResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseTerritoryResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchisePageResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseRequest;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateFranchiseTerritoryRequest;
 import com.theholymatrimony.backend.admin.franchise.dto.UpdateFranchiseStatusRequest;
+import com.theholymatrimony.backend.admin.franchise.dto.TerminateFranchiseRequest;
 import com.theholymatrimony.backend.admin.franchise.service.AdminFranchiseManagementService;
 import com.theholymatrimony.backend.franchise.enums.FranchiseStatus;
 import com.theholymatrimony.backend.franchise.enums.FranchiseTerritoryType;
@@ -907,6 +909,194 @@ class AdminFranchiseManagementControllerTests {
                 service,
                 never()
         ).updateFranchiseStatus(
+                any(),
+                any(),
+                any()
+        );
+    }
+
+
+    @Test
+    void terminateFranchiseUsesAuthenticatedAdministratorAndReturnsOkEnvelope() {
+        String administratorEmail =
+                "admin@theholymatrimony.com";
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        Authentication authentication =
+                authenticated(
+                        administratorEmail
+                );
+
+        TerminateFranchiseRequest request =
+                new TerminateFranchiseRequest(
+                        "District franchise agreement terminated"
+                );
+
+        AdminFranchiseClosureResponse serviceResponse =
+                mock(
+                        AdminFranchiseClosureResponse.class
+                );
+
+        when(
+                service.terminateFranchise(
+                        administratorEmail,
+                        franchiseId,
+                        request
+                )
+        ).thenReturn(
+                serviceResponse
+        );
+
+        ResponseEntity<ApiResponse<AdminFranchiseClosureResponse>> result =
+                controller.terminateFranchise(
+                        authentication,
+                        franchiseId,
+                        request
+                );
+
+        assertEquals(
+                HttpStatus.OK,
+                result.getStatusCode()
+        );
+
+        assertNotNull(
+                result.getBody()
+        );
+
+        assertSame(
+                serviceResponse,
+                extractEnvelopeData(
+                        result.getBody()
+                )
+        );
+
+        verify(
+                service
+        ).terminateFranchise(
+                administratorEmail,
+                franchiseId,
+                request
+        );
+    }
+
+
+    @Test
+    void terminateFranchiseRejectsNullAuthenticationBeforeServiceInvocation() {
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        TerminateFranchiseRequest request =
+                new TerminateFranchiseRequest(
+                        "District franchise agreement terminated"
+                );
+
+        IllegalStateException exception =
+                assertThrows(
+                        IllegalStateException.class,
+                        () ->
+                                controller.terminateFranchise(
+                                        null,
+                                        franchiseId,
+                                        request
+                                )
+                );
+
+        assertEquals(
+                "Authenticated administrator identity is required.",
+                exception.getMessage()
+        );
+
+        verify(
+                service,
+                never()
+        ).terminateFranchise(
+                any(),
+                any(),
+                any()
+        );
+    }
+
+
+    @Test
+    void terminateFranchiseRejectsUnauthenticatedAuthenticationBeforeServiceInvocation() {
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(
+                        "admin@theholymatrimony.com",
+                        "ignored"
+                );
+
+        TerminateFranchiseRequest request =
+                new TerminateFranchiseRequest(
+                        "District franchise agreement terminated"
+                );
+
+        IllegalStateException exception =
+                assertThrows(
+                        IllegalStateException.class,
+                        () ->
+                                controller.terminateFranchise(
+                                        authentication,
+                                        franchiseId,
+                                        request
+                                )
+                );
+
+        assertEquals(
+                "Authenticated administrator identity is required.",
+                exception.getMessage()
+        );
+
+        verify(
+                service,
+                never()
+        ).terminateFranchise(
+                any(),
+                any(),
+                any()
+        );
+    }
+
+
+    @Test
+    void terminateFranchiseRejectsBlankAdministratorIdentityBeforeServiceInvocation() {
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        Authentication authentication =
+                authenticated(
+                        "   "
+                );
+
+        TerminateFranchiseRequest request =
+                new TerminateFranchiseRequest(
+                        "District franchise agreement terminated"
+                );
+
+        IllegalStateException exception =
+                assertThrows(
+                        IllegalStateException.class,
+                        () ->
+                                controller.terminateFranchise(
+                                        authentication,
+                                        franchiseId,
+                                        request
+                                )
+                );
+
+        assertEquals(
+                "Authenticated administrator identity is required.",
+                exception.getMessage()
+        );
+
+        verify(
+                service,
+                never()
+        ).terminateFranchise(
                 any(),
                 any(),
                 any()

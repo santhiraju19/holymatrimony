@@ -1,5 +1,7 @@
 package com.theholymatrimony.backend.franchise.repository;
 
+import jakarta.persistence.LockModeType;
+
 import com.theholymatrimony.backend.franchise.entity.Franchise;
 import com.theholymatrimony.backend.franchise.enums.FranchiseStatus;
 
@@ -7,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 import org.springframework.data.repository.query.Param;
@@ -17,6 +20,17 @@ import java.util.UUID;
 
 public interface FranchiseRepository
         extends JpaRepository<Franchise, UUID> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            SELECT f
+            FROM Franchise f
+            WHERE f.id = :franchiseId
+            """)
+    Optional<Franchise> findForUpdate(
+            @Param("franchiseId")
+            UUID franchiseId
+    );
 
     Optional<Franchise> findByFranchiseCode(
             String franchiseCode

@@ -2,11 +2,13 @@ package com.theholymatrimony.backend.admin.franchise.service;
 
 import com.theholymatrimony.backend.admin.access.AdminAccessService;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseResponse;
+import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseClosureResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchiseTerritoryResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.AdminFranchisePageResponse;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateDistrictFranchiseRequest;
 import com.theholymatrimony.backend.admin.franchise.dto.CreateFranchiseTerritoryRequest;
 import com.theholymatrimony.backend.admin.franchise.dto.UpdateFranchiseStatusRequest;
+import com.theholymatrimony.backend.admin.franchise.dto.TerminateFranchiseRequest;
 import com.theholymatrimony.backend.auth.entity.User;
 import com.theholymatrimony.backend.auth.enums.Role;
 import com.theholymatrimony.backend.auth.enums.UserStatus;
@@ -16,15 +18,18 @@ import com.theholymatrimony.backend.auth.repository.UserRepository;
 import com.theholymatrimony.backend.common.exception.ResourceAlreadyExistsException;
 import com.theholymatrimony.backend.franchise.entity.Franchise;
 import com.theholymatrimony.backend.franchise.entity.FranchiseDistrictAllocation;
+import com.theholymatrimony.backend.franchise.entity.FranchiseLifecycleEvent;
 import com.theholymatrimony.backend.franchise.entity.FranchiseTerritory;
 import com.theholymatrimony.backend.franchise.entity.FranchiseUser;
 import com.theholymatrimony.backend.franchise.entity.GeoDistrict;
 import com.theholymatrimony.backend.franchise.entity.GeoState;
 import com.theholymatrimony.backend.franchise.enums.FranchiseStaffRole;
+import com.theholymatrimony.backend.franchise.enums.FranchiseLifecycleEventType;
 import com.theholymatrimony.backend.franchise.enums.FranchiseStatus;
 import com.theholymatrimony.backend.franchise.enums.FranchiseTerritoryType;
 import com.theholymatrimony.backend.franchise.enums.FranchiseUserStatus;
 import com.theholymatrimony.backend.franchise.repository.FranchiseDistrictAllocationRepository;
+import com.theholymatrimony.backend.franchise.repository.FranchiseLifecycleEventRepository;
 import com.theholymatrimony.backend.franchise.repository.FranchiseRepository;
 import com.theholymatrimony.backend.franchise.repository.FranchiseTerritoryRepository;
 import com.theholymatrimony.backend.franchise.repository.FranchiseUserRepository;
@@ -42,6 +47,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -68,6 +74,7 @@ class AdminFranchiseManagementServiceImplTests {
     private GeoDistrictRepository geoDistrictRepository;
     private FranchiseRepository franchiseRepository;
     private FranchiseDistrictAllocationRepository allocationRepository;
+    private FranchiseLifecycleEventRepository lifecycleEventRepository;
     private FranchiseTerritoryRepository franchiseTerritoryRepository;
     private UserRepository userRepository;
     private FranchiseUserRepository franchiseUserRepository;
@@ -87,6 +94,9 @@ class AdminFranchiseManagementServiceImplTests {
 
         allocationRepository =
                 mock(FranchiseDistrictAllocationRepository.class);
+
+        lifecycleEventRepository =
+                mock(FranchiseLifecycleEventRepository.class);
 
         franchiseTerritoryRepository =
                 mock(FranchiseTerritoryRepository.class);
@@ -112,6 +122,7 @@ class AdminFranchiseManagementServiceImplTests {
                         geoDistrictRepository,
                         franchiseRepository,
                         allocationRepository,
+                        lifecycleEventRepository,
                         franchiseUserRepository,
                         franchiseTerritoryRepository,
                         userRepository,
@@ -2782,6 +2793,872 @@ class AdminFranchiseManagementServiceImplTests {
                 .coverageDescription("Coverage")
                 .active(active)
                 .build();
+    }
+
+    @Test
+    void terminateFranchiseTerminatesActiveFranchiseAtomically() {
+
+        String administratorEmail =
+                "admin@theholymatrimony.com";
+
+        UUID administratorId =
+                UUID.randomUUID();
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        UUID allocationId =
+                UUID.randomUUID();
+
+        UUID districtId =
+                UUID.randomUUID();
+
+        UUID territoryOneId =
+                UUID.randomUUID();
+
+        UUID territoryTwoId =
+                UUID.randomUUID();
+
+        UUID ownerMembershipId =
+                UUID.randomUUID();
+
+        UUID managerMembershipId =
+                UUID.randomUUID();
+
+        User administrator =
+                new User();
+
+        administrator.setId(administratorId);
+        administrator.setEmail(administratorEmail);
+
+        GeoState state =
+                GeoState.builder()
+                        .id(UUID.randomUUID())
+                        .lgdCode(28)
+                        .name("Andhra Pradesh")
+                        .countryCode("IN")
+                        .active(true)
+                        .build();
+
+        GeoDistrict district =
+                GeoDistrict.builder()
+                        .id(districtId)
+                        .state(state)
+                        .lgdCode(506)
+                        .name("Guntur")
+                        .active(true)
+                        .build();
+
+        Franchise franchise =
+                new Franchise();
+
+        franchise.setId(franchiseId);
+        franchise.setFranchiseCode("HM-GNT");
+        franchise.setDisplayName("Guntur District Franchise");
+        franchise.setStatus(FranchiseStatus.ACTIVE);
+        franchise.setActivatedAt(
+                LocalDateTime.now().minusDays(30)
+        );
+
+        FranchiseDistrictAllocation allocation =
+                new FranchiseDistrictAllocation();
+
+        allocation.setId(allocationId);
+        allocation.setFranchise(franchise);
+        allocation.setDistrict(district);
+        allocation.setActive(true);
+
+        FranchiseTerritory territoryOne =
+                new FranchiseTerritory();
+
+        territoryOne.setId(territoryOneId);
+        territoryOne.setDistrictAllocation(allocation);
+        territoryOne.setName("Guntur City");
+        territoryOne.setTerritoryType(
+                FranchiseTerritoryType.CITY
+        );
+        territoryOne.setActive(true);
+
+        FranchiseTerritory territoryTwo =
+                new FranchiseTerritory();
+
+        territoryTwo.setId(territoryTwoId);
+        territoryTwo.setDistrictAllocation(allocation);
+        territoryTwo.setName("Tenali");
+        territoryTwo.setTerritoryType(
+                FranchiseTerritoryType.CITY
+        );
+        territoryTwo.setActive(true);
+
+        FranchiseUser ownerMembership =
+                new FranchiseUser();
+
+        ownerMembership.setId(ownerMembershipId);
+        ownerMembership.setFranchise(franchise);
+        ownerMembership.setStatus(
+                FranchiseUserStatus.ACTIVE
+        );
+
+        FranchiseUser managerMembership =
+                new FranchiseUser();
+
+        managerMembership.setId(managerMembershipId);
+        managerMembership.setFranchise(franchise);
+        managerMembership.setStatus(
+                FranchiseUserStatus.ACTIVE
+        );
+
+        when(
+                userRepository.findByEmail(
+                        administratorEmail
+                )
+        ).thenReturn(
+                Optional.of(administrator)
+        );
+
+        when(
+                franchiseRepository.findForUpdate(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(franchise)
+        );
+
+        when(
+                allocationRepository
+                        .findActiveForUpdateByFranchiseId(
+                                franchiseId
+                        )
+        ).thenReturn(
+                Optional.of(allocation)
+        );
+
+        when(
+                franchiseTerritoryRepository
+                        .findAllByDistrictAllocationIdAndActiveTrueOrderByNameAsc(
+                                allocationId
+                        )
+        ).thenReturn(
+                List.of(
+                        territoryOne,
+                        territoryTwo
+                )
+        );
+
+        when(
+                franchiseUserRepository
+                        .findAllByFranchiseIdAndStatusOrderByJoinedAtAsc(
+                                franchiseId,
+                                FranchiseUserStatus.ACTIVE
+                        )
+        ).thenReturn(
+                List.of(
+                        ownerMembership,
+                        managerMembership
+                )
+        );
+
+        when(
+                lifecycleEventRepository.save(
+                        any(FranchiseLifecycleEvent.class)
+                )
+        ).thenAnswer(
+                invocation -> invocation.getArgument(0)
+        );
+
+        AdminFranchiseClosureResponse response =
+                service.terminateFranchise(
+                        " ADMIN@THEHOLYMATRIMONY.COM ",
+                        franchiseId,
+                        new TerminateFranchiseRequest(
+                                "  Agreement terminated by HQ  "
+                        )
+                );
+
+        verify(adminAccessService)
+                .requireSuperAdmin(
+                        administratorEmail
+                );
+
+        verify(franchiseRepository)
+                .findForUpdate(
+                        franchiseId
+                );
+
+        verify(allocationRepository)
+                .findActiveForUpdateByFranchiseId(
+                        franchiseId
+                );
+
+        assertEquals(
+                FranchiseStatus.TERMINATED,
+                franchise.getStatus()
+        );
+
+        assertNotNull(
+                franchise.getTerminatedAt()
+        );
+
+        assertEquals(
+                false,
+                allocation.getActive()
+        );
+
+        assertNotNull(
+                allocation.getEndedAt()
+        );
+
+        assertEquals(
+                false,
+                territoryOne.getActive()
+        );
+
+        assertEquals(
+                false,
+                territoryTwo.getActive()
+        );
+
+        assertEquals(
+                FranchiseUserStatus.DEACTIVATED,
+                ownerMembership.getStatus()
+        );
+
+        assertEquals(
+                FranchiseUserStatus.DEACTIVATED,
+                managerMembership.getStatus()
+        );
+
+        assertNotNull(
+                ownerMembership.getDeactivatedAt()
+        );
+
+        assertNotNull(
+                managerMembership.getDeactivatedAt()
+        );
+
+        assertEquals(
+                franchise.getTerminatedAt(),
+                allocation.getEndedAt()
+        );
+
+        assertEquals(
+                franchise.getTerminatedAt(),
+                ownerMembership.getDeactivatedAt()
+        );
+
+        assertEquals(
+                franchise.getTerminatedAt(),
+                managerMembership.getDeactivatedAt()
+        );
+
+        ArgumentCaptor<FranchiseLifecycleEvent> eventCaptor =
+                ArgumentCaptor.forClass(
+                        FranchiseLifecycleEvent.class
+                );
+
+        verify(lifecycleEventRepository)
+                .save(
+                        eventCaptor.capture()
+                );
+
+        FranchiseLifecycleEvent lifecycleEvent =
+                eventCaptor.getValue();
+
+        assertEquals(
+                franchise,
+                lifecycleEvent.getFranchise()
+        );
+
+        assertEquals(
+                FranchiseLifecycleEventType.FRANCHISE_TERMINATED,
+                lifecycleEvent.getEventType()
+        );
+
+        assertEquals(
+                FranchiseStatus.ACTIVE,
+                lifecycleEvent.getFromStatus()
+        );
+
+        assertEquals(
+                FranchiseStatus.TERMINATED,
+                lifecycleEvent.getToStatus()
+        );
+
+        assertEquals(
+                "Agreement terminated by HQ",
+                lifecycleEvent.getReason()
+        );
+
+        assertEquals(
+                administrator,
+                lifecycleEvent.getPerformedByUser()
+        );
+
+        assertEquals(
+                franchise.getTerminatedAt(),
+                lifecycleEvent.getOccurredAt()
+        );
+
+        assertEquals(
+                franchiseId,
+                response.franchiseId()
+        );
+
+        assertEquals(
+                "HM-GNT",
+                response.franchiseCode()
+        );
+
+        assertEquals(
+                "Guntur District Franchise",
+                response.franchiseName()
+        );
+
+        assertEquals(
+                FranchiseStatus.ACTIVE,
+                response.previousStatus()
+        );
+
+        assertEquals(
+                FranchiseStatus.TERMINATED,
+                response.status()
+        );
+
+        assertEquals(
+                districtId,
+                response.districtId()
+        );
+
+        assertEquals(
+                "Guntur",
+                response.districtName()
+        );
+
+        assertEquals(
+                2,
+                response.deactivatedTerritoryCount()
+        );
+
+        assertEquals(
+                2,
+                response.deactivatedMembershipCount()
+        );
+
+        assertEquals(
+                null,
+                response.lifecycleEventId()
+        );
+
+        assertEquals(
+                "Agreement terminated by HQ",
+                response.reason()
+        );
+
+        assertEquals(
+                administratorId,
+                response.performedByUserId()
+        );
+
+        assertEquals(
+                lifecycleEvent.getOccurredAt(),
+                response.occurredAt()
+        );
+    }
+
+    @Test
+    void terminateFranchiseTerminatesSuspendedFranchiseAtomically() {
+
+        String administratorEmail =
+                "admin@theholymatrimony.com";
+
+        UUID administratorId =
+                UUID.randomUUID();
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        UUID allocationId =
+                UUID.randomUUID();
+
+        UUID districtId =
+                UUID.randomUUID();
+
+        User administrator =
+                new User();
+
+        administrator.setId(administratorId);
+        administrator.setEmail(administratorEmail);
+
+        GeoState state =
+                GeoState.builder()
+                        .id(UUID.randomUUID())
+                        .lgdCode(36)
+                        .name("Telangana")
+                        .countryCode("IN")
+                        .active(true)
+                        .build();
+
+        GeoDistrict district =
+                GeoDistrict.builder()
+                        .id(districtId)
+                        .state(state)
+                        .lgdCode(536)
+                        .name("Hyderabad")
+                        .active(true)
+                        .build();
+
+        LocalDateTime activatedAt =
+                LocalDateTime.now().minusDays(60);
+
+        LocalDateTime suspendedAt =
+                LocalDateTime.now().minusDays(5);
+
+        Franchise franchise =
+                new Franchise();
+
+        franchise.setId(franchiseId);
+        franchise.setFranchiseCode("HM-HYD");
+        franchise.setDisplayName("Hyderabad District Franchise");
+        franchise.setStatus(FranchiseStatus.SUSPENDED);
+        franchise.setActivatedAt(activatedAt);
+        franchise.setSuspendedAt(suspendedAt);
+
+        FranchiseDistrictAllocation allocation =
+                new FranchiseDistrictAllocation();
+
+        allocation.setId(allocationId);
+        allocation.setFranchise(franchise);
+        allocation.setDistrict(district);
+        allocation.setActive(true);
+
+        when(
+                userRepository.findByEmail(
+                        administratorEmail
+                )
+        ).thenReturn(
+                Optional.of(administrator)
+        );
+
+        when(
+                franchiseRepository.findForUpdate(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(franchise)
+        );
+
+        when(
+                allocationRepository
+                        .findActiveForUpdateByFranchiseId(
+                                franchiseId
+                        )
+        ).thenReturn(
+                Optional.of(allocation)
+        );
+
+        when(
+                franchiseTerritoryRepository
+                        .findAllByDistrictAllocationIdAndActiveTrueOrderByNameAsc(
+                                allocationId
+                        )
+        ).thenReturn(
+                List.of()
+        );
+
+        when(
+                franchiseUserRepository
+                        .findAllByFranchiseIdAndStatusOrderByJoinedAtAsc(
+                                franchiseId,
+                                FranchiseUserStatus.ACTIVE
+                        )
+        ).thenReturn(
+                List.of()
+        );
+
+        when(
+                lifecycleEventRepository.save(
+                        any(FranchiseLifecycleEvent.class)
+                )
+        ).thenAnswer(
+                invocation -> invocation.getArgument(0)
+        );
+
+        AdminFranchiseClosureResponse response =
+                service.terminateFranchise(
+                        administratorEmail,
+                        franchiseId,
+                        new TerminateFranchiseRequest(
+                                "Agreement closed"
+                        )
+                );
+
+        assertEquals(
+                FranchiseStatus.TERMINATED,
+                franchise.getStatus()
+        );
+
+        assertEquals(
+                activatedAt,
+                franchise.getActivatedAt()
+        );
+
+        assertEquals(
+                suspendedAt,
+                franchise.getSuspendedAt()
+        );
+
+        assertNotNull(
+                franchise.getTerminatedAt()
+        );
+
+        assertEquals(
+                false,
+                allocation.getActive()
+        );
+
+        assertEquals(
+                franchise.getTerminatedAt(),
+                allocation.getEndedAt()
+        );
+
+        ArgumentCaptor<FranchiseLifecycleEvent> eventCaptor =
+                ArgumentCaptor.forClass(
+                        FranchiseLifecycleEvent.class
+                );
+
+        verify(lifecycleEventRepository)
+                .save(
+                        eventCaptor.capture()
+                );
+
+        FranchiseLifecycleEvent lifecycleEvent =
+                eventCaptor.getValue();
+
+        assertEquals(
+                FranchiseStatus.SUSPENDED,
+                lifecycleEvent.getFromStatus()
+        );
+
+        assertEquals(
+                FranchiseStatus.TERMINATED,
+                lifecycleEvent.getToStatus()
+        );
+
+        assertEquals(
+                administrator,
+                lifecycleEvent.getPerformedByUser()
+        );
+
+        assertEquals(
+                FranchiseStatus.SUSPENDED,
+                response.previousStatus()
+        );
+
+        assertEquals(
+                FranchiseStatus.TERMINATED,
+                response.status()
+        );
+
+        assertEquals(
+                0,
+                response.deactivatedTerritoryCount()
+        );
+
+        assertEquals(
+                0,
+                response.deactivatedMembershipCount()
+        );
+
+        assertEquals(
+                null,
+                response.lifecycleEventId()
+        );
+    }
+
+    @Test
+    void terminateFranchiseRejectsOnboardingFranchise() {
+
+        String administratorEmail =
+                "admin@theholymatrimony.com";
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        User administrator =
+                new User();
+
+        administrator.setEmail(administratorEmail);
+
+        Franchise franchise =
+                new Franchise();
+
+        franchise.setId(franchiseId);
+        franchise.setStatus(
+                FranchiseStatus.ONBOARDING
+        );
+
+        when(
+                userRepository.findByEmail(
+                        administratorEmail
+                )
+        ).thenReturn(
+                Optional.of(administrator)
+        );
+
+        when(
+                franchiseRepository.findForUpdate(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(franchise)
+        );
+
+        assertThrows(
+                IllegalStateException.class,
+                () ->
+                        service.terminateFranchise(
+                                administratorEmail,
+                                franchiseId,
+                                new TerminateFranchiseRequest(
+                                        "Cancelled during onboarding"
+                                )
+                        )
+        );
+
+        assertEquals(
+                FranchiseStatus.ONBOARDING,
+                franchise.getStatus()
+        );
+
+        verify(
+                allocationRepository,
+                never()
+        ).findActiveForUpdateByFranchiseId(
+                any()
+        );
+
+        verify(
+                lifecycleEventRepository,
+                never()
+        ).save(
+                any()
+        );
+    }
+
+    @Test
+    void terminateFranchiseRejectsAlreadyTerminatedFranchise() {
+
+        String administratorEmail =
+                "admin@theholymatrimony.com";
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        User administrator =
+                new User();
+
+        administrator.setEmail(administratorEmail);
+
+        Franchise franchise =
+                new Franchise();
+
+        franchise.setId(franchiseId);
+        franchise.setStatus(
+                FranchiseStatus.TERMINATED
+        );
+
+        franchise.setTerminatedAt(
+                LocalDateTime.now().minusDays(1)
+        );
+
+        when(
+                userRepository.findByEmail(
+                        administratorEmail
+                )
+        ).thenReturn(
+                Optional.of(administrator)
+        );
+
+        when(
+                franchiseRepository.findForUpdate(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(franchise)
+        );
+
+        assertThrows(
+                IllegalStateException.class,
+                () ->
+                        service.terminateFranchise(
+                                administratorEmail,
+                                franchiseId,
+                                new TerminateFranchiseRequest(
+                                        "Repeated closure"
+                                )
+                        )
+        );
+
+        verify(
+                allocationRepository,
+                never()
+        ).findActiveForUpdateByFranchiseId(
+                any()
+        );
+
+        verify(
+                lifecycleEventRepository,
+                never()
+        ).save(
+                any()
+        );
+    }
+
+    @Test
+    void terminateFranchiseRejectsMissingActiveAllocation() {
+
+        String administratorEmail =
+                "admin@theholymatrimony.com";
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        User administrator =
+                new User();
+
+        administrator.setEmail(administratorEmail);
+
+        Franchise franchise =
+                new Franchise();
+
+        franchise.setId(franchiseId);
+        franchise.setStatus(
+                FranchiseStatus.ACTIVE
+        );
+
+        when(
+                userRepository.findByEmail(
+                        administratorEmail
+                )
+        ).thenReturn(
+                Optional.of(administrator)
+        );
+
+        when(
+                franchiseRepository.findForUpdate(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(franchise)
+        );
+
+        when(
+                allocationRepository
+                        .findActiveForUpdateByFranchiseId(
+                                franchiseId
+                        )
+        ).thenReturn(
+                Optional.empty()
+        );
+
+        assertThrows(
+                IllegalStateException.class,
+                () ->
+                        service.terminateFranchise(
+                                administratorEmail,
+                                franchiseId,
+                                new TerminateFranchiseRequest(
+                                        "Agreement terminated"
+                                )
+                        )
+        );
+
+        assertEquals(
+                FranchiseStatus.ACTIVE,
+                franchise.getStatus()
+        );
+
+        assertEquals(
+                null,
+                franchise.getTerminatedAt()
+        );
+
+        verify(
+                franchiseTerritoryRepository,
+                never()
+        ).findAllByDistrictAllocationIdAndActiveTrueOrderByNameAsc(
+                any()
+        );
+
+        verify(
+                franchiseUserRepository,
+                never()
+        ).findAllByFranchiseIdAndStatusOrderByJoinedAtAsc(
+                any(),
+                any()
+        );
+
+        verify(
+                lifecycleEventRepository,
+                never()
+        ).save(
+                any()
+        );
+    }
+
+    @Test
+    void terminateFranchiseRejectsBlankReason() {
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        service.terminateFranchise(
+                                "admin@theholymatrimony.com",
+                                franchiseId,
+                                new TerminateFranchiseRequest(
+                                        "   "
+                                )
+                        )
+        );
+
+        verifyNoInteractions(
+                adminAccessService,
+                franchiseRepository,
+                allocationRepository,
+                lifecycleEventRepository
+        );
+    }
+
+    @Test
+    void terminateFranchiseRejectsReasonLongerThanFiveHundredCharacters() {
+
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        String reason =
+                "x".repeat(501);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        service.terminateFranchise(
+                                "admin@theholymatrimony.com",
+                                franchiseId,
+                                new TerminateFranchiseRequest(
+                                        reason
+                                )
+                        )
+        );
+
+        verifyNoInteractions(
+                adminAccessService,
+                franchiseRepository,
+                allocationRepository,
+                lifecycleEventRepository
+        );
     }
 
     @Test
