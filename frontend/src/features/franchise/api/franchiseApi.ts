@@ -7,6 +7,7 @@ import type {
 
 import type {
   FranchiseTerritory,
+  UpdateFranchiseTerritoryRequest,
 } from "../types/franchiseTerritory";
 
 export async function getCurrentFranchiseAccess(): Promise<FranchiseAccess> {
@@ -24,6 +25,21 @@ export async function getFranchiseTerritories(): Promise<
   const response =
     await api.get<ApiResponse<FranchiseTerritory[]>>(
       "/franchise/territories"
+    );
+
+  return response.data.data;
+}
+
+export async function updateFranchiseTerritory(
+  territoryId: string,
+  request: UpdateFranchiseTerritoryRequest
+): Promise<FranchiseTerritory> {
+  const response =
+    await api.patch<ApiResponse<FranchiseTerritory>>(
+      `/franchise/territories/${encodeURIComponent(
+        territoryId
+      )}`,
+      request
     );
 
   return response.data.data;

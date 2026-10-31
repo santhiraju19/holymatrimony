@@ -13,3 +13,8 @@ export interface FranchiseTerritory {
   territoryType: FranchiseTerritoryType;
   coverageDescription: string | null;
 }
+
+export interface UpdateFranchiseTerritoryRequest {
+  name: string;
+  coverageDescription: string | null;
+}

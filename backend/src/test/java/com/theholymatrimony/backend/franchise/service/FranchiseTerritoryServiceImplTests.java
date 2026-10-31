@@ -2,6 +2,7 @@ package com.theholymatrimony.backend.franchise.service;
 
 import com.theholymatrimony.backend.franchise.access.FranchiseAccessService;
 import com.theholymatrimony.backend.franchise.dto.FranchiseTerritoryResponse;
+import com.theholymatrimony.backend.franchise.dto.UpdateFranchiseTerritoryRequest;
 import com.theholymatrimony.backend.franchise.entity.Franchise;
 import com.theholymatrimony.backend.franchise.entity.FranchiseDistrictAllocation;
 import com.theholymatrimony.backend.franchise.entity.FranchiseTerritory;
@@ -20,6 +21,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -371,4 +373,376 @@ class FranchiseTerritoryServiceImplTests {
                 territoryRepository
         );
     }
+
+    @Test
+    void territoryUpdateRequiresManagePermissionBeforeScopeLookup() {
+
+        String email = "staff@example.com";
+        UUID territoryId = UUID.randomUUID();
+
+        UpdateFranchiseTerritoryRequest request =
+                new UpdateFranchiseTerritoryRequest(
+                        "Updated Territory",
+                        "Updated coverage"
+                );
+
+        AccessDeniedException denied =
+                new AccessDeniedException(
+                        "Territory management denied."
+                );
+
+        when(
+                franchiseAccessService.requirePermission(
+                        email,
+                        FranchisePermission.TERRITORIES_MANAGE
+                )
+        ).thenThrow(
+                denied
+        );
+
+        AccessDeniedException result =
+                assertThrows(
+                        AccessDeniedException.class,
+                        () ->
+                                service.updateTerritory(
+                                        email,
+                                        territoryId,
+                                        request
+                                )
+                );
+
+        assertEquals(
+                denied,
+                result
+        );
+
+        verify(
+                franchiseAccessService
+        ).requirePermission(
+                email,
+                FranchisePermission.TERRITORIES_MANAGE
+        );
+
+        verifyNoMoreInteractions(
+                franchiseAccessService
+        );
+
+        verifyNoInteractions(
+                territoryRepository
+        );
+    }
+
+    @Test
+    void territoryScopeFailureStopsBeforeSave() {
+
+        String email = "manager@example.com";
+        UUID territoryId = UUID.randomUUID();
+
+        UpdateFranchiseTerritoryRequest request =
+                new UpdateFranchiseTerritoryRequest(
+                        "Updated Territory",
+                        "Updated coverage"
+                );
+
+        AccessDeniedException denied =
+                new AccessDeniedException(
+                        "Territory is outside the franchise scope."
+                );
+
+        when(
+                franchiseAccessService.requireTerritoryInScope(
+                        email,
+                        territoryId
+                )
+        ).thenThrow(
+                denied
+        );
+
+        AccessDeniedException result =
+                assertThrows(
+                        AccessDeniedException.class,
+                        () ->
+                                service.updateTerritory(
+                                        email,
+                                        territoryId,
+                                        request
+                                )
+                );
+
+        assertEquals(
+                denied,
+                result
+        );
+
+        verify(
+                franchiseAccessService
+        ).requirePermission(
+                email,
+                FranchisePermission.TERRITORIES_MANAGE
+        );
+
+        verify(
+                franchiseAccessService
+        ).requireTerritoryInScope(
+                email,
+                territoryId
+        );
+
+        verifyNoMoreInteractions(
+                franchiseAccessService
+        );
+
+        verifyNoInteractions(
+                territoryRepository
+        );
+    }
+
+    @Test
+    void territoryUpdateChangesOnlyPermittedOperationalFields() {
+
+        String email = "owner@example.com";
+
+        UUID franchiseId = UUID.randomUUID();
+        UUID allocationId = UUID.randomUUID();
+        UUID territoryId = UUID.randomUUID();
+
+        Franchise franchise =
+                Franchise.builder()
+                        .id(franchiseId)
+                        .build();
+
+        FranchiseDistrictAllocation allocation =
+                FranchiseDistrictAllocation.builder()
+                        .id(allocationId)
+                        .franchise(franchise)
+                        .active(true)
+                        .build();
+
+        FranchiseTerritory territory =
+                FranchiseTerritory.builder()
+                        .id(territoryId)
+                        .districtAllocation(allocation)
+                        .territoryCode("GNT-CITY")
+                        .name("Guntur City")
+                        .territoryType(
+                                FranchiseTerritoryType.CITY
+                        )
+                        .coverageDescription(
+                                "Original coverage"
+                        )
+                        .active(true)
+                        .build();
+
+        UpdateFranchiseTerritoryRequest request =
+                new UpdateFranchiseTerritoryRequest(
+                        "  Guntur Urban  ",
+                        "  Updated municipal coverage  "
+                );
+
+        when(
+                franchiseAccessService.requireTerritoryInScope(
+                        email,
+                        territoryId
+                )
+        ).thenReturn(
+                territory
+        );
+
+        when(
+                territoryRepository.save(
+                        same(territory)
+                )
+        ).thenReturn(
+                territory
+        );
+
+        FranchiseTerritoryResponse response =
+                service.updateTerritory(
+                        email,
+                        territoryId,
+                        request
+                );
+
+        assertEquals(
+                territoryId,
+                response.territoryId()
+        );
+
+        assertEquals(
+                "GNT-CITY",
+                response.territoryCode()
+        );
+
+        assertEquals(
+                "Guntur Urban",
+                response.name()
+        );
+
+        assertEquals(
+                FranchiseTerritoryType.CITY,
+                response.territoryType()
+        );
+
+        assertEquals(
+                "Updated municipal coverage",
+                response.coverageDescription()
+        );
+
+        assertEquals(
+                allocation,
+                territory.getDistrictAllocation()
+        );
+
+        assertEquals(
+                "GNT-CITY",
+                territory.getTerritoryCode()
+        );
+
+        assertEquals(
+                FranchiseTerritoryType.CITY,
+                territory.getTerritoryType()
+        );
+
+        assertEquals(
+                true,
+                territory.getActive()
+        );
+
+        verify(
+                franchiseAccessService
+        ).requirePermission(
+                email,
+                FranchisePermission.TERRITORIES_MANAGE
+        );
+
+        verify(
+                franchiseAccessService
+        ).requireTerritoryInScope(
+                email,
+                territoryId
+        );
+
+        verify(
+                territoryRepository
+        ).save(
+                same(territory)
+        );
+
+        verifyNoMoreInteractions(
+                franchiseAccessService,
+                territoryRepository
+        );
+    }
+
+    @Test
+    void blankCoverageDescriptionIsNormalizedToNull() {
+
+        String email = "owner@example.com";
+        UUID territoryId = UUID.randomUUID();
+
+        FranchiseTerritory territory =
+                FranchiseTerritory.builder()
+                        .id(territoryId)
+                        .territoryCode("GNT-CITY")
+                        .name("Guntur City")
+                        .territoryType(
+                                FranchiseTerritoryType.CITY
+                        )
+                        .coverageDescription(
+                                "Original coverage"
+                        )
+                        .active(true)
+                        .build();
+
+        UpdateFranchiseTerritoryRequest request =
+                new UpdateFranchiseTerritoryRequest(
+                        "Guntur City",
+                        "   "
+                );
+
+        when(
+                franchiseAccessService.requireTerritoryInScope(
+                        email,
+                        territoryId
+                )
+        ).thenReturn(
+                territory
+        );
+
+        when(
+                territoryRepository.save(
+                        same(territory)
+                )
+        ).thenReturn(
+                territory
+        );
+
+        FranchiseTerritoryResponse response =
+                service.updateTerritory(
+                        email,
+                        territoryId,
+                        request
+                );
+
+        assertEquals(
+                null,
+                territory.getCoverageDescription()
+        );
+
+        assertEquals(
+                null,
+                response.coverageDescription()
+        );
+
+        verify(
+                franchiseAccessService
+        ).requirePermission(
+                email,
+                FranchisePermission.TERRITORIES_MANAGE
+        );
+
+        verify(
+                franchiseAccessService
+        ).requireTerritoryInScope(
+                email,
+                territoryId
+        );
+
+        verify(
+                territoryRepository
+        ).save(
+                same(territory)
+        );
+
+        verifyNoMoreInteractions(
+                franchiseAccessService,
+                territoryRepository
+        );
+    }
+
+    @Test
+    void nullUpdateRequestFailsBeforeAuthorizationOrPersistence() {
+
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                service.updateTerritory(
+                                        "owner@example.com",
+                                        UUID.randomUUID(),
+                                        null
+                                )
+                );
+
+        assertEquals(
+                "Territory update request is required.",
+                exception.getMessage()
+        );
+
+        verifyNoInteractions(
+                franchiseAccessService,
+                territoryRepository
+        );
+    }
+
 }
