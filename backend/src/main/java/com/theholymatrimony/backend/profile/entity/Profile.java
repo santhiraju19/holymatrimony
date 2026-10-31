@@ -1,6 +1,7 @@
 package com.theholymatrimony.backend.profile.entity;
 
 import com.theholymatrimony.backend.auth.entity.User;
+import com.theholymatrimony.backend.franchise.entity.GeoDistrict;
 import com.theholymatrimony.backend.profile.enums.ProfileVerificationStatus;
 
 import jakarta.persistence.CascadeType;
@@ -12,6 +13,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.OrderBy;
@@ -467,6 +469,20 @@ private String district;
 
     @Column(length = 120)
     private String country;
+
+    /**
+     * Canonical district used for geographic authorization.
+     *
+     * The legacy country/state/district/city text fields remain available
+     * for display and backward compatibility. Franchise authorization must
+     * use this relationship rather than free-text location matching.
+     *
+     * Nullable because incomplete, non-India, or otherwise unmapped
+     * profiles may not have a canonical district.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "district_id")
+    private GeoDistrict canonicalDistrict;
 
     // =========================================================
     // About

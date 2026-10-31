@@ -36,6 +36,7 @@ public class ProfileService {
     private final ProfileRepository profileRepository;
     private final UserRepository userRepository;
     private final EntityManager entityManager;
+    private final CanonicalProfileDistrictResolver canonicalProfileDistrictResolver;
 
     // =========================================================
     // Get current user's profile
@@ -535,6 +536,14 @@ public class ProfileService {
 
         profile.setCity(
                 request.getCity()
+        );
+
+        profile.setCanonicalDistrict(
+                canonicalProfileDistrictResolver.resolve(
+                        request.getCountry(),
+                        request.getState(),
+                        request.getDistrict()
+                )
         );
 
         // =====================================================

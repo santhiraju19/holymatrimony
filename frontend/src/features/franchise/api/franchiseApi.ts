@@ -10,6 +10,10 @@ import type {
   UpdateFranchiseTerritoryRequest,
 } from "../types/franchiseTerritory";
 
+import type {
+  FranchiseMember,
+} from "../types/franchiseMember";
+
 export async function getCurrentFranchiseAccess(): Promise<FranchiseAccess> {
   const response =
     await api.get<ApiResponse<FranchiseAccess>>(
@@ -40,6 +44,17 @@ export async function updateFranchiseTerritory(
         territoryId
       )}`,
       request
+    );
+
+  return response.data.data;
+}
+
+export async function getFranchiseMembers(): Promise<
+  FranchiseMember[]
+> {
+  const response =
+    await api.get<ApiResponse<FranchiseMember[]>>(
+      "/franchise/members"
     );
 
   return response.data.data;

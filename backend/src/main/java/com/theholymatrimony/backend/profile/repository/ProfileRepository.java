@@ -219,4 +219,18 @@ public interface ProfileRepository
             LocalDateTime end
     );
 
+
+    /**
+     * Returns member profiles assigned to the authenticated franchise
+     * user's canonical district scope.
+     *
+     * The district ID supplied here must be derived server-side from
+     * FranchiseAccessService.requireActiveDistrictAllocation(...).
+     *
+     * Profiles without a canonical district are intentionally excluded.
+     */
+    List<Profile> findAllByCanonicalDistrictIdOrderByCreatedAtDesc(
+            UUID districtId
+    );
+
 }
