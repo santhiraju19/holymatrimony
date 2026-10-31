@@ -22,6 +22,26 @@ public interface FranchiseDistrictAllocationRepository
             UUID franchiseId
     );
 
+    /**
+     * HQ historical fallback for franchises whose active district allocation
+     * has been closed.
+     *
+     * The active allocation remains authoritative whenever one exists.
+     * This query is only intended as the fallback that preserves HQ visibility
+     * after closure by returning the most recently allocated district record.
+     */
+    @EntityGraph(
+            attributePaths = {
+                    "franchise",
+                    "district",
+                    "district.state"
+            }
+    )
+    Optional<FranchiseDistrictAllocation>
+    findFirstByFranchiseIdOrderByAllocatedAtDescCreatedAtDesc(
+            UUID franchiseId
+    );
+
     @EntityGraph(
             attributePaths = {
                     "franchise",

@@ -758,10 +758,17 @@ public class AdminFranchiseManagementServiceImpl
                         .findByFranchiseIdAndActiveTrue(
                                 franchise.getId()
                         )
+                        .or(
+                                () ->
+                                        franchiseDistrictAllocationRepository
+                                                .findFirstByFranchiseIdOrderByAllocatedAtDescCreatedAtDesc(
+                                                        franchise.getId()
+                                                )
+                        )
                         .orElseThrow(
                                 () ->
                                         new IllegalStateException(
-                                                "Active district allocation was not found for franchise."
+                                                "District allocation history was not found for franchise."
                                         )
                         );
 
@@ -772,10 +779,18 @@ public class AdminFranchiseManagementServiceImpl
                                 FranchiseStaffRole.FRANCHISE_OWNER,
                                 FranchiseUserStatus.ACTIVE
                         )
+                        .or(
+                                () ->
+                                        franchiseUserRepository
+                                                .findFirstByFranchiseIdAndStaffRoleOrderByJoinedAtDescCreatedAtDesc(
+                                                        franchise.getId(),
+                                                        FranchiseStaffRole.FRANCHISE_OWNER
+                                                )
+                        )
                         .orElseThrow(
                                 () ->
                                         new IllegalStateException(
-                                                "Active franchise owner was not found."
+                                                "Franchise owner history was not found."
                                         )
                         );
 
@@ -978,17 +993,6 @@ public class AdminFranchiseManagementServiceImpl
                         () ->
                                 new IllegalArgumentException(
                                         "Franchise was not found."
-                                )
-                );
-
-        franchiseDistrictAllocationRepository
-                .findByFranchiseIdAndActiveTrue(
-                        franchiseId
-                )
-                .orElseThrow(
-                        () ->
-                                new IllegalStateException(
-                                        "Active district allocation was not found for franchise."
                                 )
                 );
 

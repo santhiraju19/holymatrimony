@@ -67,6 +67,26 @@ public interface FranchiseUserRepository
             FranchiseUserStatus status
     );
 
+    /**
+     * HQ historical fallback for a franchise whose owner membership has been
+     * deactivated during closure.
+     *
+     * Active owner membership remains authoritative whenever present.
+     * This query returns the most recently joined owner membership only when
+     * HQ needs historical ownership information.
+     */
+    @EntityGraph(
+            attributePaths = {
+                    "user",
+                    "franchise"
+            }
+    )
+    Optional<FranchiseUser>
+    findFirstByFranchiseIdAndStaffRoleOrderByJoinedAtDescCreatedAtDesc(
+            UUID franchiseId,
+            FranchiseStaffRole staffRole
+    );
+
     boolean existsByFranchiseIdAndStaffRoleAndStatus(
             UUID franchiseId,
             FranchiseStaffRole staffRole,

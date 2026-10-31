@@ -1607,6 +1607,186 @@ class AdminFranchiseManagementServiceImplTests {
     }
 
     @Test
+    void getFranchiseFallsBackToLatestHistoricalDistrictAllocation() {
+
+        UUID franchiseId = UUID.randomUUID();
+        UUID allocationId = UUID.randomUUID();
+        UUID stateId = UUID.randomUUID();
+        UUID districtId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID ownerMembershipId = UUID.randomUUID();
+
+        Franchise franchise = mock(Franchise.class);
+        FranchiseDistrictAllocation allocation =
+                mock(FranchiseDistrictAllocation.class);
+        GeoDistrict district = mock(GeoDistrict.class);
+        GeoState state = mock(GeoState.class);
+        FranchiseUser ownerMembership = mock(FranchiseUser.class);
+        User owner = mock(User.class);
+
+        when(franchise.getId()).thenReturn(franchiseId);
+        when(franchise.getFranchiseCode()).thenReturn("HM-GUNTUR-001");
+        when(franchise.getDisplayName()).thenReturn("Holy Matrimony Guntur");
+        when(franchise.getStatus()).thenReturn(FranchiseStatus.TERMINATED);
+
+        when(franchiseRepository.findById(franchiseId))
+                .thenReturn(Optional.of(franchise));
+
+        when(allocationRepository.findByFranchiseIdAndActiveTrue(franchiseId))
+                .thenReturn(Optional.empty());
+
+        when(
+                allocationRepository
+                        .findFirstByFranchiseIdOrderByAllocatedAtDescCreatedAtDesc(
+                                franchiseId
+                        )
+        ).thenReturn(Optional.of(allocation));
+
+        when(
+                franchiseUserRepository
+                        .findByFranchiseIdAndStaffRoleAndStatus(
+                                franchiseId,
+                                FranchiseStaffRole.FRANCHISE_OWNER,
+                                FranchiseUserStatus.ACTIVE
+                        )
+        ).thenReturn(Optional.of(ownerMembership));
+
+        when(allocation.getId()).thenReturn(allocationId);
+        when(allocation.getDistrict()).thenReturn(district);
+
+        when(district.getId()).thenReturn(districtId);
+        when(district.getLgdCode()).thenReturn(506);
+        when(district.getName()).thenReturn("Guntur");
+        when(district.getState()).thenReturn(state);
+
+        when(state.getId()).thenReturn(stateId);
+        when(state.getLgdCode()).thenReturn(28);
+        when(state.getName()).thenReturn("Andhra Pradesh");
+
+        when(ownerMembership.getId()).thenReturn(ownerMembershipId);
+        when(ownerMembership.getStaffRole())
+                .thenReturn(FranchiseStaffRole.FRANCHISE_OWNER);
+        when(ownerMembership.getStatus())
+                .thenReturn(FranchiseUserStatus.ACTIVE);
+        when(ownerMembership.getUser()).thenReturn(owner);
+
+        when(owner.getId()).thenReturn(ownerId);
+        when(owner.getFullName()).thenReturn("District Owner");
+        when(owner.getEmail()).thenReturn("owner@example.com");
+        when(owner.getStatus()).thenReturn(UserStatus.ACTIVE);
+
+        AdminFranchiseResponse response =
+                service.getFranchise(
+                        "admin@theholymatrimony.com",
+                        franchiseId
+                );
+
+        assertEquals(franchiseId, response.franchiseId());
+        assertEquals(allocationId, response.allocationId());
+        assertEquals(districtId, response.districtId());
+        assertEquals("Guntur", response.districtName());
+        assertEquals(ownerMembershipId, response.franchiseUserId());
+
+        verify(
+                allocationRepository
+        ).findFirstByFranchiseIdOrderByAllocatedAtDescCreatedAtDesc(
+                franchiseId
+        );
+    }
+
+    @Test
+    void getFranchiseFallsBackToLatestHistoricalOwnerMembership() {
+
+        UUID franchiseId = UUID.randomUUID();
+        UUID allocationId = UUID.randomUUID();
+        UUID stateId = UUID.randomUUID();
+        UUID districtId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID ownerMembershipId = UUID.randomUUID();
+
+        Franchise franchise = mock(Franchise.class);
+        FranchiseDistrictAllocation allocation =
+                mock(FranchiseDistrictAllocation.class);
+        GeoDistrict district = mock(GeoDistrict.class);
+        GeoState state = mock(GeoState.class);
+        FranchiseUser ownerMembership = mock(FranchiseUser.class);
+        User owner = mock(User.class);
+
+        when(franchise.getId()).thenReturn(franchiseId);
+        when(franchise.getFranchiseCode()).thenReturn("HM-GUNTUR-001");
+        when(franchise.getDisplayName()).thenReturn("Holy Matrimony Guntur");
+        when(franchise.getStatus()).thenReturn(FranchiseStatus.TERMINATED);
+
+        when(franchiseRepository.findById(franchiseId))
+                .thenReturn(Optional.of(franchise));
+
+        when(allocationRepository.findByFranchiseIdAndActiveTrue(franchiseId))
+                .thenReturn(Optional.of(allocation));
+
+        when(
+                franchiseUserRepository
+                        .findByFranchiseIdAndStaffRoleAndStatus(
+                                franchiseId,
+                                FranchiseStaffRole.FRANCHISE_OWNER,
+                                FranchiseUserStatus.ACTIVE
+                        )
+        ).thenReturn(Optional.empty());
+
+        when(
+                franchiseUserRepository
+                        .findFirstByFranchiseIdAndStaffRoleOrderByJoinedAtDescCreatedAtDesc(
+                                franchiseId,
+                                FranchiseStaffRole.FRANCHISE_OWNER
+                        )
+        ).thenReturn(Optional.of(ownerMembership));
+
+        when(allocation.getId()).thenReturn(allocationId);
+        when(allocation.getDistrict()).thenReturn(district);
+
+        when(district.getId()).thenReturn(districtId);
+        when(district.getLgdCode()).thenReturn(506);
+        when(district.getName()).thenReturn("Guntur");
+        when(district.getState()).thenReturn(state);
+
+        when(state.getId()).thenReturn(stateId);
+        when(state.getLgdCode()).thenReturn(28);
+        when(state.getName()).thenReturn("Andhra Pradesh");
+
+        when(ownerMembership.getId()).thenReturn(ownerMembershipId);
+        when(ownerMembership.getStaffRole())
+                .thenReturn(FranchiseStaffRole.FRANCHISE_OWNER);
+        when(ownerMembership.getStatus())
+                .thenReturn(FranchiseUserStatus.DEACTIVATED);
+        when(ownerMembership.getUser()).thenReturn(owner);
+
+        when(owner.getId()).thenReturn(ownerId);
+        when(owner.getFullName()).thenReturn("Former District Owner");
+        when(owner.getEmail()).thenReturn("former.owner@example.com");
+        when(owner.getStatus()).thenReturn(UserStatus.ACTIVE);
+
+        AdminFranchiseResponse response =
+                service.getFranchise(
+                        "admin@theholymatrimony.com",
+                        franchiseId
+                );
+
+        assertEquals(franchiseId, response.franchiseId());
+        assertEquals(allocationId, response.allocationId());
+        assertEquals(ownerMembershipId, response.franchiseUserId());
+        assertEquals(
+                FranchiseUserStatus.DEACTIVATED,
+                response.franchiseUserStatus()
+        );
+
+        verify(
+                franchiseUserRepository
+        ).findFirstByFranchiseIdAndStaffRoleOrderByJoinedAtDescCreatedAtDesc(
+                franchiseId,
+                FranchiseStaffRole.FRANCHISE_OWNER
+        );
+    }
+
+    @Test
     void getFranchiseRejectsFranchiseWithoutActiveDistrictAllocation() {
         UUID franchiseId =
                 UUID.randomUUID();
@@ -2187,14 +2367,37 @@ class AdminFranchiseManagementServiceImplTests {
     }
 
     @Test
-    void listTerritoriesRequiresActiveDistrictAllocation() {
+    void listTerritoriesReturnsHistoricalTerritoriesWithoutActiveAllocation() {
         UUID franchiseId =
+                UUID.randomUUID();
+
+        UUID allocationId =
                 UUID.randomUUID();
 
         Franchise franchise =
                 territoryFranchise(
                         franchiseId,
-                        FranchiseStatus.ONBOARDING
+                        FranchiseStatus.TERMINATED
+                );
+
+        FranchiseDistrictAllocation historicalAllocation =
+                territoryAllocation(
+                        allocationId,
+                        franchise
+                );
+
+        historicalAllocation.setActive(false);
+        historicalAllocation.setEndedAt(
+                LocalDateTime.now()
+        );
+
+        FranchiseTerritory historicalTerritory =
+                territory(
+                        UUID.randomUUID(),
+                        historicalAllocation,
+                        "GNT-HIST",
+                        "Historical Guntur Territory",
+                        false
                 );
 
         when(
@@ -2206,27 +2409,57 @@ class AdminFranchiseManagementServiceImplTests {
         );
 
         when(
-                allocationRepository.findByFranchiseIdAndActiveTrue(
+                franchiseTerritoryRepository.findAllForAdminFranchise(
                         franchiseId
                 )
         ).thenReturn(
-                Optional.empty()
+                java.util.List.of(
+                        historicalTerritory
+                )
         );
 
-        assertThrows(
-                IllegalStateException.class,
-                () ->
-                        service.listTerritories(
-                                "admin@theholymatrimony.com",
-                                franchiseId
-                        )
+        java.util.List<AdminFranchiseTerritoryResponse> response =
+                service.listTerritories(
+                        "admin@theholymatrimony.com",
+                        franchiseId
+                );
+
+        assertEquals(
+                1,
+                response.size()
+        );
+
+        assertEquals(
+                allocationId,
+                response.get(0).allocationId()
+        );
+
+        assertEquals(
+                franchiseId,
+                response.get(0).franchiseId()
+        );
+
+        assertEquals(
+                "Historical Guntur Territory",
+                response.get(0).name()
+        );
+
+        assertEquals(
+                false,
+                response.get(0).active()
         );
 
         verify(
-                franchiseTerritoryRepository,
+                allocationRepository,
                 never()
-        ).findAllForAdminFranchise(
+        ).findByFranchiseIdAndActiveTrue(
                 any()
+        );
+
+        verify(
+                franchiseTerritoryRepository
+        ).findAllForAdminFranchise(
+                franchiseId
         );
     }
 
@@ -2377,6 +2610,107 @@ class AdminFranchiseManagementServiceImplTests {
         assertEquals(
                 "Territory was not found for this franchise.",
                 exception.getMessage()
+        );
+    }
+
+    @Test
+    void getTerritoryReturnsTerritoryFromHistoricalAllocation() {
+        UUID franchiseId =
+                UUID.randomUUID();
+
+        UUID allocationId =
+                UUID.randomUUID();
+
+        UUID territoryId =
+                UUID.randomUUID();
+
+        Franchise franchise =
+                territoryFranchise(
+                        franchiseId,
+                        FranchiseStatus.TERMINATED
+                );
+
+        FranchiseDistrictAllocation historicalAllocation =
+                territoryAllocation(
+                        allocationId,
+                        franchise
+                );
+
+        historicalAllocation.setActive(false);
+        historicalAllocation.setEndedAt(
+                LocalDateTime.now()
+        );
+
+        FranchiseTerritory historicalTerritory =
+                territory(
+                        territoryId,
+                        historicalAllocation,
+                        "GNT-HIST",
+                        "Historical Guntur Territory",
+                        false
+                );
+
+        when(
+                franchiseRepository.findById(
+                        franchiseId
+                )
+        ).thenReturn(
+                Optional.of(franchise)
+        );
+
+        when(
+                franchiseTerritoryRepository.findForAdminFranchise(
+                        franchiseId,
+                        territoryId
+                )
+        ).thenReturn(
+                Optional.of(historicalTerritory)
+        );
+
+        AdminFranchiseTerritoryResponse response =
+                service.getTerritory(
+                        "admin@theholymatrimony.com",
+                        franchiseId,
+                        territoryId
+                );
+
+        assertEquals(
+                territoryId,
+                response.territoryId()
+        );
+
+        assertEquals(
+                franchiseId,
+                response.franchiseId()
+        );
+
+        assertEquals(
+                allocationId,
+                response.allocationId()
+        );
+
+        assertEquals(
+                "Historical Guntur Territory",
+                response.name()
+        );
+
+        assertEquals(
+                false,
+                response.active()
+        );
+
+        verify(
+                allocationRepository,
+                never()
+        ).findByFranchiseIdAndActiveTrue(
+                any()
+        );
+
+        verify(
+                franchiseTerritoryRepository
+        ).findForAdminFranchise(
+                franchiseId,
+                territoryId
         );
     }
 

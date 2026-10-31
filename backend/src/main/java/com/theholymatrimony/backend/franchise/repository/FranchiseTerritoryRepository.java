@@ -21,7 +21,7 @@ public interface FranchiseTerritoryRepository
     );
 
     /**
-     * HQ territory list for the franchise's active district allocation.
+     * HQ territory list across the franchise's persisted district allocation history.
      *
      * Geographic ownership is derived through the persisted allocation.
      */
@@ -37,7 +37,6 @@ public interface FranchiseTerritoryRepository
             SELECT territory
             FROM FranchiseTerritory territory
             WHERE territory.districtAllocation.franchise.id = :franchiseId
-              AND territory.districtAllocation.active = true
             ORDER BY territory.name ASC
             """)
     List<FranchiseTerritory> findAllForAdminFranchise(
@@ -48,7 +47,7 @@ public interface FranchiseTerritoryRepository
     /**
      * HQ territory detail lookup.
      *
-     * The territory must belong to the franchise's active district allocation.
+     * The territory must belong to the requested franchise's persisted allocation history.
      * Both active and inactive territories may be returned to HQ.
      */
     @EntityGraph(
@@ -64,7 +63,6 @@ public interface FranchiseTerritoryRepository
             FROM FranchiseTerritory territory
             WHERE territory.id = :territoryId
               AND territory.districtAllocation.franchise.id = :franchiseId
-              AND territory.districtAllocation.active = true
             """)
     Optional<FranchiseTerritory> findForAdminFranchise(
             @Param("franchiseId")
