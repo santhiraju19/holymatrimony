@@ -149,16 +149,30 @@ function redirectToLogin(): void {
     return;
   }
 
+  const pathname =
+    window.location.pathname;
+
   const currentPath =
-    window.location.pathname +
+    pathname +
     window.location.search;
 
   clearAuthStorage();
 
-  if (
-    window.location.pathname.startsWith(
-      "/login"
+  const loginPath =
+    pathname === "/franchise" ||
+    pathname.startsWith(
+      "/franchise/"
     )
+      ? "/franchise/login"
+      : pathname === "/admin" ||
+          pathname.startsWith(
+            "/admin/"
+          )
+        ? "/admin/login"
+        : "/login";
+
+  if (
+    pathname === loginPath
   ) {
     return;
   }
@@ -169,7 +183,7 @@ function redirectToLogin(): void {
     );
 
   window.location.href =
-    `/login?redirect=${redirect}`;
+    `${loginPath}?redirect=${redirect}`;
 }
 
 api.interceptors.request.use(
