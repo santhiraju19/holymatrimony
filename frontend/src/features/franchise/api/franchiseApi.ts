@@ -3,6 +3,10 @@ import type {
   FranchiseLead,
   UpdateFranchiseLeadRequest,
 } from "@/features/franchise/types/franchiseLead";
+import type {
+  FranchisePayment,
+} from "../types/franchisePayment";
+
 import api from "@/lib/api";
 
 import type {
@@ -98,6 +102,17 @@ export async function updateFranchiseLead(
         leadId
       )}`,
       request
+    );
+
+  return response.data.data;
+}
+
+export async function getFranchisePayments(): Promise<
+  FranchisePayment[]
+> {
+  const response =
+    await api.get<ApiResponse<FranchisePayment[]>>(
+      "/franchise/payments"
     );
 
   return response.data.data;

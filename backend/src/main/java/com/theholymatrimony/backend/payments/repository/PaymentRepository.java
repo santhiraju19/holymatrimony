@@ -164,4 +164,37 @@ public interface PaymentRepository
             LocalDateTime end
     );
 
+
+    /*
+     * =====================================================
+     * Franchise Payments
+     * =====================================================
+     *
+     * The district ID supplied to this query must be derived
+     * server-side from the authenticated franchise user's active
+     * district allocation.
+     *
+     * Payment ownership is resolved through:
+     *
+     * Payment -> User -> Profile -> canonicalDistrict
+     *
+     * Profiles without a canonical district are intentionally
+     * excluded from franchise payment visibility.
+     */
+
+    @EntityGraph(attributePaths = "user")
+    @Query("""
+            SELECT p
+            FROM Payment p
+            JOIN p.user u
+            JOIN Profile profile
+                ON profile.user = u
+            WHERE profile.canonicalDistrict.id = :districtId
+            ORDER BY p.createdAt DESC
+            """)
+    List<Payment> findAllForFranchiseDistrict(
+            @Param("districtId")
+            UUID districtId
+    );
+
 }
