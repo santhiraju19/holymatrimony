@@ -1,3 +1,8 @@
+import type {
+  CreateFranchiseLeadRequest,
+  FranchiseLead,
+  UpdateFranchiseLeadRequest,
+} from "@/features/franchise/types/franchiseLead";
 import api from "@/lib/api";
 
 import type {
@@ -55,6 +60,44 @@ export async function getFranchiseMembers(): Promise<
   const response =
     await api.get<ApiResponse<FranchiseMember[]>>(
       "/franchise/members"
+    );
+
+  return response.data.data;
+}
+
+export async function getFranchiseLeads(): Promise<
+  FranchiseLead[]
+> {
+  const response =
+    await api.get<ApiResponse<FranchiseLead[]>>(
+      "/franchise/leads"
+    );
+
+  return response.data.data;
+}
+
+export async function createFranchiseLead(
+  request: CreateFranchiseLeadRequest
+): Promise<FranchiseLead> {
+  const response =
+    await api.post<ApiResponse<FranchiseLead>>(
+      "/franchise/leads",
+      request
+    );
+
+  return response.data.data;
+}
+
+export async function updateFranchiseLead(
+  leadId: string,
+  request: UpdateFranchiseLeadRequest
+): Promise<FranchiseLead> {
+  const response =
+    await api.patch<ApiResponse<FranchiseLead>>(
+      `/franchise/leads/${encodeURIComponent(
+        leadId
+      )}`,
+      request
     );
 
   return response.data.data;
